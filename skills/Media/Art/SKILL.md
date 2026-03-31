@@ -56,7 +56,6 @@ Route to the appropriate workflow based on the request.
   - Comparison or X vs Y → `Workflows/Comparisons.md`
   - Annotated screenshot → `Workflows/AnnotatedScreenshots.md`
   - Recipe card or step-by-step → `Workflows/RecipeCards.md`
-  - Aphorism or quote card → `Workflows/Aphorisms.md`
   - Conceptual map or territory → `Workflows/Maps.md`
   - Stat card or big number visual → `Workflows/Stats.md`
   - Comic or sequential panels → `Workflows/Comics.md`
