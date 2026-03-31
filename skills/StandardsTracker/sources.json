@@ -1,0 +1,82 @@
+{
+  "sources": [
+    {
+      "id": "broadband-forum",
+      "name": "Broadband Forum",
+      "url": "https://www.broadband-forum.org",
+      "type": "standards-body",
+      "description": "Primary standards body for TR-069, TR-369, and device data models",
+      "categories": ["spec_updates", "adoption"]
+    },
+    {
+      "id": "usp-technology",
+      "name": "USP Specification",
+      "url": "https://usp.technology",
+      "type": "spec",
+      "description": "TR-369 USP specification text and protocol documentation",
+      "categories": ["spec_updates"]
+    },
+    {
+      "id": "usp-data-models",
+      "name": "USP Data Models",
+      "url": "https://usp-data-models.broadband-forum.org",
+      "type": "data-model",
+      "description": "USP device data model definitions and profiles",
+      "categories": ["data_model"]
+    },
+    {
+      "id": "cwmp-data-models",
+      "name": "CWMP Data Models",
+      "url": "https://cwmp-data-models.broadband-forum.org",
+      "type": "data-model",
+      "description": "TR-069 CWMP device data model definitions",
+      "categories": ["data_model"]
+    },
+    {
+      "id": "bbf-github",
+      "name": "BBF GitHub",
+      "url": "https://github.com/BroadbandForum",
+      "type": "code",
+      "description": "Reference implementations, OB-USP-Agent, tools",
+      "categories": ["spec_updates", "adoption"]
+    },
+    {
+      "id": "prpl-foundation",
+      "name": "prpl Foundation",
+      "url": "https://prplfoundation.org",
+      "type": "consortium",
+      "description": "Open-source CPE software ecosystem, USP adoption",
+      "categories": ["adoption"]
+    },
+    {
+      "id": "wifi-alliance",
+      "name": "Wi-Fi Alliance",
+      "url": "https://www.wi-fi.org",
+      "type": "standards-body",
+      "description": "EasyMesh, WPA3, Wi-Fi 7 certification programs",
+      "categories": ["spec_updates", "adoption"]
+    }
+  ],
+  "categories": {
+    "spec_updates": {
+      "name": "Spec Updates",
+      "description": "New releases, corrigenda, amendments to tracked standards"
+    },
+    "data_model": {
+      "name": "Data Model Changes",
+      "description": "New objects, parameter additions/deprecations"
+    },
+    "adoption": {
+      "name": "Industry Adoption",
+      "description": "Vendor implementations, certifications, deployment news"
+    }
+  },
+  "tracked_specs": {
+    "TR-369": { "name": "User Services Platform (USP)", "known_version": "1.3" },
+    "TR-069": { "name": "CPE WAN Management Protocol (CWMP)", "known_version": "1.6 Amendment 6" },
+    "TR-181": { "name": "Device Data Model", "known_version": "2.17" },
+    "TR-106": { "name": "Data Model Template", "known_version": "1.12" },
+    "TR-157": { "name": "Component Objects for CWMP", "known_version": "1.10" },
+    "TR-471": { "name": "IP Performance Metrics", "known_version": "4.0" }
+  }
+}

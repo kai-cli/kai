@@ -1,0 +1,124 @@
+{
+  "sources": [
+    {
+      "id": "the-verge",
+      "name": "The Verge",
+      "url": "https://www.theverge.com",
+      "type": "tech-media",
+      "description": "Product reviews, announcements, consumer tech coverage",
+      "categories": ["launches", "reviews"]
+    },
+    {
+      "id": "ars-technica",
+      "name": "Ars Technica",
+      "url": "https://arstechnica.com",
+      "type": "tech-media",
+      "description": "Technical reviews, deep networking coverage",
+      "categories": ["reviews", "features"]
+    },
+    {
+      "id": "cnet",
+      "name": "CNET",
+      "url": "https://www.cnet.com",
+      "type": "tech-media",
+      "description": "Product reviews, buyer's guides, pricing tracking",
+      "categories": ["reviews", "pricing"]
+    },
+    {
+      "id": "smallnetbuilder",
+      "name": "SmallNetBuilder",
+      "url": "https://www.smallnetbuilder.com",
+      "type": "specialist",
+      "description": "Deep technical wireless reviews and benchmarks",
+      "categories": ["reviews", "launches"]
+    },
+    {
+      "id": "wifi-now",
+      "name": "Wi-Fi NOW",
+      "url": "https://wifinowglobal.com",
+      "type": "industry",
+      "description": "Wi-Fi industry news, technology trends, market analysis",
+      "categories": ["launches", "features"]
+    },
+    {
+      "id": "light-reading",
+      "name": "Light Reading",
+      "url": "https://www.lightreading.com",
+      "type": "industry",
+      "description": "ISP/operator news, CPE market trends",
+      "categories": ["pricing", "features"]
+    }
+  ],
+  "competitors": {
+    "tier1": [
+      {
+        "id": "netgear",
+        "name": "Netgear",
+        "brands": ["Orbi", "Nighthawk"],
+        "segment": "Premium mesh, gaming"
+      },
+      {
+        "id": "tp-link",
+        "name": "TP-Link",
+        "brands": ["Deco", "Archer"],
+        "segment": "Value mesh, broad SKU range"
+      },
+      {
+        "id": "asus",
+        "name": "Asus",
+        "brands": ["ZenWiFi", "ROG Rapture", "RT-series"],
+        "segment": "Enthusiast, gaming, mesh"
+      },
+      {
+        "id": "eero",
+        "name": "Eero (Amazon)",
+        "brands": ["Eero", "Eero Pro", "Eero Max"],
+        "segment": "Simple mesh, smart home ecosystem"
+      }
+    ],
+    "tier2": [
+      {
+        "id": "google",
+        "name": "Google",
+        "brands": ["Nest WiFi"],
+        "segment": "Smart home integration"
+      },
+      {
+        "id": "ubiquiti",
+        "name": "Ubiquiti",
+        "brands": ["UniFi"],
+        "segment": "Prosumer/SMB crossover"
+      },
+      {
+        "id": "arris",
+        "name": "Arris/CommScope",
+        "brands": ["Surfboard"],
+        "segment": "ISP-supplied CPE"
+      },
+      {
+        "id": "plume",
+        "name": "Plume",
+        "brands": ["HomePass", "WorkPass"],
+        "segment": "Software-defined WiFi, SaaS"
+      }
+    ]
+  },
+  "categories": {
+    "launches": {
+      "name": "Product Launches & Announcements",
+      "description": "New products, SKUs, hardware refreshes"
+    },
+    "features": {
+      "name": "Feature & Software Updates",
+      "description": "Firmware, new features, app changes, ecosystem moves"
+    },
+    "pricing": {
+      "name": "Pricing & Positioning",
+      "description": "Price changes, deals, channel moves, market positioning"
+    },
+    "reviews": {
+      "name": "Reviews & Reception",
+      "description": "Reviews, benchmarks, customer sentiment"
+    }
+  }
+}
