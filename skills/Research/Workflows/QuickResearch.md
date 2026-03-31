@@ -11,6 +11,17 @@
 
 ## Workflow
 
+### Step 0: Check Research Index
+
+**Before launching an agent**, check if this was recently researched:
+
+```bash
+bun ~/.claude/PAI/Tools/ResearchIndex.ts dedup "<research topic>"
+```
+
+- If `duplicate: true` — show the cached summary. Ask if the user wants fresh research or the prior findings.
+- If `duplicate: false` — continue normally
+
 ### Step 1: Launch Single Claude Agent
 
 **ONE Task call - Claude researcher with a single focused query:**
@@ -42,6 +53,19 @@ Report findings using standard format:
 ➡️ NEXT: [Suggest standard research if more depth needed]
 📖 STORY EXPLANATION: [3-5 numbered points - keep brief]
 🎯 COMPLETED: Quick answer on [topic]
+```
+
+### Step 3: Save to Research Index
+
+After delivering results, capture for future sessions:
+
+```bash
+bun ~/.claude/PAI/Tools/ResearchIndex.ts save \
+  --topic "<research topic>" \
+  --summary "<1-2 sentence key finding>" \
+  --agents "ClaudeResearcher" \
+  --keywords "<key terms>" \
+  --quality <1-10>
 ```
 
 ## Speed Target
