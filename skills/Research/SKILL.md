@@ -77,6 +77,25 @@ Route to the appropriate workflow based on the request.
 
 ---
 
+## Research Index — Institutional Knowledge
+
+**All research workflows MUST use the Research Index** (`PAI/Tools/ResearchIndex.ts`):
+
+1. **Before research:** Run `bun ~/.claude/PAI/Tools/ResearchIndex.ts dedup "<topic>"` to check for prior findings
+2. **After research:** Run `bun ~/.claude/PAI/Tools/ResearchIndex.ts save --topic "<topic>" --summary "<findings>" ...` to capture results
+3. **Context seeding:** When prior research exists, include its summary in agent prompts so they build on (not repeat) earlier work
+
+**CLI reference:**
+```bash
+bun ~/.claude/PAI/Tools/ResearchIndex.ts query "topic"   # Search prior research
+bun ~/.claude/PAI/Tools/ResearchIndex.ts dedup "topic"   # Check for recent duplicates
+bun ~/.claude/PAI/Tools/ResearchIndex.ts save --topic "t" --summary "s" --agents "a,b" --keywords "k1,k2" --quality N
+bun ~/.claude/PAI/Tools/ResearchIndex.ts list             # List recent entries
+bun ~/.claude/PAI/Tools/ResearchIndex.ts stats            # Index statistics
+```
+
+---
+
 ## Quick Reference
 
 **READ:** `QuickReference.md` for detailed examples and mode comparison.

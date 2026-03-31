@@ -20,7 +20,20 @@ See `SKILL.md` for full URL Verification Protocol.
 
 ## Workflow
 
-### Step 0: Check Local Context FIRST (MANDATORY)
+### Step 0a: Check Research Index (MANDATORY)
+
+**Before launching any agents**, check if this topic was already researched:
+
+```bash
+bun ~/.claude/PAI/Tools/ResearchIndex.ts dedup "<research topic>"
+```
+
+- If `duplicate: true` — show the prior research summary to the user. Ask: "This was researched on [date]. Want me to research again or use these findings?"
+  - If user says use prior: skip to Step 5 with the cached summary
+  - If user says re-research: continue to Step 0b, but seed agents with the prior summary as context (add to their prompts: "Prior research found: [summary]. Build on or update these findings.")
+- If `duplicate: false` — continue normally
+
+### Step 0b: Check Local Context FIRST (MANDATORY)
 
 **Before launching any web research agents**, check if the topic relates to Your Company, firmware, Pinnacle, speedtest, TR-069/369, or any known project. If so:
 
@@ -102,6 +115,22 @@ WebFetch(url, "Confirm article exists and summarize main point")
 📖 STORY EXPLANATION: [5-8 numbered points]
 🎯 COMPLETED: Research on [topic] complete
 ```
+
+### Step 6: Save to Research Index (MANDATORY)
+
+After delivering results, capture this research for future sessions:
+
+```bash
+bun ~/.claude/PAI/Tools/ResearchIndex.ts save \
+  --topic "<research topic>" \
+  --summary "<2-3 sentence synthesis of key findings>" \
+  --agents "ClaudeResearcher,GeminiResearcher" \
+  --keywords "<comma-separated key terms>" \
+  --quality <1-10 based on source quality and coverage> \
+  --sources "<comma-separated verified URLs>"
+```
+
+This builds the institutional knowledge base so future research can build on prior findings.
 
 ## Speed Target
 

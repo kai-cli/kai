@@ -74,7 +74,7 @@ function tokenize(text: string): string[] {
   return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").split(/\s+/).filter(Boolean);
 }
 
-function scoreMatch(entry: ResearchEntry, queryTokens: string[]): number {
+function scoreMatch(entry: ResearchEntry, queryTokens: string[], withBoosts = true): number {
   const entryText = [
     entry.topic,
     ...entry.keywords,
@@ -97,13 +97,15 @@ function scoreMatch(entry: ResearchEntry, queryTokens: string[]): number {
     }
   }
 
-  // Recency boost: entries from last 7 days get +2
-  const daysSince = (Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24);
-  if (daysSince < 7) score += 2;
-  else if (daysSince < 30) score += 1;
+  if (withBoosts) {
+    // Recency boost: entries from last 7 days get +2
+    const daysSince = (Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSince < 7) score += 2;
+    else if (daysSince < 30) score += 1;
 
-  // Quality boost
-  score += entry.quality / 10;
+    // Quality boost
+    score += entry.quality / 10;
+  }
 
   return score;
 }
@@ -138,7 +140,7 @@ function checkDedup(topic: string): ResearchEntry | null {
   for (const entry of index.entries) {
     if (new Date(entry.date).getTime() < cutoff) continue;
 
-    const score = scoreMatch(entry, queryTokens);
+    const score = scoreMatch(entry, queryTokens, false); // raw score, no boosts
     // High-confidence match: most query tokens found in topic+keywords
     const matchRatio = score / (queryTokens.length * 3); // max possible per token = 3
     if (matchRatio > 0.5) {
