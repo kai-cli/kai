@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAI Board</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Fira Code', monospace;
+    background: #0d1117; color: #c9d1d9; min-height: 100vh;
+  }
+
+  /* --- Header --- */
+  header {
+    padding: 12px 20px; border-bottom: 1px solid #21262d;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; font-weight: 600; color: #58a6ff; white-space: nowrap; }
+  .header-stats { font-size: 12px; color: #8b949e; white-space: nowrap; }
+  .header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .search-box {
+    background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+    padding: 5px 10px; color: #c9d1d9; font-size: 12px; width: 200px;
+    font-family: inherit; outline: none;
+  }
+  .search-box:focus { border-color: #58a6ff; }
+  .btn {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid #30363d;
+    background: #21262d; color: #c9d1d9; font-size: 12px; cursor: pointer;
+    font-family: inherit; white-space: nowrap; transition: all 0.15s;
+  }
+  .btn:hover { background: #30363d; border-color: #8b949e; }
+  .btn-primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .btn-primary:hover { background: #388bfd; }
+  .btn-danger { background: #da3633; border-color: #da3633; color: #fff; }
+  .btn-danger:hover { background: #f85149; }
+  .btn-sm { padding: 3px 8px; font-size: 11px; }
+
+  /* --- Process Bar --- */
+  .process-bar {
+    padding: 6px 20px; background: #161b22; border-bottom: 1px solid #21262d;
+    font-size: 11px; color: #8b949e; display: none; align-items: center; gap: 12px;
+  }
+  .process-bar.active { display: flex; }
+  .process-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #1f3b3b; color: #2dd4bf; padding: 2px 8px; border-radius: 4px;
+  }
+  .process-badge.docker { background: #1f2d4d; color: #58a6ff; }
+  .pulse { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* --- Board --- */
+  .board {
+    display: flex; gap: 12px; padding: 16px 20px;
+    overflow-x: auto; min-height: calc(100vh - 100px); align-items: flex-start;
+  }
+  .column { min-width: 260px; max-width: 300px; flex-shrink: 0; }
+  .column-header {
+    padding: 8px 10px; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border-radius: 6px 6px 0 0; display: flex; align-items: center; gap: 6px;
+  }
+  .column-header .count {
+    background: rgba(255,255,255,0.1); padding: 1px 6px;
+    border-radius: 8px; font-size: 10px; font-weight: 400;
+  }
+  .column-body { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; }
+
+  /* Column colors */
+  .col-backlog .column-header { background: #21262d; color: #8b949e; }
+  .col-progress .column-header { background: #0d1f3c; color: #58a6ff; }
+  .col-review .column-header { background: #2d2305; color: #d29922; }
+  .col-done .column-header { background: #0d2818; color: #3fb950; }
+  .col-sessions .column-header { background: #1a2e1a; color: #4ade80; }
+  .col-library .column-header { background: #1a1a2e; color: #a78bfa; }
+
+  /* --- Cards --- */
+  .card {
+    background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+    padding: 10px; transition: border-color 0.15s; position: relative; cursor: pointer;
+  }
+  .card:hover { border-color: #58a6ff; }
+  .card-title {
+    font-size: 12px; font-weight: 500; color: #e6edf3;
+    margin-bottom: 6px; line-height: 1.3; cursor: pointer;
+  }
+  .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .badge {
+    font-size: 9px; padding: 1px 5px; border-radius: 3px;
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .badge-micro { background: #1f2937; color: #9ca3af; }
+  .badge-standard { background: #1e3a5f; color: #58a6ff; }
+  .badge-extended { background: #2d1f4e; color: #a78bfa; }
+  .badge-advanced { background: #3b1f1f; color: #f87171; }
+  .badge-deep { background: #1f3b2d; color: #4ade80; }
+  .badge-comprehensive { background: #3b351f; color: #fbbf24; }
+  .badge-autonomous { background: #1f3b3b; color: #2dd4bf; }
+  .badge-interactive { background: #21262d; color: #8b949e; }
+  .badge-running { background: #1f3b3b; color: #2dd4bf; animation: pulse 1.5s infinite; }
+  .badge-discovered { background: #1a1a2e; color: #a78bfa; }
+  .badge-pinned { background: #2d2305; color: #d29922; }
+  .progress-bar { height: 3px; background: #21262d; border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+  .pf-backlog { background: #484f58; }
+  .pf-progress { background: #58a6ff; }
+  .pf-review { background: #d29922; }
+  .pf-done { background: #3fb950; }
+  .progress-text { font-size: 10px; color: #8b949e; }
+  .card-time { font-size: 10px; color: #484f58; margin-top: 3px; }
+  .card-actions {
+    display: none; position: absolute; top: 6px; right: 6px;
+    gap: 4px; align-items: center;
+  }
+  .card:hover .card-actions { display: flex; }
+  .card-action-btn {
+    background: #21262d; border: 1px solid #30363d; border-radius: 4px;
+    color: #8b949e; font-size: 10px; padding: 2px 6px; cursor: pointer;
+    font-family: inherit;
+  }
+  .card-action-btn:hover { color: #e6edf3; background: #30363d; }
+
+  /* Criteria expandable */
+  .card-criteria {
+    display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #21262d;
+  }
+  .card.expanded .card-criteria { display: block; }
+  .criterion {
+    font-size: 11px; padding: 2px 0; color: #8b949e;
+    display: flex; align-items: flex-start; gap: 5px; cursor: pointer;
+  }
+  .criterion:hover { color: #c9d1d9; }
+  .criterion.passed { color: #3fb950; }
+  .criterion .check { flex-shrink: 0; width: 14px; text-align: center; }
+
+  /* Library card */
+  .library-card {
+    background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+    padding: 10px; transition: border-color 0.15s;
+  }
+  .library-card:hover { border-color: #a78bfa; }
+  .library-card .card-title { color: #a78bfa; cursor: default; }
+  .library-card .card-desc { font-size: 11px; color: #8b949e; margin-bottom: 4px; line-height: 1.3; }
+  .library-card .tag {
+    font-size: 9px; background: #21262d; color: #8b949e; padding: 1px 4px;
+    border-radius: 3px; margin-right: 3px;
+  }
+
+  /* --- Modals --- */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+    padding: 20px; width: 440px; max-width: 90vw; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 15px; color: #e6edf3; margin-bottom: 14px; }
+  .modal label { display: block; font-size: 12px; color: #8b949e; margin: 10px 0 4px; }
+  .modal input, .modal textarea, .modal select {
+    width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+    padding: 8px 10px; color: #c9d1d9; font-size: 12px; font-family: inherit; outline: none;
+  }
+  .modal input:focus, .modal textarea:focus, .modal select:focus { border-color: #58a6ff; }
+  .modal textarea { resize: vertical; min-height: 60px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 12px; color: #c9d1d9; }
+  .checkbox-row input[type=checkbox] { width: auto; }
+
+  /* --- Empty --- */
+  .empty-state { font-size: 11px; color: #484f58; padding: 16px; text-align: center; font-style: italic; }
+
+  /* --- Keyboard hint --- */
+  .kbd { font-size: 10px; color: #484f58; padding: 8px 20px; border-top: 1px solid #21262d; }
+  .kbd kbd { background: #21262d; padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PAI Board</h1>
+  <div class="header-stats" id="stats"></div>
+  <div class="header-actions">
+    <input type="text" class="search-box" id="search" placeholder="Filter... (/)">
+    <button class="btn btn-primary" onclick="showNewTaskModal()">+ New Task</button>
+    <button class="btn" id="archiveToggle" onclick="toggleArchiveView()">Archive (0)</button>
+  </div>
+</header>
+
+<div class="process-bar" id="processBar"></div>
+
+<div class="board" id="board"></div>
+
+<div class="kbd">
+  <kbd>N</kbd> New task &nbsp; <kbd>/</kbd> Search &nbsp; <kbd>A</kbd> Toggle archive &nbsp; <kbd>R</kbd> Refresh
+</div>
+
+<!-- New Task Modal -->
+<div class="modal-overlay" id="newTaskModal">
+  <div class="modal">
+    <h2>New Task</h2>
+    <label>Title</label>
+    <input type="text" id="taskTitle" placeholder="8-word task description">
+    <label>Description</label>
+    <textarea id="taskDesc" placeholder="Context for the task..."></textarea>
+    <label>Effort</label>
+    <select id="taskEffort">
+      <option value="standard">Standard</option>
+      <option value="extended">Extended</option>
+      <option value="advanced">Advanced</option>
+      <option value="deep">Deep</option>
+    </select>
+    <label>Mode</label>
+    <select id="taskMode">
+      <option value="interactive">Interactive</option>
+      <option value="autonomous">Autonomous</option>
+    </select>
+    <div class="checkbox-row">
+      <input type="checkbox" id="taskAutoRalph"> Start Ralph Loop immediately
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="taskDocker"> Run in Docker container (yolo mode)
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('newTaskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createTask()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ralph Loop Modal -->
+<div class="modal-overlay" id="ralphModal">
+  <div class="modal">
+    <h2>Start Ralph Loop</h2>
+    <p style="font-size:12px;color:#8b949e;margin-bottom:12px" id="ralphSlugDisplay"></p>
+    <label>Budget ($)</label>
+    <input type="number" id="ralphBudget" value="5" min="1" max="50" step="1">
+    <label>Max Iterations</label>
+    <input type="number" id="ralphMaxIter" value="5" min="1" max="20" step="1">
+    <label>Model</label>
+    <select id="ralphModel">
+      <option value="opus">Opus (strongest, most expensive)</option>
+      <option value="sonnet">Sonnet (balanced)</option>
+      <option value="haiku">Haiku (fast, cheapest)</option>
+    </select>
+    <div class="checkbox-row">
+      <input type="checkbox" id="ralphDocker"> Run in Docker (yolo mode)
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('ralphModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="launchRalph()">Launch</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- State ---
+let allItems = [];
+let archivedItems = [];
+let libraryItems = [];
+let sessionItems = [];
+let processes = {};
+let showArchive = false;
+let searchQuery = '';
+let ralphTargetSlug = '';
+let expandedSlug = null; // Track which card is expanded (only one at a time)
+let showRecent = false; // Toggle for recent (inactive) sessions
+
+// --- Columns ---
+const COLUMNS = [
+  { id: 'backlog', label: 'Backlog', phases: ['observe'] },
+  { id: 'progress', label: 'In Progress', phases: ['think', 'plan', 'build', 'execute'] },
+  { id: 'review', label: 'Review', phases: ['verify', 'learn'] },
+  { id: 'done', label: 'Done', phases: ['complete'] },
+];
+
+// --- Utils ---
+function relativeTime(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+function elapsed(startTime) {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m > 0 ? m + 'm ' + sec + 's' : sec + 's';
+}
+
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function matchesSearch(item) {
+  if (!searchQuery) return true;
+  const q = searchQuery.toLowerCase();
+  return (item.task || item.name || '').toLowerCase().includes(q) ||
+         (item.effort || '').toLowerCase().includes(q) ||
+         (item.description || '').toLowerCase().includes(q) ||
+         (item.tags || []).some(t => t.toLowerCase().includes(q));
+}
+
+// --- Render ---
+function renderBoard() {
+  const board = document.getElementById('board');
+  const stats = document.getElementById('stats');
+  const items = allItems.filter(matchesSearch);
+  const total = allItems.length;
+  const done = allItems.filter(i => i.phase === 'complete').length;
+  const active = allItems.filter(i => !['complete','observe'].includes(i.phase)).length;
+  const running = Object.keys(processes).length;
+  const sessCount = sessionItems.length;
+  stats.textContent = total + ' tasks | ' + active + ' active | ' + done + ' done | ' + sessCount + ' sessions' +
+    (running > 0 ? ' | ' + running + ' running' : '');
+
+  // Archive button
+  document.getElementById('archiveToggle').textContent =
+    showArchive ? 'Hide Archive' : 'Archive (' + archivedItems.length + ')';
+
+  // Process bar
+  const pbar = document.getElementById('processBar');
+  const procEntries = Object.entries(processes);
+  if (procEntries.length > 0) {
+    pbar.className = 'process-bar active';
+    pbar.innerHTML = 'Running: ' + procEntries.map(([slug, p]) =>
+      '<span class="process-badge ' + (p.type === 'docker' ? 'docker' : '') + '">' +
+      '<span class="pulse">&#x25CF;</span> ' + esc(slug.slice(0, 30)) +
+      ' (' + p.type + ', ' + elapsed(p.startTime) + ')' +
+      ' <button class="card-action-btn" onclick="stopProc(\'' + esc(slug) + '\')">stop</button>' +
+      '</span>'
+    ).join(' ');
+  } else {
+    pbar.className = 'process-bar';
+  }
+
+  let html = '';
+
+  // Sessions column (first — shows active work)
+  const sessAll = sessionItems.filter(s => matchesSearch({ task: s.task, name: s.task, description: '', tags: [] }));
+  const sessActive = sessAll.filter(s => s.isActive);
+  const sessRecent = sessAll.filter(s => !s.isActive);
+  html += '<div class="column col-sessions">' +
+    '<div class="column-header">Sessions <span class="count">' + sessActive.length + '</span></div>' +
+    '<div class="column-body">' +
+    (sessActive.length === 0 ? '<div class="empty-state">No active sessions</div>' :
+      sessActive.map(renderSessionCard).join('')) +
+    (sessRecent.length > 0 ? '<div class="recent-divider" onclick="showRecent=!showRecent;renderBoard()" style="cursor:pointer;padding:6px 8px;font-size:11px;color:#484f58;border-top:1px solid #21262d;margin-top:8px">' +
+      (showRecent ? '&#x25BC;' : '&#x25B6;') + ' Recent (' + sessRecent.length + ')</div>' +
+      (showRecent ? sessRecent.map(s => renderSessionCard(s, true)).join('') : '') : '') +
+    '</div></div>';
+
+  // Kanban columns
+  for (const col of COLUMNS) {
+    let colItems = items.filter(i => col.phases.includes(i.phase));
+    if (col.id === 'done' && showArchive) {
+      colItems = [...colItems, ...archivedItems.filter(matchesSearch)];
+    }
+    html += '<div class="column col-' + col.id + '">' +
+      '<div class="column-header">' + col.label +
+      '<span class="count">' + colItems.length + '</span></div>' +
+      '<div class="column-body">' +
+      (colItems.length === 0 ? '<div class="empty-state">No items</div>' :
+        colItems.map(item => renderCard(item, col.id)).join('')) +
+      '</div></div>';
+  }
+
+  // Library column
+  const libItems = libraryItems.filter(matchesSearch);
+  html += '<div class="column col-library">' +
+    '<div class="column-header">Library <span class="count">' + libItems.length + '</span></div>' +
+    '<div class="column-body">' +
+    (libItems.length === 0 ? '<div class="empty-state">No projects found</div>' :
+      libItems.map(renderLibraryCard).join('')) +
+    '</div></div>';
+
+  board.innerHTML = html;
+}
+
+function renderCard(item, colId) {
+  const pct = item.total > 0 ? Math.round(item.passed / item.total * 100) : 0;
+  const isArchived = archivedItems.some(a => a.slug === item.slug);
+  const isRunning = processes[item.slug];
+  const isExpanded = expandedSlug === item.slug;
+  const phases = ['observe','think','plan','build','execute','verify','learn','complete'];
+
+  return '<div class="card' + (isExpanded ? ' expanded' : '') + '" id="card-' + esc(item.slug) + '" onclick="toggleExpand(\'' + esc(item.slug) + '\')">' +
+    '<div class="card-actions">' +
+      (colId === 'done' && !isArchived ? '<button class="card-action-btn" onclick="event.stopPropagation();archiveItem(\'' + esc(item.slug) + '\')" title="Archive">&#x2715;</button>' : '') +
+      (isArchived ? '<button class="card-action-btn" onclick="event.stopPropagation();unarchiveItem(\'' + esc(item.slug) + '\')" title="Unarchive">&#x21A9;</button>' : '') +
+      (!isRunning ? '<button class="card-action-btn" onclick="event.stopPropagation();showRalphModal(\'' + esc(item.slug) + '\')" title="Ralph Loop">&#x25B6;</button>' : '') +
+      (isRunning ? '<button class="card-action-btn btn-danger" onclick="event.stopPropagation();stopProc(\'' + esc(item.slug) + '\')" title="Stop">&#x25A0;</button>' : '') +
+      '<select class="card-action-btn" onclick="event.stopPropagation()" onchange="changePhase(\'' + esc(item.slug) + '\', this.value); this.value=\'\'" style="width:auto">' +
+        '<option value="">Phase...</option>' +
+        phases.map(p => '<option value="' + p + '"' + (p === item.phase ? ' disabled' : '') + '>' + p + '</option>').join('') +
+      '</select>' +
+    '</div>' +
+    '<div class="card-title">' + esc(item.task) + '</div>' +
+    '<div class="card-meta">' +
+      '<span class="badge badge-' + item.effort + '">' + item.effort + '</span>' +
+      (item.mode === 'autonomous' ? '<span class="badge badge-autonomous">auto</span>' : '') +
+      (isRunning ? '<span class="badge badge-running">' + isRunning.type + ' ' + elapsed(isRunning.startTime) + '</span>' : '') +
+      (isArchived ? '<span class="badge" style="background:#21262d;color:#484f58">archived</span>' : '') +
+    '</div>' +
+    (item.total > 0 ? (
+      '<div class="progress-bar"><div class="progress-fill pf-' + colId + '" style="width:' + pct + '%"></div></div>' +
+      '<div class="progress-text">' + item.passed + '/' + item.total + ' (' + pct + '%)</div>'
+    ) : '<div class="progress-text" style="color:#484f58">No criteria yet</div>') +
+    '<div class="card-time">' + relativeTime(item.updated) + '</div>' +
+    '<div class="card-criteria">' +
+      (item.criteria || []).map(c =>
+        '<div class="criterion ' + (c.passed ? 'passed' : '') + '" onclick="event.stopPropagation();toggleCrit(\'' + esc(item.slug) + '\',\'' + esc(c.id) + '\')">' +
+        '<span class="check">' + (c.passed ? '&#x2713;' : '&#x25CB;') + '</span>' +
+        '<span>' + esc(c.id + ': ' + c.text) + '</span></div>'
+      ).join('') +
+    '</div>' +
+  '</div>';
+}
+
+function renderLibraryCard(item) {
+  const libKey = 'lib-' + (item.path || item.name).replace(/[^a-z0-9]/gi, '-');
+  const isExpanded = expandedSlug === libKey;
+  return '<div class="library-card' + (isExpanded ? ' expanded' : '') + '" onclick="toggleExpand(\'' + esc(libKey) + '\')" style="cursor:pointer">' +
+    '<div class="card-title">' + esc(item.name) + '</div>' +
+    '<div class="card-desc">' + esc(item.description) + '</div>' +
+    '<div class="card-meta">' +
+      (item.tags || []).map(t => '<span class="tag">' + esc(t) + '</span>').join('') +
+      (item.discovered ? '<span class="badge badge-discovered">discovered</span>' : '') +
+      (item.pinned ? '<span class="badge badge-pinned">pinned</span>' : '') +
+    '</div>' +
+    '<div class="card-criteria"' + (isExpanded ? ' style="display:block"' : '') + '>' +
+      '<div style="font-size:11px;color:#8b949e;margin-bottom:6px">' +
+        '<strong>Path:</strong> ' + esc(item.path) +
+      '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="btn btn-sm" onclick="event.stopPropagation();navigator.clipboard.writeText(\'' + esc(item.path) + '\');this.textContent=\'Copied!\'">Copy Path</button>' +
+        '<button class="btn btn-sm" onclick="event.stopPropagation();openInFinder(\'' + esc(item.path) + '\')">Open in Finder</button>' +
+      '</div>' +
+    '</div>' +
+    (!isExpanded ? '<div class="card-time" style="color:#484f58">' + esc(item.path) + '</div>' : '') +
+  '</div>';
+}
+
+function renderSessionCard(sess, dimmed) {
+  const color = dimmed ? '#484f58' : '#4ade80';
+  const opacity = dimmed ? 'opacity:0.6' : '';
+  return '<div class="card" style="border-left: 2px solid ' + color + ';' + opacity + '">' +
+    '<div class="card-title" style="color:' + color + '">' + esc(sess.task) + '</div>' +
+    '<div class="card-meta">' +
+      (sess.isActive ? '<span class="badge" style="background:#1a2e1a;color:#4ade80">active</span>' :
+        '<span class="badge" style="background:#1a1a2e;color:#484f58">ended</span>') +
+      '<span class="badge badge-' + (sess.phase === 'native' ? 'interactive' : sess.phase) + '">' + esc(sess.phase) + '</span>' +
+    '</div>' +
+    '<div class="card-time">' + relativeTime(sess.startedAt) + '</div>' +
+  '</div>';
+}
+
+// --- API ---
+async function fetchAll() {
+  try {
+    const [workRes, libRes] = await Promise.all([
+      fetch('/api/work'), fetch('/api/library')
+    ]);
+    const work = await workRes.json();
+    allItems = work.items || [];
+    archivedItems = work.archived || [];
+    sessionItems = work.sessions || [];
+    processes = work.processes || {};
+    libraryItems = await libRes.json();
+    renderBoard();
+  } catch (e) {
+    document.getElementById('board').innerHTML =
+      '<div class="empty-state" style="padding:40px;font-size:14px;color:#f87171;">Error: ' + e.message + '</div>';
+  }
+}
+
+async function createTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  if (!title) return;
+  const desc = document.getElementById('taskDesc').value.trim();
+  const effort = document.getElementById('taskEffort').value;
+  const mode = document.getElementById('taskMode').value;
+  const autoRalph = document.getElementById('taskAutoRalph').checked;
+  const docker = document.getElementById('taskDocker').checked;
+
+  const res = await fetch('/api/task', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description: desc, effort, mode }),
+  });
+  const data = await res.json();
+
+  if (autoRalph && data.slug) {
+    const endpoint = docker ? '/api/task/' + data.slug + '/docker' : '/api/task/' + data.slug + '/ralph';
+    await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  }
+
+  closeModal('newTaskModal');
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskDesc').value = '';
+  document.getElementById('taskAutoRalph').checked = false;
+  document.getElementById('taskDocker').checked = false;
+  fetchAll();
+}
+
+async function changePhase(slug, phase) {
+  if (!phase) return;
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/phase', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phase }),
+  });
+  fetchAll();
+}
+
+async function toggleCrit(slug, criterionId) {
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/criteria/' + encodeURIComponent(criterionId), {
+    method: 'PATCH',
+  });
+  fetchAll();
+}
+
+async function archiveItem(slug) {
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/archive', { method: 'POST' });
+  fetchAll();
+}
+
+async function unarchiveItem(slug) {
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/archive', { method: 'DELETE' });
+  fetchAll();
+}
+
+function showRalphModal(slug) {
+  ralphTargetSlug = slug;
+  document.getElementById('ralphSlugDisplay').textContent = 'Task: ' + slug;
+  document.getElementById('ralphModal').className = 'modal-overlay active';
+}
+
+async function launchRalph() {
+  const budget = parseFloat(document.getElementById('ralphBudget').value);
+  const maxIterations = parseInt(document.getElementById('ralphMaxIter').value);
+  const model = document.getElementById('ralphModel').value;
+  const docker = document.getElementById('ralphDocker').checked;
+
+  const endpoint = docker
+    ? '/api/task/' + encodeURIComponent(ralphTargetSlug) + '/docker'
+    : '/api/task/' + encodeURIComponent(ralphTargetSlug) + '/ralph';
+
+  await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ budget, maxIterations, model }),
+  });
+
+  closeModal('ralphModal');
+  fetchAll();
+
+  // Browser notification when done
+  if (Notification.permission === 'default') Notification.requestPermission();
+}
+
+async function stopProc(slug) {
+  // Try both ralph and docker endpoints
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/ralph', { method: 'DELETE' }).catch(() => {});
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/docker', { method: 'DELETE' }).catch(() => {});
+  fetchAll();
+}
+
+// --- UI ---
+function toggleExpand(slug) {
+  if (expandedSlug === slug) {
+    expandedSlug = null; // Collapse if clicking the same card
+  } else {
+    expandedSlug = slug; // Expand this card, collapse any other
+  }
+  renderBoard();
+}
+
+function openInFinder(path) {
+  // This won't work from browser directly, but path is copied for terminal use
+  navigator.clipboard.writeText('open ' + path);
+  alert('Copied terminal command to clipboard:\nopen ' + path);
+}
+
+function toggleArchiveView() {
+  showArchive = !showArchive;
+  renderBoard();
+}
+
+function showNewTaskModal() {
+  document.getElementById('newTaskModal').className = 'modal-overlay active';
+  setTimeout(() => document.getElementById('taskTitle').focus(), 100);
+}
+
+function closeModal(id) {
+  document.getElementById(id).className = 'modal-overlay';
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.className = 'modal-overlay'; });
+});
+
+// --- Search ---
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  renderBoard();
+});
+
+// --- Keyboard ---
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); showNewTaskModal(); }
+  if (e.key === '/') { e.preventDefault(); document.getElementById('search').focus(); }
+  if (e.key === 'a' || e.key === 'A') { e.preventDefault(); toggleArchiveView(); }
+  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); fetchAll(); }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(el => el.className = 'modal-overlay');
+    document.getElementById('search').blur();
+  }
+});
+
+// --- SSE ---
+const es = new EventSource('/api/events');
+es.onmessage = () => fetchAll();
+es.onerror = () => setTimeout(() => fetchAll(), 5000);
+
+// --- Notification check for process completion ---
+let prevProcesses = {};
+function checkProcessNotifications() {
+  const currentSlugs = new Set(Object.keys(processes));
+  for (const slug of Object.keys(prevProcesses)) {
+    if (!currentSlugs.has(slug) && Notification.permission === 'granted') {
+      new Notification('PAI Board', { body: 'Process completed: ' + slug.slice(0, 40), icon: '🤖' });
+    }
+  }
+  prevProcesses = { ...processes };
+}
+
+// --- Init ---
+fetchAll();
+setInterval(() => { if (Object.keys(processes).length > 0) renderBoard(); }, 5000); // Update elapsed timers
+</script>
+</body>
+</html>

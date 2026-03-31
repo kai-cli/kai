@@ -1,0 +1,224 @@
+// PAI Hook Configuration
+// Registers hook handlers for all Claude Code lifecycle events.
+// All paths use ${PAI_DIR} which resolves to ~/.claude at runtime.
+//
+// IMPORTANT: All hooks MUST go through run-hook.sh to redirect stderr.
+// Direct hook calls cause "hook error" messages in Claude Code UI.
+// Pattern: "${PAI_DIR}/hooks/lib/run-hook.sh HookName.hook.ts"
+//
+// Async policy: Hooks that only write files/state get "async": true.
+// Sync hooks output JSON to stdout (additionalContext, decision, continue).
+//
+// Run `bun ~/.claude/hooks/handlers/BuildSettings.ts` after editing to
+// regenerate settings.json.
+
+{
+  // Status line command — shown in terminal title/status bar
+  "statusLine": {
+    "type": "command",
+    "command": "$PAI_DIR/statusline-command.sh"
+  },
+
+  // Hook registrations by lifecycle event
+  "hooks": {
+    // PreToolUse — runs before each tool invocation (all sync — they output decisions)
+    "PreToolUse": [
+      {
+        // Security validation for filesystem-mutating tools
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecurityValidator.hook.ts" },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh GitHubWriteGuard.hook.ts" }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecurityValidator.hook.ts" }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecurityValidator.hook.ts" }]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecurityValidator.hook.ts" }]
+      },
+      {
+        // Terminal state tracking + teal tab for interactive prompts
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SetQuestionTab.hook.ts" }
+        ]
+      },
+      {
+        // Agent spawn guard — validates agent parameters before execution
+        "matcher": "Task",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh AgentExecutionGuard.hook.ts" }]
+      },
+      {
+        // Skill invocation guard — validates skill calls
+        "matcher": "Skill",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SkillGuard.hook.ts" }]
+      }
+    ],
+
+    // PostToolUse — runs after each tool invocation
+    "PostToolUse": [
+      {
+        // Restore terminal state after interactive prompt resolves
+        "matcher": "AskUserQuestion",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh QuestionAnswered.hook.ts" }]
+      },
+      {
+        // Sync PRD frontmatter to work.json when PRD files are written
+        "matcher": "Write",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PRDSync.hook.ts" }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PRDSync.hook.ts" }]
+      }
+    ],
+
+    // SessionEnd — all async (post-session cleanup, no stdout needed)
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WorkCompletionLearning.hook.ts", "async": true },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionCleanup.hook.ts", "async": true },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionSummary.hook.ts", "async": true },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RelationshipMemory.hook.ts", "async": true },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateCounts.hook.ts", "async": true },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh IntegrityCheck.hook.ts", "async": true }
+        ]
+      }
+    ],
+
+    // UserPromptSubmit — mix of sync (output-producing) and async (analytics/inference)
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          // --- SYNC hooks (output additionalContext or continue flags) ---
+          // Secret scanning — outputs continue flag to block credential leaks
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecretScanner.hook.ts" },
+          // Local context injection — outputs additionalContext
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LocalContextFirst.hook.ts" },
+          // Classify effort tier and inject context modifications
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ModeClassifier.hook.ts" },
+          // Detect PAI output format violations and inject correction hint
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh FormatReminder.hook.ts" },
+          // Auto-generate four-word session names (fast, no inference)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionAutoName.hook.ts" },
+
+          // --- ASYNC hooks (inference calls, analytics — no stdout needed) ---
+          // Batched inference for tab title + session name
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PromptAnalysis.hook.ts", "async": true },
+          // Capture 1-10 ratings from prompt patterns + implicit sentiment
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RatingCapture.hook.ts", "async": true },
+          // Track terminal state for proper output rendering
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts", "async": true },
+          // Update tab title with task description
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateTabTitle.hook.ts", "async": true }
+        ]
+      }
+    ],
+
+    // SessionStart — sync (context injection happens here)
+    "SessionStart": [
+      {
+        "hooks": [
+          // Initialize terminal state tracking
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
+          // Inject relationship, learning, and work context
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LoadContext.hook.ts" },
+          // Check PAI version against repo
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh CheckVersion.hook.ts" },
+          // Display PAI startup banner
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh StartupGreeting.hook.ts" },
+          // Rebuild CLAUDE.md if algorithm version or DA name changed
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh handlers/BuildCLAUDE.ts" },
+          // Rebuild settings.json from config/*.jsonc if any config file is newer
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh handlers/BuildSettings.ts" }
+        ]
+      },
+      {
+        // Post-compaction recovery — re-inject context after context window compaction
+        "matcher": "compact",
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PostCompactRecovery.hook.ts" }
+        ]
+      }
+    ],
+
+    // Stop — mix of fast sync and slow async
+    "Stop": [
+      {
+        "hooks": [
+          // Cache the last response for quick reference (fast, 23ms)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LastResponseCache.hook.ts" },
+          // Update terminal state after response completes (188ms)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
+          // Orchestrate stop-phase handlers (15s inference — must be async)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh StopOrchestrator.hook.ts", "async": true },
+          // Track algorithm phase progress (236ms, no stdout needed)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh AlgorithmTracker.hook.ts", "async": true }
+        ]
+      }
+    ],
+
+    // PreCompact — runs before context window compaction
+    "PreCompact": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PreCompact.hook.ts" }
+        ]
+      }
+    ],
+
+    // ConfigChange — runs when configuration changes
+    "ConfigChange": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ConfigChange.hook.ts" }
+        ]
+      }
+    ],
+
+    // WorktreeCreate — runs when a git worktree is created
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WorktreeSetup.hook.ts" }
+        ]
+      }
+    ],
+
+    // WorktreeRemove — runs when a git worktree is removed
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WorktreeRemove.hook.ts" }
+        ]
+      }
+    ],
+
+    // TaskCompleted — runs when a task finishes
+    "TaskCompleted": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TaskCompleted.hook.ts" }
+        ]
+      }
+    ],
+
+    // TeammateIdle — runs when a teammate agent becomes idle
+    "TeammateIdle": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TeammateIdle.hook.ts" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "last_check_timestamp": "2026-03-06T00:15:44.888Z",
+  "sources": {
+    "blog_main_news": {
+      "last_hash": "52aa62048b097b44331efda369b51a6f",
+      "last_title": "Main News: Newsroom",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "changelog_claude_code_changelog": {
+      "last_hash": "7c2836190d2ae5402986fa581d27fdbf",
+      "last_title": "Claude Code CHANGELOG: inputChange",
+      "last_checked": "2026-03-03T20:05:05.505Z"
+    },
+    "changelog_mcp_changelog": {
+      "last_hash": "d6123d46ca17efee2f6823356f1b0726",
+      "last_title": "MCP Changelog: Latest update",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "docs_mcp_docs": {
+      "last_hash": "d6123d46ca17efee2f6823356f1b0726",
+      "last_title": "MCP Docs: Documentation updated",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "docs_mcp_specification": {
+      "last_hash": "a0404d2390e4f2319fcbe2d386e022a7",
+      "last_title": "MCP Specification: Documentation updated",
+      "last_checked": "2025-11-19T07:21:59.389Z"
+    },
+    "docs_mcp_registry": {
+      "last_hash": "ec94737081fd3c6f9ab24cc23094e2d6",
+      "last_title": "MCP Registry: Documentation updated",
+      "last_checked": "2026-03-03T20:05:05.505Z"
+    },
+    "docs_skills_documentation": {
+      "last_hash": "213cf8f45e3cd51b6ab50b6b5c704451",
+      "last_title": "Skills Documentation: Documentation updated",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_claude-code_commits": {
+      "last_sha": "1f48d799b9ef25a5c9cec36dd9a4c6f409b722f6",
+      "last_title": "chore: Update CHANGELOG.md",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_skills_commits": {
+      "last_sha": "7029232b9212482c0476da354b83364bd28fab2f",
+      "last_title": "Add claude-api skill (#515)",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_mcp_specification_commits": {
+      "last_sha": "335ee9554ec192a523cbbc9310c4b4d877bf8a7f",
+      "last_title": "Capitalize Core Maintainer and link to governance roles",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_claude-cookbooks_commits": {
+      "last_sha": "112611bacad67a1e1947f35e1672d5f9f6a3ee93",
+      "last_title": "Update registry.yaml (#393)",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_mcp_specification_releases": {
+      "last_version": "2024-11-05-final",
+      "last_title": "2024-11-05-final: 2024-11-05-final",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "blog_alignment_science_blog": {
+      "last_hash": "4258a31de9cbcb914e8e5fff5e51a9a8",
+      "last_title": "Alignment Science Blog: Alignment Science Blog",
+      "last_checked": "2026-03-03T20:05:05.505Z"
+    },
+    "blog_research_page": {
+      "last_hash": "f47ab7b595f9124445caeb55440bfea9",
+      "last_title": "Research Page: Research",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "docs_claude_docs_home": {
+      "last_hash": "1ba22ad0e3bd09a77617f4ab4123c5ff",
+      "last_title": "Claude Docs Home: Documentation updated",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "docs_anthropic_api_docs": {
+      "last_hash": "739faf31f2891654a10268653ff0a7c7",
+      "last_title": "Anthropic API Docs: Documentation updated",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_anthropic-sdk-typescript_releases": {
+      "last_version": "sdk-v0.78.0",
+      "last_title": "sdk-v0.78.0: sdk: v0.78.0",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_claude-quickstarts_commits": {
+      "last_sha": "4b2549e8093a6dee1c394bdd8fcf83cb914a271a",
+      "last_title": "Update computer-use-demo to use text_editor_20250728 exclusively with correct insert_text parameter (#352)",
+      "last_checked": "2026-03-03T20:05:05.505Z"
+    },
+    "blog_transformer_circuits": {
+      "last_hash": "2a0d56bf5f8ade7f438375af437e0450",
+      "last_title": "Transformer Circuits: Anthropic’s Interpretability Research",
+      "last_checked": "2026-03-03T20:05:05.505Z"
+    },
+    "changelog_claude_docs_release_notes": {
+      "last_hash": "e3451ef235a6cb6bb6a0da7eac3620f0",
+      "last_title": "Claude Docs Release Notes: Latest update",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "changelog_api_release_notes": {
+      "last_hash": "2cc3be4a6885269e1d2f9f8a5d48420e",
+      "last_title": "API Release Notes: Latest update",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_anthropic-sdk-python_releases": {
+      "last_version": "v0.83.0",
+      "last_title": "v0.83.0: v0.83.0",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    },
+    "github_courses_commits": {
+      "last_sha": "f4dbb137d7b02dddaf3cc73e32e20a702d3b5e77",
+      "last_title": "Merge pull request #45 from emmanuel-ferdman/master",
+      "last_checked": "2025-11-14T19:49:50.328Z"
+    },
+    "github_claude-code_releases": {
+      "last_version": "v2.1.62",
+      "last_title": "v2.1.62: v2.1.62",
+      "last_checked": "2026-03-06T00:15:44.888Z"
+    }
+  }
+}
