@@ -377,7 +377,7 @@ Currently LoadContext injects all active memory. Semantic relevance scoring woul
 `PipelineMonitor.ts` + `pipeline-monitor-ui/` exist but aren't integrated into the main session experience. A persistent dashboard (electron or tmux pane) showing algorithm state, ISC progress, and session stats in real-time.
 
 ### 8.5 PAI Algorithm v4.0
-Current algorithm (v3.9.0) is spec-only — Claude reads it and follows it. Future: `algorithm.ts` could enforce phase transitions programmatically, validate ISC format before proceeding, and prevent phase-skipping at the execution level.
+Current algorithm (v3.9.1) is spec-only — Claude reads it and follows it. Future: `algorithm.ts` could enforce phase transitions programmatically, validate ISC format before proceeding, and prevent phase-skipping at the execution level.
 
 ### 8.6 Version Central Registry
 Single `PAI/version.ts` exports `PAI_VERSION`. BuildSettings.ts, BuildCLAUDE.ts, install.sh, manifest.json all import/read it. Eliminates version string sprawl.
