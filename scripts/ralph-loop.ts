@@ -47,7 +47,9 @@ interface LoopOptions {
   maxIterations: number;
   maxBudgetUsd: number;
   stuckThreshold: number;
-  model: string;
+  deepModel: string;
+  routineModel: string;
+  modelOverride: string | null; // --model flag overrides both
   permissionMode: string;
   notify: boolean;
   verbose: boolean;
@@ -92,6 +94,53 @@ function parsePRD(prdPath: string): PRDState {
   return { phase, progress, passed, total, criteria };
 }
 
+// --- Model Selection ---
+
+function selectModel(iteration: number, previousDelta: number, opts: LoopOptions): string {
+  // Explicit --model overrides all tiering
+  if (opts.modelOverride) return opts.modelOverride;
+
+  // Iteration 1 always uses deep model (needs to understand PRD and plan)
+  if (iteration === 1) return opts.deepModel;
+
+  // If previous iteration made no progress, escalate to deep model
+  if (previousDelta === 0) return opts.deepModel;
+
+  // Normal progress — use routine (cheaper) model
+  return opts.routineModel;
+}
+
+// --- Budget Allocation ---
+
+function allocateBudget(iteration: number, maxIterations: number, totalBudget: number): number {
+  if (maxIterations <= 1) return totalBudget;
+
+  // First iteration gets 40% (heavy lifting: read PRD, plan, initial work)
+  const firstIterBudget = totalBudget * 0.4;
+  const remainingBudget = totalBudget * 0.6;
+  const remainingIterations = maxIterations - 1;
+
+  if (iteration === 1) return firstIterBudget;
+  return remainingBudget / remainingIterations;
+}
+
+// --- Context Bundle Parsing ---
+
+function parseContextBundle(prdPath: string): string[] {
+  const content = readFileSync(prdPath, "utf-8");
+  const bundleMatch = content.match(/### Context Bundle\n([\s\S]*?)(?=\n###|\n##|$)/);
+  if (!bundleMatch) return [];
+
+  const lines = bundleMatch[1].trim().split("\n");
+  const files: string[] = [];
+  for (const line of lines) {
+    // Match "- `path/to/file`" or "- path/to/file"
+    const match = line.match(/^-\s+`?([^`\s]+)`?/);
+    if (match) files.push(match[1]);
+  }
+  return files;
+}
+
 // --- Prompt Builders ---
 
 function buildPrompt(prdPath: string, state: PRDState, iteration: number, maxIterations: number): string {
@@ -100,24 +149,25 @@ function buildPrompt(prdPath: string, state: PRDState, iteration: number, maxIte
     .map((c) => `  - ${c.id}: ${c.text}`)
     .join("\n");
 
-  return `You are resuming autonomous work on an existing PAI PRD.
+  const contextBundle = parseContextBundle(prdPath);
+  const bundleSection = contextBundle.length > 0
+    ? `\nCONTEXT FILES (read these first — do NOT explore the codebase):\n${contextBundle.map(f => `  - ${f}`).join("\n")}\n`
+    : "";
 
-PRD path: ${prdPath}
-Current phase: ${state.phase}
-Progress: ${state.passed}/${state.total} criteria passed
-Iteration: ${iteration}/${maxIterations}
+  return `AUTONOMOUS LOOP — Iteration ${iteration}/${maxIterations}
 
-INSTRUCTIONS:
-1. Read the PRD at the path above
-2. Your CLAUDE.md loads automatically — follow Algorithm instructions
-3. Resume from the current phase — do NOT restart from OBSERVE
-4. Work on the next failing criteria:
+PRD: ${prdPath}
+Progress: ${state.passed}/${state.total}
+
+SKIP full Algorithm phases. Do NOT run OBSERVE/THINK/PLAN. Go directly to work:
+1. Read the PRD at the path above${bundleSection}
+2. Work on failing criteria:
 ${failing}
-5. After completing work, update the PRD: mark criteria - [x], update progress and phase
-6. If ALL criteria pass, set phase to "complete" in the PRD frontmatter
-7. If you encounter a criterion that requires human input, add a note to ## Decisions explaining why, and stop
+3. Update PRD: mark criteria - [x], update progress and phase frontmatter
+4. If ALL criteria pass, set phase to "complete"
+5. If a criterion needs human input, note in ## Decisions and stop
 
-Focus on making measurable progress. Every criterion you complete is progress.`;
+Every completed criterion is measurable progress. Be efficient with tokens.`;
 }
 
 function buildChildPrompt(
@@ -157,20 +207,21 @@ async function invokeClaudeP(
   prompt: string,
   options: LoopOptions,
   budgetPerInvocation: number,
+  model: string,
   extraArgs: string[] = []
 ): Promise<{ exitCode: number; output: string; proc: ReturnType<typeof Bun.spawn> }> {
   const args = [
     "-p",
     prompt,
     "--output-format", "text",
-    "--model", options.model,
+    "--model", model,
     "--permission-mode", options.permissionMode,
     "--max-budget-usd", String(budgetPerInvocation),
     ...extraArgs,
   ];
 
   if (options.verbose) {
-    console.log(`  [claude] model=${options.model}, budget=$${budgetPerInvocation.toFixed(2)}`);
+    console.log(`  [claude] model=${model}, budget=$${budgetPerInvocation.toFixed(2)}`);
   }
 
   const proc = Bun.spawn(["claude", ...args], {
@@ -365,7 +416,7 @@ process.on("SIGTERM", () => {
 async function runSingleMode(prdPath: string, opts: LoopOptions, logPath: string): Promise<never> {
   let consecutiveNoProgress = 0;
   let consecutiveErrors = 0;
-  const budgetPerInvocation = opts.maxBudgetUsd / opts.maxIterations;
+  let previousDelta = -1; // -1 = no previous iteration
 
   for (let iteration = 1; iteration <= opts.maxIterations; iteration++) {
     const iterStart = Date.now();
@@ -377,10 +428,13 @@ async function runSingleMode(prdPath: string, opts: LoopOptions, logPath: string
       process.exit(0);
     }
 
-    console.log(`[${iteration}/${opts.maxIterations}] Phase: ${before.phase} | Progress: ${before.passed}/${before.total} | Stuck: ${consecutiveNoProgress}/${opts.stuckThreshold}`);
+    const model = selectModel(iteration, previousDelta, opts);
+    const budget = allocateBudget(iteration, opts.maxIterations, opts.maxBudgetUsd);
+
+    console.log(`[${iteration}/${opts.maxIterations}] Phase: ${before.phase} | Progress: ${before.passed}/${before.total} | Model: ${model} | Budget: $${budget.toFixed(2)} | Stuck: ${consecutiveNoProgress}/${opts.stuckThreshold}`);
 
     const prompt = buildPrompt(prdPath, before, iteration, opts.maxIterations);
-    const { exitCode, output } = await invokeClaudeP(prompt, opts, budgetPerInvocation);
+    const { exitCode, output } = await invokeClaudeP(prompt, opts, budget, model);
     const duration = Date.now() - iterStart;
 
     // Log agent output for diagnostics
@@ -414,6 +468,8 @@ async function runSingleMode(prdPath: string, opts: LoopOptions, logPath: string
       if (opts.notify) sendNotification("Ralph Loop", `PRD complete! ${after.total}/${after.total}`);
       process.exit(0);
     }
+
+    previousDelta = delta;
 
     if (delta === 0) {
       consecutiveNoProgress++;
@@ -457,7 +513,6 @@ async function runParallelMode(prdPath: string, opts: LoopOptions, logPath: stri
 
   const actualAgents = Math.min(groups.length, opts.maxAgents);
   const budgetPerAgent = opts.maxBudgetUsd / actualAgents;
-  const budgetPerAgentPerIteration = budgetPerAgent / opts.maxIterations;
 
   // Create child PRDs
   const childPaths: string[] = [];
@@ -468,10 +523,13 @@ async function runParallelMode(prdPath: string, opts: LoopOptions, logPath: stri
 
   const antiCriteria = parentState.criteria.filter((c) => c.id.startsWith("ISC-A"));
 
+  const effectiveModel = opts.modelOverride ?? `${opts.deepModel}/${opts.routineModel}`;
+
   console.log(`\n=== Ralph Loop — Parallel Mode ===`);
   console.log(`Parent PRD: ${prdPath}`);
   console.log(`Agents: ${actualAgents}`);
   console.log(`Budget per agent: $${budgetPerAgent.toFixed(2)}`);
+  console.log(`Model: ${effectiveModel} (deep/routine tiering)`);
   console.log(`Anti-criteria (parent-checked): ${antiCriteria.length}`);
   for (let i = 0; i < actualAgents; i++) {
     console.log(`  Child ${i + 1}: ${groups[i].length} criteria [${groups[i][0]}..${groups[i][groups[i].length - 1]}]`);
@@ -496,6 +554,7 @@ async function runParallelMode(prdPath: string, opts: LoopOptions, logPath: stri
   const stuckCounters = new Map<string, number>();
   const errorCounters = new Map<string, number>();
   const completedChildren = new Set<string>();
+  const previousDeltas = new Map<string, number>();
 
   for (let iteration = 1; iteration <= opts.maxIterations; iteration++) {
     const iterStart = Date.now();
@@ -518,8 +577,12 @@ async function runParallelMode(prdPath: string, opts: LoopOptions, logPath: stri
       const prompt = buildChildPrompt(childPath, prdPath, childState, iteration, opts.maxIterations);
       const extraArgs = opts.useWorktree ? ["--worktree", `child-${idx + 1}`] : [];
 
+      const prevDelta = previousDeltas.get(childPath) ?? -1;
+      const model = selectModel(iteration, prevDelta, opts);
+      const budget = allocateBudget(iteration, opts.maxIterations, budgetPerAgent);
+
       const childStart = Date.now();
-      const { exitCode, proc } = await invokeClaudeP(prompt, opts, budgetPerAgentPerIteration, extraArgs);
+      const { exitCode, proc } = await invokeClaudeP(prompt, opts, budget, model, extraArgs);
       activeProcesses.delete(proc);
       const duration = Date.now() - childStart;
 
@@ -574,6 +637,9 @@ async function runParallelMode(prdPath: string, opts: LoopOptions, logPath: stri
       });
 
       console.log(`  ${childName}: +${r.delta} criteria in ${(r.duration / 1000).toFixed(1)}s (${r.afterPassed}/${childState.total})`);
+
+      // Track delta for model tiering
+      previousDeltas.set(r.childPath, r.delta);
 
       // Stuck detection per child
       if (r.delta === 0) {
@@ -652,7 +718,9 @@ async function main() {
       "max-iterations": { type: "string", default: "5" },
       "max-budget-usd": { type: "string", default: "5.00" },
       "stuck-threshold": { type: "string", default: "3" },
-      model: { type: "string", default: "opus" },
+      model: { type: "string", default: "" },
+      "deep-model": { type: "string", default: "opus" },
+      "routine-model": { type: "string", default: "sonnet" },
       "permission-mode": { type: "string", default: "auto" },
       notify: { type: "boolean", default: false },
       verbose: { type: "boolean", default: false },
@@ -670,6 +738,7 @@ async function main() {
   if (!prdPath) {
     console.error("Usage: bun run ralph-loop.ts <prd-path> [options]");
     console.error("       bun run ralph-loop.ts <prd-path> --parallel [--max-agents 3] [--groups '1-8,9-16']");
+    console.error("\nModel tiering: --deep-model opus --routine-model sonnet (or --model opus to override both)");
     process.exit(5);
   }
 
@@ -677,7 +746,9 @@ async function main() {
     maxIterations: parseInt(values["max-iterations"]!, 10),
     maxBudgetUsd: parseFloat(values["max-budget-usd"]!),
     stuckThreshold: parseInt(values["stuck-threshold"]!, 10),
-    model: values.model!,
+    deepModel: values["deep-model"]!,
+    routineModel: values["routine-model"]!,
+    modelOverride: values.model || null, // empty string = not set
     permissionMode: values["permission-mode"]!,
     notify: values.notify!,
     verbose: values.verbose!,
@@ -701,14 +772,15 @@ async function main() {
 
   if (!opts.parallel) {
     // Single mode header
+    const effectiveModel = opts.modelOverride ?? `${opts.deepModel}/${opts.routineModel}`;
     console.log(`\n=== Ralph Loop ===`);
     console.log(`PRD: ${prdPath}`);
     console.log(`Phase: ${state.phase}`);
     console.log(`Progress: ${state.passed}/${state.total}`);
     console.log(`Max iterations: ${opts.maxIterations}`);
-    console.log(`Budget: $${opts.maxBudgetUsd.toFixed(2)}`);
+    console.log(`Budget: $${opts.maxBudgetUsd.toFixed(2)} (iter 1: $${(opts.maxBudgetUsd * 0.4).toFixed(2)}, rest: $${(opts.maxBudgetUsd * 0.6 / Math.max(1, opts.maxIterations - 1)).toFixed(2)} each)`);
     console.log(`Stuck threshold: ${opts.stuckThreshold}`);
-    console.log(`Model: ${opts.model}`);
+    console.log(`Model: ${effectiveModel} (deep/routine tiering)`);
     console.log(`Log: ${logPath}\n`);
 
     if (state.phase === "complete") {

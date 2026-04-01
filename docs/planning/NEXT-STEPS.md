@@ -21,6 +21,7 @@
 - [x] Intelligence Layer — ResearchIndex.ts with query, dedup, save, list, stats; integrated into Research skill workflows
 - [x] Dead Skill Trim — removed 354 files: ~300 Fabric patterns, WriteStory, Sales, AnnualReports, Aphorisms, old Algorithm versions
 - [x] Algorithm v3.9.1 — pre-flight validation in OBSERVE, parallelization check in BUILD, capability invocation audit in VERIFY
+- [x] Ralph Loop Budget Fix — model tiering (opus/sonnet), weighted budget (40%/60%), lightweight prompt (skip Algorithm phases), Context Bundle injection
 
 ---
 
@@ -28,12 +29,7 @@
 
 Work items in execution order. Start at the top, finish each before moving to the next.
 
-### NOW: Ralph Loop Budget Fix (P0)
-- [ ] Sonnet fallback — use Sonnet for routine iterations, Opus only for deep work
-- [ ] Algorithm overhead reduction — compress OBSERVE/THINK for Standard tier
-- [ ] Context-per-task bundling — PRD `### Context Bundle` listing required files
-
-### THEN: Algorithm Improvements (P1)
+### NOW: Algorithm Improvements (P1)
 - [ ] Phase-locked tool access — read-only in OBSERVE/THINK, full write in BUILD/EXECUTE, read+test in VERIFY
 - [ ] Triangulation verification — VERIFY cross-references ISC criteria, actual output, and original request
 - [ ] Session handoff protocol — structured continuation state at session end/compaction
