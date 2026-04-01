@@ -52,6 +52,17 @@ Written during OBSERVE. Captures:
 
 For Advanced+ effort, a `### Plan` subsection may be added with technical approach details.
 
+For Ralph Loop autonomous execution, an optional `### Context Bundle` subsection lists files the agent needs:
+
+```markdown
+### Context Bundle
+- `src/hooks/ralph-loop.ts` — main loop implementation
+- `tests/ralph-loop.test.ts` — test suite
+- `config/settings.json` — hook configuration
+```
+
+When present, Ralph Loop injects the file list into the agent prompt so it reads exactly these files instead of exploring the codebase. Each line: `` - `path` `` with optional description after ` — `.
+
 ### ## Criteria
 
 ISC (Ideal State Criteria) checkboxes. Written during OBSERVE, checked during EXECUTE/VERIFY.
