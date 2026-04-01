@@ -12,6 +12,6 @@ For single bounded changes: 1-3 files, no design decisions, clearly under 30 sec
 ```
 
 **Rules:**
-- Do NOT load Algorithm file (`v3.9.0.md`) — Micro is self-contained
+- Do NOT load Algorithm file (`v3.9.1.md`) — Micro is self-contained
 - If work expands beyond 3 files or requires design decisions, switch to Standard+
 - `[work]` = the actual edit/output, not a description of it

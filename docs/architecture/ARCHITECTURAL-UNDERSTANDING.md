@@ -27,7 +27,7 @@ The central idea: **Claude is not the DA — PAI is.** Claude is the inference e
 
 | Pillar | Mechanism | Purpose |
 |--------|-----------|---------|
-| **Structured Execution** | PAI Algorithm v3.9.0 | 7-phase problem-solving with ISC verification |
+| **Structured Execution** | PAI Algorithm v3.9.1 | 7-phase problem-solving with ISC verification |
 | **Persistent Memory** | MEMORY/ hierarchy + hooks | Context, learning, relationship state across sessions |
 | **Identity + Personality** | config/identity.jsonc + agents/ | Consistent voice, values, preferences |
 
@@ -66,7 +66,7 @@ Releases/v4.4.0/.claude/           ← THE PAI RUNTIME (installed to ~/.claude/)
 │   └── partials/output-format.md  ← Canonical output format (shared)
 │
 ├── PAI/
-│   ├── Algorithm/                 ← Algorithm spec (v3.9.0)
+│   ├── Algorithm/                 ← Algorithm spec (v3.9.1)
 │   ├── Tools/                     ← 42 TypeScript utilities
 │   └── ACTIONS/                   ← Action runner (v1 + v2 — needs migration)
 │
@@ -658,7 +658,7 @@ Currently LoadContext injects all active memory. Future: semantic relevance scor
 `PipelineMonitor.ts` + `pipeline-monitor-ui/` exist but aren't integrated into the main session experience. Future: persistent dashboard (electron or tmux pane) that shows active algorithm state, ISC progress, session stats in real-time.
 
 ### 8.5 PAI Algorithm v4.0
-Current algorithm (v3.9.0) is spec-only — Claude reads it and follows it. Future: `algorithm.ts` enforces phase transitions programmatically, validates ISC format before proceeding, and prevents phase-skipping at the execution level (not just at the instruction level).
+Current algorithm (v3.9.1) is spec-only — Claude reads it and follows it. Future: `algorithm.ts` enforces phase transitions programmatically, validates ISC format before proceeding, and prevents phase-skipping at the execution level (not just at the instruction level).
 
 ### 8.6 Version Central Registry
 Single `PAI/version.ts` exports `PAI_VERSION`. BuildSettings.ts, BuildCLAUDE.ts, install.sh, manifest.json all import/read it. No more version string sprawl.
@@ -685,7 +685,7 @@ Enables programmatic skill discovery, composition, and validation.
 | Mode routing (NATIVE/ALGORITHM/MINIMAL) | `Releases/v4.4.0/.claude/CLAUDE.md` |
 | All hook registrations (source) | `Releases/v4.4.0/.claude/config/hooks.jsonc` |
 | Generated settings (never edit) | `Releases/v4.4.0/.claude/settings.json` |
-| Algorithm specification | `Releases/v4.4.0/.claude/PAI/Algorithm/v3.9.0.md` |
+| Algorithm specification | `Releases/v4.4.0/.claude/PAI/Algorithm/v3.9.1.md` |
 | DA identity config | `Releases/v4.4.0/.claude/config/identity.jsonc` |
 | Hook shared libraries | `Releases/v4.4.0/.claude/hooks/lib/` |
 | Skill index (all 47 skills) | `Releases/v4.4.0/.claude/skills/` |

@@ -13,7 +13,7 @@ This fork has evolved significantly. Here's what changed, what was added, and wh
 | **Skills** | 63 (12 categories) | 51 (streamlined, no dead skills) |
 | **Hooks** | 21 | 38 (all through stderr wrapper) |
 | **Agents** | ~6 generic | 18 specialized (named personas) |
-| **Algorithm** | v3.5.0 | v3.9.0 |
+| **Algorithm** | v3.5.0 | v3.9.1 |
 | **Context footprint** | ~19% at startup | Optimized with lazy loading |
 | **Installer** | Drop-in `.claude/` directory | Interactive setup wizard with symlink |
 | **Config management** | Single `settings.json` | 7 domain config files, auto-merged |
@@ -82,7 +82,7 @@ All 38 hooks now go through `run-hook.sh`, which:
   - `PromptAnalysis` — batched inference for session naming + tab titles
   - `PreCompact` — preserves critical context before compaction
 
-### 5. Algorithm v3.9.0
+### 5. Algorithm v3.9.1
 
 Upgraded from v3.5.0 with:
 

@@ -51,7 +51,7 @@ function makeMinimalRelease(dir: string): void {
   writeFile(dir, 'hooks/SecurityValidator.hook.ts', '// hook');
   writeFile(dir, 'hooks/handlers/BuildSettings.ts', '// builder');
   writeFile(dir, 'PAI/Tools/pai.ts', '// cli');
-  writeFile(dir, 'PAI/Algorithm/v3.9.0.md', '# Algorithm');
+  writeFile(dir, 'PAI/Algorithm/v3.9.1.md', '# Algorithm');
 }
 
 // ── meetsMinVersion ───────────────────────────────────────────────────────

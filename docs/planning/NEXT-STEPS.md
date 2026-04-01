@@ -18,6 +18,9 @@
 - [x] Personal data removed from git (PAI/USER/, skills/PAI/USER/ gitignored, 73 files)
 - [x] Docs consolidated from fork into pai-config
 - [x] Fork (Personal_AI_Infrastructure) archived
+- [x] Intelligence Layer — ResearchIndex.ts with query, dedup, save, list, stats; integrated into Research skill workflows
+- [x] Dead Skill Trim — removed 354 files: ~300 Fabric patterns, WriteStory, Sales, AnnualReports, Aphorisms, old Algorithm versions
+- [x] Algorithm v3.9.1 — pre-flight validation in OBSERVE, parallelization check in BUILD, capability invocation audit in VERIFY
 
 ---
 
@@ -25,17 +28,7 @@
 
 Work items in execution order. Start at the top, finish each before moving to the next.
 
-### NOW: Intelligence Layer
-- [ ] Research index (`MEMORY/RESEARCH/index.json`) — searchable catalog of prior research across sessions
-- [ ] Agent context seeding — auto-inject relevant prior research into spawned agent prompts
-- [ ] Research deduplication — detect when a topic was already researched, surface prior findings
-
-### NEXT: Dead Skill Trim
-- [ ] Audit Fabric patterns — extract the 10-15 actually used, remove the other ~300
-- [ ] Remove stale skills — WorldThreatModelHarness, Aphorisms, Sales, AnnualReports, others unused
-- [ ] Remove old Algorithm versions from PAI/Algorithm/ (keep only v3.9.0 + supporting files)
-
-### THEN: Ralph Loop Budget Fix (P0)
+### NOW: Ralph Loop Budget Fix (P0)
 - [ ] Sonnet fallback — use Sonnet for routine iterations, Opus only for deep work
 - [ ] Algorithm overhead reduction — compress OBSERVE/THINK for Standard tier
 - [ ] Context-per-task bundling — PRD `### Context Bundle` listing required files
