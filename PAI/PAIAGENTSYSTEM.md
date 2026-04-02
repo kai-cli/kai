@@ -126,7 +126,7 @@ Project agents are manually authored agents with deep domain knowledge embedded.
 | `OpenWRT-OpenSource.md` | GPL compliance | opus | GPL, licensing, binary blobs, upstream, open source |
 
 **Knowledge sources:** Each agent references indexed codebase knowledge from:
-- `~/.claude/projects/-Users-user-Projects-Learning-Your Company-Repo/memory/` (17 files)
+- `~/.claude/projects/{Learning-Your Company-Repo-project-hash}/memory/` (17 files)
 - `~/Projects/TR-069_TR-369/tr-repo/` (24 files, ~38K words)
 
 ### Routing Rules for Project Agents

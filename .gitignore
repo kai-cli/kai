@@ -74,6 +74,10 @@ config/preferences.local.jsonc
 
 # Settings backup files
 *.bak
+*.bak-*
+
+# Skill runtime state files (machine-specific)
+**/BugBountyTool/state.json
 
 # Personal data (identity, contacts, TELOS, beliefs, etc.)
 PAI/USER/

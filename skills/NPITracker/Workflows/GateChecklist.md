@@ -32,9 +32,9 @@ NPI GATE CHECKLIST — Pinnacle [X.X] — [Date]
 
 ━━━ RTW GATES
 - [ ] RTW firmware image signed and staged — Owner: [name]
-- [ ] Beta testing complete — Owner: Jamie Bolton / QA
+- [ ] Beta testing complete — Owner: [QA Lead]
 - [ ] Press/marketing assets ready — Owner: [name]
-- [ ] Launch date confirmed — Owner: Deven + Yarnin
+- [ ] Launch date confirmed — Owner: [EM] + [Release Owner]
 ```
 
 ## Step 3 — Flag Gaps

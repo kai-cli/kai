@@ -54,7 +54,7 @@ Claude Code (verified in v2.1.85) surfaces stderr from command hooks as error me
 # hooks/lib/run-hook.sh
 #!/bin/bash
 HOOK_NAME="${1:?Usage: run-hook.sh <HookName.hook.ts>}"
-HOOK_PATH="/Users/user/.claude/hooks/${HOOK_NAME}"
+HOOK_PATH="~/.claude/hooks/${HOOK_NAME}"
 LOG_DIR="/tmp/pai-hooks"
 mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/${HOOK_NAME%.hook.ts}.log"
@@ -65,7 +65,7 @@ exec bun "$HOOK_PATH" 2>>"$LOG_FILE"
 ```json
 {
   "type": "command",
-  "command": "/Users/user/.claude/hooks/lib/run-hook.sh MyHook.hook.ts"
+  "command": "~/.claude/hooks/lib/run-hook.sh MyHook.hook.ts"
 }
 ```
 
