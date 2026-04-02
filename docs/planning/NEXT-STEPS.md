@@ -27,10 +27,10 @@
 
 ## v4.7.0 — Next Release
 
-### Algorithm Improvements (P1)
-- [ ] Phase-locked tool access — read-only in OBSERVE/THINK, full write in BUILD/EXECUTE, read+test in VERIFY
-- [ ] Triangulation verification — VERIFY cross-references ISC criteria, actual output, and original request
-- [ ] Session handoff protocol — structured continuation state at session end/compaction
+### Algorithm Improvements (P1) — DONE (v3.10.0)
+- [x] Phase-locked tool access — read-only in OBSERVE/THINK, full write in BUILD/EXECUTE, read+test in VERIFY
+- [x] Triangulation verification — VERIFY cross-references ISC criteria, actual output, and original request
+- [x] Session handoff protocol — structured continuation state at session end/compaction (LEARN + PreCompact + SessionEnd)
 
 ### Security & Quality Gates (P1)
 - [ ] WebFetch/WebSearch PreToolUse guard — outbound request validation
