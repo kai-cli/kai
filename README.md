@@ -2,6 +2,14 @@
 
 > A production-ready Claude Code configuration system. Fork of Daniel Miessler's [PAI](https://danielmiessler.com), hardened for team deployment.
 
+## Prerequisites
+
+- macOS or Linux
+- [Claude Code](https://claude.ai/code) CLI installed (`claude --version` to check)
+- Anthropic API key set in your shell profile: `export ANTHROPIC_API_KEY="sk-ant-..."`
+  - Get a key at [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+  - Or AWS Bedrock credentials (configured during install)
+
 ## Install
 
 ```bash
@@ -10,6 +18,8 @@ bash ~/pai-config/install.sh
 ```
 
 The installer symlinks `~/.claude/` to your repo, walks you through identity setup (your name, assistant name, timezone), optionally configures AWS Bedrock, and builds your `settings.json` from domain config files.
+
+**New to PAI?** See **[docs/QUICKSTART.md](docs/QUICKSTART.md)** for the full getting-started guide.
 
 ## What's Inside
 
@@ -71,6 +81,7 @@ bun ~/.claude/scripts/deploy.ts
 
 ## Documentation
 
+- **[docs/QUICKSTART.md](docs/QUICKSTART.md)** — Getting started guide (start here)
 - **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with original PAI
 - **[docs/planning/ROADMAP.md](docs/planning/ROADMAP.md)** — Product roadmap
 - **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Current work
@@ -78,9 +89,6 @@ bun ~/.claude/scripts/deploy.ts
 - **[PAI/THEHOOKSYSTEM.md](PAI/THEHOOKSYSTEM.md)** — Hook system docs
 - **[PAI/SKILL.md](PAI/SKILL.md)** — Full system documentation
 
-## Requirements
+## API Keys
 
-- macOS or Linux
-- [Bun](https://bun.sh) (installed automatically by `install.sh`)
-- [Claude Code](https://claude.ai/code) CLI
-- Anthropic API key (or AWS Bedrock credentials)
+See **[.env.example](.env.example)** for all optional API keys (GitHub, research agents, notifications, etc.).
