@@ -172,6 +172,51 @@ async function main() {
 
       writeFileSync(checkpointPath, checkpointContent, 'utf-8');
       console.error(`[PreCompact] Checkpoint written: ${checkpointPath}`);
+
+      // Write HANDOFF.md if PRD exists and has unchecked criteria
+      const prdPath = join(WORK_DIR, currentWork.session_dir, 'PRD.md');
+      if (existsSync(prdPath)) {
+        try {
+          const prdContent = readFileSync(prdPath, 'utf-8');
+          const unchecked = prdContent.match(/^- \[ \] ISC-.+$/gm) || [];
+          const checked = prdContent.match(/^- \[x\] ISC-.+$/gm) || [];
+          if (unchecked.length > 0) {
+            const handoffPath = join(WORK_DIR, currentWork.session_dir, 'HANDOFF.md');
+            const total = checked.length + unchecked.length;
+            const decisionsMatch = prdContent.match(/## Decisions\n([\s\S]*?)(?=\n## |\n---|\Z)/);
+            const decisions = decisionsMatch ? decisionsMatch[1].trim() : 'None recorded';
+            const handoffContent = [
+              `---`,
+              `session_id: ${currentWork.session_id}`,
+              `handoff_type: compaction`,
+              `timestamp: ${new Date().toISOString()}`,
+              `phase_at_handoff: ${phase}`,
+              `progress: ${checked.length}/${total}`,
+              `---`,
+              ``,
+              `## What Was Done`,
+              ...checked.map(c => `- ${c.replace(/^- \[x\] /, '')}`),
+              ``,
+              `## What Remains`,
+              ...unchecked.map(c => `- ${c.replace(/^- \[ \] /, '')}`),
+              ``,
+              `## Key Decisions Made`,
+              decisions,
+              ``,
+              `## Context Needed to Continue`,
+              `- Read PRD at: MEMORY/WORK/${currentWork.session_dir}/PRD.md`,
+              `- Algorithm state at: MEMORY/STATE/algorithms/${currentWork.session_id}.json`,
+              ``,
+              `## Suggested Next Step`,
+              `Resume from ${phase} phase. ${unchecked.length} criteria remain.`,
+            ].join('\n');
+            writeFileSync(handoffPath, handoffContent, 'utf-8');
+            console.error(`[PreCompact] HANDOFF.md written (${checked.length}/${total} done)`);
+          }
+        } catch (e) {
+          console.error(`[PreCompact] HANDOFF.md generation failed: ${e}`);
+        }
+      }
     } else {
       console.error('[PreCompact] No active work session found (checkpoint skipped)');
     }
