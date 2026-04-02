@@ -1,57 +1,54 @@
 # PAI — Next Steps
 
 > Canonical repo: `kai-cli/pai-config`
-> Current: v4.5.0 shipped (2026-03-26)
-> In progress: v4.6.0
+> Current: v4.6.0 shipping (2026-04-02)
 
 ---
 
-## Completed (v4.6.0 work so far)
+## v4.6.0 — Shipped
 
 - [x] Hook hardening — all 38 hooks through run-hook.sh wrapper, async flags on 13
 - [x] Install safety — settings migration, preferences.local.jsonc for machine-specific overrides
 - [x] Deployment docs — WHATS-DIFFERENT.md, README rewrite, install.sh version bump
 - [x] Gitignore runtime state — learning, security, sessions, tasks, settings.json
-- [x] Tracked files audit — 3,347 → 1,941 files (removed archives, duplicates, old Algorithm versions)
+- [x] Tracked files audit — 3,347 → 1,587 files
 - [x] Board v2: session tracking (active/recent split, first column)
 - [x] Deployment packager (`scripts/deploy.ts`) — 19MB tarball, personal data stripped
-- [x] Personal data removed from git (PAI/USER/, skills/PAI/USER/ gitignored, 73 files)
-- [x] Docs consolidated from fork into pai-config
-- [x] Fork (Personal_AI_Infrastructure) archived
-- [x] Intelligence Layer — ResearchIndex.ts with query, dedup, save, list, stats; integrated into Research skill workflows
-- [x] Dead Skill Trim — removed 354 files: ~300 Fabric patterns, WriteStory, Sales, AnnualReports, Aphorisms, old Algorithm versions
-- [x] Algorithm v3.9.1 — pre-flight validation in OBSERVE, parallelization check in BUILD, capability invocation audit in VERIFY
-- [x] Ralph Loop Budget Fix — model tiering (opus/sonnet), weighted budget (40%/60%), lightweight prompt (skip Algorithm phases), Context Bundle injection
+- [x] Personal data removed from git (PAI/USER/, skills/PAI/USER/ gitignored)
+- [x] Docs consolidated from fork into pai-config, fork archived
+- [x] Intelligence Layer — ResearchIndex.ts with query, dedup, save, context seeding
+- [x] Dead Skill Trim — removed 354 files (Fabric patterns, stale skills, old Algorithm versions)
+- [x] Algorithm v3.9.1 — pre-flight validation, parallelization check, capability audit
+- [x] Ralph Loop Budget Fix — model tiering, weighted budget, lightweight prompts, context bundles
+- [x] Coworker onboarding guide — getting-started tutorial for team deployment
+- [x] Installation cleanup — coworker-ready install flow
 
 ---
 
-## v4.6.0 — Work Queue (Prioritized)
+## v4.7.0 — Next Release
 
-Work items in execution order. Start at the top, finish each before moving to the next.
-
-### NOW: Algorithm Improvements (P1)
+### Algorithm Improvements (P1)
 - [ ] Phase-locked tool access — read-only in OBSERVE/THINK, full write in BUILD/EXECUTE, read+test in VERIFY
 - [ ] Triangulation verification — VERIFY cross-references ISC criteria, actual output, and original request
 - [ ] Session handoff protocol — structured continuation state at session end/compaction
 
-### THEN: Security & Quality Gates (P1)
+### Security & Quality Gates (P1)
 - [ ] WebFetch/WebSearch PreToolUse guard — outbound request validation
 - [ ] PostToolUse code quality gate — error detection after tool execution
 
-### THEN: Team Deployment
-- [ ] Coworker onboarding guide — getting-started tutorial
+### Team Features
 - [ ] Org-config patterns — shared team settings vs personal overrides
 - [ ] `pai setup --team` mode (stretch)
 
-### LATER: Board & Memory (P2)
+### Board & Memory (P2)
 - [ ] Board new PRD creation — create work items directly from the UI
 - [ ] Architectural Decision Records — `MEMORY/DECISIONS/`
 - [ ] Project state snapshots — periodic `MEMORY/SNAPSHOTS/` at version releases
-- [ ] Skill collections additions — Trail of Bits, command suites, DevOps (deferred from 4.5.0)
+- [ ] Skill collections additions — Trail of Bits, command suites, DevOps
 
 ---
 
-## Backlog (Beyond 4.6.0)
+## Backlog (Beyond 4.7.0)
 
 ### Infrastructure
 - [ ] Memory TTL/archival — WISDOM/, LEARNING/, RELATIONSHIP/ grow unbounded
