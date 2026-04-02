@@ -165,3 +165,19 @@ if [ -f "$SCRIPT_DIR/hooks/handlers/BuildSettings.ts" ]; then
     warn "Run: bun ~/.claude/hooks/handlers/BuildSettings.ts"
   fi
 fi
+
+# ── Post-install guidance ─────────────────────────────────────────
+echo ""
+echo -e "${SILVER}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+echo -e "${LIGHT_BLUE}  Installation complete!${RESET}"
+echo -e "${SILVER}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+echo ""
+echo -e "  ${GRAY}Next steps:${RESET}"
+echo -e "    ${SILVER}1.${RESET} Make sure ${LIGHT_BLUE}ANTHROPIC_API_KEY${RESET} is set in your shell profile"
+echo -e "    ${SILVER}2.${RESET} Run ${LIGHT_BLUE}claude${RESET} to start your first session"
+echo -e "    ${SILVER}3.${RESET} Edit ${LIGHT_BLUE}~/.claude/PAI/USER/ABOUTME.md${RESET} to personalize"
+echo ""
+echo -e "  ${GRAY}Docs:${RESET}  ${SILVER}~/.claude/docs/QUICKSTART.md${RESET}"
+echo -e "  ${GRAY}Config:${RESET} ${SILVER}~/.claude/config/*.jsonc${RESET}"
+echo -e "  ${GRAY}Keys:${RESET}   ${SILVER}~/.claude/.env.example${RESET}"
+echo ""
