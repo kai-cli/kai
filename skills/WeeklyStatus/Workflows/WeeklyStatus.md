@@ -1,7 +1,7 @@
 # WeeklyStatus Workflow
 
 ## Purpose
-Draft YourName's weekly status update for Fortinet leadership (Gregor, VP Engineering).
+Draft {PRINCIPAL.NAME}'s weekly status update for leadership ([VP Engineering name]).
 Format: wins, risks, blockers, next week. Concise, no fluff.
 
 ## Step 1 — Gather Context
@@ -10,7 +10,7 @@ Read these sources in parallel:
 1. `~/.claude/PAI/USER/TELOS/PROJECTS.md` — active project state
 2. `~/.claude/MEMORY/WORK/` — scan PRD files modified in the last 7 days (`phase`, `progress` fields)
 3. `~/.claude/MEMORY/STATE/work.json` — active work registry
-4. Ask YourName: "Anything this week not tracked in PAI? (team issues, ad-hoc work, escalations)"
+4. Ask {PRINCIPAL.NAME}: "Anything this week not tracked in PAI? (team issues, ad-hoc work, escalations)"
 
 ## Step 2 — Classify Items
 
@@ -24,7 +24,7 @@ Sort everything gathered into four buckets:
 
 ```
 WEEKLY STATUS — [Date Range]
-Your Name | Engineering Manager & PLM Director
+{PRINCIPAL.NAME} | {PRINCIPAL.ROLE}
 
 ━━━ WINS
 • [Bullet per win — specific, past tense, outcome-focused]
@@ -39,7 +39,7 @@ Your Name | Engineering Manager & PLM Director
 • [Bullet per blocker — what's blocked, who owns the unblock]
 
 ━━━ NEXT WEEK
-• [Bullet per priority — what YourName is driving next week]
+• [Bullet per priority — what {PRINCIPAL.NAME} is driving next week]
 ```
 
 ## Step 4 — Calibrate
@@ -53,4 +53,4 @@ Ask: "Any changes? Anything to add, remove, or reframe before I finalize?"
 
 ## Output
 
-Paste-ready for Teams message or email to Gregor. Plain text, no markdown formatting in final output.
+Paste-ready for Teams message or email to leadership. Plain text, no markdown formatting in final output.

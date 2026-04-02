@@ -37,8 +37,8 @@ Captured via bash debug hook on 2026-03-27:
 ```json
 {
   "session_id": "2598bd7e-2ff7-48ca-8767-2294b255baf6",
-  "transcript_path": "/Users/user/.claude/projects/.../2598bd7e.jsonl",
-  "cwd": "/Users/user/Projects",
+  "transcript_path": "~/.claude/projects/.../{session_id}.jsonl",
+  "cwd": "~/Projects",
   "permission_mode": "default",
   "hook_event_name": "UserPromptSubmit",
   "prompt": "ok are we still testing? do we have the logs?"
@@ -137,7 +137,7 @@ Universal wrapper script `~/.claude/hooks/lib/run-hook.sh` redirects stderr to l
 ```bash
 #!/bin/bash
 HOOK_NAME="${1:?Usage: run-hook.sh <HookName.hook.ts>}"
-HOOK_PATH="/Users/user/.claude/hooks/${HOOK_NAME}"
+HOOK_PATH="~/.claude/hooks/${HOOK_NAME}"
 LOG_DIR="/tmp/pai-hooks"
 mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/${HOOK_NAME%.hook.ts}.log"
@@ -146,7 +146,7 @@ exec bun "$HOOK_PATH" 2>>"$LOG_FILE"
 
 Settings.json command format:
 ```json
-{"type": "command", "command": "/Users/user/.claude/hooks/lib/run-hook.sh HookName.hook.ts"}
+{"type": "command", "command": "~/.claude/hooks/lib/run-hook.sh HookName.hook.ts"}
 ```
 
 ---

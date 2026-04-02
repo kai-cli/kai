@@ -38,9 +38,9 @@ After reviewing PAI v4.0.3, 99 open community PRs, and an independent architectu
 # Fork repo on GitHub
 gh repo fork danielmiessler/Personal_AI_Infrastructure --clone=false
 
-# The local repo is already at /Users/deven/Projects/PersonalAI
+# The local repo is already at ~/Projects/PersonalAI
 # Create a new branch for v4.1.0 work
-cd /Users/deven/Projects/PersonalAI
+cd ~/Projects/PersonalAI
 git checkout -b v4.1.0-improvements
 
 # Copy v4.0.3 release as v4.1.0 baseline
@@ -523,7 +523,7 @@ Create release notes documenting all changes.
 ## Step 10: Commit & PR
 
 ```bash
-cd /Users/deven/Projects/PersonalAI
+cd ~/Projects/PersonalAI
 git add Releases/v4.1.0/
 git commit -m "feat: PAI v4.1.0 — architecture improvements"
 gh pr create --repo kai-cli/Personal_AI_Infrastructure \

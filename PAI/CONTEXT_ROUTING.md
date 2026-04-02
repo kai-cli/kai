@@ -51,4 +51,4 @@ Load context on-demand by reading the file at the path listed. Only load what th
 | Product management | `gh issue list --repo your-company/PRODUCT_MANAGEMENT` |
 | **OpenWRT project agents** | `~/.claude/custom-agents/OpenWRT-*.md` (9 domain agents) |
 | TR-069/TR-369 knowledge base | `~/Projects/TR-069_TR-369/tr-repo/` (24 files) |
-| Firmware codebase knowledge | `~/.claude/projects/-Users-user-Projects-Learning-Your Company-Repo/memory/` |
+| Firmware codebase knowledge | `~/.claude/projects/{Learning-Your Company-Repo-project-hash}/memory/` |
