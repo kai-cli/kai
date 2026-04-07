@@ -29,18 +29,17 @@
     "PAI_CONFIG_DIR": "${HOME}/.config/PAI",
 
     // Enable experimental multi-agent team support
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
 
-    // ── AWS Bedrock (optional) ──────────────────────────────────────────────
-    // Uncomment to route Claude Code through AWS Bedrock instead of Anthropic direct.
-    // The installer will configure this if you choose Bedrock during setup.
-    // Run BuildSettings after editing: bun ~/.claude/hooks/handlers/BuildSettings.ts
-    //
-    // "CLAUDE_CODE_USE_BEDROCK": "1",
-    // "AWS_REGION": "us-west-2",
-    // "AWS_PROFILE": "your-aws-profile-name",
-    // "ANTHROPIC_MODEL": "us.anthropic.claude-opus-4-6-v1",
-    // "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    // ── AWS Bedrock ────────────────────────────────────────────────────────
+    // Routes Claude Code through AWS Bedrock.
+    // Profile: your-aws-profile | Account: REDACTED-AWS-ACCOUNT | Region: us-west-2
+    // To disable: comment out these 5 lines and rebuild settings.
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "AWS_REGION": "us-west-2",
+    "AWS_PROFILE": "your-aws-profile",
+    "ANTHROPIC_MODEL": "global.anthropic.claude-opus-4-6-v1",
+    "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     // ── END AWS Bedrock ─────────────────────────────────────────────────────
   },
 

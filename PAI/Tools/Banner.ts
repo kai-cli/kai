@@ -104,6 +104,7 @@ interface SystemStats {
   userFiles: number;
   sessions: number;
   model: string;
+  connection: string;
   platform: string;
   arch: string;
   ccVersion: string;
@@ -173,6 +174,22 @@ function getStats(): SystemStats {
     }
   } catch {}
 
+  // Detect connection type from env/settings
+  let connection = "API";
+  let model = "Opus 4.6";
+  try {
+    const settings = JSON.parse(readFileSync(join(CLAUDE_DIR, "settings.json"), "utf-8"));
+    const env = settings.env || {};
+    if (env.CLAUDE_CODE_USE_BEDROCK === "1") {
+      connection = "Bedrock";
+      // Extract model name from ANTHROPIC_MODEL (e.g., "global.anthropic.claude-opus-4-6-v1" → "Opus 4.6")
+      const m = (env.ANTHROPIC_MODEL || "").match(/claude-(\w+)-(\d+)-(\d+)/);
+      if (m) model = `${m[1].charAt(0).toUpperCase() + m[1].slice(1)} ${m[2]}.${m[3]}`;
+    } else if (env.CLAUDE_CODE_USE_TEAMS === "1" || process.env.CLAUDE_CODE_USE_TEAMS === "1") {
+      connection = "Team";
+    }
+  } catch {}
+
   return {
     name,
     catchphrase,
@@ -183,7 +200,8 @@ function getStats(): SystemStats {
     learnings,
     userFiles,
     sessions,
-    model: "Opus 4.5",
+    model,
+    connection,
     platform,
     arch,
     ccVersion,
@@ -284,6 +302,7 @@ function createNavyBanner(stats: SystemStats, width: number): string {
     `${C.steel}${BOX.h.repeat(24)}${RESET}`,
     `${C.navy}\u2B22${RESET}  ${C.slate}PAI${RESET}       ${C.silver}${stats.paiVersion}${RESET}`,                            // ⬢ hexagon (tech/AI)
     `${C.navy}\u2699${RESET}  ${C.slate}Algo${RESET}      ${C.silver}${stats.algorithmVersion}${RESET}`,                      // ⚙ gear (algorithm)
+    `${C.medBlue}\u2601${RESET}  ${C.slate}${stats.model}${RESET}  ${C.lightBlue}${stats.connection}${RESET}`,                // ☁ cloud (model + connection)
     `${C.lightBlue}\u2726${RESET}  ${C.slate}SK${RESET}        ${C.silver}${stats.skills}${RESET}`,             // ✦ four-pointed star (skills)
     `${C.skyBlue}\u21BB${RESET}  ${C.slate}WF${RESET}        ${C.iceBlue}${stats.workflows}${RESET}`,           // ↻ cycle (workflows)
     `${C.royalBlue}\u21AA${RESET}  ${C.slate}Hooks${RESET}     ${C.periwinkle}${stats.hooks}${RESET}`,         // ↪ hook arrow
@@ -409,7 +428,7 @@ function createElectricBanner(stats: SystemStats, width: number): string {
     `${P.neonBlue}${SYM.hooks}${RESET} ${P.glow}Hooks${RESET}      ${BOLD}${P.electricBlue}${stats.hooks}${RESET}`,
     `${P.neonBlue}${SYM.learn}${RESET} ${P.glow}Signals${RESET}    ${BOLD}${P.electricBlue}${stats.learnings}${RESET}`,
     `${P.neonBlue}${SYM.files}${RESET} ${P.glow}Files${RESET}      ${BOLD}${P.electricBlue}${stats.userFiles}${RESET}`,
-    `${P.neonBlue}${SYM.model}${RESET} ${P.glow}Model${RESET}      ${BOLD}${P.ultraBlue}${stats.model}${RESET}`,
+    `${P.neonBlue}${SYM.model}${RESET} ${P.glow}Model${RESET}      ${BOLD}${P.ultraBlue}${stats.model}${RESET} ${P.midBase}(${stats.connection})${RESET}`,
     `${P.plasma}${BOX.h.repeat(32)}${RESET}`,
     `${sparkline(24, [P.plasma, P.neonBlue, P.electricBlue, P.electric, P.ultraBlue])}`,
     `${P.neonBlue}${SYM.link}${RESET} ${P.midBase}${stats.repoUrl}${RESET} ${P.midBase}[0x${hex2}]${RESET}`,
@@ -486,7 +505,7 @@ function createTealBanner(stats: SystemStats, width: number): string {
     `${P.mediumTeal}${SYM.hooks}${RESET} ${P.paleAqua}Hooks${RESET}      ${BOLD}${P.turquoise}${stats.hooks}${RESET}`,
     `${P.mediumTeal}${SYM.learn}${RESET} ${P.paleAqua}Signals${RESET}    ${BOLD}${P.turquoise}${stats.learnings}${RESET}`,
     `${P.mediumTeal}${SYM.files}${RESET} ${P.paleAqua}Files${RESET}      ${BOLD}${P.turquoise}${stats.userFiles}${RESET}`,
-    `${P.mediumTeal}${SYM.model}${RESET} ${P.paleAqua}Model${RESET}      ${BOLD}${P.aquamarine}${stats.model}${RESET}`,
+    `${P.mediumTeal}${SYM.model}${RESET} ${P.paleAqua}Model${RESET}      ${BOLD}${P.aquamarine}${stats.model}${RESET} ${P.midSea}(${stats.connection})${RESET}`,
     `${P.teal}${BOX.h.repeat(28)}${RESET}`,
     `${sparkline(20, [P.logoP, P.teal, P.mediumTeal, P.turquoise, P.aquamarine])}`,
     `${P.mediumTeal}${SYM.link}${RESET} ${P.midSea}${stats.repoUrl}${RESET}`,
@@ -565,7 +584,7 @@ function createIceBanner(stats: SystemStats, width: number): string {
     `${P.iceBlue}${SYM.hooks}${RESET} ${P.frost}Hooks${RESET}      ${BOLD}${P.pureWhite}${stats.hooks}${RESET}`,
     `${P.iceBlue}${SYM.learn}${RESET} ${P.frost}Signals${RESET}    ${BOLD}${P.pureWhite}${stats.learnings}${RESET}`,
     `${P.iceBlue}${SYM.files}${RESET} ${P.frost}Files${RESET}      ${BOLD}${P.pureWhite}${stats.userFiles}${RESET}`,
-    `${P.iceBlue}${SYM.model}${RESET} ${P.frost}Model${RESET}      ${BOLD}${P.glacierBlue}${stats.model}${RESET}`,
+    `${P.iceBlue}${SYM.model}${RESET} ${P.frost}Model${RESET}      ${BOLD}${P.glacierBlue}${stats.model}${RESET} ${P.slateBlue}(${stats.connection})${RESET}`,
     `${P.deepIce}${BOX.h.repeat(28)}${RESET}`,
     `${sparkline(20, [P.slateBlue, P.deepIce, P.iceBlue, P.frost, P.paleFrost])}`,
     `${P.iceBlue}${SYM.link}${RESET} ${P.slateBlue}${stats.repoUrl}${RESET}`,
@@ -655,6 +674,7 @@ function createNavyMediumBanner(stats: SystemStats, width: number): string {
     `${C.steel}${BOX.h.repeat(24)}${RESET}`,
     `${C.navy}\u2B22${RESET}  ${C.slate}PAI${RESET}       ${C.silver}${stats.paiVersion}${RESET}`,
     `${C.navy}\u2699${RESET}  ${C.slate}Algo${RESET}      ${C.silver}${stats.algorithmVersion}${RESET}`,
+    `${C.medBlue}\u2601${RESET}  ${C.slate}${stats.model}${RESET}  ${C.lightBlue}${stats.connection}${RESET}`,
     `${C.lightBlue}\u2726${RESET}  ${C.slate}SK${RESET}        ${C.silver}${stats.skills}${RESET}`,
     `${C.skyBlue}\u21BB${RESET}  ${C.slate}WF${RESET}        ${C.iceBlue}${stats.workflows}${RESET}`,
     `${C.royalBlue}\u21AA${RESET}  ${C.slate}Hooks${RESET}     ${C.periwinkle}${stats.hooks}${RESET}`,
