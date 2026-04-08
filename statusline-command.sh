@@ -198,204 +198,106 @@ if [ -n "$session_id" ]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PARALLEL PREFETCH - Launch ALL expensive operations immediately
+# FAST PATH — Read cached data inline, never block on network
 # ─────────────────────────────────────────────────────────────────────────────
-# This section launches everything in parallel BEFORE any sequential work.
-# Results are collected via temp files and sourced later.
+# Claude Code cancels in-flight status line commands when a new render triggers
+# (300ms debounce). Network calls that exceed this window cause partial/empty
+# output. Fix: read from cache files synchronously (instant), then kick off
+# background refresh for stale caches (fire-and-forget, updates for next render).
 
-_parallel_tmp="/tmp/pai-parallel-$$"
-mkdir -p "$_parallel_tmp"
+# 1. Git — FAST INDEX-ONLY ops (<50ms total, no working tree scan)
+if git rev-parse --git-dir > /dev/null 2>&1; then
+    branch=$(git branch --show-current 2>/dev/null)
+    [ -z "$branch" ] && branch="detached"
+    stash_count=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
+    [ -z "$stash_count" ] && stash_count=0
+    sync_info=$(git rev-list --left-right --count HEAD...@{u} 2>/dev/null)
+    last_commit_epoch=$(git log -1 --format='%ct' 2>/dev/null)
 
-# --- PARALLEL BLOCK START ---
-{
-    # 1. Git — FAST INDEX-ONLY ops (<50ms total, no working tree scan)
-    #    No git status, no git diff, no file counts. Those scan 76K+ tracked files = 4-7s.
-    if git rev-parse --git-dir > /dev/null 2>&1; then
-        branch=$(git branch --show-current 2>/dev/null)
-        [ -z "$branch" ] && branch="detached"
-        stash_count=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
-        [ -z "$stash_count" ] && stash_count=0
-        sync_info=$(git rev-list --left-right --count HEAD...@{u} 2>/dev/null)
-        last_commit_epoch=$(git log -1 --format='%ct' 2>/dev/null)
-
-        if [ -n "$sync_info" ]; then
-            ahead=$(echo "$sync_info" | awk '{print $1}')
-            behind=$(echo "$sync_info" | awk '{print $2}')
-        else
-            ahead=0
-            behind=0
-        fi
-        [ -z "$ahead" ] && ahead=0
-        [ -z "$behind" ] && behind=0
-
-        cat > "$_parallel_tmp/git.sh" << GITEOF
-branch='$branch'
-stash_count=${stash_count:-0}
-ahead=${ahead:-0}
-behind=${behind:-0}
-last_commit_epoch=${last_commit_epoch:-0}
-is_git_repo=true
-GITEOF
+    if [ -n "$sync_info" ]; then
+        ahead=$(echo "$sync_info" | awk '{print $1}')
+        behind=$(echo "$sync_info" | awk '{print $2}')
     else
-        echo "is_git_repo=false" > "$_parallel_tmp/git.sh"
+        ahead=0
+        behind=0
     fi
-} &
+    [ -z "$ahead" ] && ahead=0
+    [ -z "$behind" ] && behind=0
+    is_git_repo=true
+else
+    is_git_repo=false
+fi
 
-{
-    # 2. Location fetch (with caching)
-    cache_age=999999
-    [ -f "$LOCATION_CACHE" ] && cache_age=$(($(date +%s) - $(get_mtime "$LOCATION_CACHE")))
+# 2. Counts — read from settings.json (instant, no filesystem scan)
+skills_count=65; workflows_count=339; hooks_count=18; learnings_count=3000
+files_count=172; work_count=0; sessions_count=0; research_count=0; ratings_count=0
+if jq -e '.counts' "$SETTINGS_FILE" >/dev/null 2>&1; then
+    eval "$(jq -r '
+        "skills_count=" + (.counts.skills // 0 | tostring) + "\n" +
+        "workflows_count=" + (.counts.workflows // 0 | tostring) + "\n" +
+        "hooks_count=" + (.counts.hooks // 0 | tostring) + "\n" +
+        "learnings_count=" + (.counts.signals // 0 | tostring) + "\n" +
+        "files_count=" + (.counts.files // 0 | tostring) + "\n" +
+        "work_count=" + (.counts.work // 0 | tostring) + "\n" +
+        "sessions_count=" + (.counts.sessions // 0 | tostring) + "\n" +
+        "research_count=" + (.counts.research // 0 | tostring) + "\n" +
+        "ratings_count=" + (.counts.ratings // 0 | tostring)
+    ' "$SETTINGS_FILE" 2>/dev/null)"
+fi
 
-    if [ "$cache_age" -gt "$LOCATION_CACHE_TTL" ]; then
-        loc_data=$(curl -s --max-time 2 "http://ip-api.com/json/?fields=city,regionName,country,lat,lon" 2>/dev/null)
-        if [ -n "$loc_data" ] && echo "$loc_data" | jq -e '.city' >/dev/null 2>&1; then
-            echo "$loc_data" > "$LOCATION_CACHE"
-        fi
-    fi
+# 5. Usage — read from cache (instant)
+usage_5h=0; usage_7d=0; usage_5h_reset=""; usage_7d_reset=""
+usage_opus="null"; usage_sonnet="null"
+usage_extra_enabled=false; usage_extra_limit=0; usage_extra_used=0
+usage_ws_cost_cents=0
+if [ -f "$USAGE_CACHE" ]; then
+    eval "$(jq -r '
+        "usage_5h=" + (.five_hour.utilization // 0 | tostring) + "\n" +
+        "usage_5h_reset=" + (.five_hour.resets_at // "" | @sh) + "\n" +
+        "usage_7d=" + (.seven_day.utilization // 0 | tostring) + "\n" +
+        "usage_7d_reset=" + (.seven_day.resets_at // "" | @sh) + "\n" +
+        "usage_opus=" + (if .seven_day_opus then (.seven_day_opus.utilization // 0 | tostring) else "null" end) + "\n" +
+        "usage_sonnet=" + (if .seven_day_sonnet then (.seven_day_sonnet.utilization // 0 | tostring) else "null" end) + "\n" +
+        "usage_extra_enabled=" + (.extra_usage.is_enabled // false | tostring) + "\n" +
+        "usage_extra_limit=" + (.extra_usage.monthly_limit // 0 | tostring) + "\n" +
+        "usage_extra_used=" + (.extra_usage.used_credits // 0 | tostring) + "\n" +
+        "usage_ws_cost_cents=" + (.workspace_cost.month_used_cents // 0 | tostring)
+    ' "$USAGE_CACHE" 2>/dev/null)"
+fi
 
-    if [ -f "$LOCATION_CACHE" ]; then
-        jq -r '"location_city=" + (.city | @sh) + "\nlocation_state=" + (.regionName | @sh)' "$LOCATION_CACHE" > "$_parallel_tmp/location.sh" 2>/dev/null
-    else
-        echo -e "location_city='Unknown'\nlocation_state=''" > "$_parallel_tmp/location.sh"
-    fi
-} &
-
-{
-    # 3. Weather fetch (with caching)
-    cache_age=999999
-    [ -f "$WEATHER_CACHE" ] && cache_age=$(($(date +%s) - $(get_mtime "$WEATHER_CACHE")))
-
-    if [ "$cache_age" -gt "$WEATHER_CACHE_TTL" ]; then
-        lat="" lon=""
-        if [ -f "$LOCATION_CACHE" ]; then
-            lat=$(jq -r '.lat // empty' "$LOCATION_CACHE" 2>/dev/null)
-            lon=$(jq -r '.lon // empty' "$LOCATION_CACHE" 2>/dev/null)
-        fi
-        lat="${lat:-37.7749}"
-        lon="${lon:-122.4194}"
-
-        weather_json=$(curl -s --max-time 3 "https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=${TEMP_UNIT}" 2>/dev/null)
-        if [ -n "$weather_json" ] && echo "$weather_json" | jq -e '.current' >/dev/null 2>&1; then
-            temp=$(echo "$weather_json" | jq -r '.current.temperature_2m' 2>/dev/null)
-            code=$(echo "$weather_json" | jq -r '.current.weather_code' 2>/dev/null)
-            condition="Clear"
-            case "$code" in
-                0) condition="Clear" ;; 1|2|3) condition="Cloudy" ;; 45|48) condition="Foggy" ;;
-                51|53|55|56|57) condition="Drizzle" ;; 61|63|65|66|67) condition="Rain" ;;
-                71|73|75|77) condition="Snow" ;; 80|81|82) condition="Showers" ;;
-                85|86) condition="Snow" ;; 95|96|99) condition="Storm" ;;
-            esac
-            if [ "$TEMP_UNIT" = "celsius" ]; then
-                echo "${temp}°C ${condition}" > "$WEATHER_CACHE"
-            else
-                echo "${temp}°F ${condition}" > "$WEATHER_CACHE"
-            fi
-        fi
-    fi
-
-    if [ -f "$WEATHER_CACHE" ]; then
-        echo "weather_str='$(cat "$WEATHER_CACHE" 2>/dev/null)'" > "$_parallel_tmp/weather.sh"
-    else
-        echo "weather_str='—'" > "$_parallel_tmp/weather.sh"
-    fi
-} &
-
-{
-    # 4. All counts from settings.json (updated by StopOrchestrator → UpdateCounts)
-    # Zero filesystem scanning — stop hook keeps settings.json fresh
-    if jq -e '.counts' "$SETTINGS_FILE" >/dev/null 2>&1; then
-        jq -r '
-            "skills_count=" + (.counts.skills // 0 | tostring) + "\n" +
-            "workflows_count=" + (.counts.workflows // 0 | tostring) + "\n" +
-            "hooks_count=" + (.counts.hooks // 0 | tostring) + "\n" +
-            "learnings_count=" + (.counts.signals // 0 | tostring) + "\n" +
-            "files_count=" + (.counts.files // 0 | tostring) + "\n" +
-            "work_count=" + (.counts.work // 0 | tostring) + "\n" +
-            "sessions_count=" + (.counts.sessions // 0 | tostring) + "\n" +
-            "research_count=" + (.counts.research // 0 | tostring) + "\n" +
-            "ratings_count=" + (.counts.ratings // 0 | tostring)
-        ' "$SETTINGS_FILE" > "$_parallel_tmp/counts.sh" 2>/dev/null
-    else
-        # First run before any stop hook has fired — seed with defaults
-        cat > "$_parallel_tmp/counts.sh" << COUNTSEOF
-skills_count=65
-workflows_count=339
-hooks_count=18
-learnings_count=3000
-files_count=172
-work_count=0
-sessions_count=0
-research_count=0
-ratings_count=0
-COUNTSEOF
-    fi
-} &
-
-{
-    # 5. Usage data — refresh from Anthropic API if cache is stale
-    cache_age=999999
-    [ -f "$USAGE_CACHE" ] && cache_age=$(($(date +%s) - $(get_mtime "$USAGE_CACHE")))
-
-    if [ "$cache_age" -gt "$USAGE_CACHE_TTL" ]; then
-        # Extract OAuth token — macOS Keychain or Linux credentials file
+# ─────────────────────────────────────────────────────────────────────────────
+# BACKGROUND CACHE REFRESH — fire-and-forget, updates caches for next render
+# ─────────────────────────────────────────────────────────────────────────────
+_now=$(date +%s)
+(
+    # Usage refresh
+    _usg_age=999999
+    [ -f "$USAGE_CACHE" ] && _usg_age=$((_now - $(get_mtime "$USAGE_CACHE")))
+    if [ "$_usg_age" -gt "$USAGE_CACHE_TTL" ]; then
         if [ "$(uname -s)" = "Darwin" ]; then
-            cred_json=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
+            _cred_json=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
         else
-            cred_json=$(cat "${HOME}/.claude/.credentials.json" 2>/dev/null)
+            _cred_json=$(cat "${HOME}/.claude/.credentials.json" 2>/dev/null)
         fi
-        token=$(echo "$cred_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('claudeAiOauth',{}).get('accessToken',''))" 2>/dev/null)
-
-        if [ -n "$token" ]; then
-            usage_json=$(curl -s --max-time 3 \
-                -H "Authorization: Bearer $token" \
+        _token=$(echo "$_cred_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('claudeAiOauth',{}).get('accessToken',''))" 2>/dev/null)
+        if [ -n "$_token" ]; then
+            _usage_json=$(curl -s --max-time 3 \
+                -H "Authorization: Bearer $_token" \
                 -H "Content-Type: application/json" \
                 -H "anthropic-beta: oauth-2025-04-20" \
                 "https://api.anthropic.com/api/oauth/usage" 2>/dev/null)
-
-            if [ -n "$usage_json" ] && echo "$usage_json" | jq -e '.five_hour' >/dev/null 2>&1; then
-                # Preserve workspace_cost from existing cache (admin API is slow, stop hook handles it)
+            if [ -n "$_usage_json" ] && echo "$_usage_json" | jq -e '.five_hour' >/dev/null 2>&1; then
                 if [ -f "$USAGE_CACHE" ]; then
-                    ws_cost=$(jq -r '.workspace_cost // empty' "$USAGE_CACHE" 2>/dev/null)
-                    if [ -n "$ws_cost" ] && [ "$ws_cost" != "null" ]; then
-                        usage_json=$(echo "$usage_json" | jq --argjson ws "$ws_cost" '. + {workspace_cost: $ws}' 2>/dev/null || echo "$usage_json")
+                    _ws_cost=$(jq -r '.workspace_cost // empty' "$USAGE_CACHE" 2>/dev/null)
+                    if [ -n "$_ws_cost" ] && [ "$_ws_cost" != "null" ]; then
+                        _usage_json=$(echo "$_usage_json" | jq --argjson ws "$_ws_cost" '. + {workspace_cost: $ws}' 2>/dev/null || echo "$_usage_json")
                     fi
                 fi
-                echo "$usage_json" | jq '.' > "$USAGE_CACHE" 2>/dev/null
+                echo "$_usage_json" | jq '.' > "$USAGE_CACHE" 2>/dev/null
             fi
         fi
     fi
-
-    # Read cache (freshly updated or existing)
-    if [ -f "$USAGE_CACHE" ]; then
-        jq -r '
-            "usage_5h=" + (.five_hour.utilization // 0 | tostring) + "\n" +
-            "usage_5h_reset=" + (.five_hour.resets_at // "" | @sh) + "\n" +
-            "usage_7d=" + (.seven_day.utilization // 0 | tostring) + "\n" +
-            "usage_7d_reset=" + (.seven_day.resets_at // "" | @sh) + "\n" +
-            "usage_opus=" + (if .seven_day_opus then (.seven_day_opus.utilization // 0 | tostring) else "null" end) + "\n" +
-            "usage_sonnet=" + (if .seven_day_sonnet then (.seven_day_sonnet.utilization // 0 | tostring) else "null" end) + "\n" +
-            "usage_extra_enabled=" + (.extra_usage.is_enabled // false | tostring) + "\n" +
-            "usage_extra_limit=" + (.extra_usage.monthly_limit // 0 | tostring) + "\n" +
-            "usage_extra_used=" + (.extra_usage.used_credits // 0 | tostring) + "\n" +
-            "usage_ws_cost_cents=" + (.workspace_cost.month_used_cents // 0 | tostring)
-        ' "$USAGE_CACHE" > "$_parallel_tmp/usage.sh" 2>/dev/null
-    else
-        echo -e "usage_5h=0\nusage_7d=0\nusage_extra_enabled=false\nusage_ws_cost_cents=0" > "$_parallel_tmp/usage.sh"
-    fi
-} &
-
-# (Quote prefetch removed — quote section removed from display)
-
-# --- PARALLEL BLOCK END - wait for all to complete ---
-wait
-
-# Source all parallel results
-[ -f "$_parallel_tmp/git.sh" ] && source "$_parallel_tmp/git.sh"
-[ -f "$_parallel_tmp/location.sh" ] && source "$_parallel_tmp/location.sh"
-[ -f "$_parallel_tmp/weather.sh" ] && source "$_parallel_tmp/weather.sh"
-[ -f "$_parallel_tmp/counts.sh" ] && source "$_parallel_tmp/counts.sh"
-[ -f "$_parallel_tmp/usage.sh" ] && source "$_parallel_tmp/usage.sh"
-rm -rf "$_parallel_tmp" 2>/dev/null
+) </dev/null >/dev/null 2>&1 & disown
 
 learning_count="$learnings_count"
 
@@ -757,9 +659,8 @@ calc_bar_width() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# LINE 0: PAI BRANDING (location, time, weather)
+# LINE 0: PAI BRANDING (clock, env)
 # ═══════════════════════════════════════════════════════════════════════════════
-# NOTE: location_city, location_state, weather_str are populated by PARALLEL PREFETCH
 
 current_time=$(date +"%H:%M")
 
@@ -769,26 +670,87 @@ if [ -n "$SESSION_LABEL" ]; then
     session_display=$(echo "$SESSION_LABEL" | tr '[:lower:]' '[:upper:]')
 fi
 
-# Output PAI branding line
+# ─── Big clock using 3-row box-drawing digits (3 chars wide, 1-char gaps) ──
+# Box-drawing gives clear structure: ┏━┓ ┃ ┗━┛ etc.
+_big_digit() {
+    local d="$1" row="$2"
+    case "${d}_${row}" in
+        0_0) printf "┏━┓" ;; 0_1) printf "┃ ┃" ;; 0_2) printf "┗━┛" ;;
+        1_0) printf " ╻ " ;; 1_1) printf " ┃ " ;; 1_2) printf " ╹ " ;;
+        2_0) printf "╺━┓" ;; 2_1) printf "┏━┛" ;; 2_2) printf "┗━╸" ;;
+        3_0) printf "╺━┓" ;; 3_1) printf " ━┫" ;; 3_2) printf "╺━┛" ;;
+        4_0) printf "╻ ╻" ;; 4_1) printf "┗━┫" ;; 4_2) printf "  ╹" ;;
+        5_0) printf "┏━╸" ;; 5_1) printf "┗━┓" ;; 5_2) printf "╺━┛" ;;
+        6_0) printf "┏━╸" ;; 6_1) printf "┣━┓" ;; 6_2) printf "┗━┛" ;;
+        7_0) printf "╺━┓" ;; 7_1) printf "  ┃" ;; 7_2) printf "  ╹" ;;
+        8_0) printf "┏━┓" ;; 8_1) printf "┣━┫" ;; 8_2) printf "┗━┛" ;;
+        9_0) printf "┏━┓" ;; 9_1) printf "┗━┫" ;; 9_2) printf "╺━┛" ;;
+    esac
+}
+
+_big_colon() {
+    local row="$1"
+    case "$row" in
+        0) printf " " ;; 1) printf "╏" ;; 2) printf " " ;;
+    esac
+}
+
+# Parse time digits
+_h1="${current_time:0:1}"; _h2="${current_time:1:1}"
+_m1="${current_time:3:1}"; _m2="${current_time:4:1}"
+
+# Clock content: 17 chars. Box: ╭ + 19 dashes + ╮ = 21 chars total
+_box_width=21
+
+# Center the box within the 72-char separator line (matches PAI header)
+_center_pad=$(( (72 - _box_width) / 2 ))
+_pad=""
+for (( _i=0; _i<_center_pad; _i++ )); do _pad+=" "; done
+
+# Render 3-row big clock in a digital clock frame, centered
+_render_big_clock() {
+    local color="$1"
+    local border="${SLATE_600}"
+    # Top border
+    printf "${border}%s╔═══════════════════╗${RESET}\n" "$_pad"
+    # Clock rows (1-space padding each side)
+    for row in 0 1 2; do
+        printf "${border}%s║${RESET} ${color}" "$_pad"
+        _big_digit "$_h1" "$row"
+        printf " "
+        _big_digit "$_h2" "$row"
+        printf " "
+        _big_colon "$row"
+        printf " "
+        _big_digit "$_m1" "$row"
+        printf " "
+        _big_digit "$_m2" "$row"
+        printf " ${border}║${RESET}\n"
+    done
+    # Bottom border
+    printf "${border}%s╚═══════════════════╝${RESET}\n" "$_pad"
+}
+
+# Output PAI branding + big clock + env line
 case "$MODE" in
     nano)
         printf "${SLATE_600}── │${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}│ ────────────${RESET}\n"
-        printf "${PAI_TIME}${current_time}${RESET} ${PAI_WEATHER}${weather_str}${RESET}\n"
+        printf "${PAI_TIME}${current_time}${RESET}\n"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_500}${PAI_A}${PAI_VERSION}${RESET} ${WIELD_ACCENT}${model_name}${RESET}\n"
         ;;
     micro)
         printf "${SLATE_600}─────────────────────────────────${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}──────────────────────────────────${RESET}\n"
-        printf "${PAI_LABEL}LOC:${RESET} ${PAI_CITY}${location_city}${RESET} ${SLATE_600}│${RESET} ${PAI_TIME}${current_time}${RESET} ${SLATE_600}│${RESET} ${PAI_WEATHER}${weather_str}${RESET}\n"
+        _render_big_clock "$PAI_TIME"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_400}claude${RESET} ${PAI_A}${cc_version}${RESET} ${SLATE_600}│${RESET} ${SLATE_500}PAI:${PAI_A}${PAI_VERSION}${RESET} ${SLATE_600}│${RESET} ${WIELD_ACCENT}${model_name}${RESET}\n"
         ;;
     mini)
         printf "${SLATE_600}─────────────────────────────────${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}──────────────────────────────────${RESET}\n"
-        printf "${PAI_LABEL}LOC:${RESET} ${PAI_CITY}${location_city}${RESET}${SLATE_600},${RESET} ${PAI_STATE}${location_state}${RESET} ${SLATE_600}│${RESET} ${PAI_TIME}${current_time}${RESET} ${SLATE_600}│${RESET} ${PAI_WEATHER}${weather_str}${RESET}\n"
+        _render_big_clock "$PAI_TIME"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_400}claude${RESET} ${PAI_A}${cc_version}${RESET} ${SLATE_600}│${RESET} ${SLATE_500}PAI:${PAI_A}${PAI_VERSION}${RESET} ${SLATE_400}ALG:${PAI_A}${ALGO_VERSION}${RESET} ${SLATE_600}│${RESET} ${WIELD_ACCENT}${model_name}${RESET}\n"
         ;;
     normal)
         printf "${SLATE_600}─────────────────────────────────${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}──────────────────────────────────${RESET}\n"
-        printf "${PAI_LABEL}LOC:${RESET} ${PAI_CITY}${location_city}${RESET}${SLATE_600},${RESET} ${PAI_STATE}${location_state}${RESET} ${SLATE_600}│${RESET} ${PAI_TIME}${current_time}${RESET} ${SLATE_600}│${RESET} ${PAI_WEATHER}${weather_str}${RESET}\n"
+        _render_big_clock "$PAI_TIME"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_400}claude${RESET} ${PAI_A}${cc_version}${RESET} ${SLATE_600}│${RESET} ${SLATE_500}PAI:${PAI_A}${PAI_VERSION}${RESET} ${SLATE_400}ALG:${PAI_A}${ALGO_VERSION}${RESET} ${SLATE_600}│${RESET} ${WIELD_ACCENT}Model:${RESET} ${SLATE_300}${model_name}${RESET}\n"
         ;;
 esac
