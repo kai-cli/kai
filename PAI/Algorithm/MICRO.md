@@ -1,4 +1,4 @@
-# PAI Micro Format (v1.0)
+# PAI Micro Format (v1.1)
 
 For single bounded changes: 1-3 files, no design decisions, clearly under 30 seconds of work.
 
@@ -12,6 +12,6 @@ For single bounded changes: 1-3 files, no design decisions, clearly under 30 sec
 ```
 
 **Rules:**
-- Do NOT load Algorithm file (`v3.10.0.md`) — Micro is self-contained
-- If work expands beyond 3 files or requires design decisions, switch to Standard+
+- Do NOT load the Algorithm file — Micro is self-contained
+- If work expands beyond 3 files or requires design decisions, escalate to Standard+ (load the Algorithm version specified in CLAUDE.md)
 - `[work]` = the actual edit/output, not a description of it

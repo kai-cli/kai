@@ -41,3 +41,19 @@ You have up to 4 hours to do this."
 - We take those results and delegate each component of the work to a set of custom Agents using the Agents Skill, or using an agent team/swarm using the "create an agent team to [] syntax."
 - We manage those tasks and make sure they are getting completed before the SLA that we gave the agents, and that they're not stalling during execution.
 - When the results come back from all agents, we provide them to the user.
+
+### Example 3: Code Implementation Task
+
+The user asks, "The status bar flickers when switching tabs. Fix it."
+
+- We select the STANDARD EFFORT LEVEL — this is a targeted bug fix.
+- OBSERVE reverse engineering: user wants flickering gone, doesn't want unrelated changes, implied: don't break other status bar functionality.
+- **PRE-FLIGHT (CRITICAL):** We read the status bar implementation file BEFORE writing ISC. We discover it uses a setInterval that restarts on every tab switch event — that's likely the flicker source. We also see there's an existing debounce utility in the codebase.
+- ISC generation is informed by what we actually read: "Status bar renders once per tab switch event" not a vague "Status bar doesn't flicker."
+- CAPABILITY EVALUATION: Direct tool use is optimal — this is a surgical code fix. We document: "No capabilities selected — targeted file edit with known root cause. /simplify considered but single-file change doesn't warrant 3-agent review."
+- THINK: The riskiest assumption is that the setInterval restart is the only cause. Pre-mortem: there might be a CSS transition also contributing.
+- EXECUTE: We fix the root cause (debounce the tab switch handler, clear the old interval before creating a new one). We read the file after editing to verify the change looks correct.
+- VERIFY: We check that the fix addresses the ISC criteria. We verify no other status bar functionality was broken by reading related code.
+- LEARN: "Reading the implementation file during pre-flight identified the root cause immediately — without that, I would have guessed at the fix."
+
+This is the most common Algorithm pattern: pre-flight file reading → informed ISC → surgical fix → verify.
