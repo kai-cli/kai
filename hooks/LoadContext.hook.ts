@@ -37,10 +37,12 @@ import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
 import { loadLearningDigest, loadWisdomFrames, loadFailurePatterns, loadSignalTrends } from './lib/learning-readback';
+import { loadKnowledgeContext } from './lib/knowledge-readback';
 
 interface DynamicContextConfig {
   relationshipContext?: boolean;
   learningReadback?: boolean;
+  knowledgeInjection?: boolean;
   activeWorkSummary?: boolean;
 }
 
@@ -499,11 +501,24 @@ async function main() {
       console.error('⏭️ Skipped learning readback (disabled)');
     }
 
+    // Load cross-project knowledge context
+    let knowledgeContext = '';
+    if (isDynamicEnabled(settings, 'knowledgeInjection')) {
+      const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+      const knowledge = loadKnowledgeContext(paiDir, projectDir);
+      if (knowledge) {
+        knowledgeContext = knowledge;
+        console.error(`🧠 Loaded knowledge context (${knowledgeContext.length} chars)`);
+      }
+    } else {
+      console.error('⏭️ Skipped knowledge injection (disabled)');
+    }
+
     // Inject dynamic context if we have any
-    if (relationshipContext || learningContext) {
+    if (relationshipContext || learningContext || knowledgeContext) {
       const message = `<system-reminder>
 PAI Dynamic Context (Auto-loaded at Session Start)
-${relationshipContext ?? ''}${learningContext ? '\n---\n' + learningContext : ''}
+${relationshipContext ?? ''}${learningContext ? '\n---\n' + learningContext : ''}${knowledgeContext ? '\n---\n' + knowledgeContext : ''}
 ---
 Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
 </system-reminder>`;
