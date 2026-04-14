@@ -18,6 +18,7 @@
 | **Logic/Flow** | Branch, transition, boundary | "Login succeeds with valid creds" + "Login fails with wrong password" + "Login locks after 5 attempts" |
 | **Content** | Section, format, tone | "Intro paragraph present" + "Intro under 50 words" + "Intro uses active voice" |
 | **Infrastructure** | Service, config, permission | "Worker deployed to production" + "Worker has R2 binding" + "Worker rate-limited to 100 req/s" |
+| **Debugging/Integration** | Pipeline hop, evidence command | "MQTT broker receives message" + "Agent parses payload correctly" + "Database write returns success" — one criterion per hop, each with a verifiable evidence command (log check, curl, query) |
 
 **Granularity example — same task at two decomposition depths:**
 
