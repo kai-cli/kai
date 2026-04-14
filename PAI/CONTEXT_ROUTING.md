@@ -51,6 +51,7 @@ Load context on-demand by reading the file at the path listed. Only load what th
 | Product management | `gh issue list --repo your-company/PRODUCT_MANAGEMENT` |
 | **OpenWRT project agents** | `~/.claude/custom-agents/OpenWRT-*.md` (9 domain agents) |
 | TR-069/TR-369 knowledge base | `~/Projects/TR-069_TR-369/tr-repo/` (24 files) |
+| DU certification tracking | `~/Projects/Du_tracking/` (deliverables, issues, ATP docs) |
 
 ## Cross-Project Memory (accumulated knowledge from other project sessions)
 
@@ -79,6 +80,7 @@ Knowledge accumulated in one project's memory is available to all projects via t
 | DevOps (Jenkins, Docker, ECS) | `{MEM}Learning-Your Company-Repo/memory/lswf-devops.md` |
 | Your CompanyWRT issues | `{MEM}Learning-Your Company-Repo/memory/your-companywrt-issues.md` |
 | Full repo classification | `{MEM}Learning-Your Company-Repo/memory/repo-index.md` |
+| **DU certification status** | `{MEM}Learning-Your Company-Repo/memory/project_du_certification.md` |
 
 ### WiFi-Troubleshooter (8 files)
 
