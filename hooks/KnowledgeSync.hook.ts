@@ -1,0 +1,357 @@
+#!/usr/bin/env bun
+// KnowledgeSync.hook.ts - Incremental knowledge distillation (SessionEnd)
+//
+// Checks if any project memory files changed since the last harvest.
+// If so, re-distills only the affected knowledge domains.
+// No-change sessions cost <5ms (stat checks only).
+//
+// TRIGGER: SessionEnd (async)
+//
+// INPUT: stdin hook JSON (session_id)
+// OUTPUT: stderr status messages, exit(0) always
+//
+// SIDE EFFECTS:
+//   Updates: MEMORY/KNOWLEDGE/<domain>.md (only changed domains)
+//   Updates: MEMORY/KNOWLEDGE/.harvest-state.json (mtime tracking)
+
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { getPaiDir, paiPath } from './lib/paths';
+import { inference } from '../PAI/Tools/Inference';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface HarvestState {
+  lastRun: string;
+  fileMtimes: Record<string, number>; // path -> mtime ms
+}
+
+interface ChangedFile {
+  project: string;
+  filename: string;
+  path: string;
+  content: string;
+}
+
+// ============================================================================
+// Domain definitions (same as KnowledgeHarvester.ts)
+// ============================================================================
+
+const DOMAIN_KEYWORDS: Record<string, string[]> = {
+  'firmware': ['firmware', 'build', 'feed', 'sdk', 'openwrt', 'your-companywrt', 'targets', 'jenkins', 'make', 'package', 'ipk', 'toolchain', 'kernel'],
+  'api-and-services': ['jnap', 'sysctx', 'uci', 'api', 'service', 'tr-069', 'tr-369', 'cwmp', 'usp', 'bbf', 'obuspa', 'tr-181'],
+  'products': ['pinnacle', 'm60', 'm62', 'product', 'customer', 'sku', 'du', 'cf', 'toob', 'qualcomm', 'ipq', 'hardware'],
+  'devops': ['jenkins', 'docker', 'ci', 'cd', 'pipeline', 'github', 'actions', 'ecs', 'fargate', 'deploy', 'devops'],
+  'ui': ['ui', 'flutter', 'react', 'privacygui', 'guardians', 'dart', 'frontend', 'web', 'interface'],
+  'security': ['security', 'patch', 'vulnerability', 'cve', 'pii', 'privacy', 'encryption', 'audit'],
+  'ai-infrastructure': ['pai', 'hook', 'skill', 'agent', 'algorithm', 'memory', 'inference', 'claude', 'router'],
+};
+
+const DOMAIN_DESCRIPTIONS: Record<string, string> = {
+  'firmware': 'Your Company firmware build system, feeds, SDK, OpenWRT architecture',
+  'api-and-services': 'JNAP API, sysctx, UCI, service architecture, TR-069/TR-369',
+  'products': 'Active products, customers, SKUs, hardware specs',
+  'devops': 'Jenkins, GitHub Actions, Docker, CI/CD, deployment',
+  'ui': 'PrivacyGUI (Flutter), guardians-ui (React), UI pipeline',
+  'security': 'Security practices, patches, vulnerability management',
+  'ai-infrastructure': 'PAI system, hooks, skills, memory, agents',
+};
+
+// ============================================================================
+// State management
+// ============================================================================
+
+const KNOWLEDGE_DIR = paiPath('MEMORY', 'KNOWLEDGE');
+const STATE_FILE = join(KNOWLEDGE_DIR, '.harvest-state.json');
+
+function loadState(): HarvestState {
+  if (!existsSync(STATE_FILE)) {
+    return { lastRun: '', fileMtimes: {} };
+  }
+  try {
+    return JSON.parse(readFileSync(STATE_FILE, 'utf-8'));
+  } catch {
+    return { lastRun: '', fileMtimes: {} };
+  }
+}
+
+function saveState(state: HarvestState): void {
+  mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+// ============================================================================
+// Change detection
+// ============================================================================
+
+function scanMemoryFiles(): Array<{ path: string; project: string; filename: string; mtime: number }> {
+  const projectsDir = join(getPaiDir(), 'projects');
+  if (!existsSync(projectsDir)) return [];
+
+  const results: Array<{ path: string; project: string; filename: string; mtime: number }> = [];
+
+  try {
+    const projectDirs = readdirSync(projectsDir, { withFileTypes: true })
+      .filter(d => d.isDirectory());
+
+    for (const projDir of projectDirs) {
+      const memoryDir = join(projectsDir, projDir.name, 'memory');
+      if (!existsSync(memoryDir)) continue;
+
+      const memFiles = readdirSync(memoryDir).filter(f => f.endsWith('.md') && f !== 'MEMORY.md');
+      for (const memFile of memFiles) {
+        const filePath = join(memoryDir, memFile);
+        try {
+          const stat = statSync(filePath);
+          results.push({
+            path: filePath,
+            project: projDir.name,
+            filename: memFile,
+            mtime: stat.mtimeMs,
+          });
+        } catch { /* skip */ }
+      }
+    }
+  } catch { /* skip */ }
+
+  return results;
+}
+
+function detectChanges(state: HarvestState): ChangedFile[] {
+  const currentFiles = scanMemoryFiles();
+  const changed: ChangedFile[] = [];
+
+  for (const file of currentFiles) {
+    const previousMtime = state.fileMtimes[file.path];
+    if (previousMtime === undefined || file.mtime > previousMtime) {
+      try {
+        const content = readFileSync(file.path, 'utf-8');
+        const project = file.project
+          .replace(/^-Users-[^-]+-Projects-/, '')
+          .replace(/^-Users-[^-]+-/, '')
+          .replace(/-/g, '/');
+
+        changed.push({
+          project,
+          filename: file.filename,
+          path: file.path,
+          content,
+        });
+      } catch { /* skip unreadable */ }
+    }
+  }
+
+  return changed;
+}
+
+// ============================================================================
+// Domain identification
+// ============================================================================
+
+function identifyAffectedDomains(changedFiles: ChangedFile[]): Set<string> {
+  const affected = new Set<string>();
+
+  for (const file of changedFiles) {
+    const text = (file.filename + ' ' + file.content.substring(0, 2000)).toLowerCase();
+
+    // Score each domain, only take the top 1-2 with strong matches
+    const scores: Array<{ domain: string; hits: number }> = [];
+    for (const [domain, keywords] of Object.entries(DOMAIN_KEYWORDS)) {
+      const hits = keywords.filter(kw => text.includes(kw)).length;
+      if (hits >= 3) { // Higher threshold to avoid false positives
+        scores.push({ domain, hits });
+      }
+    }
+
+    // Take at most the top 2 domains per file (a file rarely spans 3+ domains)
+    scores.sort((a, b) => b.hits - a.hits);
+    for (const entry of scores.slice(0, 2)) {
+      affected.add(entry.domain);
+    }
+  }
+
+  return affected;
+}
+
+// ============================================================================
+// Extraction (lightweight - reuses KnowledgeHarvester logic)
+// ============================================================================
+
+function extractFacts(content: string, filename: string): string[] {
+  const facts: string[] = [];
+  const lines = content.split('\n');
+
+  for (const line of lines) {
+    // Bold statements
+    const boldMatches = line.matchAll(/\*\*(.+?)\*\*/g);
+    for (const match of boldMatches) {
+      if (match[1].length > 10 && match[1].length < 200) {
+        facts.push(match[1]);
+      }
+    }
+
+    // Meaningful bullets
+    const bulletMatch = line.match(/^[-*]\s+(.{15,200})$/);
+    if (bulletMatch) {
+      facts.push(bulletMatch[1].replace(/\*\*/g, ''));
+    }
+
+    // Table data
+    const tableMatch = line.match(/^\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/);
+    if (tableMatch && !line.includes('---') && !line.includes('Topic') && !line.includes('Path')) {
+      const key = tableMatch[1].trim().replace(/\*\*/g, '');
+      const val = tableMatch[2].trim().replace(/\*\*/g, '');
+      if (key.length > 3 && val.length > 3) {
+        facts.push(`${key}: ${val}`);
+      }
+    }
+  }
+
+  return facts;
+}
+
+// ============================================================================
+// Distillation
+// ============================================================================
+
+async function distillDomain(domain: string, facts: string[]): Promise<string | null> {
+  const MAX_FACTS = 50;
+  const cappedFacts = facts.length > MAX_FACTS
+    ? facts.sort((a, b) => b.length - a.length).slice(0, MAX_FACTS)
+    : facts;
+
+  const description = DOMAIN_DESCRIPTIONS[domain] || domain;
+
+  const systemPrompt = `You are a technical knowledge distiller. Given a list of extracted facts about "${description}", produce a concise reference document (~200-300 words). Format as markdown with 2-3 sections. Include only facts that would be useful for an engineering manager working with this technology daily. No introductions, no conclusions - just the distilled knowledge. Preserve specific details: names, versions, numbers, URLs.`;
+
+  const userPrompt = `Domain: ${domain}\nDescription: ${description}\n\nExtracted facts (${cappedFacts.length} items):\n${cappedFacts.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
+
+  const result = await inference({
+    systemPrompt,
+    userPrompt,
+    level: 'fast',
+    timeout: 60000,
+  });
+
+  if (!result.success) {
+    console.error(`  [KnowledgeSync] LLM failed for ${domain}: ${result.error}`);
+    return null;
+  }
+
+  return result.output.trim();
+}
+
+// ============================================================================
+// Main
+// ============================================================================
+
+async function main() {
+  try {
+    // Quick exit if KNOWLEDGE/ doesn't exist yet (run full harvester first)
+    if (!existsSync(KNOWLEDGE_DIR)) {
+      console.error('[KnowledgeSync] No KNOWLEDGE/ directory - run KnowledgeHarvester.ts first');
+      process.exit(0);
+    }
+
+    // Load previous state
+    const state = loadState();
+
+    // Detect changed memory files
+    const changedFiles = detectChanges(state);
+
+    if (changedFiles.length === 0) {
+      console.error('[KnowledgeSync] No memory file changes detected - skipping');
+      process.exit(0);
+    }
+
+    console.error(`[KnowledgeSync] ${changedFiles.length} memory files changed`);
+
+    // Identify which domains need re-distillation
+    const affectedDomains = identifyAffectedDomains(changedFiles);
+
+    if (affectedDomains.size === 0) {
+      console.error('[KnowledgeSync] Changed files don\'t affect any knowledge domains - skipping');
+      // Still update state so we don't re-check these files
+      updateState(state);
+      process.exit(0);
+    }
+
+    console.error(`[KnowledgeSync] Re-distilling ${affectedDomains.size} domains: ${Array.from(affectedDomains).join(', ')}`);
+
+    // For each affected domain, gather ALL facts (not just from changed files)
+    // because the distillation needs the full picture
+    const allMemoryFiles = scanMemoryFiles();
+
+    for (const domain of affectedDomains) {
+      const keywords = DOMAIN_KEYWORDS[domain];
+      if (!keywords) continue;
+
+      // Gather facts from ALL memory files relevant to this domain
+      const domainFacts: string[] = [];
+
+      for (const file of allMemoryFiles) {
+        try {
+          const content = readFileSync(file.path, 'utf-8');
+          const text = (file.filename + ' ' + content.substring(0, 2000)).toLowerCase();
+          const hits = keywords.filter(kw => text.includes(kw)).length;
+
+          if (hits >= 2) {
+            domainFacts.push(...extractFacts(content, file.filename));
+          }
+        } catch { /* skip */ }
+      }
+
+      if (domainFacts.length < 3) {
+        console.error(`  [KnowledgeSync] ${domain}: too few facts (${domainFacts.length}) - skipping`);
+        continue;
+      }
+
+      // Deduplicate
+      const unique: string[] = [];
+      for (const fact of domainFacts) {
+        const isDupe = unique.some(existing => {
+          const wordsA = new Set(fact.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+          const wordsB = new Set(existing.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+          if (wordsA.size === 0 || wordsB.size === 0) return false;
+          let intersection = 0;
+          for (const w of wordsA) { if (wordsB.has(w)) intersection++; }
+          return intersection / (wordsA.size + wordsB.size - intersection) > 0.5;
+        });
+        if (!isDupe) unique.push(fact);
+      }
+
+      console.error(`  [KnowledgeSync] ${domain}: ${unique.length} unique facts, distilling...`);
+
+      const content = await distillDomain(domain, unique);
+      if (content) {
+        writeFileSync(join(KNOWLEDGE_DIR, `${domain}.md`), content + '\n');
+        console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars)`);
+      }
+    }
+
+    // Update state with current mtimes
+    updateState(state);
+
+    console.error('[KnowledgeSync] Done');
+    process.exit(0);
+  } catch (error) {
+    console.error('[KnowledgeSync] Error:', error);
+    process.exit(0); // Non-fatal
+  }
+}
+
+function updateState(state: HarvestState): void {
+  const allFiles = scanMemoryFiles();
+  const newMtimes: Record<string, number> = {};
+  for (const file of allFiles) {
+    newMtimes[file.path] = file.mtime;
+  }
+  saveState({
+    lastRun: new Date().toISOString(),
+    fileMtimes: newMtimes,
+  });
+}
+
+main();
