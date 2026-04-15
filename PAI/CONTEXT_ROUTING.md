@@ -94,6 +94,15 @@ Knowledge accumulated in one project's memory is available to all projects via t
 | GitHub repos reference | `{MEM}WiFi-Troubleshooter/memory/reference_github_repos.md` |
 | Austin dev notes | `{MEM}WiFi-Troubleshooter/memory/reference_austin_dev_notes.md` |
 
+### Research-Agent (4 files)
+
+| Topic | Path |
+|-------|------|
+| Index | `{MEM}Research-Agent/memory/MEMORY.md` |
+| OpenWRT agent architecture | `{MEM}Research-Agent/memory/project_agent_architecture.md` |
+| Device access tooling | `{MEM}Research-Agent/memory/project_device_access.md` |
+| Knowledge sources reference | `{MEM}Research-Agent/memory/reference_knowledge_sources.md` |
+
 ### TR-069-TR-369 (2 files)
 
 | Topic | Path |
