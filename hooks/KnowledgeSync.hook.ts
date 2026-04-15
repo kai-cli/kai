@@ -25,8 +25,11 @@ import { inference } from '../PAI/Tools/Inference';
 
 interface HarvestState {
   lastRun: string;
+  lastFullHarvest?: string; // ISO timestamp of last full harvest
   fileMtimes: Record<string, number>; // path -> mtime ms
 }
+
+const FULL_HARVEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface ChangedFile {
   project: string;
@@ -228,19 +231,27 @@ async function distillDomain(domain: string, facts: string[]): Promise<string | 
 
   const userPrompt = `Domain: ${domain}\nDescription: ${description}\n\nExtracted facts (${cappedFacts.length} items):\n${cappedFacts.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
 
-  const result = await inference({
-    systemPrompt,
-    userPrompt,
-    level: 'fast',
-    timeout: 60000,
-  });
+  // Try with 90s timeout, retry once on failure
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const result = await inference({
+      systemPrompt,
+      userPrompt,
+      level: 'fast',
+      timeout: 90000,
+    });
 
-  if (!result.success) {
-    console.error(`  [KnowledgeSync] LLM failed for ${domain}: ${result.error}`);
-    return null;
+    if (result.success) {
+      return result.output.trim();
+    }
+
+    if (attempt === 1) {
+      console.error(`  [KnowledgeSync] ${domain}: attempt 1 failed (${result.error}), retrying...`);
+    } else {
+      console.error(`  [KnowledgeSync] LLM failed for ${domain}: ${result.error}`);
+    }
   }
 
-  return result.output.trim();
+  return null;
 }
 
 // ============================================================================
@@ -257,6 +268,16 @@ async function main() {
 
     // Load previous state
     const state = loadState();
+
+    // Check if a full harvest is overdue (>7 days since last full run)
+    const needsFullHarvest = !state.lastFullHarvest ||
+      (Date.now() - new Date(state.lastFullHarvest).getTime()) > FULL_HARVEST_INTERVAL_MS;
+
+    if (needsFullHarvest) {
+      console.error('[KnowledgeSync] Full harvest overdue — re-distilling ALL domains');
+      await runFullHarvest(state);
+      process.exit(0);
+    }
 
     // Detect changed memory files
     const changedFiles = detectChanges(state);
@@ -342,16 +363,70 @@ async function main() {
   }
 }
 
-function updateState(state: HarvestState): void {
+function updateState(state: HarvestState, fullHarvest = false): void {
   const allFiles = scanMemoryFiles();
   const newMtimes: Record<string, number> = {};
   for (const file of allFiles) {
     newMtimes[file.path] = file.mtime;
   }
+  const now = new Date().toISOString();
   saveState({
-    lastRun: new Date().toISOString(),
+    lastRun: now,
+    lastFullHarvest: fullHarvest ? now : (state.lastFullHarvest || now),
     fileMtimes: newMtimes,
   });
+}
+
+// Full harvest: re-distill ALL domains (runs when >7 days since last full harvest)
+async function runFullHarvest(state: HarvestState): Promise<void> {
+  const allMemoryFiles = scanMemoryFiles();
+  console.error(`[KnowledgeSync] Full harvest: scanning ${allMemoryFiles.length} memory files across all projects`);
+
+  for (const [domain, keywords] of Object.entries(DOMAIN_KEYWORDS)) {
+    const domainFacts: string[] = [];
+
+    for (const file of allMemoryFiles) {
+      try {
+        const content = readFileSync(file.path, 'utf-8');
+        const text = (file.filename + ' ' + content.substring(0, 2000)).toLowerCase();
+        const hits = keywords.filter(kw => text.includes(kw)).length;
+
+        if (hits >= 2) {
+          domainFacts.push(...extractFacts(content, file.filename));
+        }
+      } catch { /* skip */ }
+    }
+
+    if (domainFacts.length < 3) {
+      console.error(`  [KnowledgeSync] ${domain}: too few facts (${domainFacts.length}) - skipping`);
+      continue;
+    }
+
+    // Deduplicate
+    const unique: string[] = [];
+    for (const fact of domainFacts) {
+      const isDupe = unique.some(existing => {
+        const wordsA = new Set(fact.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+        const wordsB = new Set(existing.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+        if (wordsA.size === 0 || wordsB.size === 0) return false;
+        let intersection = 0;
+        for (const w of wordsA) { if (wordsB.has(w)) intersection++; }
+        return intersection / (wordsA.size + wordsB.size - intersection) > 0.5;
+      });
+      if (!isDupe) unique.push(fact);
+    }
+
+    console.error(`  [KnowledgeSync] ${domain}: ${unique.length} unique facts, distilling...`);
+
+    const content = await distillDomain(domain, unique);
+    if (content) {
+      writeFileSync(join(KNOWLEDGE_DIR, `${domain}.md`), content + '\n');
+      console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars)`);
+    }
+  }
+
+  updateState(state, true);
+  console.error('[KnowledgeSync] Full harvest complete');
 }
 
 main();
