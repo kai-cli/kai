@@ -32,7 +32,7 @@
  * - Skipped for subagents: Yes
  */
 
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, existsSync, readdirSync, appendFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
@@ -83,15 +83,46 @@ function loadSettings(paiDir: string): Settings {
 }
 
 /**
+ * Files that are only loaded for personal/PAI projects, not work projects.
+ * Saves ~500 tokens on work sessions where this context isn't needed.
+ */
+const CONDITIONAL_FILES: Record<string, 'personal-only'> = {
+  'PAI/USER/TELOS/DIGEST.md': 'personal-only',
+};
+
+/**
+ * Determine if the current session is a "personal" project (PAI, research, etc.)
+ * vs a work project (Your Company repos, firmware, etc.)
+ */
+function isPersonalProject(): boolean {
+  const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const personalPatterns = [
+    'pai-config', 'Research-Agent', 'GranolaMCP', 'Knowledge',
+    'CLI-Hidden-Commands', '/.claude/',
+  ];
+  return personalPatterns.some(p => projectDir.includes(p)) ||
+    !projectDir.includes('/Projects/');
+}
+
+/**
  * Load files listed in settings.json → loadAtStartup.files
  * Reads each file and injects as a system-reminder block.
+ * Files in CONDITIONAL_FILES are skipped based on project type.
  */
 function loadStartupFiles(paiDir: string, settings: Settings): string | null {
   const config = settings.loadAtStartup;
   if (!config?.files || config.files.length === 0) return null;
 
+  const personal = isPersonalProject();
   const parts: string[] = [];
   for (const relPath of config.files) {
+    // Check conditional loading rules
+    const condition = CONDITIONAL_FILES[relPath];
+    if (condition === 'personal-only' && !personal) {
+      console.error(`⏭️ Skipped ${relPath} (personal-only, work project detected)`);
+      continue;
+    }
+
     const fullPath = join(paiDir, relPath);
     if (!existsSync(fullPath)) {
       console.error(`⚠️ loadAtStartup: file not found: ${relPath}`);
@@ -503,15 +534,75 @@ async function main() {
 
     // Load cross-project knowledge context
     let knowledgeContext = '';
+    let injectedDomains: string[] = [];
     if (isDynamicEnabled(settings, 'knowledgeInjection')) {
       const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-      const knowledge = loadKnowledgeContext(paiDir, projectDir);
-      if (knowledge) {
-        knowledgeContext = knowledge;
-        console.error(`🧠 Loaded knowledge context (${knowledgeContext.length} chars)`);
+      const result = loadKnowledgeContext(paiDir, projectDir);
+      if (result.content) {
+        knowledgeContext = result.content;
+        injectedDomains = result.injectedDomains;
+        console.error(`🧠 Loaded knowledge context: ${result.injectedDomains.join(', ')} (${result.totalChars} chars)`);
+
+        // Write read telemetry for compound staleness detection
+        try {
+          const stateDir = join(paiDir, 'MEMORY', 'STATE');
+          mkdirSync(stateDir, { recursive: true });
+          const readLog = join(stateDir, 'memory-reads.jsonl');
+          const readEntry = {
+            timestamp: new Date().toISOString(),
+            session_id: process.env.CLAUDE_SESSION_ID || 'unknown',
+            project: projectDir,
+            domains_injected: result.injectedDomains,
+            total_chars: result.totalChars,
+          };
+          appendFileSync(readLog, JSON.stringify(readEntry) + '\n');
+        } catch (err) {
+          console.error(`⚠️ Failed to write read telemetry: ${err}`);
+        }
       }
     } else {
       console.error('⏭️ Skipped knowledge injection (disabled)');
+    }
+
+    // Token budget cap: prevent dynamic context from inflating unbounded.
+    // ~4 chars ≈ 1 token. Cap at 4,000 tokens ≈ 16,000 chars of dynamic content.
+    // Priority order (highest first): knowledge > learning > relationship
+    const TOKEN_BUDGET_CHARS = 16000;
+    const dynamicSources = [
+      { name: 'knowledge', content: knowledgeContext, priority: 1 },
+      { name: 'learning', content: learningContext, priority: 2 },
+      { name: 'relationship', content: relationshipContext ?? '', priority: 3 },
+    ].filter(s => s.content.length > 0);
+
+    const totalChars = dynamicSources.reduce((sum, s) => sum + s.content.length, 0);
+
+    if (totalChars > TOKEN_BUDGET_CHARS) {
+      console.error(`⚠️ Dynamic context over budget: ${totalChars} chars (cap: ${TOKEN_BUDGET_CHARS}). Truncating lowest-priority sources.`);
+      // Truncate from lowest priority first
+      let excess = totalChars - TOKEN_BUDGET_CHARS;
+      const sorted = [...dynamicSources].sort((a, b) => b.priority - a.priority);
+      for (const source of sorted) {
+        if (excess <= 0) break;
+        if (source.content.length <= excess) {
+          console.error(`  ⏭️ Dropped ${source.name} (${source.content.length} chars) to stay within budget`);
+          // Clear the source
+          if (source.name === 'relationship') relationshipContext = null;
+          else if (source.name === 'learning') learningContext = '';
+          else if (source.name === 'knowledge') knowledgeContext = '';
+          excess -= source.content.length;
+        } else {
+          // Truncate this source
+          const newLen = source.content.length - excess;
+          const truncated = source.content.substring(0, newLen) + '\n\n[... truncated to fit token budget]';
+          console.error(`  ✂️ Truncated ${source.name} from ${source.content.length} to ${newLen} chars`);
+          if (source.name === 'relationship') relationshipContext = truncated;
+          else if (source.name === 'learning') learningContext = truncated;
+          else if (source.name === 'knowledge') knowledgeContext = truncated;
+          excess = 0;
+        }
+      }
+    } else {
+      console.error(`📊 Dynamic context budget: ${totalChars}/${TOKEN_BUDGET_CHARS} chars (${Math.round(totalChars / TOKEN_BUDGET_CHARS * 100)}%)`);
     }
 
     // Inject dynamic context if we have any

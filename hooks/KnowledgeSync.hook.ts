@@ -18,6 +18,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSy
 import { join } from 'path';
 import { getPaiDir, paiPath } from './lib/paths';
 import { inference } from '../PAI/Tools/Inference';
+import { canCallInference, recordInferenceCall, budgetStatus } from './lib/inference-budget';
 
 // ============================================================================
 // Types
@@ -345,10 +346,17 @@ async function main() {
 
       console.error(`  [KnowledgeSync] ${domain}: ${unique.length} unique facts, distilling...`);
 
+      // Check inference budget before LLM call
+      if (!canCallInference()) {
+        console.error(`  [KnowledgeSync] ${domain}: skipped (inference budget exhausted: ${budgetStatus()})`);
+        continue;
+      }
+
       const content = await distillDomain(domain, unique);
       if (content) {
+        recordInferenceCall('KnowledgeSync', domain);
         writeFileSync(join(KNOWLEDGE_DIR, `${domain}.md`), content + '\n');
-        console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars)`);
+        console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars) [budget: ${budgetStatus()}]`);
       }
     }
 
@@ -418,10 +426,17 @@ async function runFullHarvest(state: HarvestState): Promise<void> {
 
     console.error(`  [KnowledgeSync] ${domain}: ${unique.length} unique facts, distilling...`);
 
+    // Check inference budget before LLM call
+    if (!canCallInference()) {
+      console.error(`  [KnowledgeSync] ${domain}: skipped (inference budget exhausted: ${budgetStatus()})`);
+      continue;
+    }
+
     const content = await distillDomain(domain, unique);
     if (content) {
+      recordInferenceCall('KnowledgeSync', domain);
       writeFileSync(join(KNOWLEDGE_DIR, `${domain}.md`), content + '\n');
-      console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars)`);
+      console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars) [budget: ${budgetStatus()}]`);
     }
   }
 
