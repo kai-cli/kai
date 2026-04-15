@@ -78,16 +78,24 @@ function selectDomains(projectDir: string): string[] {
   return DEFAULT_DOMAINS;
 }
 
+export interface KnowledgeLoadResult {
+  content: string | null;
+  injectedDomains: string[];
+  totalChars: number;
+}
+
 /**
  * Load knowledge context for session injection.
- * Returns a formatted string with relevant domain knowledge, or null if none available.
+ * Returns content string, list of injected domains, and total char count.
  */
-export function loadKnowledgeContext(paiDir: string, projectDir: string): string | null {
+export function loadKnowledgeContext(paiDir: string, projectDir: string): KnowledgeLoadResult {
   const knowledgeDir = join(paiDir, 'MEMORY', 'KNOWLEDGE');
-  if (!existsSync(knowledgeDir)) return null;
+  if (!existsSync(knowledgeDir)) return { content: null, injectedDomains: [], totalChars: 0 };
 
   const selectedDomains = selectDomains(projectDir);
   const parts: string[] = [];
+  const injectedDomains: string[] = [];
+  let totalChars = 0;
 
   for (const domain of selectedDomains) {
     const filePath = join(knowledgeDir, `${domain}.md`);
@@ -97,15 +105,21 @@ export function loadKnowledgeContext(paiDir: string, projectDir: string): string
       const content = readFileSync(filePath, 'utf-8').trim();
       if (content.length > 0) {
         parts.push(content);
+        injectedDomains.push(domain);
+        totalChars += content.length;
       }
     } catch {
       // Skip unreadable files silently
     }
   }
 
-  if (parts.length === 0) return null;
+  if (parts.length === 0) return { content: null, injectedDomains: [], totalChars: 0 };
 
-  return `\n## Domain Knowledge (auto-injected from MEMORY/KNOWLEDGE/)\n\n${parts.join('\n\n---\n\n')}`;
+  return {
+    content: `\n## Domain Knowledge (auto-injected from MEMORY/KNOWLEDGE/)\n\n${parts.join('\n\n---\n\n')}`,
+    injectedDomains,
+    totalChars,
+  };
 }
 
 /**
