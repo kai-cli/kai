@@ -31,15 +31,16 @@
     // Enable experimental multi-agent team support
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
 
-    // ── AWS Bedrock ────────────────────────────────────────────────────────
-    // Routes Claude Code through AWS Bedrock.
-    // Profile: your-aws-profile | Account: REDACTED-AWS-ACCOUNT | Region: us-west-2
-    // To disable: comment out these 5 lines and rebuild settings.
-    "CLAUDE_CODE_USE_BEDROCK": "1",
-    "AWS_REGION": "us-west-2",
-    "AWS_PROFILE": "your-aws-profile",
-    "ANTHROPIC_MODEL": "global.anthropic.claude-opus-4-6-v1",
-    "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    // ── AWS Bedrock (optional) ─────────────────────────────────────────────
+    // Routes Claude Code through AWS Bedrock instead of direct Anthropic API.
+    // To enable: uncomment these lines, set your AWS profile/region, rebuild settings.
+    // Run: bun ~/.claude/hooks/handlers/BuildSettings.ts
+    //
+    // "CLAUDE_CODE_USE_BEDROCK": "1",
+    // "AWS_REGION": "us-east-1",
+    // "AWS_PROFILE": "your-aws-profile-name",
+    // "ANTHROPIC_MODEL": "us.anthropic.claude-opus-4-6-v1:0",
+    // "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     // ── END AWS Bedrock ─────────────────────────────────────────────────────
   },
 
@@ -56,9 +57,9 @@
 
   // PAI version information
   "pai": {
-    "repoUrl": "github.com/kai-cli/pai-config",
-    "version": "4.6.0",
-    "algorithmVersion": "3.9.0"
+    "repoUrl": "github.com/your-username/pai-config",
+    "version": "5.0.0",
+    "algorithmVersion": "3.12.0"
   },
 
   // User preferences
