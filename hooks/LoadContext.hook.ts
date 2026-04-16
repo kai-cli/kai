@@ -631,6 +631,29 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
       console.error('⏭️ Skipped active work summary (disabled)');
     }
 
+    // Staging nudge: if unreviewed drafts exist and curate hasn't run in >14 days, remind user
+    try {
+      const stagingDir = join(paiDir, 'MEMORY', 'STAGING');
+      const curationLog = join(paiDir, 'MEMORY', 'STATE', 'curation-log.jsonl');
+      if (existsSync(stagingDir)) {
+        const drafts = readdirSync(stagingDir).filter(f => f.endsWith('.md'));
+        if (drafts.length > 0) {
+          let daysSinceCuration = 999;
+          if (existsSync(curationLog)) {
+            const lines = readFileSync(curationLog, 'utf-8').trim().split('\n').filter(l => l);
+            const lastEntry = lines[lines.length - 1];
+            if (lastEntry) {
+              const ts = JSON.parse(lastEntry).timestamp;
+              daysSinceCuration = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+            }
+          }
+          if (daysSinceCuration >= 14) {
+            console.log(`💡 STAGING has ${drafts.length} unreviewed draft(s) — run \`pai curate\` to review`);
+          }
+        }
+      }
+    } catch { /* non-fatal */ }
+
     console.error('✅ PAI session initialization complete (v4.0)');
     process.exit(0);
   } catch (error) {
