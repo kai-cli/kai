@@ -91,7 +91,7 @@ function loadReflections(): Reflection[] {
 // Jaccard deduplication
 // ============================================================================
 
-function tokenize(text: string): Set<string> {
+export function tokenize(text: string): Set<string> {
   return new Set(
     text.toLowerCase()
       .split(/\W+/)
@@ -99,7 +99,7 @@ function tokenize(text: string): Set<string> {
   );
 }
 
-function jaccard(a: Set<string>, b: Set<string>): number {
+export function jaccard(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 || b.size === 0) return 0;
   let intersection = 0;
   for (const w of a) { if (b.has(w)) intersection++; }
@@ -119,7 +119,7 @@ function reflectionText(r: Reflection): string {
  * Deduplicate reflections by Jaccard similarity.
  * Returns unique entries keeping the most recent of similar ones.
  */
-function deduplicate(reflections: Reflection[]): Reflection[] {
+export function deduplicate(reflections: Reflection[]): Reflection[] {
   const sorted = [...reflections].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
@@ -157,7 +157,7 @@ interface PatternGroup {
  * Group reflections into recurring themes by keyword clustering.
  * Returns top themes with highest frequency.
  */
-function extractPatternGroups(reflections: Reflection[]): PatternGroup[] {
+export function extractPatternGroups(reflections: Reflection[]): PatternGroup[] {
   const themeKeywords: Record<string, string[]> = {
     'parallelize-work':      ['parallel', 'paralleliz', 'concurrent', 'batch', 'simultaneously'],
     'read-files-first':      ['should have read', 'read first', 'pre-flight', 'upfront', 'earlier'],
@@ -341,7 +341,9 @@ async function main() {
   console.log('[ReflectionHarvester] Done.');
 }
 
-main().catch(err => {
-  console.error('[ReflectionHarvester] Error:', err);
-  process.exit(0);
-});
+if (import.meta.main) {
+  main().catch(err => {
+    console.error('[ReflectionHarvester] Error:', err);
+    process.exit(0);
+  });
+}
