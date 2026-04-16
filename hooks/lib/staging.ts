@@ -6,12 +6,12 @@
 //
 // Used by: RatingCapture.hook.ts (write), MemoryCurate.ts (read/approve/reject)
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, unlinkSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { paiPath } from './paths';
 
-const STAGING_DIR = paiPath('MEMORY', 'STAGING');
-const STATE_FILE = join(STAGING_DIR, '.staging-state.json');
+const getStagingDir = () => paiPath('MEMORY', 'STAGING');
+const getStateFile  = () => join(getStagingDir(), '.staging-state.json');
 const EXPIRY_DAYS = 14;
 
 export interface DraftMemory {
@@ -46,7 +46,7 @@ interface StagingState {
 }
 
 function loadState(): StagingState {
-  if (!existsSync(STATE_FILE)) {
+  if (!existsSync(getStateFile())) {
     return {
       created: new Date().toISOString().split('T')[0],
       expiryDays: EXPIRY_DAYS,
@@ -55,7 +55,7 @@ function loadState(): StagingState {
     };
   }
   try {
-    return JSON.parse(readFileSync(STATE_FILE, 'utf-8'));
+    return JSON.parse(readFileSync(getStateFile(), 'utf-8'));
   } catch {
     return {
       created: new Date().toISOString().split('T')[0],
@@ -67,15 +67,15 @@ function loadState(): StagingState {
 }
 
 function saveState(state: StagingState): void {
-  mkdirSync(STAGING_DIR, { recursive: true });
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  mkdirSync(getStagingDir(), { recursive: true });
+  writeFileSync(getStateFile(), JSON.stringify(state, null, 2));
 }
 
 /**
  * Write a draft memory to the staging area.
  */
 export function writeDraft(draft: Omit<DraftMemory, 'filename' | 'expires'>): string {
-  mkdirSync(STAGING_DIR, { recursive: true });
+  mkdirSync(getStagingDir(), { recursive: true });
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const slug = draft.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
@@ -99,7 +99,7 @@ title: "${draft.title}"
 ${draft.content}
 `;
 
-  writeFileSync(join(STAGING_DIR, filename), fileContent);
+  writeFileSync(join(getStagingDir(), filename), fileContent);
 
   // Update state
   const state = loadState();
@@ -114,15 +114,15 @@ ${draft.content}
  * List all pending draft memories (excluding expired).
  */
 export function listDrafts(): DraftMemory[] {
-  if (!existsSync(STAGING_DIR)) return [];
+  if (!existsSync(getStagingDir())) return [];
 
-  const files = readdirSync(STAGING_DIR).filter(f => f.endsWith('.md'));
+  const files = readdirSync(getStagingDir()).filter(f => f.endsWith('.md'));
   const drafts: DraftMemory[] = [];
   const now = Date.now();
 
   for (const file of files) {
     try {
-      const content = readFileSync(join(STAGING_DIR, file), 'utf-8');
+      const content = readFileSync(join(getStagingDir(), file), 'utf-8');
       const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
       if (!frontmatterMatch) continue;
 
@@ -160,20 +160,20 @@ export function listDrafts(): DraftMemory[] {
  * Remove expired drafts. Returns count of expired files removed.
  */
 export function cleanupExpired(): number {
-  if (!existsSync(STAGING_DIR)) return 0;
+  if (!existsSync(getStagingDir())) return 0;
 
-  const files = readdirSync(STAGING_DIR).filter(f => f.endsWith('.md'));
+  const files = readdirSync(getStagingDir()).filter(f => f.endsWith('.md'));
   const now = Date.now();
   let removed = 0;
 
   for (const file of files) {
     try {
-      const content = readFileSync(join(STAGING_DIR, file), 'utf-8');
+      const content = readFileSync(join(getStagingDir(), file), 'utf-8');
       const expiresMatch = content.match(/^expires:\s*(.+)$/m);
       if (expiresMatch) {
         const expires = new Date(expiresMatch[1].trim()).getTime();
         if (expires < now) {
-          unlinkSync(join(STAGING_DIR, file));
+          unlinkSync(join(getStagingDir(), file));
           removed++;
         }
       }
@@ -196,7 +196,7 @@ export function cleanupExpired(): number {
  * Approve a draft: move from STAGING to target project memory.
  */
 export function approveDraft(filename: string): { success: boolean; targetPath?: string; error?: string } {
-  const filePath = join(STAGING_DIR, filename);
+  const filePath = join(getStagingDir(), filename);
   if (!existsSync(filePath)) return { success: false, error: 'Draft not found' };
 
   const drafts = listDrafts();
@@ -222,19 +222,18 @@ export function approveDraft(filename: string): { success: boolean; targetPath?:
  * Reject a draft: remove from STAGING and log rejection.
  */
 export function rejectDraft(filename: string, reason?: string): boolean {
-  const filePath = join(STAGING_DIR, filename);
+  const filePath = join(getStagingDir(), filename);
   if (!existsSync(filePath)) return false;
 
   // Log rejection for confidence calibration
   try {
-    const rejectLog = join(STAGING_DIR, '.rejections.jsonl');
+    const rejectLog = join(getStagingDir(), '.rejections.jsonl');
     const entry = {
       timestamp: new Date().toISOString(),
       filename,
       reason: reason || 'no reason given',
     };
-    const { appendFileSync: append } = require('fs');
-    append(rejectLog, JSON.stringify(entry) + '\n');
+    appendFileSync(rejectLog, JSON.stringify(entry) + '\n');
   } catch { /* non-critical */ }
 
   // Remove from staging
