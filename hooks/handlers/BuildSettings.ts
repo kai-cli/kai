@@ -35,11 +35,12 @@ const DEFAULT_PAI_DIR = process.env.PAI_DIR ?? join(process.env.HOME ?? '~', '.c
  */
 export function parseJSONC(text: string): unknown {
   // Remove block comments /* ... */ (non-greedy, dotall)
-  // Remove line comments // ...
-  // Careful not to strip URLs (https://) — match // only when not preceded by :
+  // Remove line comments // ... (careful not to strip URLs like https://)
+  // Strip trailing commas before } or ] (standard JSONC behavior)
   const stripped = text
     .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(?<!:)\/\/[^\n]*/g, '');
+    .replace(/(?<!:)\/\/[^\n]*/g, '')
+    .replace(/,(\s*[}\]])/g, '$1');
   return JSON.parse(stripped);
 }
 
