@@ -36,6 +36,7 @@ import { getLearningCategory } from './lib/learning-utils';
 import { getISOTimestamp, getPSTComponents } from './lib/time';
 import { captureFailure } from '../PAI/Tools/FailureCapture';
 import { getPaiDir, paiPath } from './lib/paths';
+import { writeDraft } from './lib/staging';
 
 
 // ── Shared Types ──
@@ -365,6 +366,124 @@ This response was rated ${rating}/10 by ${getPrincipalName()}. Use this as an im
   console.error(`[RatingCapture] Captured low ${source} rating learning to ${filepath}`);
 }
 
+// ── Draft Memory Generation ──
+
+/**
+ * Scan transcript for correction signals (user redirecting AI).
+ * Returns true if corrections detected — used for rating 4-5 drafts.
+ */
+function detectCorrections(transcriptPath: string): string[] {
+  const CORRECTION_PATTERNS = [
+    /\bno[,.]?\s+(i\s+meant|that'?s?\s+not|don'?t|wait)/i,
+    /\bthat'?s?\s+not\s+(what\s+i|right|correct|it)/i,
+    /\bi\s+(said|meant|asked\s+for)\s+.{5,50},?\s+not\b/i,
+    /\bwrong\b.*\b(direction|approach|file|thing)\b/i,
+    /\bstop\b.{0,20}\b(doing|adding|removing|changing)\b/i,
+  ];
+
+  try {
+    if (!transcriptPath || !existsSync(transcriptPath)) return [];
+    const content = readFileSync(transcriptPath, 'utf-8');
+    const lines = content.trim().split('\n');
+    const corrections: string[] = [];
+
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line);
+        if (entry.type !== 'user') continue;
+        const text = typeof entry.message?.content === 'string'
+          ? entry.message.content
+          : Array.isArray(entry.message?.content)
+            ? entry.message.content.filter((c: { type: string }) => c.type === 'text').map((c: { text: string }) => c.text).join(' ')
+            : '';
+        for (const pattern of CORRECTION_PATTERNS) {
+          if (pattern.test(text)) {
+            corrections.push(text.slice(0, 120));
+            break;
+          }
+        }
+      } catch { /* skip */ }
+    }
+    return corrections.slice(0, 3); // max 3 correction examples
+  } catch { return []; }
+}
+
+/**
+ * Generate a success pattern draft for high ratings (8-10).
+ * Uses fast inference on the session context to describe what worked.
+ * Fire-and-forget — errors are non-fatal.
+ */
+async function generateSuccessDraft(
+  sessionId: string,
+  rating: number,
+  transcriptPath: string,
+  comment?: string
+): Promise<void> {
+  try {
+    // Only generate for Algorithm sessions (check if session has a PRD)
+    const context = getRecentContext(transcriptPath, 5);
+    if (!context || context.length < 50) return;
+
+    const result = await inference({
+      systemPrompt: 'Extract the key success pattern from this AI session. Output a single sentence (≤25 words) describing what approach worked well that should be repeated. JSON only: {"title":"...","pattern":"..."}',
+      userPrompt: `Session context (last 5 turns):\n${context}\n\nRating: ${rating}/10${comment ? `\nComment: ${comment}` : ''}\n\nOutput JSON {"title":"...","pattern":"..."} only.`,
+      level: 'fast',
+      expectJson: true,
+      timeout: 20000,
+    });
+
+    if (!result.success || !result.parsed) return;
+    const parsed = result.parsed as { title?: string; pattern?: string };
+    if (!parsed.pattern) return;
+
+    writeDraft({
+      type: 'success-pattern',
+      sourceSession: sessionId,
+      sourceRating: rating,
+      confidence: 0.75,
+      generated: new Date().toISOString(),
+      targetProject: 'pai-config',
+      targetFilename: 'feedback_success_pattern.md',
+      title: parsed.title || `Success pattern (${rating}/10 session)`,
+      content: parsed.pattern,
+    });
+
+    console.error(`[RatingCapture] Generated success pattern draft for rating ${rating}`);
+  } catch (err) {
+    console.error(`[RatingCapture] Draft generation failed (non-fatal): ${err}`);
+  }
+}
+
+/**
+ * Generate a correction draft for mild negative ratings (4-5).
+ * Uses regex-only detection — no LLM call.
+ */
+function generateCorrectionDraft(
+  sessionId: string,
+  rating: number,
+  corrections: string[]
+): void {
+  if (corrections.length === 0) return;
+
+  try {
+    writeDraft({
+      type: 'correction',
+      sourceSession: sessionId,
+      sourceRating: rating,
+      confidence: 0.65,
+      generated: new Date().toISOString(),
+      targetProject: 'pai-config',
+      targetFilename: 'feedback_correction_pattern.md',
+      title: `Correction pattern (${rating}/10 session)`,
+      content: `Session required corrections:\n${corrections.map(c => `- ${c}`).join('\n')}\n\nThis session required mid-task direction changes. Review for systematic misunderstanding patterns.`,
+    });
+
+    console.error(`[RatingCapture] Generated correction draft for rating ${rating} (${corrections.length} correction(s) detected)`);
+  } catch (err) {
+    console.error(`[RatingCapture] Correction draft failed (non-fatal): ${err}`);
+  }
+}
+
 // ── Main ──
 
 async function main() {
@@ -391,6 +510,16 @@ async function main() {
 
       writeRating(entry);
 
+      // Draft generation (fire-and-forget, non-blocking)
+      if (explicitResult.rating >= 8) {
+        // High rating: generate success pattern draft asynchronously
+        generateSuccessDraft(data.session_id, explicitResult.rating, data.transcript_path, explicitResult.comment)
+          .catch(() => { /* non-fatal */ });
+      } else if (explicitResult.rating >= 4 && explicitResult.rating <= 5) {
+        // Mild negative: scan for corrections (regex, no LLM)
+        const corrections = detectCorrections(data.transcript_path);
+        generateCorrectionDraft(data.session_id, explicitResult.rating, corrections);
+      }
 
       if (explicitResult.rating < 5) {
         // Read cached last response (written by LastResponseCache.hook.ts on previous Stop event)

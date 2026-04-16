@@ -738,6 +738,16 @@ async function main() {
       case "profiles":
         command = "profiles";
         break;
+      case "curate":
+        command = "curate";
+        wallpaperArgs = args.slice(i + 1);
+        i = args.length;
+        break;
+      case "harvest":
+        command = "harvest";
+        wallpaperArgs = args.slice(i + 1);
+        i = args.length;
+        break;
       case "mcp":
         command = "mcp";
         subCommand = args[++i];
@@ -795,6 +805,22 @@ async function main() {
       }
       await cmdPrompt(promptText);
       break;
+    case "curate": {
+      const curateArgs = wallpaperArgs;
+      const curateProc = spawnSync(['bun', 'run', paiPath('PAI', 'Tools', 'MemoryCurate.ts'), ...curateArgs], {
+        stdio: 'inherit',
+      });
+      process.exit(curateProc.exitCode ?? 0);
+      break;
+    }
+    case "harvest": {
+      const harvestArgs = wallpaperArgs;
+      const harvestProc = spawnSync(['bun', 'run', paiPath('PAI', 'Tools', 'ReflectionHarvester.ts'), ...harvestArgs], {
+        stdio: 'inherit',
+      });
+      process.exit(harvestProc.exitCode ?? 0);
+      break;
+    }
     case "wallpaper":
       cmdWallpaper(wallpaperArgs);
       break;
