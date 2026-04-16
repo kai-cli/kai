@@ -258,6 +258,50 @@ async function distillDomain(domain: string, facts: string[]): Promise<string | 
 // ============================================================================
 // Main
 // ============================================================================
+// Auto-harvest reflections
+// ============================================================================
+
+const REFLECTION_AUTO_HARVEST_THRESHOLD = 10;
+const REFLECTION_FILE = join(getPaiDir(), 'MEMORY', 'LEARNING', 'REFLECTIONS', 'algorithm-reflections.jsonl');
+const HARVEST_STATE_FILE = join(getPaiDir(), 'MEMORY', 'STATE', 'reflection-harvest-state.json');
+
+function maybeAutoHarvest(): void {
+  try {
+    if (!existsSync(REFLECTION_FILE)) return;
+
+    const totalReflections = readFileSync(REFLECTION_FILE, 'utf-8')
+      .trim().split('\n').filter(l => l.trim()).length;
+
+    let lastCount = 0;
+    if (existsSync(HARVEST_STATE_FILE)) {
+      try {
+        lastCount = JSON.parse(readFileSync(HARVEST_STATE_FILE, 'utf-8')).lastReflectionCount || 0;
+      } catch { /* use 0 */ }
+    }
+
+    const newCount = totalReflections - lastCount;
+    if (newCount < REFLECTION_AUTO_HARVEST_THRESHOLD) {
+      console.error(`[KnowledgeSync] Reflection harvest: ${newCount}/${REFLECTION_AUTO_HARVEST_THRESHOLD} new entries — not yet`);
+      return;
+    }
+
+    console.error(`[KnowledgeSync] Auto-triggering ReflectionHarvester (${newCount} new reflections)`);
+    const harvesterPath = join(getPaiDir(), 'PAI', 'Tools', 'ReflectionHarvester.ts');
+    if (!existsSync(harvesterPath)) return;
+
+    const { spawn } = require('child_process');
+    const proc = spawn('bun', ['run', harvesterPath], {
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env },
+    });
+    proc.unref();
+  } catch (err) {
+    console.error(`[KnowledgeSync] Auto-harvest check failed (non-fatal): ${err}`);
+  }
+}
+
+// ============================================================================
 
 async function main() {
   try {
@@ -363,6 +407,9 @@ async function main() {
     // Update state with current mtimes
     updateState(state);
 
+    // Auto-trigger ReflectionHarvester if enough new reflections since last harvest
+    maybeAutoHarvest();
+
     console.error('[KnowledgeSync] Done');
     process.exit(0);
   } catch (error) {
@@ -441,6 +488,7 @@ async function runFullHarvest(state: HarvestState): Promise<void> {
   }
 
   updateState(state, true);
+  maybeAutoHarvest();
   console.error('[KnowledgeSync] Full harvest complete');
 }
 
