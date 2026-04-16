@@ -13,8 +13,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { paiPath } from './paths';
 
-const STATE_DIR = paiPath('MEMORY', 'STATE');
-const BUDGET_FILE = join(STATE_DIR, '.inference-budget.json');
+const getStateDir  = () => paiPath('MEMORY', 'STATE');
+const getBudgetFile = () => join(getStateDir(), '.inference-budget.json');
 
 // Max LLM calls per SessionEnd across all hooks
 const MAX_SESSION_END_CALLS = 3;
@@ -34,11 +34,12 @@ function getSessionId(): string {
 }
 
 function loadBudget(): BudgetState {
-  if (!existsSync(BUDGET_FILE)) {
+  const budgetFile = getBudgetFile();
+  if (!existsSync(budgetFile)) {
     return { sessionId: getSessionId(), calls: [], maxCalls: MAX_SESSION_END_CALLS };
   }
   try {
-    const state = JSON.parse(readFileSync(BUDGET_FILE, 'utf-8'));
+    const state = JSON.parse(readFileSync(budgetFile, 'utf-8'));
     // Reset if different session
     if (state.sessionId !== getSessionId()) {
       return { sessionId: getSessionId(), calls: [], maxCalls: MAX_SESSION_END_CALLS };
@@ -50,8 +51,8 @@ function loadBudget(): BudgetState {
 }
 
 function saveBudget(state: BudgetState): void {
-  mkdirSync(STATE_DIR, { recursive: true });
-  writeFileSync(BUDGET_FILE, JSON.stringify(state, null, 2));
+  mkdirSync(getStateDir(), { recursive: true });
+  writeFileSync(getBudgetFile(), JSON.stringify(state, null, 2));
 }
 
 /**
