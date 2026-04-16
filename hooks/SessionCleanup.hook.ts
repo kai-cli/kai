@@ -87,6 +87,62 @@ function clearSessionWork(sessionId?: string): void {
       return;
     }
 
+    // Write HANDOFF.md if PRD has unchecked criteria (session handoff protocol v3.10.0)
+    if (currentWork.session_dir) {
+      const workPath = join(WORK_DIR, currentWork.session_dir);
+      const prdPath = join(workPath, 'PRD.md');
+      if (existsSync(prdPath)) {
+        try {
+          const prdContent = readFileSync(prdPath, 'utf-8');
+          const unchecked = prdContent.match(/^- \[ \] ISC-.+$/gm) || [];
+          const checked = prdContent.match(/^- \[x\] ISC-.+$/gm) || [];
+          if (unchecked.length > 0) {
+            const total = checked.length + unchecked.length;
+            // Extract algorithm phase from state file
+            let phase = 'unknown';
+            try {
+              const algoPath = join(STATE_DIR, 'algorithms', `${currentWork.session_id}.json`);
+              if (existsSync(algoPath)) {
+                const algoState = JSON.parse(readFileSync(algoPath, 'utf-8'));
+                phase = algoState.currentPhase || 'unknown';
+              }
+            } catch {}
+            const decisionsMatch = prdContent.match(/## Decisions\n([\s\S]*?)(?=\n## |\n---|$)/);
+            const decisions = decisionsMatch ? decisionsMatch[1].trim() : 'None recorded';
+            const handoffContent = [
+              `---`,
+              `session_id: ${currentWork.session_id}`,
+              `handoff_type: session_end`,
+              `timestamp: ${new Date().toISOString()}`,
+              `phase_at_handoff: ${phase}`,
+              `progress: ${checked.length}/${total}`,
+              `---`,
+              ``,
+              `## What Was Done`,
+              ...checked.map(c => `- ${c.replace(/^- \[x\] /, '')}`),
+              ``,
+              `## What Remains`,
+              ...unchecked.map(c => `- ${c.replace(/^- \[ \] /, '')}`),
+              ``,
+              `## Key Decisions Made`,
+              decisions,
+              ``,
+              `## Context Needed to Continue`,
+              `- Read PRD at: MEMORY/WORK/${currentWork.session_dir}/PRD.md`,
+              `- Algorithm state at: MEMORY/STATE/algorithms/${currentWork.session_id}.json`,
+              ``,
+              `## Suggested Next Step`,
+              `Resume from ${phase} phase. ${unchecked.length} criteria remain.`,
+            ].join('\n');
+            writeFileSync(join(workPath, 'HANDOFF.md'), handoffContent, 'utf-8');
+            console.error(`[SessionCleanup] HANDOFF.md written (${checked.length}/${total} done)`);
+          }
+        } catch (e) {
+          console.error(`[SessionCleanup] HANDOFF.md generation failed: ${e}`);
+        }
+      }
+    }
+
     // Mark work directory as COMPLETED — update PRD.md frontmatter (primary) or META.yaml (legacy)
     if (currentWork.session_dir) {
       const workPath = join(WORK_DIR, currentWork.session_dir);

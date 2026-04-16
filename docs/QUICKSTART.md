@@ -102,7 +102,7 @@ Spawned automatically when the task matches:
 - **5 Researchers** — Claude, Gemini, Grok, Perplexity, Codex
 - **ProductStrategist, TechnicalReviewer, StakeholderCommunicator** — EM support
 
-### The Algorithm (v3.9.1)
+### The Algorithm (v3.10.0)
 For complex tasks, PAI uses a 7-phase execution framework:
 **Observe** (understand) > **Think** (pressure-test) > **Plan** > **Build** > **Execute** > **Verify** > **Learn**
 
