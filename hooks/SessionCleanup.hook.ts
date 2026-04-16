@@ -33,7 +33,7 @@
  * - Typical execution: <50ms
  */
 
-import { writeFileSync, existsSync, readFileSync, unlinkSync, statSync, renameSync, readdirSync } from 'fs';
+import { writeFileSync, existsSync, readFileSync, unlinkSync, statSync, renameSync, readdirSync, mkdirSync } from 'fs';
 import { atomicWriteJSON } from './lib/atomic';
 import { join } from 'path';
 import { getISOTimestamp } from './lib/time';
@@ -306,6 +306,77 @@ function runRetentionCleanup(): void {
             const stat = statSync(filePath);
             if (now - stat.mtimeMs > maxAgeMs) {
               unlinkSync(filePath);
+              cleaned++;
+            }
+          } catch {}
+        }
+      }
+    } catch {}
+
+    // 3. Cap ratings.jsonl to last 500 entries
+    const ratingsPath = join(MEMORY_DIR, 'LEARNING', 'SIGNALS', 'ratings.jsonl');
+    try {
+      if (existsSync(ratingsPath)) {
+        const lines = readFileSync(ratingsPath, 'utf-8').trim().split('\n').filter(l => l);
+        if (lines.length > 500) {
+          writeFileSync(ratingsPath, lines.slice(-500).join('\n') + '\n', 'utf-8');
+          console.error(`[SessionCleanup] Capped ratings.jsonl: ${lines.length} → 500`);
+          cleaned++;
+        }
+      }
+    } catch (e) { console.error(`[SessionCleanup] ratings cap failed: ${e}`); }
+
+    // 4. Cap algorithm-reflections.jsonl to last 200 entries
+    const reflectionsPath = join(MEMORY_DIR, 'LEARNING', 'REFLECTIONS', 'algorithm-reflections.jsonl');
+    try {
+      if (existsSync(reflectionsPath)) {
+        const lines = readFileSync(reflectionsPath, 'utf-8').trim().split('\n').filter(l => l);
+        if (lines.length > 200) {
+          writeFileSync(reflectionsPath, lines.slice(-200).join('\n') + '\n', 'utf-8');
+          console.error(`[SessionCleanup] Capped algorithm-reflections.jsonl: ${lines.length} → 200`);
+          cleaned++;
+        }
+      }
+    } catch (e) { console.error(`[SessionCleanup] reflections cap failed: ${e}`); }
+
+    // 5. Archive LEARNING category files older than 90 days
+    const LEARNING_TTL_MS = 90 * ONE_DAY_MS;
+    for (const category of ['ALGORITHM', 'FAILURES', 'SYSTEM']) {
+      const categoryDir = join(MEMORY_DIR, 'LEARNING', category);
+      if (!existsSync(categoryDir)) continue;
+      try {
+        for (const monthDir of readdirSync(categoryDir, { withFileTypes: true })) {
+          if (!monthDir.isDirectory()) continue;
+          const monthPath = join(categoryDir, monthDir.name);
+          for (const file of readdirSync(monthPath)) {
+            if (!file.endsWith('.md') && !file.endsWith('.jsonl')) continue;
+            const filePath = join(monthPath, file);
+            try {
+              if (now - statSync(filePath).mtimeMs > LEARNING_TTL_MS) {
+                const archiveDir = join(categoryDir, '.archive', monthDir.name);
+                mkdirSync(archiveDir, { recursive: true });
+                renameSync(filePath, join(archiveDir, file));
+                cleaned++;
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+    }
+
+    // 6. Archive RELATIONSHIP months older than 6 months
+    const relationshipDir = join(MEMORY_DIR, 'RELATIONSHIP');
+    try {
+      if (existsSync(relationshipDir)) {
+        for (const monthDir of readdirSync(relationshipDir, { withFileTypes: true })) {
+          if (!monthDir.isDirectory() || monthDir.name.startsWith('.')) continue;
+          const monthPath = join(relationshipDir, monthDir.name);
+          try {
+            if (now - statSync(monthPath).mtimeMs > 180 * ONE_DAY_MS) {
+              const archiveDir = join(relationshipDir, '.archive');
+              mkdirSync(archiveDir, { recursive: true });
+              renameSync(monthPath, join(archiveDir, monthDir.name));
+              console.error(`[SessionCleanup] Archived RELATIONSHIP/${monthDir.name}`);
               cleaned++;
             }
           } catch {}
