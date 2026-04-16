@@ -57,6 +57,9 @@ Harvesting (periodic):
 │   │   └── algorithm-reflections.jsonl
 │   └── SIGNALS/            # User satisfaction ratings
 │       └── ratings.jsonl
+├── KNOWLEDGE/              # Cross-project distilled knowledge (auto-generated)
+│   ├── INDEX.md            # Master index of all domains
+│   └── {domain}.md         # Distilled domain knowledge (firmware, products, etc.)
 ├── RESEARCH/               # Agent output captures
 │   └── YYYY-MM/
 ├── SECURITY/               # Security audit events
@@ -184,6 +187,24 @@ This is the actual "firehose" - every message, tool call, and response. PAI leve
 1. Root cause identification - what sequence led to the failure?
 2. Pattern detection - do similar failures share characteristics?
 3. Systemic improvement - what changes would prevent this class of failure?
+
+### KNOWLEDGE/ - Cross-Project Distilled Knowledge
+
+**What populates it:** `KnowledgeHarvester.ts` (periodic, on-demand)
+**Content:** Distilled domain summaries from all project memory files
+**Format:** `KNOWLEDGE/{domain}.md` + `KNOWLEDGE/INDEX.md`
+**Purpose:** Break project isolation by making cross-project knowledge available everywhere
+
+**How it works:**
+1. KnowledgeHarvester scans all `~/.claude/projects/*/memory/` files (currently 40 files across 8 projects)
+2. Extracts key facts (headings, bold text, table rows, bullets) - rule-based, no LLM
+3. Clusters facts into domains (firmware, products, api-and-services, devops, ui, security, ai-infrastructure)
+4. Deduplicates across projects using Jaccard similarity
+5. Distills each domain into ~200-300 word summary via fast LLM inference (Haiku)
+
+**Session injection:** `LoadContext.hook.ts` reads KNOWLEDGE/ files at session start. Selects 2-3 domains relevant to the current project directory (e.g., pai-config gets ai-infrastructure; WiFi-Troubleshooter gets products + ui + api). Controlled by `settings.dynamicContext.knowledgeInjection`.
+
+**Regeneration:** `bun run PAI/Tools/KnowledgeHarvester.ts` (full harvest) or `--scan` (inventory only)
 
 ### RESEARCH/ - Agent Outputs
 

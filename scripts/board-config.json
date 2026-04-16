@@ -59,6 +59,13 @@
       "pinned": true
     },
     {
+      "name": "Firmware Inspector",
+      "path": "~/Projects/Firmware_Inspector/firmware-inspector/",
+      "description": "OpenWRT device inspection toolkit — serial/SSH access, TR-181 validation, YAML rules, safety policy, evidence collection",
+      "tags": ["your-company", "tools", "firmware", "tr-181"],
+      "pinned": true
+    },
+    {
       "name": "CLI Hidden Commands Reference",
       "path": "~/Projects/cli-hidden-commands/",
       "description": "Undocumented CLI commands reference guide",

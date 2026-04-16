@@ -76,7 +76,7 @@ These won't crash but will confuse both the AI and users.
 
 Updated all stale version strings to 4.4.0:
 - `config/preferences.jsonc:pai.version` → 4.4.0
-- `install.sh` banner → v4.4.0 / Algo v3.9.1
+- `install.sh` banner → v4.4.0 / Algo v3.10.0
 - `config/spinner-tips.json` → v4.4.0
 
 Future: centralize to ONE source with dynamic injection.
@@ -123,7 +123,7 @@ Removed 11 old release directories (v2.3 through v4.3.1), saving ~314MB. Only v4
 
 ## 3.4 Algorithm Version Accumulation — ✅ FIXED
 
-Removed v3.5.0.md, v3.7.0.md, v3.8.0.md (~64KB). Only v3.9.1.md + LATEST pointer + supporting docs remain.
+Removed v3.5.0.md, v3.7.0.md, v3.8.0.md (~64KB). Only v3.10.0.md + LATEST pointer + supporting docs remain.
 
 ## 3.5 Banner Tool Proliferation — 📦 NEEDS DESIGN
 

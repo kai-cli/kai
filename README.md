@@ -25,7 +25,7 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 
 | Directory | Contents |
 |-----------|----------|
-| `PAI/` | Core system: Algorithm v3.9.1, context routing, system docs |
+| `PAI/` | Core system: Algorithm v3.10.0, context routing, system docs |
 | `skills/` | 51 skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
 | `hooks/` | 38 lifecycle hooks (security guards, formatters, analytics, cleanup) |
 | `agents/` | 18 named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
@@ -38,7 +38,7 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 
 See **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** for a detailed comparison with Daniel Miessler's original PAI.
 
-Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, 18 named agents, Algorithm v3.9.1 with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
+Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, 18 named agents, Algorithm v3.10.0 with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
 
 ## Configuration
 

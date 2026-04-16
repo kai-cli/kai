@@ -1,0 +1,13 @@
+// KNOWN-GOOD Bedrock Configuration — Last verified: 2026-03-30
+// Copy this block into preferences.jsonc env section to restore Bedrock.
+// Profile: your-aws-profile | Account: REDACTED-AWS-ACCOUNT | Region: us-west-2
+//
+// To restore: replace the Bedrock section in preferences.jsonc with these values,
+// then run: bun ~/.claude/hooks/handlers/BuildSettings.ts
+{
+  "CLAUDE_CODE_USE_BEDROCK": "1",
+  "AWS_REGION": "us-west-2",
+  "AWS_PROFILE": "your-aws-profile",
+  "ANTHROPIC_MODEL": "global.anthropic.claude-opus-4-6-v1",
+  "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+}
