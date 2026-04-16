@@ -1,7 +1,7 @@
 # PAI — Next Steps
 
 > Canonical repo: `kai-cli/pai-config`
-> Current: v4.6.0 shipping (2026-04-02)
+> Current: v4.8.0 in progress (PR #2 open)
 
 ---
 
@@ -25,42 +25,62 @@
 
 ---
 
-## v4.7.0 — Next Release
+## v4.7.0 — Shipped (PR #1 merged 2026-04-16)
 
-### Algorithm Improvements (P1) — DONE (v3.10.0)
-- [x] Phase-locked tool access — read-only in OBSERVE/THINK, full write in BUILD/EXECUTE, read+test in VERIFY
-- [x] Triangulation verification — VERIFY cross-references ISC criteria, actual output, and original request
-- [x] Session handoff protocol — structured continuation state at session end/compaction (LEARN + PreCompact + SessionEnd)
-
-### Security & Quality Gates (P1)
-- [ ] WebFetch/WebSearch PreToolUse guard — outbound request validation
-- [ ] PostToolUse code quality gate — error detection after tool execution
-
-### Team Features
-- [ ] Org-config patterns — shared team settings vs personal overrides
-- [ ] `pai setup --team` mode (stretch)
-
-### Board & Memory (P2)
-- [ ] Board new PRD creation — create work items directly from the UI
-- [ ] Architectural Decision Records — `MEMORY/DECISIONS/`
-- [ ] Project state snapshots — periodic `MEMORY/SNAPSHOTS/` at version releases
-- [ ] Skill collections additions — Trail of Bits, command suites, DevOps
+- [x] Algorithm v3.11.0 — pipeline hop verification, pre-flight enforcement
+- [x] KnowledgeSync.hook.ts — incremental SessionEnd re-distillation, 7-day full harvest
+- [x] Context routing — DU certification memory, Research-Agent memory, Du_tracking path
 
 ---
 
-## Backlog (Beyond 4.7.0)
+## v4.8.0 — In Progress (PR #2 open)
+
+### Memory Curation Infrastructure
+- [x] Token optimization — CLAUDE.md dedup, conditional TELOS, compressed steering rules (-2,100 tokens/session)
+- [x] `inference-budget.ts` — shared SessionEnd LLM cap (max 3 calls/session)
+- [x] `staging.ts` — MEMORY/STAGING/ with 14-day draft expiry
+- [x] `pai curate` CLI — full interactive weekly review (staleness, domains, drafts, insights, stats)
+- [x] Archive/restore — stale files → .archive/ with `pai curate restore`
+- [x] Read telemetry — LoadContext logs injected domains to memory-reads.jsonl
+- [x] Hard token budget cap — 16k char limit with priority-based truncation
+
+### Self-Learning Loop
+- [x] `ReflectionHarvester.ts` (`pai harvest`) — 62 reflections → Jaccard dedup → Haiku synthesis → STAGING
+- [x] Rating-triggered drafts — rating 8-10 → success pattern; rating 4-5 → correction (RatingCapture)
+- [x] Nudge system — session start reminder when STAGING has unreviewed drafts >14 days
+- [x] Auto-harvest trigger — KnowledgeSync fires ReflectionHarvester when ≥10 new reflections
+
+### Security P1 (carried from v4.7.0)
+- [x] WebFetch/WebSearch PreToolUse guard — blocks internal network ranges, logs outbound
+- [x] PostToolUse secret detection — scans Bash/WebFetch output for 9 credential patterns
+
+### Tests
+- [x] 248 tests passing (198 → 248, +50 new across InferenceBudget, Staging, WebFetchGuard, SecretDetector, ReflectionHarvester)
+
+---
+
+## v4.9.0 — Backlog
+
+### Algorithm Improvements
+- [ ] Parallelization forcing function — mandatory gate in PLAN when 3+ independent ops
+- [ ] Phantom capability elimination — prune unused capabilities in PLAN before EXECUTE
+- [ ] Version string centralization — single VERSION source, no more 20-file bumps
+
+### Memory System
+- [ ] Learning Pattern Synthesis automation — auto-trigger when >20 new ratings
+- [ ] Confidence calibration — track approval rate, adjust draft thresholds over time
+- [ ] Batch approve — `pai curate approve-all --confidence 0.8`
 
 ### Infrastructure
+- [ ] Hook timeout hardening — per-hook timeout overrides in settings.json
+- [ ] Test coverage expansion — SecurityValidator, RatingCapture, KnowledgeSync, LoadContext
 - [ ] Memory TTL/archival — WISDOM/, LEARNING/, RELATIONSHIP/ grow unbounded
-- [ ] Hook timeout guards — no protection against hung hooks
-- [ ] Split settings.json: static config vs runtime state
-- [ ] Test coverage expansion — 7 test files covering 38 hooks + 51 skills + 18 agents
 
 ### Product Direction
+- [ ] Team features — org-config patterns, `pai setup --team` mode
 - [ ] Local model support — Ollama/llama.cpp for privacy and cost control
 - [ ] Remote access — PAI from mobile/web/other machines
 - [ ] External notifications — Discord/Slack/email for long-running task completion
-- [ ] Model routing — route tasks to different models by complexity
 
 ### Deferred EM/PLM Work (Tier 5)
 - [ ] NPI Dashboard — needs product thinking: gates, milestones, risk roll-ups
