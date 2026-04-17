@@ -466,6 +466,46 @@ async function checkActiveProgress(paiDir: string): Promise<string | null> {
   return summary;
 }
 
+/**
+ * Apply token budget cap to dynamic context sources.
+ * Priority: knowledge (1, highest) > learning (2) > relationship (3, dropped first).
+ * Returns trimmed versions of each source that fit within budgetChars total.
+ * Exported for unit testing.
+ */
+export function applyTokenBudget(
+  sources: { knowledge: string; learning: string; relationship: string },
+  budgetChars: number
+): { knowledge: string; learning: string; relationship: string } {
+  const result = { ...sources };
+  const order = [
+    { name: 'relationship' as const, priority: 3 },
+    { name: 'learning' as const, priority: 2 },
+    { name: 'knowledge' as const, priority: 1 },
+  ];
+
+  const total = () => result.knowledge.length + result.learning.length + result.relationship.length;
+
+  if (total() <= budgetChars) return result;
+
+  let excess = total() - budgetChars;
+
+  // Drop/truncate lowest priority first
+  for (const { name } of order) {
+    if (excess <= 0) break;
+    const len = result[name].length;
+    if (len === 0) continue;
+    if (len <= excess) {
+      result[name] = '';
+      excess -= len;
+    } else {
+      result[name] = result[name].substring(0, len - excess) + '\n\n[... truncated to fit token budget]';
+      excess = 0;
+    }
+  }
+
+  return result;
+}
+
 async function main() {
   try {
     // Subagents don't need dynamic context injection
@@ -564,46 +604,14 @@ async function main() {
       console.error('⏭️ Skipped knowledge injection (disabled)');
     }
 
-    // Token budget cap: prevent dynamic context from inflating unbounded.
-    // ~4 chars ≈ 1 token. Cap at 4,000 tokens ≈ 16,000 chars of dynamic content.
-    // Priority order (highest first): knowledge > learning > relationship
-    const TOKEN_BUDGET_CHARS = 16000;
-    const dynamicSources = [
-      { name: 'knowledge', content: knowledgeContext, priority: 1 },
-      { name: 'learning', content: learningContext, priority: 2 },
-      { name: 'relationship', content: relationshipContext ?? '', priority: 3 },
-    ].filter(s => s.content.length > 0);
-
-    const totalChars = dynamicSources.reduce((sum, s) => sum + s.content.length, 0);
-
-    if (totalChars > TOKEN_BUDGET_CHARS) {
-      console.error(`⚠️ Dynamic context over budget: ${totalChars} chars (cap: ${TOKEN_BUDGET_CHARS}). Truncating lowest-priority sources.`);
-      // Truncate from lowest priority first
-      let excess = totalChars - TOKEN_BUDGET_CHARS;
-      const sorted = [...dynamicSources].sort((a, b) => b.priority - a.priority);
-      for (const source of sorted) {
-        if (excess <= 0) break;
-        if (source.content.length <= excess) {
-          console.error(`  ⏭️ Dropped ${source.name} (${source.content.length} chars) to stay within budget`);
-          // Clear the source
-          if (source.name === 'relationship') relationshipContext = null;
-          else if (source.name === 'learning') learningContext = '';
-          else if (source.name === 'knowledge') knowledgeContext = '';
-          excess -= source.content.length;
-        } else {
-          // Truncate this source
-          const newLen = source.content.length - excess;
-          const truncated = source.content.substring(0, newLen) + '\n\n[... truncated to fit token budget]';
-          console.error(`  ✂️ Truncated ${source.name} from ${source.content.length} to ${newLen} chars`);
-          if (source.name === 'relationship') relationshipContext = truncated;
-          else if (source.name === 'learning') learningContext = truncated;
-          else if (source.name === 'knowledge') knowledgeContext = truncated;
-          excess = 0;
-        }
-      }
-    } else {
-      console.error(`📊 Dynamic context budget: ${totalChars}/${TOKEN_BUDGET_CHARS} chars (${Math.round(totalChars / TOKEN_BUDGET_CHARS * 100)}%)`);
-    }
+    // Token budget cap — delegate to exported pure function for testability
+    const budgeted = applyTokenBudget(
+      { knowledge: knowledgeContext, learning: learningContext, relationship: relationshipContext ?? '' },
+      16000
+    );
+    knowledgeContext     = budgeted.knowledge;
+    learningContext      = budgeted.learning;
+    relationshipContext  = budgeted.relationship || null;
 
     // Inject dynamic context if we have any
     if (relationshipContext || learningContext || knowledgeContext) {
@@ -662,4 +670,4 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
   }
 }
 
-main();
+if (import.meta.main) { main(); }
