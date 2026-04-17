@@ -256,6 +256,80 @@ async function distillDomain(domain: string, facts: string[]): Promise<string | 
 }
 
 // ============================================================================
+// ============================================================================
+// Auto-harvest reflections + auto-synthesize patterns
+// ============================================================================
+
+const REFLECTION_AUTO_HARVEST_THRESHOLD = 10;
+const REFLECTION_FILE = join(getPaiDir(), 'MEMORY', 'LEARNING', 'REFLECTIONS', 'algorithm-reflections.jsonl');
+const HARVEST_STATE_FILE = join(getPaiDir(), 'MEMORY', 'STATE', 'reflection-harvest-state.json');
+const RATINGS_FILE = join(getPaiDir(), 'MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
+const SYNTHESIS_STATE_FILE = join(getPaiDir(), 'MEMORY', 'STATE', 'synthesis-state.json');
+const PATTERN_SYNTHESIS_THRESHOLD = 20;
+
+function countLines(filePath: string): number {
+  if (!existsSync(filePath)) return 0;
+  try {
+    return readFileSync(filePath, 'utf-8').trim().split('\n').filter(l => l.trim()).length;
+  } catch { return 0; }
+}
+
+function spawnDetached(tool: string, args: string[] = []): void {
+  const { spawn } = require('child_process');
+  const proc = spawn('bun', ['run', tool, ...args], {
+    detached: true,
+    stdio: 'ignore',
+    env: { ...process.env },
+  });
+  proc.unref();
+}
+
+function maybeAutoHarvest(): void {
+  try {
+    const totalReflections = countLines(REFLECTION_FILE);
+    let lastCount = 0;
+    if (existsSync(HARVEST_STATE_FILE)) {
+      try { lastCount = JSON.parse(readFileSync(HARVEST_STATE_FILE, 'utf-8')).lastReflectionCount || 0; } catch {}
+    }
+    const newCount = totalReflections - lastCount;
+    if (newCount < REFLECTION_AUTO_HARVEST_THRESHOLD) {
+      console.error(`[KnowledgeSync] Reflection harvest: ${newCount}/${REFLECTION_AUTO_HARVEST_THRESHOLD} new — not yet`);
+      return;
+    }
+    const harvesterPath = join(getPaiDir(), 'PAI', 'Tools', 'ReflectionHarvester.ts');
+    if (!existsSync(harvesterPath)) return;
+    console.error(`[KnowledgeSync] Auto-triggering ReflectionHarvester (${newCount} new reflections)`);
+    spawnDetached(harvesterPath);
+  } catch (err) {
+    console.error(`[KnowledgeSync] Auto-harvest check failed (non-fatal): ${err}`);
+  }
+}
+
+function maybeSynthesizePatterns(): void {
+  try {
+    const totalRatings = countLines(RATINGS_FILE);
+    let lastCount = 0;
+    if (existsSync(SYNTHESIS_STATE_FILE)) {
+      try { lastCount = JSON.parse(readFileSync(SYNTHESIS_STATE_FILE, 'utf-8')).lastRatingCount || 0; } catch {}
+    }
+    const newCount = totalRatings - lastCount;
+    if (newCount < PATTERN_SYNTHESIS_THRESHOLD) {
+      console.error(`[KnowledgeSync] Pattern synthesis: ${newCount}/${PATTERN_SYNTHESIS_THRESHOLD} new ratings — not yet`);
+      return;
+    }
+    const synthPath = join(getPaiDir(), 'PAI', 'Tools', 'LearningPatternSynthesis.ts');
+    if (!existsSync(synthPath)) return;
+    console.error(`[KnowledgeSync] Auto-triggering LearningPatternSynthesis (${newCount} new ratings)`);
+    spawnDetached(synthPath, ['--week']);
+    // Update synthesis state
+    mkdirSync(join(getPaiDir(), 'MEMORY', 'STATE'), { recursive: true });
+    writeFileSync(SYNTHESIS_STATE_FILE, JSON.stringify({ lastRatingCount: totalRatings, lastRun: new Date().toISOString() }, null, 2));
+  } catch (err) {
+    console.error(`[KnowledgeSync] Pattern synthesis check failed (non-fatal): ${err}`);
+  }
+}
+
+// ============================================================================
 // Main
 // ============================================================================
 // Auto-harvest reflections
@@ -407,8 +481,9 @@ async function main() {
     // Update state with current mtimes
     updateState(state);
 
-    // Auto-trigger ReflectionHarvester if enough new reflections since last harvest
+    // Auto-trigger background tools if thresholds met
     maybeAutoHarvest();
+    maybeSynthesizePatterns();
 
     console.error('[KnowledgeSync] Done');
     process.exit(0);
@@ -489,6 +564,7 @@ async function runFullHarvest(state: HarvestState): Promise<void> {
 
   updateState(state, true);
   maybeAutoHarvest();
+  maybeSynthesizePatterns();
   console.error('[KnowledgeSync] Full harvest complete');
 }
 
