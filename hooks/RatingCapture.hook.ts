@@ -98,7 +98,7 @@ async function readStdinWithTimeout(timeout: number = 5000): Promise<string> {
  * Matches: "7", "8 - good work", "6: needs work", "9 excellent", "10!"
  * Rejects: "3 items", "5 things to fix", "7th thing"
  */
-function parseExplicitRating(prompt: string): { rating: number; comment?: string } | null {
+export function parseExplicitRating(prompt: string): { rating: number; comment?: string } | null {
   const trimmed = prompt.trim();
   // Rating must be: number alone, or number followed by whitespace/dash/colon then comment
   // Reject: "10/10", "3.5", "7th", "5x" — number followed by non-separator chars
@@ -372,7 +372,7 @@ This response was rated ${rating}/10 by ${getPrincipalName()}. Use this as an im
  * Scan transcript for correction signals (user redirecting AI).
  * Returns true if corrections detected — used for rating 4-5 drafts.
  */
-function detectCorrections(transcriptPath: string): string[] {
+export function detectCorrections(transcriptPath: string): string[] {
   const CORRECTION_PATTERNS = [
     /\bno[,.]?\s+(i\s+meant|that'?s?\s+not|don'?t|wait)/i,
     /\bthat'?s?\s+not\s+(what\s+i|right|correct|it)/i,
@@ -679,4 +679,4 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) { main(); }

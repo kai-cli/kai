@@ -452,6 +452,23 @@ Critical PAI documentation organized by domain. Load on-demand based on context.
 | **Notification System** | `SYSTEM/THENOTIFICATIONSYSTEM.md` | Voice, visual notifications |
 | **Tools Reference** | `SYSTEM/TOOLS.md` | Core tools inventory |
 
+**Memory Management CLI (`pai` commands):**
+
+| Command | Purpose | When to use |
+|---------|---------|-------------|
+| `pai curate` | Interactive weekly memory review — staleness, domain health, draft approval | Weekly maintenance; review pending drafts |
+| `pai curate --dry-run` | Show report without action prompts | Inspect memory health without changes |
+| `pai curate --quick` | Staleness + drafts only (skip domains/insights) | Quick check |
+| `pai curate stats` | Memory system statistics | Check file/domain counts |
+| `pai curate stale` | List stale memory files | Identify candidates for archival |
+| `pai curate domains` | Knowledge domain health | Check distillation freshness |
+| `pai curate drafts` | List pending draft memories in STAGING | See what RatingCapture generated |
+| `pai curate approve <n>` | Approve draft #n → moves to project memory | Accept auto-generated memory |
+| `pai curate reject <n>` | Reject draft #n | Discard auto-generated memory |
+| `pai curate restore <proj> <file>` | Restore archived memory file | Undo a stale archival |
+| `pai harvest` | Run ReflectionHarvester — synthesize algorithm reflections into behavioral lessons | Run manually or fires auto when ≥10 new reflections |
+| `pai harvest --dry-run --force` | Preview lessons without writing to STAGING | Review what would be learned |
+
 **USER Context:** `USER/` contains personal data—identity, contacts, health, finances, projects. See `USER/README.md` for full index.
 
 **Project Routing:**
