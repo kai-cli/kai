@@ -1,8 +1,9 @@
 # PAI v5.0.0 — Public Release Plan
 
 **Created:** 2026-04-17
+**Reviewed:** 2026-04-17 — issues addressed
 **Source:** 3 Architect council agents (repo/install, config layer, codebase audit)
-**Status:** Planning — fork decision pending
+**Status:** Planning — fork decisions pending (see bottom)
 
 ---
 
@@ -17,7 +18,7 @@ PAI 5.0.0 is a public open-source release of the personal AI infrastructure syst
 
 ## Decision: Fork the Repository
 
-Create a **new public repo** (`pai` or similar) forked from the current codebase. The personal repo (`kai-cli/pai-config`) stays frozen at v4.9.0 as your live installation.
+Create a **new public repo** forked from the current codebase. The personal repo (`kai-cli/pai-config`) stays frozen at v4.9.0 as your live installation.
 
 **Why fork, not in-place refactor:**
 - Clean slate — no accumulated personal log files, git history with personal data
@@ -25,45 +26,77 @@ Create a **new public repo** (`pai` or similar) forked from the current codebase
 - Public repo can be a clean generic system without risk to your live setup
 - Framework improvements (Algorithm versions, security hooks) can be manually ported — ~5 min per bump
 
-**Pending decisions:**
+**Pending decisions (must resolve before starting):**
 - [ ] Repo name: `pai`, `claude-pai`, `pai-framework`, or other?
 - [ ] GitHub org/account: personal `kai-cli` or new org?
+- [ ] Install URL: `https://pai.sh/install` (needs domain) or raw GitHub URL?
 
 ---
 
-## Install Architecture (Agent 1)
+## Install Architecture
 
 ### Install command
 ```bash
-curl -fsSL https://pai.sh/install | bash
+curl -fsSL https://raw.githubusercontent.com/ORG/pai/main/install.sh | bash
 # or with custom location:
-curl -fsSL https://pai.sh/install | PAI_HOME=~/Projects/pai bash
+curl -fsSL ... | PAI_HOME=~/Projects/pai bash
 ```
 
-### What happens
-1. Clone repo to `~/pai` (configurable via `PAI_HOME`)
-2. Create symlink: `ln -s ~/pai ~/.claude`  
-   *(Claude Code reads `~/.claude/` — symlink keeps it a live git repo)*
-3. Run `PAI-Install/main.ts` interactive wizard
-4. Generate user config files from templates
-5. Build `settings.json` and `CLAUDE.md`
+### Installer flow — existing ~/.claude/ handling (CRITICAL)
 
-### Why `curl | bash` not npm/brew
-- PAI must be a git repo post-install (for `git pull` upgrades)
-- Bun already installed via Claude Code — no new runtime dependency
-- oh-my-zsh proved this pattern at millions of users with the same constraint
+Every existing Claude Code user has `~/.claude/` as a directory. The symlink step is the most likely first-run failure. The installer must handle all three cases:
+
+```bash
+# Case A: ~/.claude/ does not exist (fresh machine)
+git clone REPO ~/pai
+ln -s ~/pai ~/.claude
+
+# Case B: ~/.claude/ is a regular directory (existing Claude Code user)
+echo "~/.claude/ already exists. PAI will back it up and install."
+mv ~/.claude ~/.claude.pre-pai.backup
+git clone REPO ~/pai
+# Migrate existing Claude Code data into the new repo
+mv ~/.claude.pre-pai.backup/settings.json ~/pai/settings.json.pre-pai 2>/dev/null
+mv ~/.claude.pre-pai.backup/projects ~/pai/projects 2>/dev/null
+mv ~/.claude.pre-pai.backup/history.jsonl ~/pai/history.jsonl 2>/dev/null
+ln -s ~/pai ~/.claude
+echo "Original ~/.claude backed up to ~/.claude.pre-pai.backup"
+
+# Case C: ~/.claude/ is already a symlink
+EXISTING=$(readlink ~/.claude)
+if git -C "$EXISTING" remote get-url origin 2>/dev/null | grep -q "pai"; then
+  echo "PAI already installed at $EXISTING. Run: pai update"
+  exit 0
+else
+  echo "~/.claude is a symlink to $EXISTING. Move it first or set PAI_HOME."
+  exit 1
+fi
+```
+
+### Symlink and Claude Code compatibility
+Claude Code resolves hooks, settings.json, and CLAUDE.md from `~/.claude/`. Symlink traversal must be verified to work with Claude Code's hook resolution. **Add an explicit test in Phase A:** install into a temp dir via symlink and verify hooks fire correctly.
+
+### What happens after symlink
+1. Run `PAI-Install/main.ts` interactive wizard
+2. Generate user config files from templates
+3. Build `settings.json` and `CLAUDE.md` via BuildSettings.ts
 
 ### Upgrade
 ```bash
 pai update
 ```
-→ `git pull --ff-only` + `BuildSettings.ts` rebuild + run versioned migrations in `scripts/migrations/`
+
+**Conflict handling policy:**
+- `git pull --ff-only` will error if user has modified system files (hooks/*.ts, skills/, etc.)
+- Policy: **system files are read-only for users.** Customizations go in `hooks/user/` (gitignored) or `config/preferences.local.jsonc`.
+- If `git pull --ff-only` fails, the upgrade prints a clear error: "You have local changes to system files. Move them to hooks/user/ first, then re-run pai update."
+- Upgrade never force-pushes or silently discards changes.
 
 ### Three-category file model
 | Category | `git pull` touches? | User changes? | Examples |
 |----------|-------------------|---------------|---------|
 | **System** | Yes | No | hooks/*.ts, Algorithm/, skills/, config/hooks.jsonc |
-| **User** | Never | Yes | PAI/USER/, config/identity.jsonc, .env |
+| **User** | Never | Yes | PAI/USER/, config/identity.jsonc, hooks/user/*.ts, .env |
 | **Runtime** | Never | Generated | settings.json, CLAUDE.md, MEMORY/ |
 
 ### Template/instance pattern
@@ -73,7 +106,7 @@ pai update
 
 ---
 
-## Configuration Layer (Agent 2)
+## Configuration Layer
 
 ### The One New File: `config/domains.jsonc`
 
@@ -81,7 +114,6 @@ All hardcoded Your Company content collapses into a single user-editable file:
 
 ```jsonc
 {
-  // Define knowledge domains relevant to your work
   "definitions": {
     "backend": {
       "keywords": ["rails", "django", "postgres", "redis", "api"],
@@ -92,28 +124,30 @@ All hardcoded Your Company content collapses into a single user-editable file:
       "description": "Infrastructure and deployment"
     }
   },
-
-  // Map project directory patterns to relevant domains
   "projectMapping": [
-    { "pattern": "my-app", "domains": ["backend", "frontend"] },
-    { "pattern": "infra", "domains": ["devops"] }
+    { "pattern": "my-app", "domains": ["backend", "frontend"] }
   ],
-
-  // Projects to skip knowledge injection entirely
   "excludedProjects": ["personal-notes", "resume"],
-
-  // Max domains injected per session (token budget)
   "maxDomainsPerSession": 3
 }
 ```
 
 ### What this replaces
-- `DOMAIN_KEYWORDS` in KnowledgeSync.hook.ts (R4)
-- `DOMAIN_DESCRIPTIONS` in KnowledgeSync.hook.ts (R4)
-- `PROJECT_DOMAIN_MAP` in knowledge-readback.ts (R3)
-- `EXCLUDED_PROJECTS` in knowledge-readback.ts (R3)
-- Domain definitions in KnowledgeHarvester.ts (R13)
-- `DOMAIN_PATTERNS` in LocalContextFirst.hook.ts (R5)
+- `DOMAIN_KEYWORDS` + `DOMAIN_DESCRIPTIONS` in KnowledgeSync.hook.ts
+- `PROJECT_DOMAIN_MAP` + `EXCLUDED_PROJECTS` in knowledge-readback.ts
+- Domain definitions in KnowledgeHarvester.ts
+- `DOMAIN_PATTERNS` in LocalContextFirst.hook.ts
+
+### LocalContextFirst.hook.ts — generic version design
+The current hook detects Your Company-specific topics in the prompt and injects local context paths. The generic version does the same thing but reads patterns from `config/domains.jsonc`.
+
+**Generic behavior:**
+1. Read `projectMapping` from domains.jsonc
+2. Check if current prompt mentions keywords from any mapped domain
+3. If match: inject a brief reminder: "Local knowledge available at `[path]` — check before searching"
+4. The paths are defined by the user in `config/domains.jsonc` under an optional `localPaths` field
+
+If the user hasn't configured `localPaths`, the hook does nothing (zero output). This makes it genuinely optional.
 
 ### New lib: `hooks/lib/config-loader.ts`
 Single module with caching that all hooks import. No hook reads domain config directly.
@@ -132,6 +166,8 @@ Steps 3-6: [optional] Bedrock, projects, custom domains, review
 
 Generates 8 files from templates in one pass. Idempotent on re-run.
 
+**PAI-Install/main.ts note:** A stub already exists in the current repo. Phase C is a full rewrite to support the 6-step wizard, archetype selection, and template rendering — not an extension of the existing stub.
+
 ### Four archetype starter configs ship in repo
 - `config/starters/fullstack-domains.jsonc`
 - `config/starters/datascience-domains.jsonc`
@@ -140,83 +176,141 @@ Generates 8 files from templates in one pass. Idempotent on re-run.
 
 ---
 
-## Codebase Audit — What Must Change (Agent 3)
+## Codebase Audit — What Must Change
 
-### RED: Must fix before public release (20 items)
+### R14 Skills — Disposition Decision
 
-| # | File | Issue |
-|---|------|-------|
-| R1 | `config/preferences.jsonc` | ~~AWS credentials~~ **DONE in v4.9.0** |
-| R2 | `config/bedrock-known-good.jsonc` | ~~Personal AWS~~ **DONE in v4.9.0** |
-| R3 | `hooks/lib/knowledge-readback.ts` | `EXCLUDED_PROJECTS` + `PROJECT_DOMAIN_MAP` hardcoded |
-| R4 | `hooks/KnowledgeSync.hook.ts` | `DOMAIN_KEYWORDS` + `DOMAIN_DESCRIPTIONS` Your Company-specific |
-| R5 | `hooks/LocalContextFirst.hook.ts` | Entire hook is Your Company-specific |
-| R6 | `PAI/CONTEXT_ROUTING.md` | Entire Your Company/firmware section + cross-project memory paths |
-| R7 | `PAI/PAIAGENTSYSTEM.md` | OpenWRT/Your Company agents section |
-| R8 | `agents/StakeholderCommunicator.md` | "YourName", "Your Company", "Fortinet" throughout |
-| R8 | `agents/ProductStrategist.md` | "YourName", "Your Company NPI programs" throughout |
-| R8 | `agents/TechnicalReviewer.md` | "YourName", "Your Company/Fortinet" throughout |
-| R9 | `PAI/Tools/Banner*.ts` (4 files) | Fallback hardcoded `kai-cli/pai-config` URL |
-| R10 | `install.sh` | `kai-cli/pai-config` URL |
-| R11 | `scripts/board-config.json` | Personal project library |
-| R12 | `Plans/archive/` | Personal work plans tracked in git |
-| R13 | `PAI/Tools/KnowledgeHarvester.ts` | Your Company domain definitions |
-| R14 | `skills/CompetitiveIntel/` | Your Company Wireless throughout |
-| R14 | `skills/StandardsTracker/` | TR-369 Your Company references |
-| R14 | `skills/NPITracker/` | Your Company Pinnacle product line |
-| R14 | `skills/WeeklyStatus/` | Fortinet leadership update |
-| R15 | `skills/OneOnOne/` | "YourName" in workflow |
-| R16 | `skills/Research/` | Your Company/firmware pre-check |
-| R17 | `skills/PAI/SKILL.md` | `principal.name - User's name (YourName)` |
-| R18 | `docs/` (multiple) | `kai-cli/pai-config` URLs throughout |
-| R19 | `MEMORY/WISDOM/README.md` | "YourName's personal" references |
-| R20 | `README.md` | `kai-cli/pai-config` clone URL |
+The four Your Company-vertical skills need an explicit call before Phase A:
+
+| Skill | Verdict | Rationale |
+|-------|---------|-----------|
+| `CompetitiveIntel/` | **Move to `skills-examples/`** | Useful template showing how to build domain-specific competitive tracking. Keep as example, not shipped as active skill. |
+| `StandardsTracker/` | **Move to `skills-examples/`** | Same — demonstrates standards tracking pattern, not generically useful |
+| `NPITracker/` | **Move to `skills-examples/`** | Highly specific to Your Company NPI process |
+| `WeeklyStatus/` | **Genericize** | Weekly status reporting is universal for any EM. Replace "Fortinet leadership" with `{PRINCIPAL.ORG}` template variable. |
+| `OneOnOne/` | **Keep, fix "YourName"** | Generically useful EM skill — replace name with `{PRINCIPAL.NAME}` |
+| `DecisionLog/` | **Keep, fix "YourName"** | Generically useful EM skill — replace name with `{PRINCIPAL.NAME}` |
+
+### RED: Must fix before public release
+
+| # | File | Fix |
+|---|------|-----|
+| ~~R1~~ | ~~config/preferences.jsonc~~ | **DONE in v4.9.0** |
+| ~~R2~~ | ~~config/bedrock-known-good.jsonc~~ | **DONE in v4.9.0** |
+| R3 | `hooks/lib/knowledge-readback.ts` | Replace with config-loader.ts (Phase B) |
+| R4 | `hooks/KnowledgeSync.hook.ts` | Replace with config-loader.ts (Phase B) |
+| R5 | `hooks/LocalContextFirst.hook.ts` | Rewrite as config-driven (Phase B) |
+| R6 | `PAI/CONTEXT_ROUTING.md` | Strip Your Company section; replace with generated template |
+| R7 | `PAI/PAIAGENTSYSTEM.md` | Remove OpenWRT/Your Company agents section |
+| R8 | `agents/Stakeholder*.md`, `ProductStrategist.md`, `TechnicalReviewer.md` | Replace `{PRINCIPAL.NAME}`, strip company refs |
+| R9 | `PAI/Tools/Banner*.ts` (4 files) | Change fallback URL to public org URL |
+| R10 | `install.sh` | Update URL to public repo |
+| R11 | `scripts/board-config.json` | Replace library with empty array + comment |
+| R12 | `Plans/archive/` | Delete entirely, add to .gitignore |
+| R13 | `PAI/Tools/KnowledgeHarvester.ts` | Replace with config-loader.ts (Phase B) |
+| R14 | Skills | See disposition table above |
+| R15–R20 | Various docs + README | Replace `kai-cli` URLs, personal names |
+
+**Spot check before shipping:**
+- `config/spinner-tips.json` and `config/spinner-verbs.json` — scan for personal content
+- Any YAML files in PAI/PIPELINES/ — scan for personal refs
 
 ### Dead code to delete
-- `PAI/Tools/BannerRetro.ts` — unused legacy
-- `PAI/Tools/BannerMatrix.ts` — unused legacy
-- `PAI/Tools/BannerNeofetch.ts` — unused legacy
-- `PAI/Tools/NeofetchBanner.ts` — unused legacy
-- `Plans/archive/` — personal archived work plans
-- `skills/SECUpdates/State/` — stale personal state
+- `PAI/Tools/BannerRetro.ts`, `BannerMatrix.ts`, `BannerNeofetch.ts`, `NeofetchBanner.ts`
+- `Plans/archive/` (+ add to .gitignore)
+- `skills/SECUpdates/State/` (+ add to .gitignore)
 
-### Already clean (no work needed)
-- All Algorithm files, MEMORYSYSTEM.md, THEHOOKSYSTEM.md
-- config/hooks.jsonc, config/permissions.jsonc
-- Generic skills (Research, Security, Thinking, Science)
-- All test files, deploy.ts, board.ts
+### MEMORY/ stub structure for new installs
+The public repo needs a stub MEMORY/ skeleton so fresh installs have the right directory structure. Current repo has real MEMORY content (gitignored). Phase A must add:
 
-### Missing for release
-- `LICENSE` (MIT)
-- `CONTRIBUTING.md`
-- `CUSTOMIZATION.md` — how to configure your domains
-- `CHANGELOG.md`
+```
+MEMORY/
+├── README.md          (tracked — explains the memory system)
+├── KNOWLEDGE/         (tracked — .gitkeep)
+├── LEARNING/          (tracked — .gitkeep)
+├── RELATIONSHIP/      (tracked — .gitkeep)
+├── SECURITY/          (tracked — .gitkeep)
+├── STAGING/           (tracked — .gitkeep)
+├── STATE/             (tracked — .gitkeep)
+└── WORK/              (tracked — .gitkeep)
+```
+
+### .gitignore audit (Phase A deliverable)
+The three-category model requires the public .gitignore to cover:
+```gitignore
+# User config (generated at install, never committed)
+PAI/USER/
+config/identity.jsonc
+config/preferences.jsonc
+config/notifications.jsonc
+config/preferences.local.jsonc
+.env
+settings.json
+CLAUDE.md
+
+# Runtime state
+MEMORY/STATE/
+MEMORY/WORK/
+MEMORY/LEARNING/
+MEMORY/RELATIONSHIP/
+MEMORY/SECURITY/
+MEMORY/RESEARCH/
+MEMORY/STAGING/
+projects/
+history.jsonl
+sessions/
+tasks/
+Plans/archive/
+skills/SECUpdates/State/
+skills/_USER/
+
+# User hook extensions
+hooks/user/
+
+# Build artifacts
+node_modules/
+*.bun-build
+```
+
+This must be verified against a clean install to confirm no personal content leaks on first `git push`.
 
 ---
 
-## Implementation Sequence
+## Implementation Sequence (Revised)
 
 ```
-Phase A: Fork + Strip (1 day)
-  1. Fork repo (decide name/org)
-  2. Remove all 20 RED items from tracked files
-  3. Delete 4 dead banner files + Plans/archive/ + SECUpdates/State/
-  4. Add LICENSE, update README, update install.sh URL
+Prerequisites (before writing any code):
+  [ ] Decide repo name + GitHub org
+  [ ] Decide install URL (pai.sh or raw GitHub)
+  [ ] Merge PR #2 and PR #3 to personal repo
+
+Phase A: Fork + Strip + History Clean (1 day)
+  1. Fork repo with new name/org
+  2. Run git filter-repo / BFG on fork to remove credential history
+     (R1/R2 files still in git history even though content is fixed)
+  3. Verify symlink install works with existing ~/.claude/ (Cases A, B, C)
+  4. Remove all 20 RED items from tracked files
+  5. Delete dead code (4 banners, Plans/archive/, SECUpdates/State/)
+  6. Add MEMORY/ stub skeleton + .gitkeep files
+  7. Audit + finalize .gitignore
+  8. Spot check spinner-tips.json, spinner-verbs.json, PIPELINES/*.yaml
+  9. Add LICENSE (MIT)
 
 Phase B: Config Layer (half day)
   1. Create config/domains.jsonc + 4 starter configs
   2. Create hooks/lib/config-loader.ts
   3. Refactor KnowledgeSync.hook.ts (DOMAIN_KEYWORDS → config)
   4. Refactor knowledge-readback.ts (PROJECT_DOMAIN_MAP → config)
-  5. Refactor LocalContextFirst.hook.ts (Your Company patterns → config)
+  5. Refactor LocalContextFirst.hook.ts (generic pattern injection)
   6. Refactor KnowledgeHarvester.ts (same domain externalization)
 
-Phase C: Setup Wizard (half day)
-  1. Create PAI-Install/main.ts (6-step interactive wizard)
+Phase C: Setup Wizard + Install (half day)
+  1. Rewrite PAI-Install/main.ts (full 6-step wizard, archetype selection)
   2. Create config/*.jsonc.template files
   3. Create PAI/USER/*.md.template files
   4. Create PAI/CONTEXT_ROUTING.md.template
-  5. Update install.sh for curl|bash + clone + symlink
+  5. Update install.sh for curl|bash + clone + symlink (all 3 cases)
+  6. Test end-to-end on a machine with existing ~/.claude/
 
 Phase D: Documentation (1-2 hours)
   1. CONTRIBUTING.md
@@ -231,12 +325,14 @@ Total: ~2 days of focused work
 
 ## Decoupling Note (Future — v6.0)
 
-The Claude Code dependency is intentional and accepted for v5.0.0. Future decoupling (like Nous Research's Hermes model abstraction) would mean abstracting `PAI/Tools/Inference.ts` to support any model provider (Anthropic, OpenAI, Ollama). This is a v6.0 investigation, not v5.0 scope.
+The Claude Code dependency is intentional and accepted for v5.0.0. Future decoupling would mean abstracting `PAI/Tools/Inference.ts` to support any model provider (Anthropic, OpenAI, Ollama) — similar to how Nous Research's Hermes abstracts model providers. This is a v6.0 investigation, not v5.0 scope.
 
 ---
 
 ## Pending Before Starting
 
-- [ ] Decide: fork repo name (`pai`, `claude-pai`, `pai-framework`?)
-- [ ] Decide: GitHub account/org for public release
-- [ ] Merge PR #2 and PR #3 to personal repo before forking
+- [ ] Repo name: `pai`, `claude-pai`, `pai-framework`?
+- [ ] GitHub org/account for public release?
+- [ ] Install URL: need a domain, or use raw.githubusercontent.com?
+- [ ] Merge PR #2 (v4.8.0) to personal repo
+- [ ] Merge PR #3 (v4.9.0) to personal repo
