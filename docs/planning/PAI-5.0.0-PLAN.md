@@ -1,27 +1,28 @@
-# PAI v5.0.0 — Public Release Plan
+# KAI v5.0.0 — Public Release Plan (Kaizen AI)
 
 **Created:** 2026-04-17  
 **Reviewed:** 2026-04-17 (two rounds)  
 **Source:** 3 Architect council agents + principal review  
-**Status:** Execution-ready pending fork decisions
+**Status:** Ready to execute
 
 ---
 
-## Prerequisites — Must Resolve Before Any Work
+## Prerequisites
 
-- [ ] **Repo name:** `pai`, `claude-pai`, `pai-framework`?
-- [ ] **GitHub org/account:** personal `kai-cli` or new org?
-- [ ] **Install URL:** final repo URL locks the `install.sh` content and all docs
-- [ ] **License:** MIT (single). Not dual — pick MIT and ship one `LICENSE` file consistently.
+- [x] **Name:** KAI — Kaizen AI (tribute to Daniel Miessler's PAI)
+- [x] **GitHub org:** `github.com/kai-cli`
+- [x] **Repo:** `github.com/kai-cli/kai`
+- [x] **Install URL:** `https://raw.githubusercontent.com/kai-cli/kai/main/install.sh`
+- [x] **License:** MIT
 - [ ] **Merge PR #2 (v4.8.0) to personal repo**
 - [ ] **Merge PR #3 (v4.9.0) to personal repo**
-- [ ] **Verify symlink compatibility:** test that Claude Code resolves hooks, settings.json, and CLAUDE.md correctly when `~/.claude` is a symlink (not a directory). Block Phase A on this result.
+- [ ] **Verify symlink compatibility:** test that Claude Code resolves hooks, settings.json, and CLAUDE.md correctly when `~/.claude` is a symlink. Block Phase A on this result.
 
 ---
 
 ## Vision
 
-PAI 5.0.0 is a public open-source release of the personal AI infrastructure system, installable by any CLI-comfortable developer who uses Claude Code. MIT license. Zero personal or company-specific content in the repository.
+KAI (Kaizen AI) 5.0.0 is a public open-source release of the personal AI infrastructure system, installable by any CLI-comfortable developer who uses Claude Code. MIT license. Zero personal or company-specific content in the repository.
 
 **What changes:** Configuration layer replaces hardcoded content. Installer replaces manual setup.  
 **What stays:** Algorithm, all hooks, all skills, all tools — generic framework unchanged.
@@ -44,11 +45,10 @@ Create a **new public repo** forked from the current codebase. The personal repo
 
 ### Install command
 ```bash
-# Provisional — URL finalizes once org/repo name is decided
-curl -fsSL https://raw.githubusercontent.com/ORG/REPO/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kai-cli/kai/main/install.sh | bash
 
 # Custom install location
-curl -fsSL ... | PAI_HOME=~/Projects/pai bash
+curl -fsSL https://raw.githubusercontent.com/kai-cli/kai/main/install.sh | PAI_HOME=~/Projects/kai bash
 ```
 
 ### ~/.claude handling — three cases
