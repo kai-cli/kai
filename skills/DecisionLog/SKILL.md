@@ -1,6 +1,6 @@
 ---
 name: DecisionLog
-description: Product and engineering decision logging for Engineering Manager. Captures key decisions with context, options considered, rationale, and owner. Searchable log that feeds retrospectives and prevents "why did we do this?" moments. USE WHEN log decision, decision log, record decision, document decision, why did we decide, what did we decide, capture decision, decisions on Pinnacle, architecture decision, product decision.
+description: Product and engineering decision logging for Engineering Manager. Captures key decisions with context, options considered, rationale, and owner. Searchable log that feeds retrospectives and prevents "why did we do this?" moments. USE WHEN log decision, decision log, record decision, document decision, why did we decide, what did we decide, capture decision, decisions on [your project], architecture decision, product decision.
 ---
 
 ## MANDATORY TRIGGER

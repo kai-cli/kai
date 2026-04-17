@@ -1,7 +1,7 @@
 # GateChecklist Workflow
 
 ## Purpose
-Generate a Your Company NPI gate checklist for a specific Pinnacle release.
+Generate a [Your Company] NPI gate checklist for a specific [Your Product] release.
 Tracks BOM, QSG, RTM, RTW readiness with owner and status.
 
 ## Trigger
@@ -13,7 +13,7 @@ Extract release. Ask for current status of each gate item if not in PAI context.
 ## Step 2 — Generate Checklist
 
 ```
-NPI GATE CHECKLIST — Pinnacle [X.X] — [Date]
+NPI GATE CHECKLIST — [Your Product] [X.X] — [Date]
 
 ━━━ PRE-RTM GATES
 - [ ] BOM finalized and procurement aligned — Owner: [name]

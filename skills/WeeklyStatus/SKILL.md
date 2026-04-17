@@ -1,6 +1,6 @@
 ---
 name: WeeklyStatus
-description: Weekly status report generator for Engineering Manager + PLM Director. Pulls from active PRDs, TELOS PROJECTS.md, and CONTACTS.md to draft a Fortinet leadership status update. USE WHEN weekly status, status update, weekly report, status draft, what did we do this week, update for leadership, weekly update, write status.
+description: Weekly status report generator for Engineering Manager + PLM Director. Pulls from active PRDs, TELOS PROJECTS.md, and CONTACTS.md to draft a {PRINCIPAL.ORG} leadership status update. USE WHEN weekly status, status update, weekly report, status draft, what did we do this week, update for leadership, weekly update, write status.
 ---
 
 ## MANDATORY TRIGGER

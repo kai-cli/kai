@@ -23,7 +23,7 @@ const FORMAT_MARKERS = [
   /═+\s*PAI\s*═+/,                               // MINIMAL mode header
   /PHASE\s+\d/i,                                  // Algorithm phase markers
   /🗒️\s*TASK:/,                                   // NATIVE task line
-  /🗣️\s*William the AI:/,                         // Summary line
+  /🗣️\s*[\w\s]+:/,                         // Summary line
 ];
 
 // Responses that are exempt from format checking

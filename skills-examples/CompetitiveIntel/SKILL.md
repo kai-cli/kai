@@ -1,11 +1,11 @@
 ---
 name: CompetitiveIntel
-description: "Competitive intelligence tracker for Your Company Wireless. Monitors competitor product launches, feature announcements, pricing changes, reviews, and market positioning. USE WHEN competitive intel, competitor analysis, what is Netgear doing, TP-Link news, Asus wireless, Eero updates, competitor products, market landscape, competitive positioning, what are competitors shipping."
+description: "Competitive intelligence tracker for [Your Company]. Monitors competitor product launches, feature announcements, pricing changes, reviews, and market positioning. USE WHEN competitive intel, competitor analysis, what is Netgear doing, TP-Link news, Asus wireless, Eero updates, competitor products, market landscape, competitive positioning, what are competitors shipping."
 use_when: "User asks about competitor wireless products, market positioning, competitive landscape, or wants to know what Netgear/TP-Link/Asus/Eero/other wireless vendors are doing."
 workflows:
   - Update: "Fetch latest competitor news, product launches, and market signals"
   - DeepDive: "Focused analysis on a specific competitor or product category"
-  - Battlecard: "Generate competitive positioning summary for a specific Pinnacle release"
+  - Battlecard: "Generate competitive positioning summary for a specific [Your Product] release"
 ---
 
 ## Customization
@@ -23,7 +23,7 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 # CompetitiveIntel Skill
 
-**Purpose:** Track competitors in the consumer/SMB wireless market to inform Your Company Pinnacle product decisions. Surface product launches, feature gaps, pricing moves, and positioning shifts.
+**Purpose:** Track competitors in the consumer/SMB wireless market to inform [Your Company] [Your Product] product decisions. Surface product launches, feature gaps, pricing moves, and positioning shifts.
 
 ## Competitor Landscape
 
@@ -105,8 +105,8 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 ---
 
-## Your Company Implications
-| Signal | Competitor | Affects Pinnacle | Action |
+## [Your Company] Implications
+| Signal | Competitor | Affects [Your Product] | Action |
 |--------|-----------|-----------------|--------|
 | [signal] | [who] | [2.x/3.0/roadmap] | [respond/monitor/ignore] |
 
@@ -155,13 +155,13 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 ---
 
-## Your Company Impact Assessment
+## [Your Company] Impact Assessment
 
 For each competitive signal:
 
 | Impact Level | Criteria | Action |
 |-------------|----------|--------|
-| **RESPOND** | Direct threat to Pinnacle positioning or pricing | Flag for product/leadership discussion |
+| **RESPOND** | Direct threat to [Your Product] positioning or pricing | Flag for product/leadership discussion |
 | **MONITOR** | Trend that could affect future releases | Track, revisit at next planning cycle |
 | **IGNORE** | Irrelevant segment or non-threatening | Note for completeness |
 
@@ -173,7 +173,7 @@ For each competitive signal:
 |----------|-------------|
 | Update | "competitive update", "competitor news", "/competitive" — scan all sources |
 | DeepDive | "deep dive on Netgear", "analyze TP-Link Deco" — focused single-competitor analysis |
-| Battlecard | "battlecard for Pinnacle 2.2", "competitive positioning" — Pinnacle vs. competitors |
+| Battlecard | "battlecard for [Your Product] 2.2", "competitive positioning" — [Your Product] vs. competitors |
 
 ---
 
@@ -185,7 +185,7 @@ For each competitive signal:
 
 ## Key Principles
 
-1. **So what?** — Every signal assessed for Your Company impact
+1. **So what?** — Every signal assessed for [Your Company] impact
 2. **Signal over noise** — Minor firmware patches aren't interesting; Wi-Fi 7 launches are
 3. **Pricing matters** — Track MSRPs and deals; pricing pressure is the #1 competitive threat
 4. **Features, not specs** — "Parental controls added" matters more than "new chipset"

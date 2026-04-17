@@ -60,8 +60,8 @@ Also check:
 
 ---
 
-## vs. Your Company Pinnacle
-| Dimension | [Competitor] | Your Company Pinnacle | Advantage |
+## vs. [Your Company] [Your Product]
+| Dimension | [Competitor] | [Your Company] [Your Product] | Advantage |
 |-----------|-------------|-----------------|-----------|
 | Price (comparable SKU) | [$XXX] | [$XXX] | [who] |
 | Wi-Fi Performance | [assessment] | [assessment] | [who] |
@@ -73,7 +73,7 @@ Also check:
 
 ---
 
-## Implications for Pinnacle
+## Implications for [Your Product]
 1. **[Insight]** — [What to do about it]
 2. **[Insight]** — [What to do about it]
 3. **[Insight]** — [What to do about it]

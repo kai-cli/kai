@@ -1,45 +1,50 @@
 #!/usr/bin/env bun
 /**
- * LocalContextFirst.hook.ts — Inject local Knowledge base pointers for work topics
+ * LocalContextFirst.hook.ts — Inject local knowledge base pointers for domain topics
  *
- * TRIGGER: UserPromptSubmit (runs with other UserPromptSubmit hooks)
+ * TRIGGER: UserPromptSubmit
  *
- * PURPOSE: When the user's prompt touches Your Company/firmware/product topics,
- * inject a reminder to check local Knowledge index and CONTEXT_ROUTING.md
- * BEFORE launching web research agents. Prevents the 7-minute web search
- * problem when 90% of the answer is in local repos.
+ * PURPOSE: When the user's prompt matches topics in their configured domains
+ * (config/domains.jsonc), remind them to check local knowledge sources before
+ * web research. Prevents redundant web searches when local knowledge exists.
  *
- * DESIGN: Deterministic regex matching (<5ms, no API calls).
- * Only injects when topic matches — silent otherwise.
+ * DESIGN: Reads domain keywords from config/domains.jsonc.
+ * If not configured, exits silently (zero output, zero cost).
+ * Deterministic regex matching (<5ms, no API calls).
  */
 
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import { readHookInput } from './lib/hook-io';
+import { paiPath } from './lib/paths';
 
-// Topic patterns that indicate local context should be checked first
-const DOMAIN_PATTERNS = [
-  // Product / hardware
-  /\b(pinnacle|m60|m61|m62|mx\d{3,4}|velop|your-company|spnm\d{2})\b/i,
-  // Firmware / build
-  /\b(firmware|openwrt|qsdk|ipq\d{4}|chipset|soc|nss|qualcomm|broadcom|mediatek)\b/i,
-  // Speedtest
-  /\b(ookla|speedtest|speed\s*test|nss.?udp|obudpst|user1|tr.?143|tr.?471)\b/i,
-  // Standards
-  /\b(tr.?069|tr.?369|tr.?181|cwmp|usp|obuspa|icwmp|bbfdm|data\s*model)\b/i,
-  // Partners / customers
-  /\b(du\s+(telecom|eitc)|community\s*fibre|toob|samknows)\b/i,
-  // Build / release
-  /\b(rc\d{1,2}|release\s*candidate|build\s*config|feed_\w+|preconfig)\b/i,
-];
+const DOMAINS_CONFIG_PATH = paiPath('config', 'domains.jsonc');
 
-function matchesWorkTopic(prompt: string): string[] {
-  const matches: string[] = [];
-  for (const pattern of DOMAIN_PATTERNS) {
-    const match = prompt.match(pattern);
-    if (match) {
-      matches.push(match[0]);
+function loadDomainPatterns(): Array<{ domain: string; keywords: string[] }> {
+  if (!existsSync(DOMAINS_CONFIG_PATH)) return [];
+  try {
+    // Strip JSONC comments before parsing
+    const raw = readFileSync(DOMAINS_CONFIG_PATH, 'utf-8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(?<!:)\/\/[^\n]*/g, '')
+      .replace(/,(\s*[}\]])/g, '$1');
+    const config = JSON.parse(raw);
+    return Object.entries(config.definitions || {}).map(([domain, def]: [string, any]) => ({
+      domain,
+      keywords: def.keywords || [],
+    }));
+  } catch { return []; }
+}
+
+function matchesDomainTopics(prompt: string, patterns: Array<{ domain: string; keywords: string[] }>): string[] {
+  const lower = prompt.toLowerCase();
+  const matched: string[] = [];
+  for (const { domain, keywords } of patterns) {
+    if (keywords.some(kw => lower.includes(kw.toLowerCase()))) {
+      matched.push(domain);
     }
   }
-  return matches;
+  return matched;
 }
 
 async function main() {
@@ -49,38 +54,35 @@ async function main() {
   const prompt = ((input as any).prompt || '').trim();
   if (!prompt || prompt.length < 10) process.exit(0);
 
-  // Skip ratings
+  // Skip bare ratings
   if (/^([1-9]|10)$/.test(prompt.trim())) process.exit(0);
 
-  const matches = matchesWorkTopic(prompt);
+  const patterns = loadDomainPatterns();
+  if (patterns.length === 0) {
+    // Not configured — exit silently
+    process.exit(0);
+  }
 
-  if (matches.length > 0) {
+  const matched = matchesDomainTopics(prompt, patterns);
+
+  if (matched.length > 0) {
     const context = `<local-context-hint>
-Topic matches local Knowledge base: [${matches.join(', ')}]
+Topic matches configured domains: [${matched.join(', ')}]
 
-BEFORE web research, check these local sources:
-1. CONTEXT_ROUTING.md → "Your Company / Firmware" section for indexed paths
-2. ~/Projects/Knowledge/INDEX.md — master keyword index (speedtest, firmware, standards, etc.)
-3. ~/Projects/Knowledge/firmware/INDEX.md — firmware-specific index
-4. gh issue list/view on your-company/Your CompanyWRT and your-company/FWDEV for bugs and vendor docs
-5. your-company/FWDEV docs/3rd party/ for vendor-specific documentation (Ookla, SamKnows, etc.)
-6. ~/Projects/Learning_Your Company_Repo/targets/ for build configs and customer overlays
+Check local knowledge sources before web research:
+1. PAI/CONTEXT_ROUTING.md → your domain-specific paths
+2. Your configured local knowledge base (config/domains.jsonc)
 
-Local context is faster and more accurate than web research for these topics.
+Local context is faster and more accurate than web research for your domain topics.
 </local-context-hint>`;
 
-    console.log(JSON.stringify({
-      additionalContext: context
-    }));
-    console.error(`[LocalContextFirst] Matched work topics: ${matches.join(', ')}`);
+    console.log(JSON.stringify({ additionalContext: context }));
+    console.error(`[LocalContextFirst] Matched domains: ${matched.join(', ')}`);
   } else {
-    console.error(`[LocalContextFirst] No work topic match — skipped`);
+    console.error('[LocalContextFirst] No domain match — skipped');
   }
 
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error('[LocalContextFirst] Error:', err);
-  process.exit(0);
-});
+main();

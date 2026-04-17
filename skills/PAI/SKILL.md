@@ -1209,7 +1209,7 @@ ALWAYS. USE. THE. ALGORITHM. AND. PROPER. OUTPUT. FORMAT. AND. INVOKE. CAPABILIT
 ## Configuration
 
 Custom values in `settings.json`:
-- `daidentity.name` - DA's name (William the AI)
+- `daidentity.name` - DA's name (configured in config/identity.jsonc)
 - `principal.name` - User's name (configured during `pai setup`)
 - `principal.timezone` - User's timezone
 

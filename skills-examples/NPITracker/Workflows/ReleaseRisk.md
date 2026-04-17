@@ -1,10 +1,10 @@
 # ReleaseRisk Workflow
 
 ## Purpose
-Generate a risk matrix for a specific Pinnacle release.
+Generate a risk matrix for a specific [Your Product] release.
 
 ## Trigger
-"Risk for Pinnacle [2.0/2.1/2.2/3.0]" / "release risk [release]" / "RTM risk [release]"
+"Risk for [Your Product] [2.0/2.1/2.2/3.0]" / "release risk [release]" / "RTM risk [release]"
 
 ## Step 1 — Identify Release
 Extract release from prompt (2.0, 2.1, 2.2, or 3.0).
@@ -17,7 +17,7 @@ Also pull from any MEMORY/WORK PRDs related to this release.
 ## Step 3 — Build Risk Matrix
 
 ```
-RISK MATRIX — Pinnacle [X.X] — [Date]
+RISK MATRIX — [Your Product] [X.X] — [Date]
 
 | Risk | Category | Likelihood | Impact | Owner | Mitigation |
 |------|----------|-----------|--------|-------|------------|

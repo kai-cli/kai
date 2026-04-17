@@ -308,8 +308,10 @@ function approveDraft(index: number): { success: boolean; error?: string } {
   }
 
   if (!targetMemoryDir || !existsSync(targetMemoryDir)) {
-    // Fall back: use pai-config memory dir
-    targetMemoryDir = join(paiDir, 'projects', '-Users-user-Projects-pai-config', 'memory');
+    // Fall back: create a new memory dir for the target project
+    const fallbackSlug = (draft.targetProject || 'kai').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    const home = process.env.HOME || '';
+    targetMemoryDir = join(paiDir, 'projects', `-${home.replace(/\//g, '-').replace(/^-/, '')}-Projects-${fallbackSlug}`, 'memory');
     mkdirSync(targetMemoryDir, { recursive: true });
   }
 

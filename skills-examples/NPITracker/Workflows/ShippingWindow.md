@@ -7,7 +7,7 @@ Calculate the RTM → RTW window based on shipping method from CBT (Taiwan).
 "Shipping window for [release]" / "when is RTW if RTM is [date]"
 
 ## Context
-CBT (Cybertan) is in Taiwan. Your Company products ship either:
+CBT (Cybertan) is in Taiwan. [Your Company] products ship either:
 - **Air freight:** ~5-10 days Taiwan → US distribution
 - **Ocean freight:** ~20-35 days Taiwan → US distribution
 
