@@ -42,6 +42,8 @@ const SECRET_PATTERNS: { name: string; pattern: RegExp }[] = [
   // AWS
   { name: 'AWS Access Key', pattern: /AKIA[0-9A-Z]{16}/ },
   { name: 'AWS Secret Key', pattern: /(?:aws[_-]?secret|secret[_-]?access[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?/i },
+  { name: 'AWS Account ID (in AWS_PROFILE context)', pattern: /(?:Account|account_id|AccountId)\s*[:=]\s*['"]?\d{12}['"]?/i },
+  { name: 'AWS Profile name (personal)', pattern: /AWS_PROFILE\s*[:=]\s*['"]?[A-Za-z][A-Za-z0-9_.-]{4,}['"]?/i },
 
   // Anthropic
   { name: 'Anthropic API Key', pattern: /sk-ant-[A-Za-z0-9_\-]{40,}/ },
