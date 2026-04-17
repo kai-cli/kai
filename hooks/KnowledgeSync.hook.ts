@@ -43,24 +43,22 @@ interface ChangedFile {
 // Domain definitions (same as KnowledgeHarvester.ts)
 // ============================================================================
 
+// Generic starter domains — replace with your own in config/domains.jsonc (KAI v5.0.0+)
+// These cover common developer archetypes. Customize by adding config/domains.jsonc.
 const DOMAIN_KEYWORDS: Record<string, string[]> = {
-  'firmware': ['firmware', 'build', 'feed', 'sdk', 'openwrt', 'your-companywrt', 'targets', 'jenkins', 'make', 'package', 'ipk', 'toolchain', 'kernel'],
-  'api-and-services': ['jnap', 'sysctx', 'uci', 'api', 'service', 'tr-069', 'tr-369', 'cwmp', 'usp', 'bbf', 'obuspa', 'tr-181'],
-  'products': ['pinnacle', 'm60', 'm62', 'product', 'customer', 'sku', 'du', 'cf', 'toob', 'qualcomm', 'ipq', 'hardware'],
-  'devops': ['jenkins', 'docker', 'ci', 'cd', 'pipeline', 'github', 'actions', 'ecs', 'fargate', 'deploy', 'devops'],
-  'ui': ['ui', 'flutter', 'react', 'privacygui', 'guardians', 'dart', 'frontend', 'web', 'interface'],
-  'security': ['security', 'patch', 'vulnerability', 'cve', 'pii', 'privacy', 'encryption', 'audit'],
-  'ai-infrastructure': ['pai', 'hook', 'skill', 'agent', 'algorithm', 'memory', 'inference', 'claude', 'router'],
+  'backend': ['api', 'server', 'database', 'sql', 'rest', 'graphql', 'service', 'endpoint', 'auth', 'cache'],
+  'frontend': ['ui', 'react', 'vue', 'angular', 'css', 'html', 'component', 'frontend', 'web', 'interface'],
+  'devops': ['docker', 'kubernetes', 'ci', 'cd', 'pipeline', 'deploy', 'terraform', 'helm', 'jenkins', 'github'],
+  'security': ['security', 'vulnerability', 'cve', 'patch', 'audit', 'encryption', 'auth', 'pii', 'privacy'],
+  'ai-infrastructure': ['kai', 'hook', 'skill', 'agent', 'algorithm', 'memory', 'inference', 'claude', 'llm'],
 };
 
 const DOMAIN_DESCRIPTIONS: Record<string, string> = {
-  'firmware': 'Your Company firmware build system, feeds, SDK, OpenWRT architecture',
-  'api-and-services': 'JNAP API, sysctx, UCI, service architecture, TR-069/TR-369',
-  'products': 'Active products, customers, SKUs, hardware specs',
-  'devops': 'Jenkins, GitHub Actions, Docker, CI/CD, deployment',
-  'ui': 'PrivacyGUI (Flutter), guardians-ui (React), UI pipeline',
-  'security': 'Security practices, patches, vulnerability management',
-  'ai-infrastructure': 'PAI system, hooks, skills, memory, agents',
+  'backend': 'Backend services, APIs, databases, and server-side logic',
+  'frontend': 'Frontend frameworks, UI components, and web interfaces',
+  'devops': 'CI/CD pipelines, containerization, infrastructure, and deployment',
+  'security': 'Security practices, vulnerability management, and privacy',
+  'ai-infrastructure': 'KAI system, hooks, skills, memory, and AI agents',
 };
 
 // ============================================================================
@@ -329,51 +327,6 @@ function maybeSynthesizePatterns(): void {
   }
 }
 
-// ============================================================================
-// Main
-// ============================================================================
-// Auto-harvest reflections
-// ============================================================================
-
-const REFLECTION_AUTO_HARVEST_THRESHOLD = 10;
-const REFLECTION_FILE = join(getPaiDir(), 'MEMORY', 'LEARNING', 'REFLECTIONS', 'algorithm-reflections.jsonl');
-const HARVEST_STATE_FILE = join(getPaiDir(), 'MEMORY', 'STATE', 'reflection-harvest-state.json');
-
-function maybeAutoHarvest(): void {
-  try {
-    if (!existsSync(REFLECTION_FILE)) return;
-
-    const totalReflections = readFileSync(REFLECTION_FILE, 'utf-8')
-      .trim().split('\n').filter(l => l.trim()).length;
-
-    let lastCount = 0;
-    if (existsSync(HARVEST_STATE_FILE)) {
-      try {
-        lastCount = JSON.parse(readFileSync(HARVEST_STATE_FILE, 'utf-8')).lastReflectionCount || 0;
-      } catch { /* use 0 */ }
-    }
-
-    const newCount = totalReflections - lastCount;
-    if (newCount < REFLECTION_AUTO_HARVEST_THRESHOLD) {
-      console.error(`[KnowledgeSync] Reflection harvest: ${newCount}/${REFLECTION_AUTO_HARVEST_THRESHOLD} new entries — not yet`);
-      return;
-    }
-
-    console.error(`[KnowledgeSync] Auto-triggering ReflectionHarvester (${newCount} new reflections)`);
-    const harvesterPath = join(getPaiDir(), 'PAI', 'Tools', 'ReflectionHarvester.ts');
-    if (!existsSync(harvesterPath)) return;
-
-    const { spawn } = require('child_process');
-    const proc = spawn('bun', ['run', harvesterPath], {
-      detached: true,
-      stdio: 'ignore',
-      env: { ...process.env },
-    });
-    proc.unref();
-  } catch (err) {
-    console.error(`[KnowledgeSync] Auto-harvest check failed (non-fatal): ${err}`);
-  }
-}
 
 // ============================================================================
 

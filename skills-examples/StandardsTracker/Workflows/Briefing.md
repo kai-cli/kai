@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Generate an executive-ready summary of the open standards landscape as it relates to Your Company Wireless. Designed for leadership updates, planning meetings, or Deven's own orientation before strategy discussions.
+Generate an executive-ready summary of the open standards landscape as it relates to [Your Company]. Designed for leadership updates, planning meetings, or Deven's own orientation before strategy discussions.
 
 ## Process
 
@@ -25,8 +25,8 @@ Build the briefing from three angles:
 - Recent changes and trajectory
 - What's coming next (announced roadmap items)
 
-**B. Where Your Company is:**
-- Current compliance posture per Pinnacle release
+**B. Where [Your Company] is:**
+- Current compliance posture per [Your Product] release
 - Key gaps and planned remediation
 - Competitive position vs. other vendors
 
@@ -38,7 +38,7 @@ Build the briefing from three angles:
 ### 3. Generate Briefing
 
 ```markdown
-# Open Standards Briefing — Your Company Wireless
+# Open Standards Briefing — [Your Company]
 **Date:** [timestamp]
 **Prepared for:** Leadership / Planning
 
@@ -66,9 +66,9 @@ Build the briefing from three angles:
 
 ---
 
-## Your Company Position
+## [Your Company] Position
 
-| Standard | Pinnacle 2.x | Pinnacle 3.0 | Industry Avg |
+| Standard | [Your Product] 2.x | [Your Product] 3.0 | Industry Avg |
 |----------|-------------|-------------|-------------|
 | TR-369 | [status] | [target] | [context] |
 | TR-069 | [status] | [target] | [context] |
@@ -106,6 +106,6 @@ Build the briefing from three angles:
 ## Key Principles
 
 1. **No jargon without context** — "TR-369" always gets "(USP — device management protocol)" on first mention
-2. **Competitive framing** — Always position Your Company relative to industry
+2. **Competitive framing** — Always position [Your Company] relative to industry
 3. **Actionable** — Every insight leads to a recommended action
 4. **Honest** — If we're behind, say so with a plan to catch up

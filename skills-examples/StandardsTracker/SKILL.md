@@ -1,10 +1,10 @@
 ---
 name: StandardsTracker
-description: "TR-369/USP and TR-069/CWMP open standards tracker for Your Company Wireless. Monitors spec updates, data model changes, compliance gaps, and industry adoption. USE WHEN TR-369, TR-069, USP, CWMP, standards update, standards tracker, Broadband Forum, data model, BBF, open standards status, device management standards, what changed in TR-369, compliance check."
-use_when: "User asks about TR-369, TR-069, USP, CWMP, Broadband Forum specs, open standards compliance, device management protocol updates, data model changes, or wants a standards status briefing for Your Company/Pinnacle products."
+description: "TR-369/USP and TR-069/CWMP open standards tracker for [Your Company]. Monitors spec updates, data model changes, compliance gaps, and industry adoption. USE WHEN TR-369, TR-069, USP, CWMP, standards update, standards tracker, Broadband Forum, data model, BBF, open standards status, device management standards, what changed in TR-369, compliance check."
+use_when: "User asks about TR-369, TR-069, USP, CWMP, Broadband Forum specs, open standards compliance, device management protocol updates, data model changes, or wants a standards status briefing for [Your Company]/[Your Product] products."
 workflows:
   - Update: "Fetch latest from all sources, compare to last check, report changes"
-  - ComplianceCheck: "Assess Pinnacle product line compliance against current specs"
+  - ComplianceCheck: "Assess [Your Product] product line compliance against current specs"
   - Briefing: "Executive summary of standards landscape for leadership or planning"
 ---
 
@@ -17,7 +17,7 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 # StandardsTracker Skill
 
-**Purpose:** Track TR-369 (USP), TR-069 (CWMP), and related Broadband Forum standards that affect Your Company Wireless product development. Surface spec changes, data model updates, industry adoption signals, and compliance gaps.
+**Purpose:** Track TR-369 (USP), TR-069 (CWMP), and related Broadband Forum standards that affect [Your Company] product development. Surface spec changes, data model updates, industry adoption signals, and compliance gaps.
 
 ## Standards Scope
 
@@ -83,8 +83,8 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 ---
 
-## Your Company Impact Assessment
-| Change | Affects | Pinnacle Release | Action |
+## [Your Company] Impact Assessment
+| Change | Affects | [Your Product] Release | Action |
 |--------|---------|-----------------|--------|
 | [change] | [subsystem] | [2.x/3.0] | [implement/track/ignore] |
 
@@ -125,16 +125,16 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 ---
 
-## Your Company Impact Assessment Rules
+## [Your Company] Impact Assessment Rules
 
-For each change found, assess impact on Pinnacle:
+For each change found, assess impact on [Your Product]:
 
 | Impact Level | Criteria | Action |
 |-------------|----------|--------|
 | **HIGH** | Breaks existing implementation or blocks certification | Immediate — flag for current release |
 | **MEDIUM** | New required object/feature in upcoming profile | Plan — scope for next release |
 | **LOW** | Optional feature or future profile | Track — add to 3.0 backlog |
-| **NONE** | Irrelevant to Your Company product line | Ignore — note for completeness |
+| **NONE** | Irrelevant to [Your Company] product line | Ignore — note for completeness |
 
 ---
 
@@ -143,7 +143,7 @@ For each change found, assess impact on Pinnacle:
 | Workflow | When to Use |
 |----------|-------------|
 | Update | "standards update", "TR-369 updates", "what's new in USP", "/standards" — fetch and report changes |
-| ComplianceCheck | "compliance check", "are we compliant", "TR-369 compliance" — assess Pinnacle against current specs |
+| ComplianceCheck | "compliance check", "are we compliant", "TR-369 compliance" — assess [Your Product] against current specs |
 | Briefing | "standards briefing", "standards summary for leadership" — executive-ready overview |
 
 ---
@@ -175,7 +175,7 @@ For each change found, assess impact on Pinnacle:
 
 ## Key Principles
 
-1. **Your Company-first** — Every finding assessed for Pinnacle impact
+1. **[Your Company]-first** — Every finding assessed for [Your Product] impact
 2. **Actionable** — Changes tagged with release and action needed
 3. **Crisp** — 1-2 sentences per item, no spec-dumping
 4. **Stateful** — Track what's been seen, only surface new changes

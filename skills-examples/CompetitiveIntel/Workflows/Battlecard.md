@@ -1,23 +1,23 @@
 # Battlecard Workflow
 
-**Trigger:** "battlecard", "competitive positioning for Pinnacle", "how do we compare", "Pinnacle vs competitors"
+**Trigger:** "battlecard", "competitive positioning for [Your Product]", "how do we compare", "[Your Product] vs competitors"
 
 ## Purpose
 
-Generate a competitive positioning battlecard for a specific Pinnacle release. Designed for internal use — sales enablement, product planning, or leadership presentations.
+Generate a competitive positioning battlecard for a specific [Your Product] release. Designed for internal use — sales enablement, product planning, or leadership presentations.
 
 ## Process
 
 ### 1. Identify Release
 
-Determine which Pinnacle release to position:
-- Pinnacle 2.0 / 2.1 / 2.2 (shipping or releasing)
-- Pinnacle 3.0 (speccing)
-- Or "general" for the full Pinnacle line
+Determine which [Your Product] release to position:
+- [Your Product] 2.0 / 2.1 / 2.2 (shipping or releasing)
+- [Your Product] 3.0 (speccing)
+- Or "general" for the full [Your Product] line
 
 ### 2. Load Context
 
-- Read Pinnacle project context from `~/.claude/PAI/USER/PROJECTS/`
+- Read [Your Product] project context from `~/.claude/PAI/USER/PROJECTS/`
 - Load latest competitive state from `State/last-check.json`
 - If state is stale (>14 days), run a quick Update first
 
@@ -25,7 +25,7 @@ Determine which Pinnacle release to position:
 
 Select the 3-4 most relevant competitor products to compare against:
 
-| Pinnacle Segment | Compare Against |
+| [Your Product] Segment | Compare Against |
 |-----------------|----------------|
 | Premium mesh | Netgear Orbi, Asus ZenWiFi, Eero Max |
 | Mid-range mesh | TP-Link Deco, Google Nest WiFi |
@@ -34,15 +34,15 @@ Select the 3-4 most relevant competitor products to compare against:
 ### 4. Generate Battlecard
 
 ```markdown
-# Competitive Battlecard: Pinnacle [Release]
+# Competitive Battlecard: [Your Product] [Release]
 **Date:** [timestamp]
-**Positioning:** [One sentence — where Pinnacle sits in market]
+**Positioning:** [One sentence — where [Your Product] sits in market]
 
 ---
 
 ## Quick Reference
 
-| | Pinnacle [X] | [Comp 1] | [Comp 2] | [Comp 3] |
+| | [Your Product] [X] | [Comp 1] | [Comp 2] | [Comp 3] |
 |---|---|---|---|---|
 | **MSRP** | | | | |
 | **Wi-Fi Standard** | | | | |
@@ -55,7 +55,7 @@ Select the 3-4 most relevant competitor products to compare against:
 
 ---
 
-## Why Pinnacle Wins
+## Why [Your Product] Wins
 
 1. **[Differentiator]** — [1-2 sentences with proof point]
 2. **[Differentiator]** — [1-2 sentences with proof point]
@@ -84,7 +84,7 @@ Select the 3-4 most relevant competitor products to compare against:
 ## Key Messaging
 
 **Elevator Pitch (30 sec):**
-> [2-3 sentences positioning Pinnacle]
+> [2-3 sentences positioning [Your Product]]
 
 **For Technical Buyers:**
 > [2-3 sentences emphasizing specs, standards, security]
@@ -101,7 +101,7 @@ Select the 3-4 most relevant competitor products to compare against:
 
 ## Key Principles
 
-1. **Honest** — Never overstate Pinnacle advantages or dismiss real competitor strengths
+1. **Honest** — Never overstate [Your Product] advantages or dismiss real competitor strengths
 2. **Specific** — Use actual specs, prices, and features, not vague claims
 3. **Actionable** — Objection handling should give real answers, not deflections
 4. **Current** — Flag anything that might be outdated

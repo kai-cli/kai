@@ -23,7 +23,7 @@ Ask (or extract from context):
 ---
 ## [YYYY-MM-DD] — [Decision Title]
 
-**Product/Area:** [Pinnacle 2.x / TR-369 / Frontend / Firmware / Team / Process]
+**Product/Area:** [Your Product / Your Service / Frontend / Backend / Team / Process]
 **Decision:** [One sentence — what was decided]
 **Owner:** [Who made or owns this decision]
 

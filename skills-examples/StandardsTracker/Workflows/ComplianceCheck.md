@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Assess Pinnacle product line compliance against current TR-369/USP and TR-069/CWMP specifications. Produces a gap analysis that can feed into sprint planning or leadership updates.
+Assess [Your Product] product line compliance against current TR-369/USP and TR-069/CWMP specifications. Produces a gap analysis that can feed into sprint planning or leadership updates.
 
 ## Process
 
@@ -18,8 +18,8 @@ Get known spec versions to assess against.
 
 ### 2. Load Product Context
 
-Read Pinnacle project context:
-- Check `~/.claude/PAI/USER/PROJECTS/` for Pinnacle project files
+Read [Your Product] project context:
+- Check `~/.claude/PAI/USER/PROJECTS/` for [Your Product] project files
 - Determine which releases are active (2.0, 2.1, 2.2, 3.0)
 - Identify any previously logged compliance decisions from DecisionLog
 
@@ -53,7 +53,7 @@ For the active specs, identify mandatory and optional requirements:
 | **Firmware** | Download and firmware upgrade | |
 | **Diagnostics** | IPPing, TraceRoute, DSL diagnostics | |
 
-### 4. Assess Each Pinnacle Release
+### 4. Assess Each [Your Product] Release
 
 For each active release, fill in compliance status:
 
@@ -68,7 +68,7 @@ For each active release, fill in compliance status:
 ### 5. Generate Gap Report
 
 ```markdown
-# Compliance Assessment — Pinnacle [Release]
+# Compliance Assessment — [Your Product] [Release]
 **Assessed Against:** TR-369 v[X.X], TR-181 v[X.X], TR-069 v[X.X]
 **Date:** [timestamp]
 

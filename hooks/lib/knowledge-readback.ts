@@ -11,48 +11,15 @@ import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 // Project path patterns -> relevant knowledge domains
-// Each entry maps a substring of CLAUDE_PROJECT_DIR to domain file names
-// Personal/non-work projects - skip knowledge injection entirely (zero overhead)
-// Personal/non-work projects - skip knowledge injection entirely (zero overhead)
-// DevenGithub: work-adjacent but meta (knowledge org) - content already in CONTEXT_ROUTING
-const EXCLUDED_PROJECTS = [
-  'Steadfast',
-  'DevenResume',
-  'DevenGithub',
-  'Startup',
-  'GranolaMCP',
-  'cli-hidden-commands',
-  'Personal-AI-Infrastructure-Review',
-];
+// Populated from config/domains.jsonc at runtime via config-loader (KAI v5.0.0+).
+// Until configured, these are empty — the hook injects nothing (safe default).
+// Add your own project mappings in config/domains.jsonc projectMapping field.
+const EXCLUDED_PROJECTS: string[] = [];
 
 const PROJECT_DOMAIN_MAP: Array<{ pattern: string; domains: string[] }> = [
-  // Firmware/embedded work gets firmware + api + products
-  { pattern: 'Learning-Your Company-Repo', domains: ['firmware', 'api-and-services', 'products', 'devops'] },
-  { pattern: 'Learning_Your Company_Repo', domains: ['firmware', 'api-and-services', 'products', 'devops'] },
-  // WiFi troubleshooter gets products + ui + api
-  { pattern: 'WiFi-Troubleshooter', domains: ['products', 'ui', 'api-and-services'] },
-  // TR-069/TR-369 gets api + products
-  { pattern: 'TR-069', domains: ['api-and-services', 'products', 'firmware'] },
-  { pattern: 'TR_069', domains: ['api-and-services', 'products', 'firmware'] },
-  // PAI config gets ai-infrastructure
-  { pattern: 'pai-config', domains: ['ai-infrastructure'] },
-  { pattern: 'pai_config', domains: ['ai-infrastructure'] },
-  // PAI development projects get ai-infrastructure
-  { pattern: 'PAI-Continued-Development', domains: ['ai-infrastructure'] },
-  { pattern: 'PAI-v4', domains: ['ai-infrastructure'] },
-  // Research-Agent: OpenWRT agents + device access tooling + TR-181 assessment
-  { pattern: 'Research-Agent', domains: ['firmware', 'api-and-services', 'products'] },
-  { pattern: 'Research_Agent', domains: ['firmware', 'api-and-services', 'products'] },
-  // AIrouter gets ai-infrastructure
-  { pattern: 'AIrouter', domains: ['ai-infrastructure'] },
-  // PrivacyGUI gets ui + products
-  { pattern: 'PrivacyGUI', domains: ['ui', 'products', 'api-and-services'] },
-  // Firmware Inspector gets firmware + products
-  { pattern: 'Firmware-Inspector', domains: ['firmware', 'products'] },
-  // Release notes gets products + firmware
-  { pattern: 'release-notes', domains: ['products', 'firmware'] },
-  // Knowledge base gets firmware + products
-  { pattern: 'Knowledge', domains: ['firmware', 'products', 'api-and-services'] },
+  // KAI system projects get ai-infrastructure domain
+  { pattern: 'kai', domains: ['ai-infrastructure'] },
+  // Add your project→domain mappings in config/domains.jsonc
 ];
 
 // Default for unrecognized projects: no injection (conservative - avoid wasting tokens)

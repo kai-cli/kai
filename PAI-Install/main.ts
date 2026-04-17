@@ -376,9 +376,9 @@ async function main() {
 
   // Load existing identity to use as defaults
   const identityPath = join(paiDir, "config", "identity.jsonc");
-  let defaultDaName = "William the AI";
+  let defaultDaName = "KAI";
   let defaultDaColor = "#3B82F6";
-  let defaultDaCatchphrase = "William go";
+  let defaultDaCatchphrase = "Ready";
   let defaultPrincipalName = "";
   let defaultTimezone = guessTimezone();
 

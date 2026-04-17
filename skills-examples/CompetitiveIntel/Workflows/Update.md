@@ -25,7 +25,7 @@ Launch parallel WebFetch requests:
 | Agent 5 | wifinowglobal.com | Industry news, Wi-Fi technology developments |
 
 **WebFetch prompt for each:**
-> "Extract all articles about consumer/SMB wireless routers, mesh WiFi systems, and networking products. Focus on: Netgear, TP-Link, Asus, Eero, Google Nest WiFi, Ubiquiti, Your Company, and any new entrants. For each item: title, competitor name, 1-2 sentence summary, date. Last 14 days."
+> "Extract all articles about consumer/SMB wireless routers, mesh WiFi systems, and networking products. Focus on: Netgear, TP-Link, Asus, Eero, Google Nest WiFi, Ubiquiti, [Your Company], and any new entrants. For each item: title, competitor name, 1-2 sentence summary, date. Last 14 days."
 
 ### 3. Categorize Items
 
@@ -44,17 +44,17 @@ Drop items that are:
 - Duplicate coverage of the same announcement
 - Older than 14 days (unless major launch)
 
-### 5. Assess Your Company Impact
+### 5. Assess [Your Company] Impact
 
 For each item:
 - **Signal:** What happened (1 sentence)
 - **Competitor:** Who did it
-- **Affects Pinnacle:** Which release or roadmap area
+- **Affects [Your Product]:** Which release or roadmap area
 - **Action:** RESPOND / MONITOR / IGNORE
 
 ### 6. Generate Output
 
-Use SKILL.md format with all four category sections plus Your Company Implications table.
+Use SKILL.md format with all four category sections plus [Your Company] Implications table.
 
 ### 7. Update State
 

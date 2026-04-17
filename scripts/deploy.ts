@@ -245,7 +245,7 @@ Correct
   "PAI/USER/DAIDENTITY.md": `# Digital Assistant Identity
 
 <!-- Configure your AI assistant's personality -->
-Name: William
+Name: KAI
 Personality: Professional, direct, technically capable
 `,
 

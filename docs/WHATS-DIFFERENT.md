@@ -161,7 +161,7 @@ Multi-agent research with parallel execution:
 - **No API keys** — stored in environment or `.env` (gitignored)
 - **No `settings.json`** — generated from domain configs at install
 - **No session state** — sessions, tasks, learning signals are gitignored
-- **No Your Company-specific content** — EM/PLM skills are generic frameworks
+- **No company-specific content — EM/PLM and workflow skills are generic frameworks
 
 ---
 

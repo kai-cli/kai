@@ -85,3 +85,7 @@ skills/PAI/USER/
 
 # Domain-specific example skills (not active, for reference only)
 # skills-examples/ is tracked intentionally as templates
+
+# Runtime skill state (never commit session-specific state)
+skills/**/State/
+skills-examples/**/State/

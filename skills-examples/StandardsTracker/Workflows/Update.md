@@ -50,11 +50,11 @@ For each extracted item:
 | **Data Model** | New objects, parameter changes, profile additions |
 | **Adoption** | Vendor news, ISP deployments, certifications, tools |
 
-### 5. Assess Your Company Impact
+### 5. Assess [Your Company] Impact
 
 For each item, determine:
 - **Affects:** Which subsystem (USP agent, data model, Wi-Fi, security)
-- **Pinnacle Release:** 2.x (current) or 3.0 (future)
+- **[Your Product] Release:** 2.x (current) or 3.0 (future)
 - **Action:** implement / track / ignore
 - **Priority:** HIGH / MEDIUM / LOW / NONE
 
@@ -63,7 +63,7 @@ For each item, determine:
 Use the format from SKILL.md:
 - Header with timestamp and sources
 - Three category sections with items
-- Your Company Impact Assessment table
+- [Your Company] Impact Assessment table
 - Summary table
 
 ### 7. Update State

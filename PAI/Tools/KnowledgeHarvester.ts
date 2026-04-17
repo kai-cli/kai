@@ -58,42 +58,33 @@ const PROJECTS_DIR = join(CLAUDE_DIR, "projects");
 const KNOWLEDGE_DIR = paiPath("MEMORY", "KNOWLEDGE");
 const STALE_THRESHOLD_DAYS = 30;
 
-// Domain classification - keywords map memory files to knowledge domains
+// Domain classification - generic starter domains.
+// Replace with your own in config/domains.jsonc (KAI v5.0.0+).
 const DOMAIN_DEFINITIONS: Array<{ name: string; description: string; keywords: string[] }> = [
   {
-    name: "firmware",
-    description: "Your Company firmware build system, feeds, SDK, OpenWRT architecture",
-    keywords: ["firmware", "build", "feed", "sdk", "openwrt", "your-companywrt", "targets", "jenkins", "make", "package", "ipk", "toolchain", "kernel", "uboot", "flash", "image"],
+    name: "backend",
+    description: "Backend services, APIs, databases, and server-side logic",
+    keywords: ["api", "server", "database", "sql", "rest", "graphql", "service", "endpoint", "auth", "cache", "microservice"],
   },
   {
-    name: "api-and-services",
-    description: "JNAP API, sysctx, UCI, service architecture, TR-069/TR-369",
-    keywords: ["jnap", "sysctx", "uci", "api", "service", "tr-069", "tr-369", "cwmp", "usp", "bbf", "obuspa", "tr-181"],
-  },
-  {
-    name: "products",
-    description: "Active products, customers, SKUs, hardware specs",
-    keywords: ["pinnacle", "m60", "m62", "m61", "product", "customer", "sku", "du", "cf", "toob", "qualcomm", "ipq", "hardware", "soc", "wifi"],
+    name: "frontend",
+    description: "Frontend frameworks, UI components, and web interfaces",
+    keywords: ["ui", "react", "vue", "angular", "css", "html", "component", "frontend", "web", "interface", "typescript"],
   },
   {
     name: "devops",
-    description: "Jenkins, GitHub Actions, Docker, CI/CD, deployment",
-    keywords: ["jenkins", "docker", "ci", "cd", "pipeline", "github", "actions", "ecs", "fargate", "deploy", "devops", "lswf"],
-  },
-  {
-    name: "ui",
-    description: "PrivacyGUI (Flutter), guardians-ui (React), UI pipeline",
-    keywords: ["ui", "flutter", "react", "privacygui", "guardians", "dart", "frontend", "web", "interface"],
+    description: "CI/CD pipelines, containerization, infrastructure, and deployment",
+    keywords: ["docker", "kubernetes", "ci", "cd", "pipeline", "github", "actions", "deploy", "devops", "terraform", "helm"],
   },
   {
     name: "security",
-    description: "Security practices, patches, vulnerability management",
+    description: "Security practices, vulnerability management, and privacy",
     keywords: ["security", "patch", "vulnerability", "cve", "pii", "privacy", "encryption", "ssl", "tls", "audit"],
   },
   {
     name: "ai-infrastructure",
-    description: "PAI system, hooks, skills, memory, agents",
-    keywords: ["pai", "hook", "skill", "agent", "algorithm", "memory", "inference", "claude", "ai", "router"],
+    description: "KAI system, hooks, skills, memory, and AI agents",
+    keywords: ["kai", "hook", "skill", "agent", "algorithm", "memory", "inference", "claude", "ai", "llm"],
   },
 ];
 
