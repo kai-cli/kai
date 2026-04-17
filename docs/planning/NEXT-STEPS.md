@@ -1,7 +1,7 @@
 # PAI — Next Steps
 
 > Canonical repo: `kai-cli/pai-config`
-> Current: v4.8.0 in progress (PR #2 open)
+> Current: v4.9.0 in progress (PR #3 open) | v5.0.0 planned (fork)
 
 ---
 
@@ -27,8 +27,8 @@
 
 ## v4.7.0 — Shipped (PR #1 merged 2026-04-16)
 
-- [x] Algorithm v3.11.0 — pipeline hop verification, pre-flight enforcement
-- [x] KnowledgeSync.hook.ts — incremental SessionEnd re-distillation, 7-day full harvest
+- [x] Algorithm v3.11.0 — pipeline hop verification, pre-flight target file reading enforcement
+- [x] KnowledgeSync.hook.ts — incremental SessionEnd re-distillation, 7-day full harvest auto-trigger
 - [x] Context routing — DU certification memory, Research-Agent memory, Du_tracking path
 
 ---
@@ -36,53 +36,85 @@
 ## v4.8.0 — In Progress (PR #2 open)
 
 ### Memory Curation Infrastructure
-- [x] Token optimization — CLAUDE.md dedup, conditional TELOS, compressed steering rules (-2,100 tokens/session)
+- [x] Token optimization — CLAUDE.md dedup, conditional TELOS, compressed steering rules (~2,100 tokens/session)
 - [x] `inference-budget.ts` — shared SessionEnd LLM cap (max 3 calls/session)
 - [x] `staging.ts` — MEMORY/STAGING/ with 14-day draft expiry
 - [x] `pai curate` CLI — full interactive weekly review (staleness, domains, drafts, insights, stats)
 - [x] Archive/restore — stale files → .archive/ with `pai curate restore`
 - [x] Read telemetry — LoadContext logs injected domains to memory-reads.jsonl
-- [x] Hard token budget cap — 16k char limit with priority-based truncation
+- [x] Hard token budget cap — 16k char limit with priority-based truncation (`applyTokenBudget`)
 
 ### Self-Learning Loop
-- [x] `ReflectionHarvester.ts` (`pai harvest`) — 62 reflections → Jaccard dedup → Haiku synthesis → STAGING
-- [x] Rating-triggered drafts — rating 8-10 → success pattern; rating 4-5 → correction (RatingCapture)
+- [x] `ReflectionHarvester.ts` (`pai harvest`) — Jaccard dedup → Haiku synthesis → STAGING
+- [x] Rating-triggered drafts — 8-10 → success pattern; 4-5 → correction (RatingCapture)
 - [x] Nudge system — session start reminder when STAGING has unreviewed drafts >14 days
 - [x] Auto-harvest trigger — KnowledgeSync fires ReflectionHarvester when ≥10 new reflections
 
-### Security P1 (carried from v4.7.0)
+### Security P1
 - [x] WebFetch/WebSearch PreToolUse guard — blocks internal network ranges, logs outbound
 - [x] PostToolUse secret detection — scans Bash/WebFetch output for 9 credential patterns
 
-### Tests
-- [x] 248 tests passing (198 → 248, +50 new across InferenceBudget, Staging, WebFetchGuard, SecretDetector, ReflectionHarvester)
+### Tests: 169 → 248 passing
 
 ---
 
-## v4.9.0 — Backlog
+## v4.9.0 — In Progress (PR #3 open)
 
-### Algorithm Improvements
-- [ ] Parallelization forcing function — mandatory gate in PLAN when 3+ independent ops
-- [ ] Phantom capability elimination — prune unused capabilities in PLAN before EXECUTE
-- [ ] Version string centralization — single VERSION source, no more 20-file bumps
-
-### Memory System
-- [ ] Learning Pattern Synthesis automation — auto-trigger when >20 new ratings
-- [ ] Confidence calibration — track approval rate, adjust draft thresholds over time
-- [ ] Batch approve — `pai curate approve-all --confidence 0.8`
+### Algorithm v3.12.0
+- [x] Parallelization gate (QG8) — mandatory `📐 PARALLEL PLAN` when 3+ independent ops
+- [x] Capability prune — PLAN phase KEEP/DROP review prevents phantom selections reaching VERIFY
+- [x] Version centralization — CLAUDE.md reads PAI/Algorithm/LATEST; future bumps need 3 files only
 
 ### Infrastructure
-- [ ] Hook timeout hardening — per-hook timeout overrides in settings.json
-- [ ] Test coverage expansion — SecurityValidator, RatingCapture, KnowledgeSync, LoadContext
-- [ ] Memory TTL/archival — WISDOM/, LEARNING/, RELATIONSHIP/ grow unbounded
+- [x] Hook timeout hardening — `run-hook.sh` enforces per-hook timeouts (KnowledgeSync 180s, others 30s)
+- [x] Memory TTL/archival — SessionCleanup caps ratings.jsonl (500), reflections (200), archives LEARNING/RELATIONSHIP
+- [x] LearningPatternSynthesis auto-trigger — KnowledgeSync fires when ≥20 new ratings
 
-### Product Direction
-- [ ] Team features — org-config patterns, `pai setup --team` mode
-- [ ] Local model support — Ollama/llama.cpp for privacy and cost control
-- [ ] Remote access — PAI from mobile/web/other machines
-- [ ] External notifications — Discord/Slack/email for long-running task completion
+### Security
+- [x] Remove personal AWS credentials from config/preferences.jsonc and bedrock-known-good.jsonc
+- [x] SecretScanner + git pre-commit: add AWS account ID and profile name patterns
+- [x] BuildSettings parseJSONC: add trailing comma stripping (standard JSONC)
 
-### Deferred EM/PLM Work (Tier 5)
-- [ ] NPI Dashboard — needs product thinking: gates, milestones, risk roll-ups
-- [ ] Release Notes Generator — needs audience definition, format, source mapping
-- [ ] Team Health Tracker — needs privacy design, review cycle integration
+### Quality & Testing
+- [x] RatingCapture tests (28) — parseExplicitRating regex, detectCorrections patterns
+- [x] CriticalPath integration tests (14) — RatingCapture → STAGING → LoadContext → pai curate
+- [x] SecurityValidator tests (17) — hard blocks, zero-access paths, confirm ops, fail-open
+- [x] TokenBudget tests (12) — priority truncation, drop order, edge cases
+- [x] rating-parser.ts extraction — zero-dependency module
+- [x] SKILL.md — Memory Management CLI section (pai curate/harvest commands)
+- [x] RebuildPAI.ts — fix broken Components and Algorithm path references
+
+### Tests: 248 → ~240 (your refactor) + new tests
+
+---
+
+## v5.0.0 — Planned (fork: public release)
+
+### Goals
+- Public GitHub repo, MIT/Apache license, installable by any developer
+- `curl | bash` installer → `git clone ~/pai` → `ln -s ~/pai ~/.claude`
+- Zero personal/company content in tracked files
+- Generic config layer replacing all Your Company-specific hardcoding
+
+### Council Synthesis (2026-04-17)
+- [x] Repo structure & install architecture designed (Agent 1)
+- [x] Config layer design completed — `config/domains.jsonc` spec (Agent 2)
+- [x] Full codebase audit — 20 RED items, 6 YELLOW, 13 GREEN, 4 dead code (Agent 3)
+
+### Work Required
+- [ ] Strip 20 RED audit items (personal refs, dead banner files, Plans/archive)
+- [ ] Extract domains to `config/domains.jsonc` + `config-loader.ts` + refactor 3 hooks
+- [ ] Build `pai setup` wizard (Agent 2 spec complete)
+- [ ] Add LICENSE, CONTRIBUTING.md, CHANGELOG.md
+- [ ] Update installer for curl|bash + symlink pattern
+- [ ] Decide: fork repo name and GitHub org
+
+---
+
+## Deferred / Won't Do (this version)
+
+- Confidence calibration — needs weeks of approval/rejection data first
+- Batch approve (`pai curate approve-all`) — depends on confidence calibration
+- Hook timeout per-hook config in settings.json — env var override sufficient for now
+- Team features, local model support, remote access, external notifications — v6+ territory
+- NPI Dashboard, Release Notes Generator, Team Health Tracker — needs product design
