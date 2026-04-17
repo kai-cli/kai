@@ -48,5 +48,5 @@ Ask (or extract from context):
 ```
 
 ## Step 3 — Confirm and Append
-Show draft to Deven. On approval, append to DECISIONS.md.
+Show draft to {PRINCIPAL.NAME}. On approval, append to DECISIONS.md.
 Confirm: "Logged. Decision #[N] in the log."

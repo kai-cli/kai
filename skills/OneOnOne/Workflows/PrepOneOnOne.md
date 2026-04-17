@@ -1,7 +1,7 @@
 # PrepOneOnOne Workflow
 
 ## Purpose
-Prepare Deven for an upcoming 1:1 with a direct report.
+Prepare {PRINCIPAL.NAME} for an upcoming 1:1 with a direct report.
 Surfaces themes, open action items, and suggested talking points.
 
 ## Trigger

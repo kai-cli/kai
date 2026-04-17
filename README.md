@@ -13,7 +13,7 @@
 ## Install
 
 ```bash
-git clone https://github.com/kai-cli/pai-config ~/pai-config
+git clone https://github.com/kai-cli/kai ~/pai-config
 bash ~/pai-config/install.sh
 ```
 

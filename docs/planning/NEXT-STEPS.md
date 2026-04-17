@@ -1,6 +1,6 @@
 # PAI — Next Steps
 
-> Canonical repo: `kai-cli/pai-config`
+> Canonical repo: `kai-cli/kai`
 > Current: v4.9.0 in progress (PR #3 open) | v5.0.0 planned (fork)
 
 ---

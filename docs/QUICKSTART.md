@@ -26,7 +26,7 @@ Before running the installer, make sure you have:
 
 ```bash
 # Clone the repo
-git clone https://github.com/kai-cli/pai-config ~/pai-config
+git clone https://github.com/kai-cli/kai ~/pai-config
 
 # Run the installer
 bash ~/pai-config/install.sh

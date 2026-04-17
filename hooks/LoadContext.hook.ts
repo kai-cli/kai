@@ -92,7 +92,7 @@ const CONDITIONAL_FILES: Record<string, 'personal-only'> = {
 
 /**
  * Determine if the current session is a "personal" project (PAI, research, etc.)
- * vs a work project (Your Company repos, firmware, etc.)
+ * vs a work project (non-personal projects)
  */
 function isPersonalProject(): boolean {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();

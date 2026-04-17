@@ -133,7 +133,7 @@ The release that introduced persistent learning and sentiment capture.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/kai-cli/pai-config.git
+git clone https://github.com/kai-cli/kai.git
 cd pai-config
 
 # 2. Run the installer

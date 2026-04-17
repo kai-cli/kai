@@ -12,7 +12,7 @@ PAI has four agent systems that serve different purposes. Confusing them causes 
 |--------|-----------|-------------|
 | **Task Tool Subagent Types** | Pre-built agents in Claude Code (Architect, Designer, Engineer, Explore, etc.) | Internal workflow use ONLY |
 | **Named Agents** | Persistent identities with backstories and personalities (Serena, Marcus, Rook, etc.) | Recurring work, relationships |
-| **Project Agents** | Domain-specific agents with embedded codebase knowledge (`~/.claude/custom-agents/`) | Firmware/Your Company/OpenWRT work |
+| **Project Agents** | Domain-specific agents with embedded codebase knowledge (`~/.claude/custom-agents/`) | Domain-specific deep work |
 | **Custom Agents** | Dynamic agents composed via ComposeAgent from traits | When user says "custom agents" |
 
 ---
@@ -49,7 +49,7 @@ Skill("Agents")  // → CreateCustomAgent workflow
 | "use Remy", "get Ava to" | Named agent | Use appropriate researcher subagent_type |
 | (Code implementation) | Engineer | `Task({ subagent_type: "Engineer" })` |
 | (Architecture/design) | Architect | `Task({ subagent_type: "Architect" })` |
-| (Firmware/OpenWRT/Your Company topic) | Project agent | Load from `~/.claude/custom-agents/OpenWRT-*.md` |
+| (Domain-specific topic matching your custom agents) | Project agent | Load from `~/.claude/custom-agents/*.md` |
 
 ### Custom Agent Creation Flow
 
@@ -111,45 +111,32 @@ Named agents have rich backstories and personality traits. They provide relation
 
 Project agents are manually authored agents with deep domain knowledge embedded. They live in `~/.claude/custom-agents/` with `custom_agent: true` frontmatter and are available globally across all PAI projects.
 
-### OpenWRT / Your Company Firmware Agents
+### Creating Domain-Specific Project Agents
 
-| Agent File | Role | Model | Trigger Topics |
-|------------|------|-------|----------------|
-| `OpenWRT-FirmwareEngineer.md` | Lead firmware engineer | opus | build system, SDK, feeds, patches, OpenWRT internals |
-| `OpenWRT-FirmwareQA.md` | QA lead | opus | testing, CDRouter, TR-181 certification, regression |
-| `OpenWRT-PLM.md` | Product Line Manager | opus | roadmap, ISP requirements, release planning, competitive |
-| `OpenWRT-TR-Standards.md` | TR-069/TR-369/USP specialist | opus | CWMP, USP, TR-181, ACS, data models, BBF |
-| `OpenWRT-Security.md` | Security/PSIRT | opus | CVE, supply chain, secrets, firmware security, patches |
-| `OpenWRT-DevOps.md` | CI/CD engineer | opus | Jenkins, ECS, Docker, build pipeline, artifacts |
-| `OpenWRT-ISP-Liaison.md` | ISP partner coordinator | opus | DU, CommunityFibre, Toob, customer configs |
-| `OpenWRT-ODM.md` | ODM coordinator | opus | CyberTan, cbt feed, devinfo, BDF, hardware |
-| `OpenWRT-OpenSource.md` | GPL compliance | opus | GPL, licensing, binary blobs, upstream, open source |
+Project agents are the most powerful customization point in KAI. Each agent embeds deep knowledge about a specific domain — a codebase, a product, a technology stack.
 
-**Knowledge sources:** Each agent references indexed codebase knowledge from:
-- `~/.claude/projects/{Learning-Your Company-Repo-project-hash}/memory/` (17 files)
-- `~/Projects/TR-069_TR-369/tr-repo/` (24 files, ~38K words)
+**To create your own project agent:**
+1. Create `~/.claude/custom-agents/YourDomain-Role.md`
+2. Add frontmatter: `custom_agent: true`, `model: opus`, `triggers: [keyword list]`
+3. Write a system prompt embedding the domain knowledge you want the agent to carry
+4. The agent is available globally across all KAI sessions when a matching trigger topic is detected
 
-### Routing Rules for Project Agents
+**Example agent structure:**
+```markdown
+---
+custom_agent: true
+model: opus
+triggers: [your-domain, your-technology, your-product]
+---
 
-| Context | Suggested Agent(s) |
-|---------|-------------------|
-| Firmware build issues, SDK patches | FirmwareEngineer |
-| Test planning, QA sign-off, CDRouter | FirmwareQA |
-| Release planning, ISP requirements, roadmap | PLM |
-| TR-069/TR-369/USP, data models, ACS | TR-Standards |
-| CVE triage, security review, PSIRT | Security |
-| Jenkins, Docker, build times, CI/CD | DevOps |
-| DU/CF/Toob partner builds, preconfigs | ISP-Liaison |
-| CyberTan deliverables, BDF files, devinfo | ODM |
-| GPL compliance, license audit, source release | OpenSource |
+You are a specialist in [DOMAIN]. Your knowledge covers:
+- [Area 1]
+- [Area 2]
 
-### Coordination Protocol
+Key context: [embed the context that would otherwise need to be re-established every session]
+```
 
-Project agents can hand off work via shared context files in project `Context/` directories:
-- `decisions.md` — Architecture and product decisions
-- `hardware.md` — Hardware platform reference
-- `backlog.md` — Cross-functional work items
-- `coordination.md` — PLM -> Engineer -> QA handoff protocol
+**See `skills-examples/` for domain-specific skill templates** that show how to structure specialized workflow skills alongside project agents.
 
 ---
 

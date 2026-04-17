@@ -1210,7 +1210,7 @@ ALWAYS. USE. THE. ALGORITHM. AND. PROPER. OUTPUT. FORMAT. AND. INVOKE. CAPABILIT
 
 Custom values in `settings.json`:
 - `daidentity.name` - DA's name (William the AI)
-- `principal.name` - User's name (Deven)
+- `principal.name` - User's name (configured during `pai setup`)
 - `principal.timezone` - User's timezone
 
 ---
