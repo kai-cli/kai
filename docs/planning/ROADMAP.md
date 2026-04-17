@@ -1,6 +1,6 @@
 # PAI Roadmap
 
-> Canonical repo: `kai-cli/pai-config`
+> Canonical repo: `kai-cli/kai`
 > This file maps what PAI is building toward. [NEXT-STEPS.md](NEXT-STEPS.md) has the tactical checklist.
 
 ---

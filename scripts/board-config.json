@@ -1,78 +1,18 @@
 {
   "port": 3333,
   "scanDirs": [
-    "~/.claude/MEMORY/WORK",
-    "~/.claude/docs/v45-staging/work",
-    "~/.claude/docs/v46-staging/work"
+    "~/.claude/MEMORY/WORK"
   ],
   "projectsDir": "~/Projects",
   "autoDiscover": true,
-  "ignored": ["node_modules", ".git", "__pycache__", ".venv", "Personal"],
-  "library": [
-    {
-      "name": "Release Notes Generator",
-      "path": "~/Projects/release-notes/",
-      "description": "ISP release note drafting pipeline — config-driven, multi-audience output",
-      "tags": ["your-company", "releases", "writing"],
-      "pinned": true
-    },
-    {
-      "name": "Release Calendar & Gap Analysis",
-      "path": "~/Projects/release-calendar/",
-      "description": "7-board release tracking with gap analysis, ISP bug exposure, weekly calendar",
-      "tags": ["your-company", "releases", "tracking"],
-      "pinned": true
-    },
-    {
-      "name": "TR-069/TR-369 Research",
-      "path": "~/Projects/TR-069_TR-369/",
-      "description": "Open standards compliance research, data model analysis, USP protocol work",
-      "tags": ["standards", "your-company", "research"],
-      "pinned": true
-    },
-    {
-      "name": "Knowledge Base",
-      "path": "~/Projects/Knowledge/",
-      "description": "Indexed knowledge store — firmware, standards, security, AI reference material",
-      "tags": ["knowledge", "reference"],
-      "pinned": true
-    },
-    {
-      "name": "Serial Router Monitor",
-      "path": "~/Projects/serial-router-monitor/",
-      "description": "USB serial console tool for router log capture and device assessment",
-      "tags": ["your-company", "tools", "hardware"],
-      "pinned": true
-    },
-    {
-      "name": "GranolaMCP",
-      "path": "~/Projects/GranolaMCP/",
-      "description": "Meeting notes auto-sync daemon (complete) + Todo MCP server (next)",
-      "tags": ["ai", "meetings", "automation"],
-      "pinned": true
-    },
-    {
-      "name": "PAI System (v4.5.0)",
-      "path": "~/.claude/",
-      "description": "Personal AI Infrastructure — Algorithm, skills, hooks, agents, Ralph Loop",
-      "tags": ["ai", "infrastructure"],
-      "pinned": true
-    },
-    {
-      "name": "Firmware Inspector",
-      "path": "~/Projects/Firmware_Inspector/firmware-inspector/",
-      "description": "OpenWRT device inspection toolkit — serial/SSH access, TR-181 validation, YAML rules, safety policy, evidence collection",
-      "tags": ["your-company", "tools", "firmware", "tr-181"],
-      "pinned": true
-    },
-    {
-      "name": "CLI Hidden Commands Reference",
-      "path": "~/Projects/cli-hidden-commands/",
-      "description": "Undocumented CLI commands reference guide",
-      "tags": ["reference", "tools"],
-      "pinned": true
-    }
+  "ignored": [
+    "node_modules",
+    ".git",
+    "__pycache__",
+    ".venv",
+    "Personal"
   ],
+  "library": [],
   "archived": [],
   "ralphLoop": {
     "defaultBudget": 5,

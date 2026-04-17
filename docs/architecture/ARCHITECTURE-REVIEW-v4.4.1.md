@@ -4,7 +4,7 @@
 >
 > **Date:** 2026-03-11
 > **Branch:** v4.4.1-dev
-> **Reviewer:** Oz (AI) + YourName (human)
+> **Reviewer:** AI + Principal (human)
 > **Companion docs:** SYSTEM-ATLAS.md (structure), IMPROVEMENT-INDEX.md (tracker), HOOK-SYSTEM-AUDIT.md (hook details)
 
 ---

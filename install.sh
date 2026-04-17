@@ -52,7 +52,7 @@ echo -e "           ${NAVY}████${RESET}        ${BLUE}████${RESE
 echo -e "           ${NAVY}████${RESET}        ${BLUE}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}"
 echo ""
 echo ""
-echo -e "                       ${STEEL}→${RESET} ${BLUE}github.com/kai-cli/pai-config${RESET}"
+echo -e "                       ${STEEL}→${RESET} ${BLUE}github.com/kai-cli/kai${RESET}"
 echo ""
 echo -e "${STEEL}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${RESET}"
 echo ""

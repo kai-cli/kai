@@ -31,7 +31,7 @@ The CapabilityRecommender hook uses AI inference to classify depth. Its classifi
 
 **Default:** FULL. MINIMAL is rare — only pure social interaction with zero task content. Short prompts can demand FULL depth. The word "just" does not reduce depth.
 
-# The Algorithm (v3.10.0 | github.com/kai-cli/pai-config)
+# The Algorithm (v3.10.0 | github.com/kai-cli/kai)
 
 ## Core Philosophy
 
@@ -232,7 +232,7 @@ More ISC = finer verification = better hill-climbing. When in doubt, more criter
 ## The Seven Mandatory Phases of Algorithm Execution
 
 ```
-♻︎ Entering the PAI ALGORITHM… (v3.10.0 | github.com/kai-cli/pai-config) ═════════════
+♻︎ Entering the PAI ALGORITHM… (v3.10.0 | github.com/kai-cli/kai) ═════════════
 
 🗒️ TASK: [8 word description]
 

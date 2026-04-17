@@ -117,7 +117,7 @@ function getStats(): SystemStats {
   let paiVersion = "4.0.3";
   let algorithmVersion = "3.7.0";
   let catchphrase = "{name} here, ready to go";
-  let repoUrl = "github.com/kai-cli/pai-config";
+  let repoUrl = "github.com/kai-cli/kai";
   try {
     const settings = JSON.parse(readFileSync(join(CLAUDE_DIR, "settings.json"), "utf-8"));
     name = settings.daidentity?.displayName || settings.daidentity?.name || "PAI";

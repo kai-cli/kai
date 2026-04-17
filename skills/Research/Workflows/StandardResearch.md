@@ -35,14 +35,14 @@ bun ~/.claude/PAI/Tools/ResearchIndex.ts dedup "<research topic>"
 
 ### Step 0b: Check Local Context FIRST (MANDATORY)
 
-**Before launching any web research agents**, check if the topic relates to Your Company, firmware, Pinnacle, speedtest, TR-069/369, or any known project. If so:
+**Before launching any web research agents**, check if the topic relates to known local projects in your knowledge base, or any known project. If so:
 
 1. Read `CONTEXT_ROUTING.md` for relevant local paths
 2. Read `~/Projects/Knowledge/INDEX.md` and search for topic keywords
 3. Check relevant GitHub repos via `gh` CLI (issues, docs)
 4. Launch an **Explore agent** to search local project files IN PARALLEL with web agents (not after)
 
-**Why:** YourName has a comprehensive local Knowledge base with indexed firmware docs, architecture, vendor docs (Ookla, SamKnows), build configs, and GitHub issue pointers. Web research agents are slow and the information is often not public. Local context is faster and more accurate.
+**Why:** The user has a comprehensive local knowledge base with indexed firmware docs, architecture, vendor docs (Ookla, SamKnows), build configs, and GitHub issue pointers. Web research agents are slow and the information is often not public. Local context is faster and more accurate.
 
 **If local context covers >80% of the answer**, skip web agents entirely and synthesize from local sources.
 
