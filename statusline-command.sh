@@ -581,10 +581,8 @@ calc_bar_width() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# LINE 0: PAI BRANDING (clock, env)
+# LINE 0: PAI BRANDING + ENV
 # ═══════════════════════════════════════════════════════════════════════════════
-
-current_time=$(date +"%H:%M")
 
 # Session label: uppercase 2-word label
 session_display=""
@@ -592,87 +590,22 @@ if [ -n "$SESSION_LABEL" ]; then
     session_display=$(echo "$SESSION_LABEL" | tr '[:lower:]' '[:upper:]')
 fi
 
-# ─── Big clock using 3-row box-drawing digits (3 chars wide, 1-char gaps) ──
-# Box-drawing gives clear structure: ┏━┓ ┃ ┗━┛ etc.
-_big_digit() {
-    local d="$1" row="$2"
-    case "${d}_${row}" in
-        0_0) printf "┏━┓" ;; 0_1) printf "┃ ┃" ;; 0_2) printf "┗━┛" ;;
-        1_0) printf " ╻ " ;; 1_1) printf " ┃ " ;; 1_2) printf " ╹ " ;;
-        2_0) printf "╺━┓" ;; 2_1) printf "┏━┛" ;; 2_2) printf "┗━╸" ;;
-        3_0) printf "╺━┓" ;; 3_1) printf " ━┫" ;; 3_2) printf "╺━┛" ;;
-        4_0) printf "╻ ╻" ;; 4_1) printf "┗━┫" ;; 4_2) printf "  ╹" ;;
-        5_0) printf "┏━╸" ;; 5_1) printf "┗━┓" ;; 5_2) printf "╺━┛" ;;
-        6_0) printf "┏━╸" ;; 6_1) printf "┣━┓" ;; 6_2) printf "┗━┛" ;;
-        7_0) printf "╺━┓" ;; 7_1) printf "  ┃" ;; 7_2) printf "  ╹" ;;
-        8_0) printf "┏━┓" ;; 8_1) printf "┣━┫" ;; 8_2) printf "┗━┛" ;;
-        9_0) printf "┏━┓" ;; 9_1) printf "┗━┫" ;; 9_2) printf "╺━┛" ;;
-    esac
-}
-
-_big_colon() {
-    local row="$1"
-    case "$row" in
-        0) printf " " ;; 1) printf "╏" ;; 2) printf " " ;;
-    esac
-}
-
-# Parse time digits
-_h1="${current_time:0:1}"; _h2="${current_time:1:1}"
-_m1="${current_time:3:1}"; _m2="${current_time:4:1}"
-
-# Clock content: 17 chars. Box: ╭ + 19 dashes + ╮ = 21 chars total
-_box_width=21
-
-# Center the box within the 72-char separator line (matches PAI header)
-_center_pad=$(( (72 - _box_width) / 2 ))
-_pad=""
-for (( _i=0; _i<_center_pad; _i++ )); do _pad+=" "; done
-
-# Render 3-row big clock in a digital clock frame, centered
-_render_big_clock() {
-    local color="$1"
-    local border="${SLATE_600}"
-    # Top border
-    printf "${border}%s╔═══════════════════╗${RESET}\n" "$_pad"
-    # Clock rows (1-space padding each side)
-    for row in 0 1 2; do
-        printf "${border}%s║${RESET} ${color}" "$_pad"
-        _big_digit "$_h1" "$row"
-        printf " "
-        _big_digit "$_h2" "$row"
-        printf " "
-        _big_colon "$row"
-        printf " "
-        _big_digit "$_m1" "$row"
-        printf " "
-        _big_digit "$_m2" "$row"
-        printf " ${border}║${RESET}\n"
-    done
-    # Bottom border
-    printf "${border}%s╚═══════════════════╝${RESET}\n" "$_pad"
-}
-
-# Output PAI branding + big clock + env line
+# Output PAI branding + env line
 case "$MODE" in
     nano)
         printf "${SLATE_600}── │${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}│ ────────────${RESET}\n"
-        printf "${PAI_TIME}${current_time}${RESET}\n"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_500}${PAI_A}${PAI_VERSION}${RESET} ${WIELD_ACCENT}${model_name}${RESET}\n"
         ;;
     micro)
         printf "${SLATE_600}─────────────────────────────────${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}──────────────────────────────────${RESET}\n"
-        _render_big_clock "$PAI_TIME"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_400}claude${RESET} ${PAI_A}${cc_version}${RESET} ${SLATE_600}│${RESET} ${SLATE_500}PAI:${PAI_A}${PAI_VERSION}${RESET} ${SLATE_600}│${RESET} ${WIELD_ACCENT}${model_name}${RESET}\n"
         ;;
     mini)
         printf "${SLATE_600}─────────────────────────────────${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}──────────────────────────────────${RESET}\n"
-        _render_big_clock "$PAI_TIME"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_400}claude${RESET} ${PAI_A}${cc_version}${RESET} ${SLATE_600}│${RESET} ${SLATE_500}PAI:${PAI_A}${PAI_VERSION}${RESET} ${SLATE_400}ALG:${PAI_A}${ALGO_VERSION}${RESET} ${SLATE_600}│${RESET} ${WIELD_ACCENT}${model_name}${RESET}\n"
         ;;
     normal)
         printf "${SLATE_600}─────────────────────────────────${RESET} ${PAI_P}P${PAI_A}A${PAI_I}I${RESET} ${SLATE_600}──────────────────────────────────${RESET}\n"
-        _render_big_clock "$PAI_TIME"
         printf "${SLATE_400}ENV:${RESET} ${SLATE_400}claude${RESET} ${PAI_A}${cc_version}${RESET} ${SLATE_600}│${RESET} ${SLATE_500}PAI:${PAI_A}${PAI_VERSION}${RESET} ${SLATE_400}ALG:${PAI_A}${ALGO_VERSION}${RESET} ${SLATE_600}│${RESET} ${WIELD_ACCENT}Model:${RESET} ${SLATE_300}${model_name}${RESET}\n"
         ;;
 esac

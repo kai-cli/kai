@@ -287,12 +287,16 @@ function getRecentWorkSessions(paiDir: string): WorkSession[] {
       if (existsSync(prdPath)) {
         // v4.0: Read from PRD.md frontmatter
         try {
-          const prdHead = readFileSync(prdPath, 'utf-8').substring(0, 600);
+          const prdHead = readFileSync(prdPath, 'utf-8').substring(0, 800);
           const statusMatch = prdHead.match(/^status:\s*"?(\w+)"?/m);
+          const phaseMatch = prdHead.match(/^phase:\s*"?(\w+)"?/m);
           const titleMatch = prdHead.match(/^title:\s*"?(.+?)"?\s*$/m);
+          const taskMatch = prdHead.match(/^task:\s*"?(.+?)"?\s*$/m);
           const sessionIdMatch = prdHead.match(/^session_id:\s*"?(.+?)"?\s*$/m);
           if (statusMatch) status = statusMatch[1];
+          else if (phaseMatch) status = phaseMatch[1].toUpperCase();
           if (titleMatch) rawTitle = titleMatch[1];
+          else if (taskMatch) rawTitle = taskMatch[1];
           if (sessionIdMatch) sessionId = sessionIdMatch[1]?.trim();
         } catch { /* skip */ }
       } else if (existsSync(metaPath)) {
@@ -312,7 +316,7 @@ function getRecentWorkSessions(paiDir: string): WorkSession[] {
 
       try {
 
-        if (status === 'COMPLETED') continue;
+        if (status === 'COMPLETED' || status === 'COMPLETE') continue;
         if (rawTitle.toLowerCase().startsWith('tasknotification') || rawTitle.length < 10) continue;
         if (sessionId && seenSessionIds.has(sessionId)) continue;
         if (sessionId) seenSessionIds.add(sessionId);
@@ -332,14 +336,16 @@ function getRecentWorkSessions(paiDir: string): WorkSession[] {
             if (files.length > 0) prdFile = join(dirPath, files[0]);
           }
           if (prdFile) {
-            const prdContent = readFileSync(prdFile, 'utf-8');
+            const prdContent = readFileSync(prdFile, 'utf-8').substring(0, 800);
             const prdIdMatch = prdContent.match(/^id:\s*(.+)$/m);
             const prdStatusMatch = prdContent.match(/^status:\s*(.+)$/m);
+            const prdPhaseMatch = prdContent.match(/^phase:\s*(.+)$/m);
             const prdVerifyMatch = prdContent.match(/^verification_summary:\s*"?(.+?)"?$/m);
+            const prdProgressMatch = prdContent.match(/^progress:\s*(.+)$/m);
             prd = {
               id: prdIdMatch?.[1]?.trim() || 'PRD',
-              status: prdStatusMatch?.[1]?.trim() || 'UNKNOWN',
-              progress: prdVerifyMatch?.[1]?.trim() || '0/0'
+              status: prdStatusMatch?.[1]?.trim() || prdPhaseMatch?.[1]?.trim() || 'UNKNOWN',
+              progress: prdVerifyMatch?.[1]?.trim() || prdProgressMatch?.[1]?.trim() || '0/0'
             };
           }
         } catch { /* no PRDs */ }
