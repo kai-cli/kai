@@ -38,6 +38,7 @@ import { getPaiDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
 import { loadLearningDigest, loadWisdomFrames, loadFailurePatterns, loadSignalTrends } from './lib/learning-readback';
 import { loadKnowledgeContext } from './lib/knowledge-readback';
+import { alreadyRanForSession, markRanForSession } from './lib/once-per-session';
 
 interface DynamicContextConfig {
   relationshipContext?: boolean;
@@ -508,6 +509,27 @@ export function applyTokenBudget(
 
 async function main() {
   try {
+    // Read hook input for compaction detection and session tracking
+    let sessionId: string | null = null;
+    try {
+      const stdinText = await Bun.stdin.text();
+      if (stdinText.trim()) {
+        const hookInput = JSON.parse(stdinText);
+        sessionId = hookInput.session_id || null;
+        if (hookInput.source === 'compact') {
+          console.error('[LoadContext] Skipping — compaction (handled by PostCompactRecovery)');
+          process.exit(0);
+        }
+      }
+    } catch { /* stdin parse failed — proceed as normal session start */ }
+
+    // Only run once per session (prevents re-fire on compaction/resume)
+    if (alreadyRanForSession('LoadContext', sessionId)) {
+      console.error('[LoadContext] Skipping — already ran for this session');
+      process.exit(0);
+    }
+    markRanForSession('LoadContext', sessionId);
+
     // Subagents don't need dynamic context injection
     const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
     const isSubagent = claudeProjectDir.includes('/.claude/Agents/') ||

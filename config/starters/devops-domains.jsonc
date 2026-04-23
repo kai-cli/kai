@@ -1,0 +1,33 @@
+// DevOps / Platform Engineer archetype
+// 6 domains covering infrastructure, networking, observability, and security
+{
+  "definitions": {
+    "infrastructure": {
+      "description": "Cloud infrastructure, IaC, and platform engineering",
+      "keywords": ["terraform", "pulumi", "cloudformation", "aws", "gcp", "azure", "ec2", "s3", "lambda", "vpc", "iam", "eks", "ecs", "fargate"]
+    },
+    "containers": {
+      "description": "Container orchestration, Kubernetes, and service mesh",
+      "keywords": ["docker", "kubernetes", "helm", "k8s", "pod", "deployment", "service", "ingress", "istio", "envoy", "container", "registry", "argo"]
+    },
+    "ci-cd": {
+      "description": "CI/CD pipelines, build systems, and release engineering",
+      "keywords": ["pipeline", "ci", "cd", "github", "actions", "jenkins", "gitlab", "circleci", "build", "deploy", "release", "artifact", "rollback", "canary", "blue-green"]
+    },
+    "observability": {
+      "description": "Monitoring, logging, tracing, and alerting",
+      "keywords": ["prometheus", "grafana", "datadog", "cloudwatch", "logging", "tracing", "metric", "alert", "slo", "sli", "opentelemetry", "elk", "loki", "jaeger"]
+    },
+    "networking": {
+      "description": "Network architecture, DNS, load balancing, and CDN",
+      "keywords": ["dns", "load-balancer", "cdn", "cloudflare", "nginx", "haproxy", "vpn", "firewall", "route53", "ssl", "tls", "certificate", "http", "tcp"]
+    },
+    "security": {
+      "description": "Infrastructure security, compliance, and access management",
+      "keywords": ["security", "iam", "rbac", "vault", "secrets", "compliance", "audit", "vulnerability", "scanning", "soc2", "pci", "encryption", "zero-trust"]
+    }
+  },
+  "projectMapping": [],
+  "excludedProjects": [],
+  "maxDomainsPerSession": 3
+}

@@ -1,0 +1,33 @@
+// Data Scientist / ML Engineer archetype
+// 6 domains covering ML, data engineering, visualization, and infrastructure
+{
+  "definitions": {
+    "machine-learning": {
+      "description": "ML models, training, evaluation, and deployment",
+      "keywords": ["model", "training", "inference", "embedding", "fine-tune", "llm", "transformer", "neural", "pytorch", "tensorflow", "sklearn", "huggingface", "onnx", "mlflow"]
+    },
+    "data-engineering": {
+      "description": "Data pipelines, ETL, and data infrastructure",
+      "keywords": ["pipeline", "etl", "spark", "airflow", "dbt", "kafka", "streaming", "batch", "warehouse", "lake", "parquet", "arrow", "dagster", "prefect"]
+    },
+    "data-analysis": {
+      "description": "Statistical analysis, experimentation, and data exploration",
+      "keywords": ["pandas", "numpy", "statistics", "hypothesis", "experiment", "ab-test", "correlation", "regression", "visualization", "notebook", "jupyter", "eda"]
+    },
+    "visualization": {
+      "description": "Data visualization, dashboards, and reporting",
+      "keywords": ["plotly", "matplotlib", "seaborn", "dashboard", "chart", "grafana", "superset", "tableau", "streamlit", "gradio", "d3"]
+    },
+    "devops": {
+      "description": "Infrastructure, CI/CD, and ML deployment",
+      "keywords": ["docker", "kubernetes", "ci", "cd", "deploy", "terraform", "aws", "gcp", "azure", "sagemaker", "vertex", "gpu", "monitoring"]
+    },
+    "databases": {
+      "description": "Data storage, querying, and vector databases",
+      "keywords": ["postgres", "bigquery", "snowflake", "redshift", "sql", "vector", "pinecone", "weaviate", "chroma", "pgvector", "duckdb", "clickhouse"]
+    }
+  },
+  "projectMapping": [],
+  "excludedProjects": [],
+  "maxDomainsPerSession": 3
+}
