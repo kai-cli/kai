@@ -25,19 +25,28 @@ const paiDir = getPaiDir();
     }
 
     let sessionId: string | null = null;
+    let hookInput: Record<string, unknown> = {};
     try {
       const stdinText = await Bun.stdin.text();
       if (stdinText.trim()) {
-        const hookInput = JSON.parse(stdinText);
-        sessionId = hookInput.session_id || null;
-        if (hookInput.source === 'compact') process.exit(0);
+        hookInput = JSON.parse(stdinText);
+        sessionId = (hookInput.session_id as string) || null;
       }
     } catch {}
 
-    if (alreadyRanForSession('StartupGreeting', sessionId)) process.exit(0);
+    // Skip banner on compaction — PostCompactRecovery handles that case
+    if (hookInput.source === 'compact') {
+      process.exit(0);
+    }
+
+    // Only show banner once per session (prevents re-fire on compaction/resume)
+    if (alreadyRanForSession('StartupGreeting', sessionId)) {
+      process.exit(0);
+    }
     markRanForSession('StartupGreeting', sessionId);
 
-    // Persist Kitty environment for hooks that run later without terminal context
+    // Persist Kitty environment for hooks that run later without terminal context.
+    // Uses per-session mapping so multiple tabs don't overwrite each other's window IDs.
     const kittyListenOn = process.env.KITTY_LISTEN_ON;
     const kittyWindowId = process.env.KITTY_WINDOW_ID;
     if (kittyListenOn && kittyWindowId) {
