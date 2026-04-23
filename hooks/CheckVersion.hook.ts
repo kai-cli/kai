@@ -66,6 +66,15 @@ async function getLatestVersion(): Promise<string> {
 
 async function main() {
   try {
+    // Skip on compaction — not useful mid-session
+    try {
+      const stdinText = await Bun.stdin.text();
+      if (stdinText.trim()) {
+        const hookInput = JSON.parse(stdinText);
+        if (hookInput.source === 'compact') process.exit(0);
+      }
+    } catch { /* proceed */ }
+
     // Skip for subagents
     const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
     const isSubagent = claudeProjectDir.includes('/.claude/Agents/') ||

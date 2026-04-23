@@ -1,0 +1,43 @@
+// KAI Domain Configuration
+//
+// Defines knowledge domains, project-to-domain mappings, and exclusions.
+// Used by KnowledgeSync, KnowledgeHarvester, and knowledge-readback hooks.
+//
+// To customize: edit the definitions, add your projects to projectMapping,
+// and exclude any projects you don't want knowledge-synced.
+{
+  "definitions": {
+    "backend": {
+      "description": "Backend services, APIs, databases, and server-side logic",
+      "keywords": ["api", "server", "database", "sql", "rest", "graphql", "service", "endpoint", "auth", "cache", "microservice", "postgres", "redis", "django", "rails", "express", "fastapi"]
+    },
+    "frontend": {
+      "description": "Frontend applications, UI frameworks, and client-side code",
+      "keywords": ["react", "vue", "svelte", "angular", "css", "html", "dom", "component", "ui", "ux", "browser", "webpack", "vite", "tailwind", "nextjs"]
+    },
+    "devops": {
+      "description": "Infrastructure, CI/CD, deployment, and platform engineering",
+      "keywords": ["docker", "kubernetes", "ci", "cd", "pipeline", "github", "actions", "deploy", "terraform", "ansible", "aws", "gcp", "azure", "nginx", "monitoring"]
+    },
+    "security": {
+      "description": "Security practices, vulnerability management, and compliance",
+      "keywords": ["security", "patch", "vulnerability", "cve", "encryption", "audit", "authentication", "authorization", "tls", "certificate", "pentest"]
+    },
+    "ai-infrastructure": {
+      "description": "AI/ML tooling, LLM infrastructure, prompt engineering, and agents",
+      "keywords": ["kai", "hook", "skill", "agent", "algorithm", "memory", "inference", "claude", "llm", "prompt", "model", "embedding", "fine-tune"]
+    }
+  },
+
+  // Map project directory patterns to knowledge domains.
+  // Pattern matches against the project directory name (substring match).
+  "projectMapping": [
+    { "pattern": "kai", "domains": ["ai-infrastructure"] }
+  ],
+
+  // Projects to exclude from knowledge sync entirely.
+  "excludedProjects": [],
+
+  // Maximum domains injected per session (prevents context bloat).
+  "maxDomainsPerSession": 3
+}

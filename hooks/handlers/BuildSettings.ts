@@ -22,6 +22,8 @@
 import { readFileSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { atomicWriteJSON } from '../lib/atomic.ts';
+import { parseJSONC } from '../lib/config-loader';
+export { parseJSONC };
 
 // ── Path resolution ────────────────────────────────────────────────────────
 
@@ -29,20 +31,7 @@ const DEFAULT_PAI_DIR = process.env.PAI_DIR ?? join(process.env.HOME ?? '~', '.c
 
 // ── JSONC parser ───────────────────────────────────────────────────────────
 
-/**
- * Parse JSONC (JSON with Comments) by stripping line and block comments
- * before passing to JSON.parse. Handles the comment styles Bun uses natively.
- */
-export function parseJSONC(text: string): unknown {
-  // Remove block comments /* ... */ (non-greedy, dotall)
-  // Remove line comments // ... (careful not to strip URLs like https://)
-  // Strip trailing commas before } or ] (standard JSONC behavior)
-  const stripped = text
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(?<!:)\/\/[^\n]*/g, '')
-    .replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(stripped);
-}
+// parseJSONC imported from config-loader (canonical implementation)
 
 // ── File utilities ─────────────────────────────────────────────────────────
 
@@ -104,6 +93,8 @@ const CONFIG_FILES = [
   'preferences.jsonc',
   'spinner-verbs.json',
   'spinner-tips.json',
+  'domains.jsonc',
+  'user-hooks.jsonc',
 ];
 
 // Local override file — machine-specific settings that survive git pulls.
@@ -267,6 +258,46 @@ export function buildSettings(paiDir = DEFAULT_PAI_DIR): Record<string, unknown>
   // Remove undefined runtime state fields if they were absent
   if (merged.counts === undefined) delete merged.counts;
   if (merged.feedbackSurveyState === undefined) delete merged.feedbackSurveyState;
+
+  // Merge user hooks from hooks/user/ (gitignored, survives git pull)
+  const userHooksConfig = join(configDir, 'user-hooks.jsonc');
+  if (existsSync(userHooksConfig)) {
+    try {
+      const userHooks = expandEnvInObject(
+        readJSONC(userHooksConfig) as Record<string, unknown>
+      ) as Record<string, Array<{ event: string; matcher?: string; hook: { type: string; command: string; async?: boolean } }>>;
+
+      const entries = userHooks.hooks;
+      if (Array.isArray(entries)) {
+        const mergedHooks = (merged.hooks ?? {}) as Record<string, unknown[]>;
+        for (const entry of entries) {
+          if (!entry.event || !entry.hook) continue;
+          const eventHooks = mergedHooks[entry.event] as Array<{ matcher?: string; hooks: unknown[] }> | undefined;
+          if (!eventHooks) continue;
+
+          const hookDef = entry.hook;
+          if (entry.matcher) {
+            const matcherGroup = eventHooks.find(g => g.matcher === entry.matcher);
+            if (matcherGroup) {
+              matcherGroup.hooks.push(hookDef);
+            } else {
+              eventHooks.push({ matcher: entry.matcher, hooks: [hookDef] });
+            }
+          } else {
+            const defaultGroup = eventHooks.find(g => !g.matcher);
+            if (defaultGroup) {
+              defaultGroup.hooks.push(hookDef);
+            } else {
+              eventHooks.push({ hooks: [hookDef] });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`BuildSettings: WARNING — user-hooks.jsonc parse error: ${msg}`);
+    }
+  }
 
   // Apply local overrides (machine-specific settings that survive git pulls)
   const localOverridePath = join(configDir, LOCAL_OVERRIDE_FILE);

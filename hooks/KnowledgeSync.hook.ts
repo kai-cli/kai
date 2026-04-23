@@ -19,6 +19,7 @@ import { join } from 'path';
 import { getPaiDir, paiPath } from './lib/paths';
 import { inference } from '../PAI/Tools/Inference';
 import { canCallInference, recordInferenceCall, budgetStatus } from './lib/inference-budget';
+import { loadDomainKeywords, loadDomainDescriptions } from './lib/config-loader';
 
 // ============================================================================
 // Types
@@ -40,26 +41,11 @@ interface ChangedFile {
 }
 
 // ============================================================================
-// Domain definitions (same as KnowledgeHarvester.ts)
+// Domain definitions — loaded from config/domains.jsonc via config-loader
 // ============================================================================
 
-// Generic starter domains — replace with your own in config/domains.jsonc (KAI v5.0.0+)
-// These cover common developer archetypes. Customize by adding config/domains.jsonc.
-const DOMAIN_KEYWORDS: Record<string, string[]> = {
-  'backend': ['api', 'server', 'database', 'sql', 'rest', 'graphql', 'service', 'endpoint', 'auth', 'cache'],
-  'frontend': ['ui', 'react', 'vue', 'angular', 'css', 'html', 'component', 'frontend', 'web', 'interface'],
-  'devops': ['docker', 'kubernetes', 'ci', 'cd', 'pipeline', 'deploy', 'terraform', 'helm', 'jenkins', 'github'],
-  'security': ['security', 'vulnerability', 'cve', 'patch', 'audit', 'encryption', 'auth', 'pii', 'privacy'],
-  'ai-infrastructure': ['kai', 'hook', 'skill', 'agent', 'algorithm', 'memory', 'inference', 'claude', 'llm'],
-};
-
-const DOMAIN_DESCRIPTIONS: Record<string, string> = {
-  'backend': 'Backend services, APIs, databases, and server-side logic',
-  'frontend': 'Frontend frameworks, UI components, and web interfaces',
-  'devops': 'CI/CD pipelines, containerization, infrastructure, and deployment',
-  'security': 'Security practices, vulnerability management, and privacy',
-  'ai-infrastructure': 'KAI system, hooks, skills, memory, and AI agents',
-};
+const DOMAIN_KEYWORDS = loadDomainKeywords();
+const DOMAIN_DESCRIPTIONS = loadDomainDescriptions();
 
 // ============================================================================
 // State management

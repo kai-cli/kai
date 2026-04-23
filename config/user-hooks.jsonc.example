@@ -1,0 +1,25 @@
+// User Hook Extensions
+//
+// Register custom hooks that run alongside system hooks.
+// User hooks APPEND to system hooks — they never replace or disable them.
+//
+// Copy this file to config/user-hooks.jsonc and add your hooks.
+// Then run: bun hooks/handlers/BuildSettings.ts
+//
+// The hooks/user/ directory is gitignored — put your hook files there.
+{
+  "hooks": [
+    // Example: custom SessionEnd hook
+    // {
+    //   "event": "SessionEnd",
+    //   "hook": { "type": "command", "command": "${PAI_DIR}/hooks/user/MyCleanup.hook.ts", "async": true }
+    // },
+    //
+    // Example: custom PreToolUse hook with matcher
+    // {
+    //   "event": "PreToolUse",
+    //   "matcher": "Bash",
+    //   "hook": { "type": "command", "command": "${PAI_DIR}/hooks/user/MyBashGuard.hook.ts" }
+    // }
+  ]
+}

@@ -1,0 +1,29 @@
+// Full-Stack Web Developer archetype
+// 5 domains covering frontend, backend, devops, security, and databases
+{
+  "definitions": {
+    "backend": {
+      "description": "Backend services, APIs, databases, and server-side logic",
+      "keywords": ["api", "server", "database", "sql", "rest", "graphql", "service", "endpoint", "auth", "cache", "microservice", "postgres", "redis", "django", "rails", "express", "fastapi", "prisma", "sequelize"]
+    },
+    "frontend": {
+      "description": "Frontend applications, UI frameworks, and client-side code",
+      "keywords": ["react", "vue", "svelte", "angular", "css", "html", "dom", "component", "ui", "ux", "browser", "webpack", "vite", "tailwind", "nextjs", "remix", "astro", "typescript"]
+    },
+    "devops": {
+      "description": "Infrastructure, CI/CD, deployment, and platform engineering",
+      "keywords": ["docker", "kubernetes", "ci", "cd", "pipeline", "github", "actions", "deploy", "terraform", "ansible", "aws", "gcp", "azure", "nginx", "monitoring", "vercel", "netlify"]
+    },
+    "security": {
+      "description": "Security practices, vulnerability management, and compliance",
+      "keywords": ["security", "vulnerability", "cve", "encryption", "audit", "authentication", "authorization", "tls", "certificate", "owasp", "xss", "csrf", "injection"]
+    },
+    "databases": {
+      "description": "Database design, optimization, and data modeling",
+      "keywords": ["postgres", "mysql", "mongodb", "redis", "sql", "migration", "index", "query", "schema", "orm", "nosql", "elasticsearch", "sqlite"]
+    }
+  },
+  "projectMapping": [],
+  "excludedProjects": [],
+  "maxDomainsPerSession": 3
+}

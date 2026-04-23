@@ -75,6 +75,10 @@ settings.json.backup*
 # Local machine-specific overrides (created by installer migration or manually)
 config/preferences.local.jsonc
 
+# User hook extensions (gitignored, survives git pull)
+config/user-hooks.jsonc
+hooks/user/
+
 # User identity (generated at install by setup wizard)
 config/identity.jsonc
 

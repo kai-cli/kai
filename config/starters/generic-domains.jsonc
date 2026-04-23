@@ -1,0 +1,21 @@
+// Generic developer archetype
+// 3 broad domains covering common software engineering topics
+{
+  "definitions": {
+    "backend": {
+      "description": "Backend services, APIs, and server-side logic",
+      "keywords": ["api", "server", "database", "rest", "graphql", "auth", "service"]
+    },
+    "frontend": {
+      "description": "Frontend applications and client-side code",
+      "keywords": ["react", "vue", "css", "html", "component", "ui", "browser"]
+    },
+    "devops": {
+      "description": "Infrastructure, CI/CD, and deployment",
+      "keywords": ["docker", "ci", "deploy", "pipeline", "aws", "monitoring"]
+    }
+  },
+  "projectMapping": [],
+  "excludedProjects": [],
+  "maxDomainsPerSession": 3
+}
