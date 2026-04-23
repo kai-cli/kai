@@ -65,12 +65,18 @@ tasks/
 # MCP auth cache (machine-specific)
 mcp-needs-auth-cache.json
 
+# Generated at session start — do not commit
+CLAUDE.md
+
 # Generated from config/*.jsonc — do not commit (contains expanded personal paths)
 settings.json
 settings.json.backup*
 
 # Local machine-specific overrides (created by installer migration or manually)
 config/preferences.local.jsonc
+
+# User identity (generated at install by setup wizard)
+config/identity.jsonc
 
 # Settings backup files
 *.bak

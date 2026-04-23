@@ -6,7 +6,7 @@ A coworker submitted a standalone `research.ts` script implementing multi-model 
 
 This plan integrates the good parts into the existing Deliberate skill as a new `--mode research`, adds web search grounding to make it actual research, and exposes it through both the Deliberate and Research skills.
 
-**Decisions (confirmed by Deven):**
+**Decisions:**
 - GPT-4o: Use OpenAI Responses API (`/v1/responses`) for web search
 - Extract shared model invocation to `PAI/Tools/ModelInvocation.ts`
 - Rotation mode: warn-and-proceed (no blocking confirmation)
@@ -32,7 +32,7 @@ This plan integrates the good parts into the existing Deliberate skill as a new 
 
 ## Step 1: `PAI/Tools/Inference.ts` — Add `tools` Parameter
 
-**File:** `/Users/user/Projects/pai-config/PAI/Tools/Inference.ts`
+**File:** `~/.claude/PAI/Tools/Inference.ts`
 
 Add optional `tools` field to `InferenceOptions`:
 
@@ -66,7 +66,7 @@ This is backward-compatible — existing callers don't pass `tools`, so they get
 
 ## Step 2: `PAI/Tools/ModelInvocation.ts` — Shared Model Invocation
 
-**File:** `/Users/user/Projects/pai-config/PAI/Tools/ModelInvocation.ts` (new)
+**File:** `~/.claude/PAI/Tools/ModelInvocation.ts` (new)
 
 Extract and extend the model invocation layer from `deliberate.ts`. This module:
 
@@ -136,7 +136,7 @@ This means as new models are added to the registry, they participate automatical
 
 ## Step 3: `scripts/deliberate.ts` — Add Research Mode
 
-**File:** `/Users/user/Projects/pai-config/scripts/deliberate.ts`
+**File:** `~/.claude/scripts/deliberate.ts`
 
 ### Refactor existing code
 

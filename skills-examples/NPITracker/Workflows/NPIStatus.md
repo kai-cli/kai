@@ -10,7 +10,7 @@ Generate a full NPI status table across all active [Your Product] releases.
 Read `~/.claude/PAI/USER/TELOS/PROJECTS.md` for current project state.
 Read `~/.claude/PAI/USER/DEFINITIONS.md` for [Your Product] product definitions.
 Scan `MEMORY/WORK/` for any [Your Product]-related PRDs.
-Ask Deven if current state isn't captured: "What's the current status on each [Your Product] release?"
+Ask {PRINCIPAL.NAME} if current state isn't captured: "What's the current status on each [Your Product] release?"
 
 ## Step 2 — Build Status Table
 
