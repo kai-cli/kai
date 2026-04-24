@@ -1,4 +1,4 @@
-// PAI Preferences Configuration
+// KAI Preferences Configuration
 // Environment variables, system preferences, tech stack, and runtime settings.
 // Identity → identity.jsonc | Hooks → hooks.jsonc | Permissions → permissions.jsonc
 // Notifications → notifications.jsonc | Everything else → here.

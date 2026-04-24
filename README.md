@@ -84,7 +84,7 @@ bun ~/.claude/scripts/deploy.ts
 - **[docs/QUICKSTART.md](docs/QUICKSTART.md)** — Getting started guide (start here)
 - **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with original PAI
 - **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Roadmap & next steps
-- **[docs/architecture/SYSTEM-ATLAS.md](docs/architecture/SYSTEM-ATLAS.md)** — System architecture
+- **[docs/architecture/](docs/architecture/)** — Architecture reference docs
 - **[PAI/THEHOOKSYSTEM.md](PAI/THEHOOKSYSTEM.md)** — Hook system docs
 - **[PAI/SKILL.md](PAI/SKILL.md)** — Full system documentation
 

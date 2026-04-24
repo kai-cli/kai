@@ -1,4 +1,4 @@
-// PAI Hook Configuration
+// KAI Hook Configuration
 // Registers hook handlers for all Claude Code lifecycle events.
 // All paths use ${PAI_DIR} which resolves to ~/.claude at runtime.
 //

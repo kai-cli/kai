@@ -464,14 +464,7 @@ async function interactiveDomains(dryRun: boolean): Promise<void> {
 
   if (!dryRun && issues.length > 0) {
     console.log();
-    console.log(dim(`  ${issues.length} domain(s) need attention. Re-distill runs at next session end via KnowledgeSync.`));
-    const key = await prompt(
-      `  Action: ${cyan('[t]')}rigger KnowledgeSync now  ${dim('[s]')}kip → `,
-      ['t', 's', 'q']
-    );
-    if (key === 't') {
-      console.log(dim('  → KnowledgeSync will re-distill on next session end (already scheduled automatically).'));
-    }
+    console.log(dim(`  ${issues.length} domain(s) need attention.`));
   }
   console.log();
 }

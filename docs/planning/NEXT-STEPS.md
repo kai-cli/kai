@@ -49,7 +49,7 @@
 ## Backlog (unversioned)
 
 ### Quality & Reliability
-- [ ] PostToolUse code quality gate — error/lint/syntax detection after edits (SecretOutputDetector exists but no code quality check)
+- [ ] PostToolUse code quality gate — error/lint/syntax detection after edits
 - [ ] Agent context seeding — auto-inject prior ResearchIndex findings into spawned agents (infrastructure built, manual only today)
 - [ ] Confidence calibration — track approval rate, adjust draft thresholds
 - [ ] Batch approve — `pai curate approve-all --confidence N`

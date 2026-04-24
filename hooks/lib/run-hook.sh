@@ -25,7 +25,6 @@ LOG_FILE="${LOG_DIR}/${LOG_BASE}.log"
 # ── Timeout selection (per-hook → global env → hardcoded default) ──
 # Known slow hooks get longer timeouts. All others: 30s default.
 case "$LOG_BASE" in
-  KnowledgeSync)             DEFAULT_TIMEOUT=180 ;;  # Full harvest: 7 domains × ~25s each
   ReflectionHarvester)       DEFAULT_TIMEOUT=120 ;;  # LLM synthesis
   SessionSummary)            DEFAULT_TIMEOUT=60  ;;  # LLM summarization
   WorkCompletionLearning)    DEFAULT_TIMEOUT=60  ;;  # LLM learning capture
@@ -34,7 +33,7 @@ case "$LOG_BASE" in
   *)                         DEFAULT_TIMEOUT=30  ;;  # All others: 30s
 esac
 
-# Per-hook env override: PAI_HOOK_TIMEOUT_KnowledgeSync=300
+# Per-hook env override: PAI_HOOK_TIMEOUT_ReflectionHarvester=300
 HOOK_ENV_VAR="PAI_HOOK_TIMEOUT_${LOG_BASE//-/_}"
 TIMEOUT="${!HOOK_ENV_VAR:-${PAI_HOOK_TIMEOUT:-$DEFAULT_TIMEOUT}}"
 

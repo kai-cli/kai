@@ -27,8 +27,8 @@ const LATEST_PATH = paiPath("PAI/Algorithm", "LATEST");
 
 function getAlgorithmVersion(): string {
   if (!existsSync(LATEST_PATH)) {
-    console.error("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.7.0");
-    return "v3.7.0";
+    console.error("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.12.0");
+    return "v3.12.0";
   }
   return readFileSync(LATEST_PATH, "utf-8").trim();
 }
@@ -48,7 +48,7 @@ function loadVariables(): Record<string, string> {
     "{DAIDENTITY.DISPLAYNAME}": settings.daidentity?.displayName || "Assistant",
     "{PRINCIPAL.NAME}": settings.principal?.name || "User",
     "{PRINCIPAL.TIMEZONE}": settings.principal?.timezone || "UTC",
-    "{{PAI_VERSION}}": settings.pai?.version || "4.0.3",
+    "{{PAI_VERSION}}": settings.pai?.version || "5.0.0",
     "{{ALGO_VERSION}}": algoVersion,
     "{{ALGO_PATH}}": `PAI/Algorithm/${algoVersion}.md`,
   };

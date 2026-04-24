@@ -72,7 +72,7 @@ All configuration lives in `~/.claude/config/*.jsonc` (JSON with comments):
 | File | What it controls |
 |------|-----------------|
 | `identity.jsonc` | Your name, assistant name, timezone |
-| `hooks.jsonc` | 38 lifecycle hooks (security, formatting, etc.) |
+| `hooks.jsonc` | 37 lifecycle hooks (security, formatting, etc.) |
 | `permissions.jsonc` | Tool permissions (allow/deny/ask rules) |
 | `preferences.jsonc` | Environment variables, MCP servers, tech stack |
 | `notifications.jsonc` | Alert routing (disabled by default) |
@@ -93,7 +93,7 @@ KAI includes specialized skills invoked with slash commands or automatically:
 - **Security** — recon, web assessment, prompt injection testing
 - **Thinking** — first principles, iterative depth, council debate
 - **EM/PLM** — 1:1 notes, weekly status, decision log, NPI tracking
-- And 40+ more — type `/skills` in a session to see all
+- And 35+ more — type `/skills` in a session to see all
 
 ### Agents (18 named specialists)
 Spawned automatically when the task matches:
