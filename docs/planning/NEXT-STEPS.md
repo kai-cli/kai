@@ -18,17 +18,21 @@
 
 ---
 
-## v5.1.0 — Configuration, Setup & Research
+## v5.1.0 — Research, Quality & Polish
 
-### Configuration Layer
-- [ ] `config/domains.jsonc` — user-configurable knowledge domains
-- [ ] `hooks/lib/config-loader.ts` — single config module for all hooks
-- [ ] Refactor KnowledgeSync, knowledge-readback, LocalContextFirst to use config
+### Configuration Layer (shipped in v5.0.0)
+- [x] `config/domains.jsonc` — user-configurable knowledge domains
+- [x] `hooks/lib/config-loader.ts` — single config module for all hooks
+- [x] Refactor LocalContextFirst to use config-loader
+- [x] `hooks/user/` — user-custom hook loading mechanism
+- [x] `config/preferences.local.jsonc` — machine-specific overrides (Bedrock)
+- [x] `BuildSettings.ts` — env var preservation across rebuilds
 
-### Setup & Install
-- [ ] `pai setup` — interactive wizard with archetype selection
-- [ ] `install.sh` — curl-pipe installer with proper `~/.claude` handling
-- [ ] Template files for PAI/USER/ and config/
+### Setup & Install (shipped in v5.0.0)
+- [x] `install.sh` — interactive setup with archetype selection
+- [x] `get-kai.sh` — curl-pipe installer with 3-case `~/.claude` handling
+- [x] Template files for PAI/USER/ and config/
+- [x] `CUSTOMIZATION.md` — user guide for config, hooks, domains, Bedrock
 
 ### Deliberate Research Mode
 - [ ] `PAI/Tools/ModelInvocation.ts` — shared model invocation with web search support
@@ -51,8 +55,12 @@
 - [ ] Batch approve — `pai curate approve-all --confidence N`
 
 ### KAI Public Launch
+- [x] Git history rewrite — PII purged, author rewritten to KAI Maintainer
+- [x] LICENSE (MIT), CONTRIBUTING.md, CHANGELOG.md
+- [x] Symlink compatibility verified
 - [ ] Team deployment guide — org-config patterns, multi-user setup for kai-cli/kai
 - [ ] Org-config templates — shareable team configurations
+- [ ] End-to-end test — `get-kai.sh` on clean machine without `~/.claude`
 
 ### Future
 - [ ] Automatic model routing — detect task complexity, route to fast/standard/smart without manual selection
