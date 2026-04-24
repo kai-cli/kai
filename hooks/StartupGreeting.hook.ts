@@ -1,105 +1,49 @@
 #!/usr/bin/env bun
 /**
- * StartupGreeting.hook.ts - Display PAI Banner at Session Start (SessionStart)
+ * StartupGreeting.hook.ts - Session initialization + Kitty persistence (SessionStart)
  *
- * PURPOSE:
- * Displays the responsive neofetch-style PAI banner with system statistics.
- * Creates a visual confirmation that PAI is initialized and shows key metrics
- * like skill count, session count, and learning items.
+ * Marks the session as started (once-per-session sentinel), skips
+ * subagent/compaction re-fires, and persists Kitty terminal env
+ * for hooks that run later without terminal context.
  *
  * TRIGGER: SessionStart
- *
- * INPUT:
- * - Environment: COLUMNS, KITTY_WINDOW_ID for terminal detection
- * - Settings: settings.json for identity configuration
- *
- * OUTPUT:
- * - stdout: Banner display (captured by Claude Code)
- * - stderr: Error messages on failure
- * - exit(0): Normal completion
- * - exit(1): Banner display failed
- *
- * SIDE EFFECTS:
- * - Spawns Banner.ts tool as child process
- * - Reads settings.json for configuration
- *
- * INTER-HOOK RELATIONSHIPS:
- * - DEPENDS ON: None (runs independently at session start)
- * - COORDINATES WITH: LoadContext (both run at SessionStart)
- * - MUST RUN BEFORE: None (visual feedback only)
- * - MUST RUN AFTER: None
- *
- * ERROR HANDLING:
- * - Missing settings: Error logged, exits with error code
- * - Banner tool failure: Error logged, exits with error code
- *
- * PERFORMANCE:
- * - Non-blocking: Yes (banner is informational)
- * - Typical execution: <100ms
- * - Skipped for subagents: Yes
- *
- * BANNER MODES:
- * - nano (<40 cols): Minimal single-line
- * - micro (40-59 cols): Compact with stats
- * - mini (60-84 cols): Medium layout
- * - normal (85+ cols): Full neofetch-style
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
-import { spawnSync } from 'child_process';
-
-import { getPaiDir, getSettingsPath } from './lib/paths';
+import { getPaiDir } from './lib/paths';
 import { persistKittySession } from './lib/tab-setter';
 import { alreadyRanForSession, markRanForSession } from './lib/once-per-session';
 
 const paiDir = getPaiDir();
-const settingsPath = getSettingsPath();
 
 (async () => {
   try {
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-
-    // Check if this is a subagent session - if so, exit silently
     const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
-    const isSubagent = claudeProjectDir.includes('/.claude/Agents/') ||
-                      process.env.CLAUDE_AGENT_TYPE !== undefined;
-
-    if (isSubagent) {
+    if (claudeProjectDir.includes('/.claude/Agents/') || process.env.CLAUDE_AGENT_TYPE !== undefined) {
       process.exit(0);
     }
 
-    // Read session_id from stdin (Claude Code passes hook input as JSON)
     let sessionId: string | null = null;
-    let hookInput: Record<string, unknown> = {};
     try {
       const stdinText = await Bun.stdin.text();
       if (stdinText.trim()) {
-        hookInput = JSON.parse(stdinText);
-        sessionId = (hookInput.session_id as string) || null;
+        const hookInput = JSON.parse(stdinText);
+        sessionId = hookInput.session_id || null;
+        if (hookInput.source === 'compact') process.exit(0);
       }
-    } catch { /* stdin parse failed — proceed without session_id */ }
+    } catch {}
 
-    // Skip banner on compaction — PostCompactRecovery handles that case
-    if (hookInput.source === 'compact') {
-      process.exit(0);
-    }
-
-    // Only show banner once per session (prevents re-fire on compaction/resume)
-    if (alreadyRanForSession('StartupGreeting', sessionId)) {
-      process.exit(0);
-    }
+    if (alreadyRanForSession('StartupGreeting', sessionId)) process.exit(0);
     markRanForSession('StartupGreeting', sessionId);
 
-    // Persist Kitty environment for hooks that run later without terminal context.
-    // Uses per-session mapping so multiple tabs don't overwrite each other's window IDs.
+    // Persist Kitty environment for hooks that run later without terminal context
     const kittyListenOn = process.env.KITTY_LISTEN_ON;
     const kittyWindowId = process.env.KITTY_WINDOW_ID;
     if (kittyListenOn && kittyWindowId) {
       if (sessionId) {
         persistKittySession(sessionId, kittyListenOn, kittyWindowId);
       } else {
-        // Fallback: write singleton for backward compat when no session_id available
         const stateDir = join(paiDir, 'MEMORY', 'STATE');
         if (!existsSync(stateDir)) mkdirSync(stateDir, { recursive: true });
         writeFileSync(
@@ -109,31 +53,8 @@ const settingsPath = getSettingsPath();
       }
     }
 
-    // Run the banner tool
-    const bannerPath = join(paiDir, 'PAI/Tools/Banner.ts');
-    const result = spawnSync('bun', ['run', bannerPath], {
-      encoding: 'utf-8',
-      stdio: ['inherit', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        // Pass through terminal detection env vars
-        COLUMNS: process.env.COLUMNS,
-        KITTY_WINDOW_ID: process.env.KITTY_WINDOW_ID,
-      }
-    });
-
-    if (result.stdout) {
-      console.log(result.stdout);
-    }
-
-    // Voice greeting removed — Banner.ts already displays the catchphrase visually.
-    // Having both caused duplicate "{DA_NAME} here, ready to go" output.
-    // Voice-at-startup should be handled by Banner.ts or a dedicated voice-only mechanism
-    // if re-added, to avoid visual duplication.
-
     process.exit(0);
-  } catch (error) {
-    console.error('StartupGreeting: Failed to display banner', error);
-    process.exit(1);
+  } catch {
+    process.exit(0);
   }
 })();

@@ -7,12 +7,14 @@ import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getPaiDir } from './paths';
 
-const STATE_DIR = join(getPaiDir(), 'MEMORY', 'STATE');
+function stateDir(): string {
+  return join(getPaiDir(), 'MEMORY', 'STATE');
+}
 
 export function alreadyRanForSession(hookName: string, sessionId: string | null): boolean {
   if (!sessionId) return false;
   try {
-    const last = readFileSync(join(STATE_DIR, `.once-${hookName}`), 'utf-8').trim();
+    const last = readFileSync(join(stateDir(), `.once-${hookName}`), 'utf-8').trim();
     return last === sessionId;
   } catch {
     return false;
@@ -22,7 +24,8 @@ export function alreadyRanForSession(hookName: string, sessionId: string | null)
 export function markRanForSession(hookName: string, sessionId: string | null): void {
   if (!sessionId) return;
   try {
-    mkdirSync(STATE_DIR, { recursive: true });
-    writeFileSync(join(STATE_DIR, `.once-${hookName}`), sessionId);
+    const dir = stateDir();
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, `.once-${hookName}`), sessionId);
   } catch { /* non-fatal */ }
 }
