@@ -690,7 +690,23 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
       }
     } catch { /* non-fatal */ }
 
-    console.error('✅ PAI session initialization complete (v4.0)');
+    // Check for context routing drift
+    try {
+      const driftFile = join(paiDir, 'MEMORY', 'STATE', 'routing-drift.json');
+      if (existsSync(driftFile)) {
+        const drift = JSON.parse(readFileSync(driftFile, 'utf-8'));
+        const ageHours = (Date.now() - new Date(drift.lastAudit).getTime()) / 3600000;
+        if (ageHours < 168 && (drift.staleCount > 0 || drift.discoveredCount > 0)) {
+          const parts: string[] = [];
+          if (drift.staleCount > 0) parts.push(`${drift.staleCount} stale path(s)`);
+          if (drift.discoveredCount > 0) parts.push(`${drift.discoveredCount} new project(s)`);
+          ttyLog(`🗺️ Context routing drift: ${parts.join(', ')} — run \`bun PAI/Tools/RoutingAudit.ts fix\``);
+        }
+      }
+    } catch { /* non-fatal */ }
+
+    flushTty();
+    console.error('✅ KAI session initialization complete');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error in LoadContext hook:', error);
