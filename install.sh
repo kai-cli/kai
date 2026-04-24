@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════
-#  PAI Installer v4.6 — Bootstrap Script
+#  KAI Installer v5.0 — Bootstrap Script
 #  Requirements: bash, curl
 #  This script bootstraps the installer by ensuring Bun is
 #  available, then hands off to the TypeScript installer.
@@ -136,7 +136,7 @@ fi
 if command -v claude &>/dev/null; then
   success "Claude Code found"
 else
-  warn "Claude Code not found — will install during setup"
+  warn "Claude Code not found — install from https://claude.ai/code before starting a session"
 fi
 
 # ─── Launch Installer ────────────────────────────────────

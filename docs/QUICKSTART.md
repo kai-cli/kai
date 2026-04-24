@@ -26,10 +26,10 @@ Before running the installer, make sure you have:
 
 ```bash
 # Clone the repo
-git clone https://github.com/kai-cli/kai ~/pai-config
+git clone https://github.com/kai-cli/kai ~/kai
 
 # Run the installer
-bash ~/pai-config/install.sh
+bash ~/kai/install.sh
 ```
 
 The installer will:
@@ -102,7 +102,7 @@ Spawned automatically when the task matches:
 - **5 Researchers** — Claude, Gemini, Grok, Perplexity, Codex
 - **ProductStrategist, TechnicalReviewer, StakeholderCommunicator** — EM support
 
-### The Algorithm (v3.10.0)
+### The Algorithm (v3.12.0)
 For complex tasks, PAI uses a 7-phase execution framework:
 **Observe** (understand) > **Think** (pressure-test) > **Plan** > **Build** > **Execute** > **Verify** > **Learn**
 
@@ -157,7 +157,7 @@ ls -la ~/.claude/MEMORY/STATE/*.log
 
 ### Want to re-run the installer
 ```bash
-bash ~/pai-config/install.sh
+bash ~/kai/install.sh
 # It detects existing config and offers to migrate or overwrite
 ```
 
@@ -165,4 +165,4 @@ bash ~/pai-config/install.sh
 
 - [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How PAI differs from the original
 - [SYSTEM-ATLAS.md](architecture/SYSTEM-ATLAS.md) — Full system architecture
-- [ROADMAP.md](planning/ROADMAP.md) — Product roadmap
+- [NEXT-STEPS.md](planning/NEXT-STEPS.md) — Roadmap & next steps

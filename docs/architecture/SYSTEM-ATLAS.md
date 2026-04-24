@@ -56,7 +56,7 @@ PersonalAI/
 │   └── migration/    5 files,   48KB — Version migration tools
 ├── MEMORY/           1 file,     4KB — Memory system (dirs created at runtime)
 ├── PAI/             23 files,  1.4MB — System docs, Algorithm, Tools, USER/
-│   ├── Algorithm/    5 files          — v3.10.0 (current) + support docs (old versions removed)
+│   ├── Algorithm/    5 files          — v3.12.0 (current) + support docs (old versions removed)
 │   ├── ACTIONS/     10 files          — Action system (runners, examples)
 │   ├── FLOWS/        1 file           — Flow definitions
 │   ├── PIPELINES/    2 files          — Pipeline definitions
@@ -92,8 +92,8 @@ PersonalAI/
 
 The 7-phase execution engine: **Observe → Think → Plan → Build → Execute → Verify → Learn**
 
-- **Current version:** v3.10.0 (pointed to by `LATEST` file)
-- **Shipped versions:** v3.10.0 only (v3.5.0, v3.7.0, v3.8.0 removed in v4.4.1-dev cleanup)
+- **Current version:** v3.12.0 (pointed to by `LATEST` file)
+- **Shipped versions:** v3.9.1, v3.10.0, v3.11.0, v3.12.0 (older versions removed)
 - **Support docs:** CapabilitySelection.md, Examples.md, ISC-Methodology.md, MICRO.md
 - **Concept:** Transition from CURRENT STATE to IDEAL STATE via verifiable criteria (ISC)
 - **ISC = Ideal State Criteria = Verification Criteria** — binary, testable, 4-12 words each

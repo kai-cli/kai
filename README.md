@@ -1,4 +1,4 @@
-# PAI 4.6.0 — Personal AI Infrastructure
+# KAI 5.0.0 — Personal AI Infrastructure
 
 > A production-ready Claude Code configuration system. Fork of Daniel Miessler's [PAI](https://danielmiessler.com), hardened for team deployment.
 
@@ -13,8 +13,8 @@
 ## Install
 
 ```bash
-git clone https://github.com/kai-cli/kai ~/pai-config
-bash ~/pai-config/install.sh
+git clone https://github.com/kai-cli/kai ~/kai
+bash ~/kai/install.sh
 ```
 
 The installer symlinks `~/.claude/` to your repo, walks you through identity setup (your name, assistant name, timezone), optionally configures AWS Bedrock, and builds your `settings.json` from domain config files.
@@ -25,7 +25,7 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 
 | Directory | Contents |
 |-----------|----------|
-| `PAI/` | Core system: Algorithm v3.10.0, context routing, system docs |
+| `PAI/` | Core system: Algorithm v3.12.0, context routing, system docs |
 | `skills/` | 51 skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
 | `hooks/` | 38 lifecycle hooks (security guards, formatters, analytics, cleanup) |
 | `agents/` | 18 named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
@@ -38,7 +38,7 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 
 See **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** for a detailed comparison with Daniel Miessler's original PAI.
 
-Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, 18 named agents, Algorithm v3.10.0 with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
+Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, 18 named agents, Algorithm v3.12.0 with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
 
 ## Configuration
 
@@ -83,8 +83,7 @@ bun ~/.claude/scripts/deploy.ts
 
 - **[docs/QUICKSTART.md](docs/QUICKSTART.md)** — Getting started guide (start here)
 - **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with original PAI
-- **[docs/planning/ROADMAP.md](docs/planning/ROADMAP.md)** — Product roadmap
-- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Current work
+- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Roadmap & next steps
 - **[docs/architecture/SYSTEM-ATLAS.md](docs/architecture/SYSTEM-ATLAS.md)** — System architecture
 - **[PAI/THEHOOKSYSTEM.md](PAI/THEHOOKSYSTEM.md)** — Hook system docs
 - **[PAI/SKILL.md](PAI/SKILL.md)** — Full system documentation

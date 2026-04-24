@@ -57,7 +57,7 @@
 
   // PAI version information
   "pai": {
-    "repoUrl": "github.com/your-username/pai-config",
+    "repoUrl": "github.com/kai-cli/kai",
     "version": "5.0.0",
     "algorithmVersion": "3.12.0"
   },
@@ -76,7 +76,7 @@
 
   // Tech stack — used in code generation and tool recommendations
   "techStack": {
-    "browser": "Dia",
+    "browser": "Chrome",
     "terminal": "Kitty",
     "packageManager": "bun",
     "pythonPackageManager": "uv",

@@ -98,7 +98,7 @@ const CONDITIONAL_FILES: Record<string, 'personal-only'> = {
 function isPersonalProject(): boolean {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const personalPatterns = [
-    'pai-config', 'Research-Agent', 'GranolaMCP', 'Knowledge',
+    'kai', 'Research-Agent', 'GranolaMCP', 'Knowledge',
     'CLI-Hidden-Commands', '/.claude/',
   ];
   return personalPatterns.some(p => projectDir.includes(p)) ||
