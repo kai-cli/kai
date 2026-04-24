@@ -13,7 +13,7 @@ let tmpDir: string;
 let origPaiDir: string | undefined;
 
 function setup() {
-  tmpDir = mkdtempSync(join(tmpdir(), 'pai-config-loader-test-'));
+  tmpDir = mkdtempSync(join(tmpdir(), 'kai-config-loader-test-'));
   mkdirSync(join(tmpDir, 'config'), { recursive: true });
   origPaiDir = process.env.PAI_DIR;
   process.env.PAI_DIR = tmpDir;
