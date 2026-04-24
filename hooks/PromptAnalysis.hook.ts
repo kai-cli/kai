@@ -25,7 +25,7 @@
 
 import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { paiPath } from './lib/paths';
-import { inference } from '../skills/PAI/Tools/Inference';
+import { inference } from '../PAI/Tools/Inference';
 
 interface HookInput {
   session_id: string;

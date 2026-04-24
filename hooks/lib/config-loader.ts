@@ -38,6 +38,8 @@ export function parseJSONC(text: string): unknown {
 
 let cached: DomainsConfig | null = null;
 
+export function _resetCache(): void { cached = null; }
+
 const DEFAULTS: DomainsConfig = {
   definitions: {},
   projectMapping: [],
