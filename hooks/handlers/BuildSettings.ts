@@ -19,7 +19,7 @@
  * Also called at SessionStart to auto-rebuild when config files change.
  */
 
-import { readFileSync, existsSync, statSync } from 'fs';
+import { readFileSync, existsSync, statSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { atomicWriteJSON } from '../lib/atomic.ts';
 
@@ -280,6 +280,34 @@ export function buildSettings(paiDir = DEFAULT_PAI_DIR): Record<string, unknown>
       if (!(key in mergedEnv)) {
         mergedEnv[key] = value;
       }
+    }
+  }
+
+  // Merge user hooks from hooks/user/ (gitignored, appended to system hooks)
+  const userHooksDir = join(paiDir, 'hooks', 'user');
+  if (existsSync(userHooksDir)) {
+    try {
+      const userHookFiles = readdirSync(userHooksDir).filter(f => f.endsWith('.hook.ts'));
+      const registryPath = join(userHooksDir, 'hooks.jsonc');
+      if (existsSync(registryPath)) {
+        const registry = readJSONC(registryPath) as Record<string, string[]>;
+        const mergedHooks = (merged.hooks || {}) as Record<string, unknown[]>;
+        for (const [event, hookFiles] of Object.entries(registry)) {
+          if (!Array.isArray(mergedHooks[event])) mergedHooks[event] = [];
+          for (const hookFile of hookFiles) {
+            if (!userHookFiles.includes(hookFile)) continue;
+            mergedHooks[event].push({
+              hooks: [{
+                type: 'command',
+                command: `${paiDir}/hooks/lib/run-hook.sh user/${hookFile}`,
+              }],
+            });
+          }
+        }
+        merged.hooks = mergedHooks;
+      }
+    } catch {
+      console.error('BuildSettings: WARNING — failed to load user hooks');
     }
   }
 

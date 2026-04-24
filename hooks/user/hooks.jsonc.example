@@ -1,0 +1,14 @@
+// User Hook Registry
+// Copy this file to hooks.jsonc to register custom hooks.
+// Keys are lifecycle events, values are arrays of hook filenames in this directory.
+// Hooks are appended to system hooks (never replace them).
+//
+// Available events: SessionStart, SessionEnd, UserPromptSubmit,
+//   PreToolUse, PostToolUse, Stop, PreCompact, ConfigChange,
+//   WorktreeCreate, WorktreeRemove, TaskCompleted, TeammateIdle
+//
+// After editing, run: bun ~/.claude/hooks/handlers/BuildSettings.ts
+{
+  // "SessionEnd": ["MySessionEnd.hook.ts"],
+  // "UserPromptSubmit": ["MyPromptHook.hook.ts"]
+}

@@ -13,35 +13,15 @@
  * Deterministic regex matching (<5ms, no API calls).
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
 import { readHookInput } from './lib/hook-io';
-import { paiPath } from './lib/paths';
+import { loadDomainDefinitions } from './lib/config-loader';
 
-const DOMAINS_CONFIG_PATH = paiPath('config', 'domains.jsonc');
-
-function loadDomainPatterns(): Array<{ domain: string; keywords: string[] }> {
-  if (!existsSync(DOMAINS_CONFIG_PATH)) return [];
-  try {
-    // Strip JSONC comments before parsing
-    const raw = readFileSync(DOMAINS_CONFIG_PATH, 'utf-8')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/(?<!:)\/\/[^\n]*/g, '')
-      .replace(/,(\s*[}\]])/g, '$1');
-    const config = JSON.parse(raw);
-    return Object.entries(config.definitions || {}).map(([domain, def]: [string, any]) => ({
-      domain,
-      keywords: def.keywords || [],
-    }));
-  } catch { return []; }
-}
-
-function matchesDomainTopics(prompt: string, patterns: Array<{ domain: string; keywords: string[] }>): string[] {
+function matchesDomainTopics(prompt: string, patterns: Array<{ name: string; keywords: string[] }>): string[] {
   const lower = prompt.toLowerCase();
   const matched: string[] = [];
-  for (const { domain, keywords } of patterns) {
+  for (const { name, keywords } of patterns) {
     if (keywords.some(kw => lower.includes(kw.toLowerCase()))) {
-      matched.push(domain);
+      matched.push(name);
     }
   }
   return matched;
@@ -57,7 +37,7 @@ async function main() {
   // Skip bare ratings
   if (/^([1-9]|10)$/.test(prompt.trim())) process.exit(0);
 
-  const patterns = loadDomainPatterns();
+  const patterns = loadDomainDefinitions();
   if (patterns.length === 0) {
     // Not configured — exit silently
     process.exit(0);
