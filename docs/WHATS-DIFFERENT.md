@@ -1,19 +1,19 @@
-# What's Different: PAI 4.6.0 vs. Daniel Miessler's Original
+# What's Different: KAI 5.0.0 vs. Daniel Miessler's Original PAI
 
 PAI (Personal AI Infrastructure) was originally created by [Daniel Miessler](https://danielmiessler.com), the creator of [Fabric](https://github.com/danielmiessler/fabric). His public release (v4.0.3) established the foundational architecture for turning Claude Code into a personalized AI assistant.
 
-This fork has evolved significantly. Here's what changed, what was added, and what you gain by deploying PAI 4.6.0.
+This fork has evolved significantly. Here's what changed, what was added, and what you gain by deploying KAI 5.0.0.
 
 ---
 
 ## At a Glance
 
-| | Daniel's PAI (v4.0.3) | This Fork (v4.6.0) |
+| | Daniel's PAI (v4.0.3) | KAI (v5.0.0) |
 |---|---|---|
 | **Skills** | 63 (12 categories) | 51 (streamlined, no dead skills) |
 | **Hooks** | 21 | 38 (all through stderr wrapper) |
 | **Agents** | ~6 generic | 18 specialized (named personas) |
-| **Algorithm** | v3.5.0 | v3.10.0 |
+| **Algorithm** | v3.5.0 | v3.12.0 |
 | **Context footprint** | ~19% at startup | Optimized with lazy loading |
 | **Installer** | Drop-in `.claude/` directory | Interactive setup wizard with symlink |
 | **Config management** | Single `settings.json` | 7 domain config files, auto-merged |
@@ -39,7 +39,7 @@ Your coworkers clone the repo, run the installer, and get their own identity wit
 
 ### 2. Interactive Installer
 
-The original required manually copying a `.claude/` directory. PAI 4.6.0 includes:
+The original required manually copying a `.claude/` directory. KAI includes:
 
 - **`install.sh`** — bootstrap script that installs prerequisites (Bun, Git)
 - **`PAI-Install/main.ts`** — 6-step interactive wizard:
@@ -82,7 +82,7 @@ All 38 hooks now go through `run-hook.sh`, which:
   - `PromptAnalysis` — batched inference for session naming + tab titles
   - `PreCompact` — preserves critical context before compaction
 
-### 5. Algorithm v3.10.0
+### 5. Algorithm v3.12.0
 
 Upgraded from v3.5.0 with:
 

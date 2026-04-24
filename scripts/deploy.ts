@@ -479,7 +479,7 @@ async function main() {
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| Algorithm | v3.10.0 | Core reasoning engine |
+| Algorithm | v3.12.0 | Core reasoning engine |
 | Skills | 51 | Research, security, writing, analysis, etc. |
 | Hooks | 38 | Pre/post tool guards, format enforcement, etc. |
 | Agents | 18 | Specialized agent definitions |
