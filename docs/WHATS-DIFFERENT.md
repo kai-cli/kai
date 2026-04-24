@@ -68,7 +68,7 @@ Instead of one monolithic `settings.json`, configuration is split into purpose-s
 
 ### 4. Hook System Hardening
 
-All 37 hooks now go through `run-hook.sh`, which:
+All 35 hooks now go through `run-hook.sh`, which:
 
 - **Redirects stderr to `/tmp/pai-hooks/`** — prevents "hook error" messages in Claude Code UI
 - **Async flags on analytics hooks** — PromptAnalysis, RatingCapture, StopOrchestrator, and other inference-heavy hooks run in the background instead of blocking the UI for 15+ seconds
