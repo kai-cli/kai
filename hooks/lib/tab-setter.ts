@@ -31,6 +31,12 @@ const KITTY_SESSIONS_DIR = paiPath('MEMORY', 'STATE', 'kitty-sessions');
  * leaks garbage text into the terminal output. See PR #493.
  */
 function getKittyEnv(sessionId?: string): { listenOn: string | null; windowId: string | null } {
+  // Short-circuit for non-Kitty terminals — silent, no logging
+  const isKitty = !!process.env.KITTY_WINDOW_ID ||
+                  !!process.env.KITTY_LISTEN_ON ||
+                  process.env.TERM === 'xterm-kitty';
+  if (!isKitty) return { listenOn: null, windowId: null };
+
   // Try environment first (direct terminal calls)
   let listenOn = process.env.KITTY_LISTEN_ON || null;
   let windowId = process.env.KITTY_WINDOW_ID || null;
@@ -61,7 +67,7 @@ function getKittyEnv(sessionId?: string): { listenOn: string | null; windowId: s
     } catch { /* silent */ }
   }
 
-  // Log when kitty env lookup fails with a session ID (diagnostic for compaction issues)
+  // Log only when in Kitty but lookup failed — genuine diagnostic signal
   if (sessionId && !listenOn && !windowId) {
     console.error(`[tab-setter] getKittyEnv: no kitty env found for session ${sessionId.slice(0, 8)} (no env vars, no session file, no default socket)`);
   }

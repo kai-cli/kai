@@ -65,7 +65,7 @@ exec bun "$HOOK_PATH" 2>>"$LOG_FILE"
 ```json
 {
   "type": "command",
-  "command": "~/.claude/hooks/lib/run-hook.sh MyHook.hook.ts"
+  "command": "~/.claude/hooks/lib/run-hook.sh YourHook.hook.ts"
 }
 ```
 
@@ -176,7 +176,7 @@ Claude Code sends `prompt` (not `user_prompt`) in UserPromptSubmit payloads. The
     {
       "matcher": "ToolName",
       "hooks": [
-        { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MyHook.hook.ts" }
+        { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh YourHook.hook.ts" }
       ]
     }
   ]

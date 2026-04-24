@@ -24,7 +24,7 @@
  * - Resets: Kitty tab title and color to defaults (no lingering colored backgrounds)
  *
  * INTER-HOOK RELATIONSHIPS:
- * - DEPENDS ON: AutoWorkCreation (expects WORK/ structure and current-work.json)
+ * - READS: MEMORY/STATE/current-work.json (if present), MEMORY/WORK/ structure
  * - COORDINATES WITH: WorkCompletionLearning (both run at SessionEnd)
  * - MUST RUN BEFORE: None (final cleanup)
  * - MUST RUN AFTER: WorkCompletionLearning (learning capture uses state before clear)
