@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * PAI Deployment Packager
+ * KAI Deployment Packager
  *
- * Creates a distributable PAI package for coworker machines.
+ * Creates a distributable KAI package for coworker machines.
  * Includes all system components, strips personal data,
  * creates USER scaffolding with placeholders.
  *
@@ -199,10 +199,10 @@ function humanSize(bytes: number): string {
 
 // --- USER scaffold ---
 const USER_SCAFFOLD: Record<string, string> = {
-  "PAI/USER/README.md": `# PAI User Configuration
+  "PAI/USER/README.md": `# KAI User Configuration
 
-This directory contains your personal PAI configuration.
-Edit these files to customize PAI for your workflow.
+This directory contains your personal KAI configuration.
+Edit these files to customize KAI for your workflow.
 
 ## Getting Started
 
@@ -270,7 +270,7 @@ Package Manager: bun
   "PAI/USER/TELOS/README.md": `# TELOS — Life Operating System
 
 Configure your goals, projects, and life context here.
-See PAI documentation for TELOS file format.
+See KAI documentation for TELOS file format.
 `,
 
   "PAI/USER/PROJECTS/README.md": `# Projects
@@ -327,7 +327,7 @@ function createBoardConfigTemplate(): string {
 }
 
 // --- .env template ---
-const ENV_TEMPLATE = `# PAI Environment Configuration
+const ENV_TEMPLATE = `# KAI Environment Configuration
 # Add your API keys here
 
 # Required for Research skill
@@ -351,7 +351,7 @@ const ENV_TEMPLATE = `# PAI Environment Configuration
 
 // --- Main ---
 async function main() {
-  console.log(`\n${BOLD}PAI Deployment Packager v${VERSION}${RESET}\n`);
+  console.log(`\n${BOLD}KAI Deployment Packager v${VERSION}${RESET}\n`);
 
   const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
   const pkgName = `pai-${VERSION}-${timestamp}`;
@@ -459,7 +459,7 @@ async function main() {
   ok("MEMORY directory structure");
 
   // Create quick-start README
-  writeFileSync(join(pkgDir, "DEPLOY-README.md"), `# PAI ${VERSION} Deployment Package
+  writeFileSync(join(pkgDir, "DEPLOY-README.md"), `# KAI ${VERSION} Deployment Package
 
 ## Quick Start
 
@@ -495,7 +495,7 @@ async function main() {
 
 ## Board
 
-The PAI Board runs at http://localhost:3333
+The KAI Board runs at http://localhost:3333
 
 \`\`\`bash
 bun ~/.claude/scripts/board.ts
@@ -516,7 +516,7 @@ auto-discovery of ~/Projects/
   scripts/       Board, Ralph Loop, deployment
   config/        Domain config files (hooks, permissions, etc.)
   MEMORY/        Session state, work items, decisions
-  settings.json  Claude Code settings with PAI hooks
+  settings.json  Claude Code settings with KAI hooks
   CLAUDE.md      System prompt (generated from template)
 \`\`\`
 `);

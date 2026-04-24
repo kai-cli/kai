@@ -6,8 +6,8 @@
 
 First public release of KAI, forked from Daniel Miessler's PAI and hardened for deployment.
 
-- 51 skill modules across 12 categories
-- 38 lifecycle hooks with stderr wrapper + async flags
+- 41 skill modules across 12 categories
+- 37 lifecycle hooks with stderr wrapper + async flags
 - 18 named agents (Architect, Engineer, 5 researchers, etc.)
 - Algorithm v3.12.0 with ISC quality gates
 - Interactive setup wizard with archetype selection
