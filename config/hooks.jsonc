@@ -16,7 +16,7 @@
   // Status line command — shown in terminal title/status bar
   "statusLine": {
     "type": "command",
-    "command": "$PAI_DIR/statusline-command.sh"
+    "command": "bun $PAI_DIR/statusline.ts"
   },
 
   // Hook registrations by lifecycle event

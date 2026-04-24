@@ -1060,8 +1060,7 @@ KEY FILES:
 ~/.claude/hooks/lib/                 Shared libraries (13 files)
 ~/.claude/hooks/lib/learning-utils.ts Learning categorization
 ~/.claude/hooks/lib/time.ts          PST timestamp utilities
-~/.claude/hooks/lib/event-types.ts   Typed event definitions (22 interfaces)
-~/.claude/hooks/lib/event-emitter.ts appendEvent() → events.jsonl
+~/.claude/MEMORY/STATE/events.jsonl  Unified event log (hooks append inline)
 ~/.claude/MEMORY/WORK/               Work tracking
 ~/.claude/MEMORY/LEARNING/           Learning captures
 ~/.claude/MEMORY/STATE/              Runtime state
@@ -1184,25 +1183,26 @@ Alongside existing filesystem state writes (algorithm-state JSON, PRDs, session-
 
 | File | Purpose |
 |------|---------|
-| `${PAI_DIR}/hooks/lib/event-types.ts` | TypeScript discriminated union of all PAI event types (22 interfaces covering algorithm, work, session, rating, learning, PRD, doc, build, system, tab, hook error, and custom events) |
-| `${PAI_DIR}/hooks/lib/event-emitter.ts` | `appendEvent()` utility that writes typed events to `${PAI_DIR}/MEMORY/STATE/events.jsonl` |
+| `${PAI_DIR}/MEMORY/STATE/events.jsonl` | Unified append-only event log |
 
 ### Usage in Hooks
 
-Hooks call `appendEvent()` as a secondary write **alongside** their existing state writes. The emitter is synchronous, fire-and-forget, and silently swallows errors so it never blocks or crashes a hook.
+Hooks write events inline using `appendFileSync` alongside their existing state writes. Synchronous, fire-and-forget, errors silently swallowed so event logging never blocks or crashes a hook.
 
 ```typescript
-import { appendEvent } from './lib/event-emitter';
+import { appendFileSync } from 'fs';
+import { join } from 'path';
 
 // Inside an existing hook, AFTER the normal state write:
-appendEvent({ type: 'work.created', source: 'PRDSync', slug: 'my-task' });
+const eventsPath = join(process.env.PAI_DIR!, 'MEMORY', 'STATE', 'events.jsonl');
+appendFileSync(eventsPath, JSON.stringify({ type: 'work.created', source: 'PRDSync', slug: 'my-task', timestamp: new Date().toISOString(), session_id: process.env.CLAUDE_SESSION_ID }) + '\n');
 ```
 
 ### Event Structure
 
 Every event has a common base shape plus type-specific fields:
-- `timestamp` (ISO 8601) -- auto-injected by `appendEvent()`
-- `session_id` -- auto-injected from `CLAUDE_SESSION_ID` env
+- `timestamp` (ISO 8601) -- set by the emitting hook
+- `session_id` -- from `CLAUDE_SESSION_ID` env
 - `source` -- the hook or handler name that emitted the event
 - `type` -- dot-separated topic (e.g., `algorithm.phase`, `work.created`, `rating.captured`)
 
@@ -1217,7 +1217,7 @@ Events use a dot-separated topic hierarchy for filtering. A `custom.*` escape ha
 | `rating.*` | captured | RatingCapture |
 | `learning.*` | captured | WorkCompletionLearning |
 | `prd.*` | synced | PRDSync |
-| `doc.*` | integrity | DocIntegrity |
+| `doc.*` | integrity | StopOrchestrator (DocCrossRefIntegrity) |
 | `build.*` | rebuild | BuildCLAUDE (SessionStart handler) |
 | `system.*` | integrity | IntegrityCheck |
 | `settings.*` | counts_updated | UpdateCounts |
@@ -1236,8 +1236,9 @@ tail -f ~/.claude/MEMORY/STATE/events.jsonl | jq 'select(.type | startswith("alg
 
 # Programmatic (Node/Bun fs.watch)
 import { watch } from 'fs';
-import { getEventsPath } from './hooks/lib/event-emitter';
-watch(getEventsPath(), (eventType) => { /* read new lines */ });
+import { join } from 'path';
+const eventsPath = join(process.env.PAI_DIR!, 'MEMORY', 'STATE', 'events.jsonl');
+watch(eventsPath, (eventType) => { /* read new lines */ });
 ```
 
 ### Key Principles

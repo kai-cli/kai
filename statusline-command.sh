@@ -43,7 +43,7 @@ TEMP_UNIT=$(jq -r '.preferences.temperatureUnit // "fahrenheit"' "$SETTINGS_FILE
 LOCATION_CACHE_TTL=3600  # 1 hour (IP rarely changes)
 WEATHER_CACHE_TTL=900    # 15 minutes
 COUNTS_CACHE_TTL=30      # 30 seconds (file counts rarely change mid-session)
-USAGE_CACHE_TTL=60       # 60 seconds (API recommends ≤1 poll/minute)
+USAGE_CACHE_TTL=300      # 5 minutes (reduces refresh contention; data changes slowly)
 
 # Additional cache files
 COUNTS_CACHE="$PAI_DIR/MEMORY/STATE/counts-cache.sh"
@@ -121,20 +121,19 @@ total_output=${total_output:-0}
 session_cost_str=""
 if [ "$total_input" -gt 0 ] || [ "$total_output" -gt 0 ]; then
     case "$model_name" in
-        *"Opus 4"*|*"opus-4"*)   input_mtok="15.00"; output_mtok="75.00" ;;
-        *"Sonnet 4"*)             input_mtok="3.00";  output_mtok="15.00" ;;
-        *"Haiku 4"*|*"haiku-4"*) input_mtok="0.80";  output_mtok="4.00"  ;;
-        *)                        input_mtok="3.00";  output_mtok="15.00" ;;
+        *"Opus 4"*|*"opus-4"*)   input_num=1500; output_num=7500 ;;
+        *"Sonnet 4"*)             input_num=300;  output_num=1500 ;;
+        *"Haiku 4"*|*"haiku-4"*) input_num=80;   output_num=400  ;;
+        *)                        input_num=300;  output_num=1500 ;;
     esac
-    session_cost_str=$(python3 -c "
-cost = ($total_input * $input_mtok + $total_output * $output_mtok) / 1_000_000
-if cost < 0.01:
-    print(f'~\${cost:.4f}')
-elif cost < 1.00:
-    print(f'~\${cost:.3f}')
-else:
-    print(f'~\${cost:.2f}')
-" 2>/dev/null)
+    # Pure awk — no python3 subprocess needed for simple arithmetic
+    session_cost_str=$(awk -v ti="$total_input" -v to="$total_output" \
+        -v in_rate="$input_num" -v out_rate="$output_num" 'BEGIN {
+        cost = (ti * in_rate + to * out_rate) / 100000000000
+        if (cost < 0.01)      printf "~$%.4f", cost
+        else if (cost < 1.00) printf "~$%.3f", cost
+        else                  printf "~$%.2f", cost
+    }' 2>/dev/null)
 fi
 
 # Get Claude Code version
@@ -297,7 +296,8 @@ _now=$(date +%s)
             fi
         fi
     fi
-) </dev/null >/dev/null 2>&1 & disown
+) </dev/null >/dev/null 2>&1 &
+disown $! 2>/dev/null || true
 
 learning_count="$learnings_count"
 
@@ -306,22 +306,15 @@ learning_count="$learnings_count"
 # ─────────────────────────────────────────────────────────────────────────────
 # Hooks don't inherit terminal context. Try multiple methods.
 
-_width_cache="/tmp/pai-term-width-${KITTY_WINDOW_ID:-default}"
+_width_cache="/tmp/pai-term-width-default"
 
 detect_terminal_width() {
     local width=""
 
-    # Tier 1: Kitty IPC (most accurate for Kitty panes)
-    if [ -n "$KITTY_WINDOW_ID" ] && command -v kitten >/dev/null 2>&1; then
-        width=$(kitten @ ls 2>/dev/null | jq -r --argjson wid "$KITTY_WINDOW_ID" \
-            '.[].tabs[].windows[] | select(.id == $wid) | .columns' 2>/dev/null)
-    fi
+    # Tier 1: Direct TTY query (fast, no IPC)
+    width=$(stty size </dev/tty 2>/dev/null | awk '{print $2}')
 
-    # Tier 2: Direct TTY query
-    [ -z "$width" ] || [ "$width" = "0" ] || [ "$width" = "null" ] && \
-        width=$(stty size </dev/tty 2>/dev/null | awk '{print $2}')
-
-    # Tier 3: tput fallback
+    # Tier 2: tput fallback
     [ -z "$width" ] || [ "$width" = "0" ] && width=$(tput cols 2>/dev/null)
 
     # If we got a real width, cache it for subprocess re-renders
@@ -331,7 +324,7 @@ detect_terminal_width() {
         return
     fi
 
-    # Tier 4: Read cached width from previous successful detection
+    # Tier 3: Read cached width from previous successful detection
     if [ -f "$_width_cache" ]; then
         local cached
         cached=$(cat "$_width_cache" 2>/dev/null)
@@ -341,7 +334,7 @@ detect_terminal_width() {
         fi
     fi
 
-    # Tier 5: Environment variable / default
+    # Tier 4: Environment variable / default
     echo "${COLUMNS:-80}"
 }
 
@@ -514,77 +507,6 @@ get_usage_color() {
     fi
 }
 
-# Calculate human-readable time until reset from ISO 8601 timestamp
-# Uses TZ from settings.json (principal.timezone) for correct local time
-time_until_reset() {
-    local reset_ts="$1"
-    [ -z "$reset_ts" ] && { echo "—"; return; }
-    # Use python3 for reliable ISO 8601 parsing with timezone handling
-    local diff=$(python3 -c "
-from datetime import datetime, timezone
-import sys
-try:
-    ts = '$reset_ts'
-    # Parse ISO 8601 with timezone
-    from datetime import datetime
-    if '+' in ts[10:]:
-        dt = datetime.fromisoformat(ts)
-    elif ts.endswith('Z'):
-        dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
-    else:
-        dt = datetime.fromisoformat(ts + '+00:00')
-    now = datetime.now(timezone.utc)
-    diff = int((dt - now).total_seconds())
-    print(max(diff, 0))
-except:
-    print(-1)
-" 2>/dev/null)
-    [ -z "$diff" ] || [ "$diff" = "-1" ] && { echo "—"; return; }
-    [ "$diff" -le 0 ] && { echo "now"; return; }
-    local hours=$((diff / 3600))
-    local mins=$(((diff % 3600) / 60))
-    if [ "$hours" -ge 24 ]; then
-        local days=$((hours / 24))
-        local rem_hours=$((hours % 24))
-        [ "$rem_hours" -gt 0 ] && echo "${days}d${rem_hours}h" || echo "${days}d"
-    elif [ "$hours" -gt 0 ]; then
-        echo "${hours}h${mins}m"
-    else
-        echo "${mins}m"
-    fi
-}
-
-# Calculate local clock time from ISO 8601 reset timestamp
-# Returns format like "3:45p" for 5H or "Mon 3p" for weekly
-reset_clock_time() {
-    local reset_ts="$1" fmt="$2"
-    [ -z "$reset_ts" ] && { echo ""; return; }
-    local result=$(python3 -c "
-from datetime import datetime, timezone, timedelta
-import sys
-try:
-    ts = '$reset_ts'
-    if '+' in ts[10:]:
-        dt = datetime.fromisoformat(ts)
-    elif ts.endswith('Z'):
-        dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
-    else:
-        dt = datetime.fromisoformat(ts + '+00:00')
-    # Convert to Pacific
-    from zoneinfo import ZoneInfo
-    local_dt = dt.astimezone(ZoneInfo('$USER_TZ'))
-    if '$fmt' == 'weekly':
-        day = local_dt.strftime('%a')
-        hour = local_dt.strftime('%H:%M')
-        print(f'{day} {hour}')
-    else:
-        hour = local_dt.strftime('%H:%M')
-        print(hour)
-except:
-    print('')
-" 2>/dev/null)
-    echo "$result"
-}
 
 # Render context bar - gradient progress bar using (potentially scaled) percentage
 render_context_bar() {
@@ -845,50 +767,46 @@ if [ "$usage_5h_int" -gt 0 ] || [ "$usage_7d_int" -gt 0 ] || [ -f "$USAGE_CACHE"
     usage_5h_color=$(get_usage_color "$usage_5h_int")
     usage_7d_color=$(get_usage_color "$usage_7d_int")
 
-    # Batch all 4 python3 calls into one process (saves ~150ms)
-    eval "$(python3 -c "
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
-import sys
+    # Parse ISO 8601 reset timestamps using date + awk (no python3 subprocess)
+    _iso_to_epoch() {
+        local ts="$1"
+        [ -z "$ts" ] && { echo 0; return; }
+        # macOS date: strip sub-seconds, handle Z and +offset
+        local cleaned
+        cleaned=$(echo "$ts" | sed 's/\.[0-9]*//' | sed 's/Z$/+00:00/')
+        date -j -f "%Y-%m-%dT%H:%M:%S%z" "$cleaned" "+%s" 2>/dev/null \
+            || date -d "$ts" "+%s" 2>/dev/null \
+            || echo 0
+    }
+    _epoch_to_countdown() {
+        local epoch="$1" now
+        now=$(date +%s)
+        local diff=$(( epoch - now ))
+        [ "$diff" -le 0 ] && { echo "now"; return; }
+        local h=$(( diff / 3600 )) m=$(( (diff % 3600) / 60 ))
+        if [ "$h" -ge 24 ]; then
+            local d=$(( h / 24 )) rh=$(( h % 24 ))
+            [ "$rh" -gt 0 ] && echo "${d}d${rh}h" || echo "${d}d"
+        elif [ "$h" -gt 0 ]; then echo "${h}h${m}m"
+        else echo "${m}m"
+        fi
+    }
+    _epoch_to_clock() {
+        local epoch="$1" fmt="$2"
+        [ "$epoch" = "0" ] && { echo ""; return; }
+        if [ "$fmt" = "weekly" ]; then
+            TZ="$USER_TZ" date -r "$epoch" "+%a %H:%M" 2>/dev/null || date -d "@$epoch" "+%a %H:%M" 2>/dev/null
+        else
+            TZ="$USER_TZ" date -r "$epoch" "+%H:%M" 2>/dev/null || date -d "@$epoch" "+%H:%M" 2>/dev/null
+        fi
+    }
 
-def parse_ts(ts):
-    if not ts: return None
-    try:
-        if '+' in ts[10:]:
-            return datetime.fromisoformat(ts)
-        elif ts.endswith('Z'):
-            return datetime.fromisoformat(ts.replace('Z', '+00:00'))
-        else:
-            return datetime.fromisoformat(ts + '+00:00')
-    except: return None
-
-def time_until(ts):
-    dt = parse_ts(ts)
-    if not dt: return '—'
-    diff = int((dt - datetime.now(timezone.utc)).total_seconds())
-    if diff <= 0: return 'now'
-    h, m = diff // 3600, (diff % 3600) // 60
-    if h >= 24:
-        d, rh = h // 24, h % 24
-        return f'{d}d{rh}h' if rh > 0 else f'{d}d'
-    return f'{h}h{m}m' if h > 0 else f'{m}m'
-
-def clock_time(ts, fmt):
-    dt = parse_ts(ts)
-    if not dt: return ''
-    local_dt = dt.astimezone(ZoneInfo('$USER_TZ'))
-    if fmt == 'weekly':
-        return local_dt.strftime('%a %H:%M')
-    return local_dt.strftime('%H:%M')
-
-r5h = '$usage_5h_reset'
-r7d = '$usage_7d_reset'
-print(f\"reset_5h='{time_until(r5h)}'\")
-print(f\"reset_7d='{time_until(r7d)}'\")
-print(f\"clock_5h='{clock_time(r5h, 'hourly')}'\")
-print(f\"clock_7d='{clock_time(r7d, 'weekly')}'\")
-
-" 2>/dev/null)"
+    _epoch_5h=$(_iso_to_epoch "$usage_5h_reset")
+    _epoch_7d=$(_iso_to_epoch "$usage_7d_reset")
+    reset_5h=$(_epoch_to_countdown "$_epoch_5h")
+    reset_7d=$(_epoch_to_countdown "$_epoch_7d")
+    clock_5h=$(_epoch_to_clock "$_epoch_5h" "hourly")
+    clock_7d=$(_epoch_to_clock "$_epoch_7d" "weekly")
     reset_5h="${reset_5h:-—}"
     reset_7d="${reset_7d:-—}"
 

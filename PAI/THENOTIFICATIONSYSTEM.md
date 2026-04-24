@@ -215,7 +215,7 @@ await sendDiscord("Message", { title: "Title", color: 0x00ff00 });
 
 In addition to the push and Discord channels above, PAI hooks emit structured events to `${PAI_DIR}/MEMORY/STATE/events.jsonl`. This is an append-only JSONL file where each line is a typed event (e.g., `algorithm.phase`, `work.created`, `rating.captured`). It serves as a unified observability channel that any process can consume by tailing or watching the file.
 
-Events are emitted via `appendEvent()` from `${PAI_DIR}/hooks/lib/event-emitter.ts`, which is synchronous and fire-and-forget. The event type system is defined in `${PAI_DIR}/hooks/lib/event-types.ts` as a TypeScript discriminated union covering 22 event interfaces. This channel is additive -- it does not replace any of the notification channels above, and hooks emit events alongside their existing state writes and notifications.
+Events are emitted inline by each hook via synchronous `appendFileSync` — fire-and-forget with errors silently swallowed. This channel is additive — it does not replace any of the notification channels above, and hooks emit events alongside their existing state writes and notifications.
 
 ---
 

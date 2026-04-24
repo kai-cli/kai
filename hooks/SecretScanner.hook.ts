@@ -89,7 +89,7 @@ async function main(): Promise<void> {
       }
     })();
 
-    await Promise.race([readLoop, new Promise<void>(r => setTimeout(r, 200))]);
+    await Promise.race([readLoop, new Promise<void>(r => setTimeout(r, 50))]);
 
     if (!raw.trim()) {
       console.log(JSON.stringify({ continue: true }));

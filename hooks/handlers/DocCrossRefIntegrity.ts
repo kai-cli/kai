@@ -8,7 +8,7 @@
  * The deterministic layer detects WHAT changed. The inference layer understands
  * HOW docs need updating — generating surgical edit pairs, never full rewrites.
  *
- * TRIGGER: Stop hook (via DocIntegrity.hook.ts)
+ * TRIGGER: Stop hook (via StopOrchestrator)
  *
  * PATTERN TYPES CHECKED (deterministic):
  * 1. Hook file references (*.hook.ts) - diff against disk
@@ -202,11 +202,18 @@ function isSystemFileModified(modifiedFiles: Set<string>): boolean {
 /**
  * Check Pattern 2: Hook file references in docs vs actual files on disk.
  */
+// Docs that contain historical/example hook names that are intentionally not on disk
+const HOOK_REF_EXCLUDED_DOCS = new Set(['MEMORY-CHANGELOG.md']);
+// Placeholder names used in code examples — not real hook files
+const HOOK_REF_PLACEHOLDERS = new Set(['HookName', 'MyHook', 'YourHook', 'ExampleHook']);
+
 function checkHookFileRefs(docsToCheck: string[], hooksOnDisk: Set<string>): DriftItem[] {
   const drift: DriftItem[] = [];
   const hookRefRegex = /(\w+)\.hook\.ts/g;
 
   for (const docFile of docsToCheck) {
+    if (HOOK_REF_EXCLUDED_DOCS.has(docFile)) continue;
+
     const docPath = join(SYSTEM_DIR, docFile);
     if (!existsSync(docPath)) continue;
 
@@ -215,6 +222,8 @@ function checkHookFileRefs(docsToCheck: string[], hooksOnDisk: Set<string>): Dri
 
     while ((match = hookRefRegex.exec(content)) !== null) {
       const hookName = match[0]; // e.g., "LoadContext.hook.ts"
+      const baseName = match[1]; // e.g., "LoadContext"
+      if (HOOK_REF_PLACEHOLDERS.has(baseName)) continue;
       if (!hooksOnDisk.has(hookName)) {
         drift.push({
           doc: docFile,
@@ -817,16 +826,22 @@ export async function handleDocCrossRefIntegrity(
 
   // Step 6: Inference-powered semantic analysis
   // Run inference to catch what grep can't: semantic drift in descriptions
-  // Skip if no drift found — saves ~15s of inference per response
-  if (allDrift.length > 0) {
+  // Skip if no drift found OR already ran for this session (15s LLM call — once per session max)
+  const INFERENCE_SENTINEL = paiPath('MEMORY', 'STATE', `.doc-inference-${hookInput.session_id}`);
+  const inferenceAlreadyRan = existsSync(INFERENCE_SENTINEL);
+  let inferenceEdits: Awaited<ReturnType<typeof runInferenceAnalysis>> = [];
+  if (allDrift.length > 0 && !inferenceAlreadyRan) {
+    try { writeFileSync(INFERENCE_SENTINEL, new Date().toISOString()); } catch { /* non-fatal */ }
     console.error(`${TAG} === Running inference analysis ===`);
-    const inferenceEdits = await runInferenceAnalysis(modifiedFiles, docsToCheck);
+    inferenceEdits = await runInferenceAnalysis(modifiedFiles, docsToCheck);
     if (inferenceEdits.length > 0) {
       const inferenceApplied = applyInferenceEdits(inferenceEdits);
       updatesApplied.push(...inferenceApplied);
     } else {
       console.error(`${TAG} [INFERENCE] No semantic corrections needed`);
     }
+  } else if (inferenceAlreadyRan) {
+    console.error(`${TAG} [INFERENCE] Skipped — already ran for this session`);
   } else {
     console.error(`${TAG} [INFERENCE] Skipped — no drift detected`);
   }

@@ -192,7 +192,7 @@
   "LoadContext.hook.ts injects dynamic context (relationship, learning, work) at session start.",
   "v4.0 hierarchical skills: 12 public categories replace 37 flat directories. Faster routing.",
   "Private skills prefixed with _ (e.g., _COMMS, _FEED) are excluded from public PAI releases.",
-  "DocIntegrity.hook.ts and DocRebuild.hook.ts keep documentation cross-references current on Stop.",
+  "StopOrchestrator runs DocCrossRefIntegrity on Stop — keeps documentation cross-references current.",
   "SkillGuard.hook.ts validates skill invocations. AgentExecutionGuard.hook.ts controls agent spawning.",
   "v4.0 eliminated packs. The release IS the .claude/ directory \u2014 install by copying directly.",
   "PRD frontmatter has 8 fields: task, slug, effort, phase, progress, mode, started, updated.",
