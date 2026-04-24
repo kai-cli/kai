@@ -1,7 +1,7 @@
 // KAI Domain Configuration
 //
 // Defines knowledge domains, project-to-domain mappings, and exclusions.
-// Used by KnowledgeSync, KnowledgeHarvester, and knowledge-readback hooks.
+// Used by domain-aware hooks for project-to-domain mapping.
 //
 // To customize: edit the definitions, add your projects to projectMapping,
 // and exclude any projects you don't want knowledge-synced.

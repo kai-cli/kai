@@ -1,4 +1,4 @@
-// PAI Permission Configuration
+// KAI Permission Configuration
 // Controls which Claude Code tools are allowed, denied, or require confirmation.
 // Pattern: "ToolName(argument-pattern:*)" for argument-specific matching.
 //

@@ -1,13 +1,13 @@
 // inference-budget.ts - SessionEnd inference budget cap
 //
 // Limits total LLM inference calls across all SessionEnd hooks to prevent
-// timeout cascading and excessive latency. KnowledgeSync gets priority.
+// timeout cascading and excessive latency.
 //
 // Usage:
 //   import { canCallInference, recordInferenceCall } from './lib/inference-budget';
 //   if (!canCallInference()) { /* skip or batch */ }
 //   // ... make inference call ...
-//   recordInferenceCall('KnowledgeSync', 'firmware');
+//   recordInferenceCall('ReflectionHarvester', 'session');
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';

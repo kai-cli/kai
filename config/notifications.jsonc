@@ -1,4 +1,4 @@
-// PAI Notification Configuration
+// KAI Notification Configuration
 // Controls multi-channel notification routing for long tasks, errors, and security events.
 // Credentials are loaded from environment variables — never hardcode values here.
 //

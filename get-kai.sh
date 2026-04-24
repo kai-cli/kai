@@ -59,17 +59,23 @@ elif [ -d "$CLAUDE_DIR" ]; then
   info "To revert: rm ~/.claude && mv $BACKUP ~/.claude"
 fi
 
-# Case A or B (after backup): clone and symlink
-if [ -d "$KAI_HOME" ]; then
-  error "$KAI_HOME already exists. Remove it or set KAI_HOME to a different path."
+# Case A or B (after backup): clone or update
+if [ -d "$KAI_HOME/.git" ]; then
+  info "$KAI_HOME already exists — pulling latest..."
+  git -C "$KAI_HOME" pull --ff-only 2>/dev/null && success "Updated $KAI_HOME" \
+    || warn "Pull failed — you may have local changes. Run 'cd $KAI_HOME && git pull' manually."
+elif [ -d "$KAI_HOME" ]; then
+  error "$KAI_HOME exists but is not a git repo. Remove it or set KAI_HOME to a different path."
+else
+  info "Cloning KAI to $KAI_HOME..."
+  git clone "$REPO" "$KAI_HOME"
+  success "Cloned to $KAI_HOME"
 fi
 
-info "Cloning KAI to $KAI_HOME..."
-git clone "$REPO" "$KAI_HOME"
-success "Cloned to $KAI_HOME"
-
-ln -s "$KAI_HOME" "$CLAUDE_DIR"
-success "Symlinked ~/.claude → $KAI_HOME"
+if [ ! -L "$CLAUDE_DIR" ]; then
+  ln -s "$KAI_HOME" "$CLAUDE_DIR"
+  success "Symlinked ~/.claude → $KAI_HOME"
+fi
 
 # Migrate reusable files from backup
 if [ -d "${BACKUP:-}" ]; then

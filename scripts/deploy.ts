@@ -480,8 +480,8 @@ async function main() {
 | Component | Count | Description |
 |-----------|-------|-------------|
 | Algorithm | v3.12.0 | Core reasoning engine |
-| Skills | 51 | Research, security, writing, analysis, etc. |
-| Hooks | 38 | Pre/post tool guards, format enforcement, etc. |
+| Skills | 41 | Research, security, writing, analysis, etc. |
+| Hooks | 37 | Pre/post tool guards, format enforcement, etc. |
 | Agents | 18 | Specialized agent definitions |
 | Scripts | 4 | Board, Ralph Loop, deploy |
 | Config | 8 | Domain configuration files |
@@ -511,7 +511,7 @@ auto-discovery of ~/Projects/
   PAI/           Core system (Algorithm, docs, routing)
   PAI/USER/      Your personal config (identity, rules, contacts)
   hooks/         Pre/PostToolUse guards and automation
-  skills/        51 skill packs (Research, Security, Writing...)
+  skills/        41 skill packs (Research, Security, Writing...)
   agents/        18 specialized agent definitions
   scripts/       Board, Ralph Loop, deployment
   config/        Domain config files (hooks, permissions, etc.)
