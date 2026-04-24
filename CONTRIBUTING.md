@@ -20,11 +20,11 @@ KAI requires [Bun](https://bun.sh) as its runtime. Install it first:
 curl -fsSL https://bun.sh/install | bash
 ```
 
-Then install dependencies:
+No `bun install` step is needed — KAI uses only Bun built-ins and has no external dependencies.
 
 ```bash
 cd kai
-bun install
+bun test   # verify everything works
 ```
 
 ## File Categories

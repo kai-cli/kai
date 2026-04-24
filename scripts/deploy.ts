@@ -19,7 +19,7 @@ import { execSync } from "child_process";
 
 const HOME = process.env.HOME!;
 const PAI_ROOT = join(HOME, ".claude");
-const VERSION = "4.5.0";
+const VERSION = "5.0.0";
 
 // --- CLI args ---
 const args = process.argv.slice(2);
