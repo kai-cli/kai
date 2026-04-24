@@ -311,6 +311,7 @@ export function buildSettings(paiDir = DEFAULT_PAI_DIR): Record<string, unknown>
     }
   }
 
+
   // Apply local overrides (machine-specific settings that survive git pulls)
   const localOverridePath = join(configDir, LOCAL_OVERRIDE_FILE);
   if (existsSync(localOverridePath)) {
