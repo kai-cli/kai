@@ -10,8 +10,8 @@ This fork has evolved significantly. Here's what changed, what was added, and wh
 
 | | Daniel's PAI (v4.0.3) | KAI (v5.0.0) |
 |---|---|---|
-| **Skills** | 63 (12 categories) | 51 (streamlined, no dead skills) |
-| **Hooks** | 21 | 38 (all through stderr wrapper) |
+| **Skills** | 63 (12 categories) | 41 (streamlined, no dead skills) |
+| **Hooks** | 21 | 37 (all through stderr wrapper) |
 | **Agents** | ~6 generic | 18 specialized (named personas) |
 | **Algorithm** | v3.5.0 | v3.12.0 |
 | **Context footprint** | ~19% at startup | Optimized with lazy loading |
@@ -68,7 +68,7 @@ Instead of one monolithic `settings.json`, configuration is split into purpose-s
 
 ### 4. Hook System Hardening
 
-All 38 hooks now go through `run-hook.sh`, which:
+All 37 hooks now go through `run-hook.sh`, which:
 
 - **Redirects stderr to `/tmp/pai-hooks/`** — prevents "hook error" messages in Claude Code UI
 - **Async flags on analytics hooks** — PromptAnalysis, RatingCapture, StopOrchestrator, and other inference-heavy hooks run in the background instead of blocking the UI for 15+ seconds
@@ -76,7 +76,7 @@ All 38 hooks now go through `run-hook.sh`, which:
   - `SecretScanner` — blocks credential leaks in prompts
   - `GitHubWriteGuard` — requires explicit confirmation for all GitHub mutations
   - `LocalContextFirst` — injects project context before web research
-  - `FormatReminder` — enforces PAI output format compliance
+  - `FormatReminder` — enforces KAI output format compliance
   - `AlgorithmTracker` — tracks Algorithm phase progress
   - `PRDSync` — syncs PRD frontmatter to dashboard
   - `PromptAnalysis` — batched inference for session naming + tab titles
@@ -144,7 +144,7 @@ Multi-agent research with parallel execution:
 - **OSINT/Investigation** — Structured intelligence gathering
 - **ContentAnalysis** — Wisdom extraction from videos, podcasts, articles
 
-### 10. PAI Board (Dashboard)
+### 10. KAI Board (Dashboard)
 
 `bun ~/.claude/scripts/board.ts` — visual dashboard on port 3333:
 

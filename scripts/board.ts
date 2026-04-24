@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * PAI Board v2 — Personal project dashboard
+ * KAI Board v2 — Personal project dashboard
  *
  * Features:
  *   - Multi-directory PRD scanning with auto-refresh (SSE)
@@ -719,7 +719,7 @@ Bun.serve({
   },
 });
 
-console.log(`PAI Board v2 running at http://localhost:${PORT}`);
+console.log(`KAI Board v2 running at http://localhost:${PORT}`);
 console.log(`Scanning ${SCAN_DIRS.length} directories:`);
 for (const dir of SCAN_DIRS) console.log(`  → ${dir}`);
 console.log(`Auto-discovery: ${config.autoDiscover ? PROJECTS_DIR : "disabled"}`);

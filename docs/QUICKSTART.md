@@ -1,6 +1,6 @@
-# PAI Quickstart Guide
+# KAI Quickstart Guide
 
-Step-by-step guide for getting PAI running on your machine.
+Step-by-step guide for getting KAI running on your machine.
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ The installer will:
 2. Symlink `~/.claude/` to your repo clone
 3. Ask for your name, assistant name, and timezone
 4. Optionally configure AWS Bedrock
-5. Create personal file templates in `PAI/USER/`
+5. Create personal file templates in `PAI/USER/` (personal context)
 6. Build `settings.json` from domain config files
 
 Total time: ~60 seconds.
@@ -47,23 +47,23 @@ Total time: ~60 seconds.
 ### Verify it works
 
 ```bash
-# Start a session — PAI loads automatically
+# Start a session — KAI loads automatically
 claude
 
-# You should see the PAI banner and your configured identity
+# You should see the KAI banner and your configured identity
 ```
 
 ### Personalize (optional but recommended)
 
-Edit these files in `~/.claude/PAI/USER/` to give PAI context about you:
+Edit these files in `~/.claude/PAI/USER/` to give KAI context about you:
 
 | File | What to add | Impact |
 |------|-------------|--------|
-| `ABOUTME.md` | Your name, role, team, expertise | PAI tailors responses to your background |
-| `AISTEERINGRULES.md` | Personal rules (e.g., "always use TypeScript") | PAI follows your preferences |
+| `ABOUTME.md` | Your name, role, team, expertise | KAI tailors responses to your background |
+| `AISTEERINGRULES.md` | Personal rules (e.g., "always use TypeScript") | KAI follows your preferences |
 | `CONTACTS.md` | People you work with (name, role, context) | Used by meeting and communication skills |
 
-These are all **optional** — PAI works without them, just with less personalization.
+These are all **optional** — KAI works without them, just with less personalization.
 
 ### Configuration
 
@@ -87,8 +87,8 @@ bun ~/.claude/hooks/handlers/BuildSettings.ts
 
 ## What You Get
 
-### Skills (47 modules)
-PAI includes specialized skills invoked with slash commands or automatically:
+### Skills (41 modules)
+KAI includes specialized skills invoked with slash commands or automatically:
 - **Research** — multi-agent parallel research with dedup
 - **Security** — recon, web assessment, prompt injection testing
 - **Thinking** — first principles, iterative depth, council debate
@@ -103,16 +103,16 @@ Spawned automatically when the task matches:
 - **ProductStrategist, TechnicalReviewer, StakeholderCommunicator** — EM support
 
 ### The Algorithm (v3.12.0)
-For complex tasks, PAI uses a 7-phase execution framework:
+For complex tasks, KAI uses a 7-phase execution framework:
 **Observe** (understand) > **Think** (pressure-test) > **Plan** > **Build** > **Execute** > **Verify** > **Learn**
 
-Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes PAI systematically reliable rather than just "AI that tries."
+Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
-### Hooks (38 lifecycle events)
+### Hooks (37 lifecycle events)
 Automated behaviors that fire on specific events:
 - **SecretScanner** — warns if you're about to commit secrets
 - **GitHubWriteGuard** — requires confirmation before git push
-- **FormatReminder** — enforces PAI output format
+- **FormatReminder** — enforces KAI output format
 - **BuildSettings** — auto-rebuilds config on changes
 
 ## Optional: API Keys for Advanced Features
@@ -163,6 +163,6 @@ bash ~/kai/install.sh
 
 ## Further Reading
 
-- [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How PAI differs from the original
+- [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How KAI differs from the original
 - [SYSTEM-ATLAS.md](architecture/SYSTEM-ATLAS.md) — Full system architecture
 - [NEXT-STEPS.md](planning/NEXT-STEPS.md) — Roadmap & next steps

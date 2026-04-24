@@ -19,18 +19,18 @@ bash ~/kai/install.sh
 
 The installer symlinks `~/.claude/` to your repo, walks you through identity setup (your name, assistant name, timezone), optionally configures AWS Bedrock, and builds your `settings.json` from domain config files.
 
-**New to PAI?** See **[docs/QUICKSTART.md](docs/QUICKSTART.md)** for the full getting-started guide.
+**New to KAI?** See **[docs/QUICKSTART.md](docs/QUICKSTART.md)** for the full getting-started guide.
 
 ## What's Inside
 
 | Directory | Contents |
 |-----------|----------|
 | `PAI/` | Core system: Algorithm v3.12.0, context routing, system docs |
-| `skills/` | 51 skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
-| `hooks/` | 38 lifecycle hooks (security guards, formatters, analytics, cleanup) |
+| `skills/` | 41 skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
+| `hooks/` | 37 lifecycle hooks (security guards, formatters, analytics, cleanup) |
 | `agents/` | 18 named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
 | `config/` | 7 domain config files that generate settings.json |
-| `scripts/` | PAI Board dashboard, deployment packager |
+| `scripts/` | KAI Board dashboard, deployment packager |
 | `PAI-Install/` | Interactive setup wizard |
 | `MEMORY/` | Runtime state (gitignored — created per-machine) |
 
@@ -69,10 +69,10 @@ Personal files go in `PAI/USER/` (gitignored, created by installer):
 ## Quick Start
 
 ```bash
-# Start a Claude Code session (PAI loads automatically)
+# Start a Claude Code session (KAI loads automatically)
 claude
 
-# Open PAI Board (dashboard on port 3333)
+# Open KAI Board (dashboard on port 3333)
 bun ~/.claude/scripts/board.ts
 
 # Build a deployment package
