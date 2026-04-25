@@ -52,6 +52,8 @@ PII_PATTERNS=(
   '10\.94\.107'
   '10\.18\.3\.'
   '@linksys\.com'
+  '000000000000'
+  '\bDeven_Ducommun\b'
 )
 
 if [[ "${PII_PATTERNS[0]}" == *"YOUR_"* ]]; then
