@@ -81,7 +81,7 @@ AUTHORS=$(git log --all --format='%an <%ae>' | sort -u)
 if [[ $AUTHOR_COUNT -eq 1 ]]; then
   pass "Single author in history: $AUTHORS"
 else
-  warn "Multiple authors in history ($AUTHOR_COUNT):"
+  fail "Multiple authors in history ($AUTHOR_COUNT) — must all be KAI Maintainer:"
   echo "$AUTHORS" | while read -r line; do echo "    $line"; done
 fi
 

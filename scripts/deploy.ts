@@ -481,7 +481,7 @@ async function main() {
 |-----------|-------|-------------|
 | Algorithm | v3.12.0 | Core reasoning engine |
 | Skills | 41 | Research, security, writing, analysis, etc. |
-| Hooks | 37 | Pre/post tool guards, format enforcement, etc. |
+| Hooks | 35 | Pre/post tool guards, format enforcement, etc. |
 | Agents | 18 | Specialized agent definitions |
 | Scripts | 4 | Board, Ralph Loop, deploy |
 | Config | 8 | Domain configuration files |

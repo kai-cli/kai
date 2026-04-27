@@ -179,9 +179,9 @@ interface PatternsConfig {
 
 // Pattern paths in priority order:
 // 1. PAI/USER/PAISECURITYSYSTEM/patterns.yaml (user's custom rules)
-// 2. PAI/PAISECURITYSYSTEM/patterns.example.yaml (default template)
+// 2. skills/PAI/PAISECURITYSYSTEM/patterns.example.yaml (default template)
 const USER_PATTERNS_PATH = paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.yaml');
-const SYSTEM_PATTERNS_PATH = paiPath('PAI', 'PAISECURITYSYSTEM', 'patterns.example.yaml');
+const SYSTEM_PATTERNS_PATH = paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.yaml');
 
 let patternsCache: PatternsConfig | null = null;
 let patternsSource: 'user' | 'system' | 'none' = 'none';
