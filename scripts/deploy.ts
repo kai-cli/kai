@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * KAI Deployment Packager
+ * PAI Deployment Packager
  *
- * Creates a distributable KAI package for coworker machines.
+ * Creates a distributable PAI package for coworker machines.
  * Includes all system components, strips personal data,
  * creates USER scaffolding with placeholders.
  *
@@ -19,7 +19,7 @@ import { execSync } from "child_process";
 
 const HOME = process.env.HOME!;
 const PAI_ROOT = join(HOME, ".claude");
-const VERSION = "5.0.0";
+const VERSION = "4.5.0";
 
 // --- CLI args ---
 const args = process.argv.slice(2);
@@ -199,10 +199,10 @@ function humanSize(bytes: number): string {
 
 // --- USER scaffold ---
 const USER_SCAFFOLD: Record<string, string> = {
-  "PAI/USER/README.md": `# KAI User Configuration
+  "PAI/USER/README.md": `# PAI User Configuration
 
-This directory contains your personal KAI configuration.
-Edit these files to customize KAI for your workflow.
+This directory contains your personal PAI configuration.
+Edit these files to customize PAI for your workflow.
 
 ## Getting Started
 
@@ -270,7 +270,7 @@ Package Manager: bun
   "PAI/USER/TELOS/README.md": `# TELOS — Life Operating System
 
 Configure your goals, projects, and life context here.
-See KAI documentation for TELOS file format.
+See PAI documentation for TELOS file format.
 `,
 
   "PAI/USER/PROJECTS/README.md": `# Projects
@@ -351,7 +351,7 @@ const ENV_TEMPLATE = `# KAI Environment Configuration
 
 // --- Main ---
 async function main() {
-  console.log(`\n${BOLD}KAI Deployment Packager v${VERSION}${RESET}\n`);
+  console.log(`\n${BOLD}PAI Deployment Packager v${VERSION}${RESET}\n`);
 
   const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
   const pkgName = `pai-${VERSION}-${timestamp}`;
@@ -459,7 +459,7 @@ async function main() {
   ok("MEMORY directory structure");
 
   // Create quick-start README
-  writeFileSync(join(pkgDir, "DEPLOY-README.md"), `# KAI ${VERSION} Deployment Package
+  writeFileSync(join(pkgDir, "DEPLOY-README.md"), `# PAI ${VERSION} Deployment Package
 
 ## Quick Start
 
@@ -479,10 +479,10 @@ async function main() {
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| Algorithm | v3.12.0 | Core reasoning engine |
-| Skills | 41 | Research, security, writing, analysis, etc. |
-| Hooks | 35 | Pre/post tool guards, format enforcement, etc. |
-| Agents | 18 | Specialized agent definitions |
+| Algorithm | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> | Core reasoning engine |
+| Skills | <!-- KAI:counts:skills:begin -->41<!-- KAI:counts:skills:end --> | Research, security, writing, analysis, etc. |
+| Hooks | <!-- KAI:counts:hooks:begin -->35<!-- KAI:counts:hooks:end --> | Pre/post tool guards, format enforcement, etc. |
+| Agents | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> | Specialized agent definitions |
 | Scripts | 4 | Board, Ralph Loop, deploy |
 | Config | 8 | Domain configuration files |
 
@@ -516,7 +516,7 @@ auto-discovery of ~/Projects/
   scripts/       Board, Ralph Loop, deployment
   config/        Domain config files (hooks, permissions, etc.)
   MEMORY/        Session state, work items, decisions
-  settings.json  Claude Code settings with KAI hooks
+  settings.json  Claude Code settings with PAI hooks
   CLAUDE.md      System prompt (generated from template)
 \`\`\`
 `);

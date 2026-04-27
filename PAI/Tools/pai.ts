@@ -638,6 +638,7 @@ COMMANDS:
   k mcp list               List all available MCPs
   k mcp set <profile>      Set MCP profile permanently
   k prompt "<text>"        One-shot prompt execution
+  k curate                 Review and approve/reject staged memory drafts
   k -w, --wallpaper        List/switch wallpapers (Kitty + macOS)
   k help, -h               Show this help
 

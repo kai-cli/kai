@@ -37,7 +37,7 @@ The installer will:
 2. Symlink `~/.claude/` to your repo clone
 3. Ask for your name, assistant name, and timezone
 4. Optionally configure AWS Bedrock
-5. Create personal file templates in `PAI/USER/` (personal context)
+5. Create personal file templates in `PAI/USER/`
 6. Build `settings.json` from domain config files
 
 Total time: ~60 seconds.
@@ -55,7 +55,7 @@ claude
 
 ### Personalize (optional but recommended)
 
-Edit these files in `~/.claude/PAI/USER/` to give KAI context about you:
+Edit these files in `~/.claude/PAI/USER/` to give PAI context about you:
 
 | File | What to add | Impact |
 |------|-------------|--------|
@@ -72,7 +72,7 @@ All configuration lives in `~/.claude/config/*.jsonc` (JSON with comments):
 | File | What it controls |
 |------|-----------------|
 | `identity.jsonc` | Your name, assistant name, timezone |
-| `hooks.jsonc` | 35 lifecycle hooks (security, formatting, etc.) |
+| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->35<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
 | `permissions.jsonc` | Tool permissions (allow/deny/ask rules) |
 | `preferences.jsonc` | Environment variables, MCP servers, tech stack |
 | `notifications.jsonc` | Alert routing (disabled by default) |
@@ -87,28 +87,28 @@ bun ~/.claude/hooks/handlers/BuildSettings.ts
 
 ## What You Get
 
-### Skills (41 modules)
+### Skills (<!-- KAI:counts:skills:begin -->41<!-- KAI:counts:skills:end --> modules)
 KAI includes specialized skills invoked with slash commands or automatically:
 - **Research** — multi-agent parallel research with dedup
 - **Security** — recon, web assessment, prompt injection testing
 - **Thinking** — first principles, iterative depth, council debate
 - **EM/PLM** — 1:1 notes, weekly status, decision log, NPI tracking
-- And 35+ more — type `/skills` in a session to see all
+- And 40+ more — type `/skills` in a session to see all
 
-### Agents (18 named specialists)
+### Agents (<!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> named specialists)
 Spawned automatically when the task matches:
 - **Architect** — system design
 - **Engineer** — implementation with TDD
 - **5 Researchers** — Claude, Gemini, Grok, Perplexity, Codex
 - **ProductStrategist, TechnicalReviewer, StakeholderCommunicator** — EM support
 
-### The Algorithm (v3.12.0)
+### The Algorithm (<!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->)
 For complex tasks, KAI uses a 7-phase execution framework:
 **Observe** (understand) > **Think** (pressure-test) > **Plan** > **Build** > **Execute** > **Verify** > **Learn**
 
 Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
-### Hooks (35 lifecycle events)
+### Hooks (<!-- KAI:counts:hooks:begin -->35<!-- KAI:counts:hooks:end --> lifecycle events)
 Automated behaviors that fire on specific events:
 - **SecretScanner** — warns if you're about to commit secrets
 - **GitHubWriteGuard** — requires confirmation before git push
@@ -164,5 +164,5 @@ bash ~/kai/install.sh
 ## Further Reading
 
 - [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How KAI differs from the original
-- [Architecture](architecture/) — System architecture reference
-- [NEXT-STEPS.md](planning/NEXT-STEPS.md) — Roadmap & next steps
+- [SYSTEM-ATLAS.md](architecture/SYSTEM-ATLAS.md) — Full system architecture
+- [ROADMAP.md](planning/ROADMAP.md) — Product roadmap

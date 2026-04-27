@@ -53,7 +53,7 @@ Claude Code (verified in v2.1.85) surfaces stderr from command hooks as error me
 ```bash
 # hooks/lib/run-hook.sh
 #!/bin/bash
-HOOK_NAME="${1:?Usage: run-hook.sh <HookName.hook.ts>}"
+HOOK_NAME="${1:?Usage: run-hook.sh <ExampleHook.hook.ts>}"
 HOOK_PATH="~/.claude/hooks/${HOOK_NAME}"
 LOG_DIR="/tmp/pai-hooks"
 mkdir -p "$LOG_DIR"

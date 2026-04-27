@@ -1272,12 +1272,32 @@ Critical PAI documentation organized by domain. Load on-demand based on context.
 | **Tools Reference** | `SYSTEM/TOOLS.md` | Core tools inventory |
 
 **USER Context:** `USER/` contains personal data—identity, contacts, health, finances, projects. See `USER/README.md` for full index.
-
 **Project Routing:**
 
 | Trigger | Path | Purpose |
 |---------|------|---------|
-| "projects", "my projects", "project paths", "deploy" | `USER/PROJECTS/PROJECTS.md` | Technical project registry—paths, deployment, routing aliases |
-| "Telos", "life goals", "goals", "challenges" | `USER/TELOS/PROJECTS.md` | Life goals, challenges, predictions (Telos Life System) |
+|| "projects", "my projects", "project paths", "deploy" | `USER/PROJECTS/PROJECTS.md` | Technical project registry—paths, deployment, routing aliases |
+|| "Telos", "life goals", "goals", "challenges" | `USER/TELOS/PROJECTS.md` | Life goals, challenges, predictions (Telos Life System) |
 
+---
+
+## Memory Curation (pai curate)
+
+Rating-triggered drafts accumulate in `MEMORY/STAGING/` and require periodic review. Use `pai curate` to approve, reject, or archive staged memory drafts.
+
+**Triggers:** User asks about staged memories, draft review, curate, memory hygiene, or approving/rejecting learning drafts.
+
+```bash
+pai curate          # Interactive review — list, approve/reject drafts
+pai curate --list   # Show all pending drafts
+```
+
+**How drafts get created:**
+- Explicit rating 8–10 → success-pattern draft (via inference, if transcript context ≥50 chars)
+- Explicit rating 4–5 + corrections detected → correction draft (regex-only, no inference)
+- Drafts expire automatically after 14 days if not reviewed
+
+**Staging path:** `MEMORY/STAGING/` — state in `.staging-state.json`, rejections logged to `.rejections.jsonl`
+
+---
 ---

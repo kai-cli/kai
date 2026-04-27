@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Run tests
+        run: bun test
+
+  verify:
+    name: Release Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Run verify-release.sh
+        run: bash scripts/verify-release.sh
+
+  smoke:
+    name: Config-Layer Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Verify CLAUDE.md exists and has KAI header
+        run: |
+          test -f CLAUDE.md || { echo "FAIL: CLAUDE.md missing"; exit 1; }
+          head -1 CLAUDE.md | grep -q "^# " || { echo "FAIL: CLAUDE.md missing header"; exit 1; }
+
+      - name: Verify hook runner is executable
+        run: test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
+
+      - name: Verify BuildSettings runs
+        run: bun hooks/handlers/BuildSettings.ts
+
+      - name: Verify skill inventory matches filesystem
+        run: |
+          SKILL_COUNT=$(find skills -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')
+          echo "Found $SKILL_COUNT skills"
+          test "$SKILL_COUNT" -gt 0 || { echo "FAIL: no skills found"; exit 1; }
+
+      - name: Verify hook inventory matches filesystem
+        run: |
+          HOOK_COUNT=$(find hooks -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' ')
+          echo "Found $HOOK_COUNT hooks"
+          test "$HOOK_COUNT" -gt 0 || { echo "FAIL: no hooks found"; exit 1; }
+
+  # BuildDocs check — enable after Phase 2 (items 2.1-2.2) land:
+  # build-docs:
+  #   name: BuildDocs Freshness
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: oven-sh/setup-bun@v2
+  #     - run: bun install --frozen-lockfile || bun install
+  #     - run: bun PAI/Tools/BuildDocs.ts --check

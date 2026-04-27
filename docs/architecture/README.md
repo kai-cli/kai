@@ -1,14 +1,29 @@
-# KAI Architecture Documentation
+# PAI Development & Architecture Documentation
 
-> Reference documentation for KAI's hook system, skill system, and internal structure.
+> This directory contains architecture reviews, system maps, and improvement tracking for PAI development. It is the canonical location for understanding the system's structure, known issues, and planned changes.
 
 ## Documents
 
 | File | Purpose |
 |------|---------|
-| `THEHOOKSYSTEM-Reference.md` | Hook system reference — registration map, execution flow, lifecycle events |
-| `SKILLSYSTEM-Reference.md` | Skill system reference — invocation, routing, skill anatomy |
+| `SYSTEM-ATLAS.md` | Complete structural map — what exists, where it lives, how it connects |
+| `IMPROVEMENT-INDEX.md` | Master tracker of all identified issues, fixes, and open items |
+| `ARCHITECTURE-REVIEW-v4.4.1.md` | Holistic architecture review — design flaws, bugs, improvement paths |
+| `HOOK-SYSTEM-AUDIT.md` | Deep audit of the hook system — registration map, execution flow, bugs |
+| `THEHOOKSYSTEM-Reference.md` | Hook system reference documentation |
+| `SKILLSYSTEM-Reference.md` | Skill system reference documentation |
+| `ARCHITECTURAL-UNDERSTANDING.md` | Original comprehensive reference (architecture, decomposition blueprints, future vision) |
+| `AUDIT-STATUS.md` | Current audit progress and next steps |
 
-## Archived
+## How to Use
 
-Older architecture reviews from pre-v5.0 development are in `archive/`. These reflect earlier PAI versions and may have stale counts or paths.
+- **Starting a cleanup session?** Read IMPROVEMENT-INDEX.md first — it tracks what's done and what's open.
+- **Need to understand the system?** Read SYSTEM-ATLAS.md for structure, then ARCHITECTURE-REVIEW for analysis.
+- **Working on hooks?** Read HOOK-SYSTEM-AUDIT.md for the detailed execution map and known bugs.
+- **Adding a new document?** Keep it focused. One doc per concern. Update this README.
+
+## Conventions
+
+- Files are versioned by the PAI version they describe (e.g., `ARCHITECTURE-REVIEW-v4.4.1.md`)
+- IMPROVEMENT-INDEX.md uses priority levels: P0 (runtime bugs), P1 (critical), P2 (high), P3 (medium), P4 (low), P5 (repo-level)
+- Status markers: ✅ FIXED, ⏳ DEFERRED, 📦 NEEDS DECISION, 🔴 OPEN

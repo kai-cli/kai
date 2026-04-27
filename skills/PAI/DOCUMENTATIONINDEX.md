@@ -17,7 +17,6 @@ extracted_from: SKILL.md lines 339-401
 
 **Core Architecture & Philosophy:**
 - `SYSTEM/PAISYSTEMARCHITECTURE.md` - System architecture and philosophy, foundational principles (CLI-First, Deterministic Code, Prompts Wrap Code) | ⭐ PRIMARY REFERENCE | Triggers: "system architecture", "how does the system work", "system principles"
-- `SYSTEM/FEEDSYSTEM.md` - Feed System: intelligence aggregation, multi-dimensional rating, rule-based routing, Arbol integration | ⭐ CRITICAL | Triggers: "feed system", "intelligence routing", "content monitoring", "feed architecture", "rating system", "routing rules"
 - `SYSTEM/ACTIONS.md` - Actions: atomic units of work (LLM, shell, custom) deployed as Cloudflare Workers | Triggers: "actions", "arbol actions", "action workers"
 - `SYSTEM/PIPELINES.md` - Pipelines: action chaining with verification gates | Triggers: "pipelines", "action chaining", "verification gates"
 - `SYSTEM/FLOWS.md` - Flows: scheduled source → pipeline → destination orchestration via Cloudflare Cron | Triggers: "flows", "cron triggers", "scheduled pipelines", "arbol flows"

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# KAI pre-push hook — fast local feedback before CI.
+# Runs bun test + verify-release.sh --quick.
+# Installed by: bash scripts/install-hooks.sh
+# Bypass (auditable): git push --no-verify
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+echo "── KAI pre-push checks ──"
+
+# ── 1. Test suite ────────────────────────────────────────────
+echo "Running tests..."
+if ! bun test --cwd "$REPO_ROOT" 2>&1; then
+  echo ""
+  echo "❌ Pre-push blocked: test suite has failures."
+  echo "   Fix failing tests, then push again."
+  echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
+  exit 1
+fi
+
+# ── 2. BuildDocs freshness ───────────────────────────────────
+if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
+  echo ""
+  echo "Checking marker freshness..."
+  if ! bun "$REPO_ROOT/PAI/Tools/BuildDocs.ts" --check 2>&1; then
+    echo ""
+    echo "❌ Pre-push blocked: stale marker regions."
+    echo "   Run: bun PAI/Tools/BuildDocs.ts"
+    echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
+    exit 1
+  fi
+fi
+
+# ── 3. Quick release verification ────────────────────────────
+echo ""
+echo "Running quick verification..."
+if ! bash "$REPO_ROOT/scripts/verify-release.sh" --quick 2>&1; then
+  echo ""
+  echo "❌ Pre-push blocked: verify-release.sh --quick failed."
+  echo "   Fix the issues above, then push again."
+  echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
+  exit 1
+fi
+
+echo ""
+echo "✅ Pre-push checks passed."
+exit 0

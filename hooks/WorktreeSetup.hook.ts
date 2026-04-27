@@ -32,7 +32,10 @@ import { homedir } from 'os';
 
 interface WorktreeCreateInput {
   session_id: string;
-  worktree_path?: string;
+  worktree_path?: string;  // Not sent by Claude Code as of v2.x
+  transcript_path?: string;
+  cwd?: string;
+  name?: string;           // Agent name
   hook_event_name: string;
 }
 
@@ -129,12 +132,21 @@ async function readStdin(): Promise<WorktreeCreateInput | null> {
 async function main() {
   const input = await readStdin();
 
+  // Always output valid JSON to stdout so Claude Code considers hook successful
+  const outputSuccess = () => console.log(JSON.stringify({}));
+
   if (!input) {
+    console.error(`[WorktreeSetup] No stdin input received`);
+    outputSuccess();
     process.exit(0);
   }
 
-  const worktreePath = input.worktree_path || '';
-  const sessionId = input.session_id || 'unknown';
+  // Debug: log raw input to see what Claude Code sends
+  console.error(`[WorktreeSetup] Raw input: ${JSON.stringify(input)}`);
+
+  // Try multiple possible field names for the worktree path
+  const worktreePath = input.worktree_path || (input as any).worktreePath || (input as any).path || '';
+  const sessionId = input.session_id || (input as any).sessionId || 'unknown';
 
   console.error(`[WorktreeSetup] WorktreeCreate: ${worktreePath || '(no path)'} (session: ${sessionId.slice(0, 8)}...)`);
 
@@ -149,6 +161,7 @@ async function main() {
     console.error(`[WorktreeSetup] Worktree path not found: ${worktreePath}`);
   }
 
+  outputSuccess();
   process.exit(0);
 }
 

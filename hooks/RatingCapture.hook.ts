@@ -37,6 +37,7 @@ import { getISOTimestamp, getPSTComponents } from './lib/time';
 import { captureFailure } from '../PAI/Tools/FailureCapture';
 import { getPaiDir, paiPath } from './lib/paths';
 import { writeDraft } from './lib/staging';
+import { parseExplicitRating, detectCorrections } from './lib/rating-parser';
 
 
 // ── Shared Types ──
@@ -90,40 +91,7 @@ async function readStdinWithTimeout(timeout: number = 5000): Promise<string> {
     process.stdin.on('error', (err) => { clearTimeout(timer); reject(err); });
   });
 }
-
-// ── Explicit Rating Detection ──
-
-/**
- * Parse explicit rating pattern from prompt.
- * Matches: "7", "8 - good work", "6: needs work", "9 excellent", "10!"
- * Rejects: "3 items", "5 things to fix", "7th thing"
- */
-export function parseExplicitRating(prompt: string): { rating: number; comment?: string } | null {
-  const trimmed = prompt.trim();
-  // Rating must be: number alone, or number followed by whitespace/dash/colon then comment
-  // Reject: "10/10", "3.5", "7th", "5x" — number followed by non-separator chars
-  const ratingPattern = /^(10|[1-9])(?:\s*[-:]\s*|\s+)?(.*)$/;
-  const match = trimmed.match(ratingPattern);
-  if (!match) return null;
-
-  const rating = parseInt(match[1], 10);
-  const rest = match[2]?.trim() || undefined;
-
-  if (rating < 1 || rating > 10) return null;
-
-  // Reject if the character immediately after the number is not a separator
-  // This catches "10/10", "3.5", "7th", "5x", etc.
-  const afterNumber = trimmed.slice(match[1].length);
-  if (afterNumber.length > 0 && /^[/.\dA-Za-z]/.test(afterNumber)) return null;
-
-  // Reject if comment starts with words indicating a sentence, not a rating
-  if (rest) {
-    const sentenceStarters = /^(items?|things?|steps?|files?|lines?|bugs?|issues?|errors?|times?|minutes?|hours?|days?|seconds?|percent|%|th\b|st\b|nd\b|rd\b|of\b|in\b|at\b|to\b|the\b|a\b|an\b)/i;
-    if (sentenceStarters.test(rest)) return null;
-  }
-
-  return { rating, comment: rest };
-}
+// parseExplicitRating and detectCorrections are imported from ./lib/rating-parser
 
 // ── Implicit Sentiment Analysis ──
 
@@ -368,45 +336,7 @@ This response was rated ${rating}/10 by ${getPrincipalName()}. Use this as an im
 
 // ── Draft Memory Generation ──
 
-/**
- * Scan transcript for correction signals (user redirecting AI).
- * Returns true if corrections detected — used for rating 4-5 drafts.
- */
-export function detectCorrections(transcriptPath: string): string[] {
-  const CORRECTION_PATTERNS = [
-    /\bno[,.]?\s+(i\s+meant|that'?s?\s+not|don'?t|wait)/i,
-    /\bthat'?s?\s+not\s+(what\s+i|right|correct|it)/i,
-    /\bi\s+(said|meant|asked\s+for)\s+.{5,50},?\s+not\b/i,
-    /\bwrong\b.*\b(direction|approach|file|thing)\b/i,
-    /\bstop\b.{0,20}\b(doing|adding|removing|changing)\b/i,
-  ];
-
-  try {
-    if (!transcriptPath || !existsSync(transcriptPath)) return [];
-    const content = readFileSync(transcriptPath, 'utf-8');
-    const lines = content.trim().split('\n');
-    const corrections: string[] = [];
-
-    for (const line of lines) {
-      try {
-        const entry = JSON.parse(line);
-        if (entry.type !== 'user') continue;
-        const text = typeof entry.message?.content === 'string'
-          ? entry.message.content
-          : Array.isArray(entry.message?.content)
-            ? entry.message.content.filter((c: { type: string }) => c.type === 'text').map((c: { text: string }) => c.text).join(' ')
-            : '';
-        for (const pattern of CORRECTION_PATTERNS) {
-          if (pattern.test(text)) {
-            corrections.push(text.slice(0, 120));
-            break;
-          }
-        }
-      } catch { /* skip */ }
-    }
-    return corrections.slice(0, 3); // max 3 correction examples
-  } catch { return []; }
-}
+// detectCorrections is imported from ./lib/rating-parser
 
 /**
  * Generate a success pattern draft for high ratings (8-10).
@@ -679,4 +609,4 @@ async function main() {
   }
 }
 
-if (import.meta.main) { main(); }
+main();

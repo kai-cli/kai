@@ -1,6 +1,6 @@
 # Actions
 
-> **PAI 4.0** — This system is under active development. APIs, configuration formats, and features may change without notice.
+> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
 
 **Atomic, Composable Units of Work**
 
@@ -397,7 +397,7 @@ Same input should produce same output (for LLM actions, use temperature 0).
 
 ---
 
-**Last Updated:** 2026-02-14
+**Last Updated:** 2026-04-23
 
 ---
 

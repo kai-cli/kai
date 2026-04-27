@@ -7,7 +7,7 @@ Default model roster for deliberation. Each model is assigned a deliberation per
 | ID | Model | Provider | Persona | Why This Role |
 |----|-------|----------|---------|---------------|
 | `claude` | Claude Opus | Anthropic (PAI Inference) | **Architect** | Strong systems reasoning, nuanced trade-off analysis |
-| `gemini` | Gemini 2.5 Pro | Google | **Researcher** | Large context window, strong at evidence synthesis |
+| `gemini` | Gemini 2.5 Flash (default) | Google | **Researcher** | Fast, cost-effective evidence synthesis. Escalate to `gemini-2.5-pro` for deep technical analysis. |
 | `grok` | Grok 3 | xAI | **Contrarian** | Unfiltered, challenges consensus, stress-tests assumptions |
 | `gpt` | GPT-4o | OpenAI | **Pragmatist** | Strong at practical implementation, user-facing concerns |
 | `deepseek` | DeepSeek Reasoner | DeepSeek | **Reasoner** | Explicit chain-of-thought, exposes reasoning steps |

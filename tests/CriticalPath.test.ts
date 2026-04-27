@@ -213,19 +213,17 @@ describe('CriticalPath: STAGING draft → pai curate lists correctly', () => {
 
 describe('CriticalPath: LAST_RESPONSE_CACHE missing → graceful fallback', () => {
   test('detectCorrections returns empty for missing transcript path', async () => {
-    const { detectCorrections } = await import('../hooks/RatingCapture.hook.ts');
-    // Missing file should not throw — returns empty array
+    const { detectCorrections } = await import('../hooks/lib/rating-parser');
     expect(detectCorrections('/nonexistent/transcript.jsonl')).toEqual([]);
   });
 
   test('detectCorrections returns empty for empty string path', async () => {
-    const { detectCorrections } = await import('../hooks/RatingCapture.hook.ts');
+    const { detectCorrections } = await import('../hooks/lib/rating-parser');
     expect(detectCorrections('')).toEqual([]);
   });
 
   test('parseExplicitRating still works without any file system access', async () => {
-    const { parseExplicitRating } = await import('../hooks/RatingCapture.hook.ts');
-    // Pure function — no file system dependency
+    const { parseExplicitRating } = await import('../hooks/lib/rating-parser');
     expect(parseExplicitRating('8 great session')).not.toBeNull();
     expect(parseExplicitRating('3 bugs found')).toBeNull();
   });

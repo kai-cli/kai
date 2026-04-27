@@ -121,7 +121,6 @@ interface StopPayload extends BasePayload {
 
 | Hook | Purpose | Blocking | Dependencies |
 |------|---------|----------|--------------|
-| `KittyEnvPersist.hook.ts` | Persist Kitty env vars + tab reset | No | None |
 | `LoadContext.hook.ts` | Inject dynamic context (relationship, learning, work) | Yes (stdout) | `settings.json`, `MEMORY/` |
 
 ### UserPromptSubmit Hooks
@@ -153,9 +152,7 @@ interface StopPayload extends BasePayload {
 | Hook | Purpose | Blocking | Dependencies |
 |------|---------|----------|--------------|
 | `LastResponseCache.hook.ts` | Cache last response for RatingCapture bridge | No | None |
-| `ResponseTabReset.hook.ts` | Reset Kitty tab title/color after response | No | Kitty terminal |
-| `AlgorithmTab.hook.ts` | Show Algorithm phase + progress in tab | No | `work.json` |
-| `StopOrchestrator.hook.ts` | Doc cross-ref + semantic drift checks (via DocCrossRefIntegrity handler) | No | Inference API |
+| `StopOrchestrator.hook.ts` | Orchestrates stop-event handlers (tab reset, algorithm tracking, doc integrity) | No | Inference API |
 
 ### SessionEnd Hooks
 
@@ -316,7 +313,7 @@ Hooks are configured in `settings.json` under the `hooks` key:
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "${PAI_DIR}/hooks/KittyEnvPersist.hook.ts" },
+          { "type": "command", "command": "${PAI_DIR}/hooks/StartupGreeting.hook.ts" },
           { "type": "command", "command": "${PAI_DIR}/hooks/LoadContext.hook.ts" }
         ]
       }
@@ -353,7 +350,7 @@ Every hook MUST follow this documentation structure:
 ```typescript
 #!/usr/bin/env bun
 /**
- * HookName.hook.ts - [Brief Description] ([Event Type])
+ * ExampleHook.hook.ts - [Brief Description] ([Event Type])
  *
  * PURPOSE:
  * [2-3 sentences explaining what this hook does and why it exists]
@@ -458,7 +455,7 @@ Use this checklist when adding or modifying hooks:
 1. Verify hook is in `settings.json` under correct event
 2. Check file is executable: `chmod +x hook.ts`
 3. Check shebang: `#!/usr/bin/env bun`
-4. Run manually: `echo '{"session_id":"test"}' | bun hooks/HookName.hook.ts`
+4. Run manually: `echo '{"session_id":"test"}' | bun hooks/ExampleHook.hook.ts`
 
 ### Hook Blocking Session
 

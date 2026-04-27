@@ -1,6 +1,6 @@
 # PAI Flows
 
-> **PAI 3.0 Alpha** — This system is under active development. APIs, configuration formats, and features may change without notice.
+> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
 
 Flows connect **sources** to **pipelines** on a **schedule**. A flow fetches content from an external source (RSS feed, API, etc.), pipes it through a pipeline of actions, and delivers results to a destination (email, webhook, etc.).
 

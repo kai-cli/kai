@@ -136,7 +136,7 @@ Universal wrapper script `~/.claude/hooks/lib/run-hook.sh` redirects stderr to l
 
 ```bash
 #!/bin/bash
-HOOK_NAME="${1:?Usage: run-hook.sh <HookName.hook.ts>}"
+HOOK_NAME="${1:?Usage: run-hook.sh <ExampleHook.hook.ts>}"
 HOOK_PATH="~/.claude/hooks/${HOOK_NAME}"
 LOG_DIR="/tmp/pai-hooks"
 mkdir -p "$LOG_DIR"
@@ -146,7 +146,7 @@ exec bun "$HOOK_PATH" 2>>"$LOG_FILE"
 
 Settings.json command format:
 ```json
-{"type": "command", "command": "~/.claude/hooks/lib/run-hook.sh HookName.hook.ts"}
+{"type": "command", "command": "~/.claude/hooks/lib/run-hook.sh ExampleHook.hook.ts"}
 ```
 
 ---

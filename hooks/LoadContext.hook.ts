@@ -33,6 +33,14 @@
  */
 
 import { readFileSync, existsSync, readdirSync, appendFileSync, mkdirSync } from 'fs';
+
+function ttyLog(msg: string): void {
+  console.error(msg);
+}
+
+function flushTty(): void {
+  // no-op — ttyLog now writes to stderr immediately (captured by run-hook.sh)
+}
 import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
@@ -93,7 +101,7 @@ const CONDITIONAL_FILES: Record<string, 'personal-only'> = {
 
 /**
  * Determine if the current session is a "personal" project (PAI, research, etc.)
- * vs a work project (non-personal projects)
+ * vs a work project (YourCompany repos, firmware, etc.)
  */
 function isPersonalProject(): boolean {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
@@ -548,8 +556,6 @@ async function main() {
 
     const paiDir = getPaiDir();
 
-    // Tab reset is handled by KittyEnvPersist.hook.ts (runs before this hook)
-
     // Record session start time for notification timing
     recordSessionStart();
     console.error('⏱️ Session start time recorded');
@@ -651,16 +657,16 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
 </system-reminder>`;
 
       console.log(message);
-      console.log('\n✅ PAI dynamic context loaded...');
+      ttyLog('\n✅ PAI dynamic context loaded...');
     } else {
-      console.log('\n✅ PAI session ready...');
+      ttyLog('\n✅ PAI session ready...');
     }
 
     // Active work summary
     if (isDynamicEnabled(settings, 'activeWorkSummary')) {
       const activeProgress = await checkActiveProgress(paiDir);
       if (activeProgress) {
-        console.log(activeProgress);
+        ttyLog(activeProgress);
         console.error(`📋 Active work summary loaded (${activeProgress.length} chars)`);
       }
     } else {
@@ -684,7 +690,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
             }
           }
           if (daysSinceCuration >= 14) {
-            console.log(`💡 STAGING has ${drafts.length} unreviewed draft(s) — run \`pai curate\` to review`);
+            ttyLog(`💡 STAGING has ${drafts.length} unreviewed draft(s) — run \`pai curate\` to review`);
           }
         }
       }
@@ -706,9 +712,10 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete');
+    console.error('✅ PAI session initialization complete (v4.9.0)');
     process.exit(0);
   } catch (error) {
+    flushTty();
     console.error('❌ Error in LoadContext hook:', error);
     process.exit(0); // Non-fatal — don't block session startup
   }

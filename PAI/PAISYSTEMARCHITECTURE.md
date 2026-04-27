@@ -300,34 +300,45 @@ Brief description.
 
 ## Hook System Architecture
 
-### Hook Lifecycle
+**35 active hooks** across **12 lifecycle events**, executed via `hooks/lib/run-hook.sh`.
+
+### Hook Lifecycle & Event Map
 
 ```
-┌─────────────────┐
-│  Session Start  │──► Load PAI context
-└─────────────────┘
+SessionStart (7)     → TerminalState, LoadContext, CheckVersion, StartupGreeting,
+                        BuildCLAUDE, BuildSettings, PostCompactRecovery
 
-┌─────────────────┐
-│   Tool Use      │──► Logging/validation
-└─────────────────┘
+UserPromptSubmit (9) → SecretScanner, LocalContextFirst, ModeClassifier,
+                        FormatReminder, SessionAutoName, PromptAnalysis,
+                        RatingCapture, TerminalState, UpdateTabTitle
 
-┌─────────────────┐
-│  Session Stop   │──► Capture session summary
-└─────────────────┘
+PreToolUse (9)       → SecurityValidator (×4 matchers: Bash/Edit/Write/Read),
+                        GitHubWriteGuard, TerminalState, SetQuestionTab,
+                        AgentExecutionGuard, SkillGuard
+
+PostToolUse (3)      → QuestionAnswered, PRDSync (×2 matchers: Write/Edit)
+
+Stop (4)             → LastResponseCache, TerminalState, StopOrchestrator,
+                        AlgorithmTracker
+
+SessionEnd (6)       → WorkCompletionLearning, SessionCleanup, SessionSummary,
+                        RelationshipMemory, UpdateCounts, IntegrityCheck
+
+PreCompact (1)       → PreCompact
+ConfigChange (1)     → ConfigChange
+WorktreeCreate (1)   → WorktreeSetup
+WorktreeRemove (1)   → WorktreeRemove
+TaskCompleted (1)    → TaskCompleted
+TeammateIdle (1)     → TeammateIdle
 ```
 
-### Hook Configuration
+### Hook Infrastructure
 
-Located in `settings.json`:
-
-```json
-{
-  "hooks": {
-    "SessionStart": ["path/to/hook.ts"],
-    "Stop": ["path/to/hook.ts"]
-  }
-}
-```
+- **Runner:** `hooks/lib/run-hook.sh` — shell wrapper handling Bun execution
+- **Libraries (26):** `hooks/lib/` — shared utilities (paths, identity, inference-budget, once-per-session, tab-setter, etc.)
+- **Handlers (8):** `hooks/handlers/` — sub-routines called by hooks (BuildCLAUDE, BuildSettings, DocCrossRefIntegrity, TabState, etc.)
+- **Guards:** SecurityValidator, GitHubWriteGuard, AgentExecutionGuard, SkillGuard — block dangerous operations before execution
+- **Idempotency:** `once-per-session.ts` sentinel files prevent re-fires on compaction
 
 ---
 
@@ -352,14 +363,23 @@ Located in `settings.json`:
 
 ```
 MEMORY/
-├── RAW/                # Event logs (JSONL) - source of truth, everything flows here first
-├── WORK/               # Primary work tracking (work directories with items, verification)
+├── KNOWLEDGE/          # Domain knowledge extracted by KnowledgeHarvester
 ├── LEARNING/           # Learnings (SYSTEM/, ALGORITHM/) + SIGNALS/ (ratings.jsonl)
+├── RELATIONSHIP/       # Relationship growth reflections
 ├── RESEARCH/           # Agent output captures
-├── SECURITY/           # Security events (filtered from RAW)
-├── STATE/              # Runtime state (current-work.json, progress/, integrity/)
-└── PAISYSTEMUPDATES/     # System change documentation
+├── SECURITY/           # Security events
+├── STAGING/            # Curated items awaiting review (pai curate)
+├── STATE/              # Runtime state (session sentinels, algorithm-phase, kitty-env, caches)
+├── WISDOM/             # Wisdom Frames — domain-specific principle collections
+└── WORK/               # Primary work tracking (work directories with items, verification)
 ```
+
+### Key Tools
+
+- `MemoryCurate.ts` — Weekly 5-section interactive review
+- `KnowledgeHarvester.ts` — Automated domain knowledge extraction
+- `SessionHarvester.ts` — Session transcript insight extraction
+- `ReflectionHarvester.ts` — Behavioral lesson extraction from algorithm reflections
 
 ### Naming Convention
 
@@ -541,5 +561,6 @@ User-specific updates are tracked in `USER/UPDATES/`.
 
 | Date | Change | Author | Related |
 |------|--------|--------|---------|
+| 2026-04-23 | Refreshed hook lifecycle (35 hooks/12 events), memory structure (9 dirs), tools inventory (39 active) | {DAIDENTITY.NAME} | TOOLS.md |
 | 2026-02-03 | Added Arbol section for cloud execution architecture | {DAIDENTITY.NAME} | ACTIONS.md, PIPELINES.md, FLOWS.md |
 | 2026-01-01 | Initial document creation | {DAIDENTITY.NAME} | - |

@@ -48,7 +48,8 @@ function loadVariables(): Record<string, string> {
     "{DAIDENTITY.DISPLAYNAME}": settings.daidentity?.displayName || "Assistant",
     "{PRINCIPAL.NAME}": settings.principal?.name || "User",
     "{PRINCIPAL.TIMEZONE}": settings.principal?.timezone || "UTC",
-    "{{PAI_VERSION}}": settings.pai?.version || "5.0.0",
+    "{{PAI_VERSION}}": settings.pai?.version || "4.8.0",
+    "{{PRODUCT_NAME}}": settings.pai?.productName || "PAI",
     "{{ALGO_VERSION}}": algoVersion,
     "{{ALGO_PATH}}": `PAI/Algorithm/${algoVersion}.md`,
   };

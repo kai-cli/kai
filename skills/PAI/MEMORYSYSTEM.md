@@ -105,7 +105,6 @@ This is the actual "firehose" - every message, tool call, and response. PAI leve
 ### WORK/ - Primary Work Tracking
 
 **What populates it:**
-- `AutoWorkCreation.hook.ts` on UserPromptSubmit (creates work dir)
 - `WorkCompletionLearning.hook.ts` on Stop (updates work items)
 - `SessionSummary.hook.ts` on SessionEnd (marks COMPLETED)
 
@@ -263,7 +262,6 @@ This is mutable state that changes during execution - not historical records. If
 
 | Hook | Trigger | Writes To |
 |------|---------|-----------|
-| AutoWorkCreation.hook.ts | UserPromptSubmit | WORK/, STATE/current-work.json |
 | WorkCompletionLearning.hook.ts | Stop | WORK/items, LEARNING/ (significant work) |
 | SessionSummary.hook.ts | SessionEnd | WORK/META.yaml (status), clears STATE |
 | RatingCapture.hook.ts | UserPromptSubmit | LEARNING/SIGNALS/, LEARNING/, FAILURES/ (1-3) |
@@ -377,7 +375,7 @@ bun run ~/.claude/skills/PAI/Tools/LearningPatternSynthesis.ts --week
 
 **2026-01-12:** v7.0 - Projects-native architecture
 - Eliminated RAW/ directory entirely - Claude Code's `projects/` is the source of truth
-- Removed EventLogger.hook.ts (was duplicating what projects/ already captures)
+- Removed EventLogger hook (was duplicating what projects/ already captures)
 - Created SessionHarvester.ts to extract learnings from projects/ transcripts
 - Created WorkCompletionLearning.hook.ts for session-end learning capture
 - Created LearningPatternSynthesis.ts for rating pattern aggregation
@@ -387,7 +385,7 @@ bun run ~/.claude/skills/PAI/Tools/LearningPatternSynthesis.ts --week
 
 **2026-01-11:** v6.1 - Removed RECOVERY system
 - Deleted RECOVERY/ directory (5GB of redundant snapshots)
-- Removed RecoveryJournal.hook.ts, recovery-engine.ts, snapshot-manager.ts
+- Removed RecoveryJournal hook, recovery-engine.ts, snapshot-manager.ts
 - Git provides all necessary rollback capability
 
 **2026-01-11:** v6.0 - Major consolidation
