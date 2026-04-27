@@ -129,6 +129,7 @@ paths:
   zeroAccess:
     - "~/.ssh/id_*"
     - "~/.ssh/*.pem"
+    - "~/.ssh/authorized_keys"
     - "~/.aws/credentials"
     - "~/.gnupg/private*"
     - "**/credentials.json"
