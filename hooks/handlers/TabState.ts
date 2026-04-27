@@ -7,7 +7,7 @@
  * falls back to summary line extraction, then generic fallback.
  *
  * Pure handler: receives pre-parsed transcript data, updates Kitty tab.
- * Called by ResponseTabReset.hook.ts.
+ * Called by StopOrchestrator.hook.ts.
  */
 
 import { setTabState, readTabState, stripPrefix, setPhaseTab } from '../lib/tab-setter';

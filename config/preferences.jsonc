@@ -1,4 +1,4 @@
-// KAI Preferences Configuration
+// PAI Preferences Configuration
 // Environment variables, system preferences, tech stack, and runtime settings.
 // Identity → identity.jsonc | Hooks → hooks.jsonc | Permissions → permissions.jsonc
 // Notifications → notifications.jsonc | Everything else → here.
@@ -39,7 +39,7 @@
     // "CLAUDE_CODE_USE_BEDROCK": "1",
     // "AWS_REGION": "us-east-1",
     // "AWS_PROFILE": "your-aws-profile-name",
-    // "ANTHROPIC_MODEL": "us.anthropic.claude-opus-4-6-v1:0",
+    // "ANTHROPIC_MODEL": "us.anthropic.claude-opus-4-6-v1",
     // "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     // ── END AWS Bedrock ─────────────────────────────────────────────────────
   },
@@ -57,9 +57,10 @@
 
   // PAI version information
   "pai": {
-    "repoUrl": "github.com/kai-cli/kai",
-    "version": "5.0.0",
-    "algorithmVersion": "3.12.0"
+    "repoUrl": "github.com/YourNameYourLastName/kai",
+    "version": "4.9.0",
+    "algorithmVersion": "3.13.0",
+    "productName": "PAI"
   },
 
   // User preferences
@@ -76,7 +77,7 @@
 
   // Tech stack — used in code generation and tool recommendations
   "techStack": {
-    "browser": "Chrome",
+    "browser": "Dia",
     "terminal": "Kitty",
     "packageManager": "bun",
     "pythonPackageManager": "uv",

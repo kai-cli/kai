@@ -73,8 +73,37 @@ function createToken(command: string, userResponse: string, ttl: number): string
 
 const args = process.argv.slice(2);
 const isBatch = args[0] === '--batch';
+const isHash = args[0] === '--hash';
 
-if (isBatch) {
+if (isHash) {
+  // HASH MODE: --hash "precomputed-hash" "user response"
+  // Use this when the hook already blocked and showed "Token hash: XXXX"
+  // Avoids shell-escaping mismatches that occur when embedding commands in other bash calls.
+  const hash = args[1];
+  const userResponse = validateResponse(args[2]);
+
+  if (!hash || !/^[0-9a-f]{12}$/.test(hash)) {
+    console.error('❌ Invalid hash. Must be 12 hex characters from the "Token hash:" line in the blocked message.');
+    console.error('   Usage: bun github-approve.ts --hash "f2345e37dd22" "user response"');
+    process.exit(1);
+  }
+
+  ensureDir();
+
+  const tokenPath = join(APPROVALS_DIR, `${hash}.json`);
+  writeFileSync(tokenPath, JSON.stringify({
+    command: `(approved by hash: ${hash})`,
+    hash,
+    approved_at: Date.now(),
+    expires_at: Date.now() + SINGLE_TTL,
+    user_response: userResponse,
+  }), 'utf-8');
+
+  console.log(`✅ GitHub command approved by hash (${SINGLE_TTL / 1000}s window)`);
+  console.log(`   Token hash: ${hash}`);
+  console.log(`   Confirmed by: "${userResponse}"`);
+
+} else if (isBatch) {
   // BATCH MODE: --batch "user response" "cmd1" "cmd2" ...
   const userResponse = validateResponse(args[1]);
   const commands = args.slice(2);

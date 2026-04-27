@@ -1,6 +1,6 @@
 # Actions
 
-> **PAI 3.0 Alpha** — This system is under active development. APIs, configuration formats, and features may change without notice.
+> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
 
 **Atomic, Composable Units of Work**
 

@@ -33,7 +33,7 @@ The PAI system uses Kitty terminal tab colors and title suffixes to provide inst
 - Announces via voice server
 
 **2. Stop (End of Work)**
-- Hook: `VoiceAndHistoryCapture.hook.ts`
+- Hook: `StopOrchestrator.hook.ts` (via TabState handler)
 - Detects final state (completed, awaiting input, error)
 - Sets appropriate suffix and color
 - Voice notification with completion message
@@ -102,7 +102,7 @@ kitten @ set-tab-color --self \
 |------|-------|---------|
 | `UpdateTabTitle.hook.ts` | UserPromptSubmit | Set working state (italic text) |
 | `SetQuestionTab.hook.ts` | PreToolUse (AskUserQuestion) | Set question state (bold caps) |
-| `VoiceAndHistoryCapture.hook.ts` | Stop | Set final state |
+| `StopOrchestrator.hook.ts` | Stop | Set final state (via TabState handler) |
 
 ### Color Constants
 

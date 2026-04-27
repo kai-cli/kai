@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Generate an executive-ready summary of the open standards landscape as it relates to [Your Company]. Designed for leadership updates, planning meetings, or your own orientation before strategy discussions.
+Generate an executive-ready summary of the open standards landscape as it relates to [Your Company]. Designed for leadership updates, planning meetings, or YourName's own orientation before strategy discussions.
 
 ## Process
 

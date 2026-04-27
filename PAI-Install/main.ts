@@ -6,15 +6,14 @@
  * Steps:
  *   1. Ensure PAI lives at ~/.claude/ (symlink if cloned elsewhere)
  *   2. Collect identity (user name, timezone, DA name)
- *   3. Choose knowledge domain archetype
- *   4. Configure AWS Bedrock (optional)
- *   5. Create PAI/USER/ scaffold if absent
- *   6. Run BuildSettings.ts → settings.json
- *   7. Run BuildCLAUDE.ts  → CLAUDE.md
+ *   3. Configure AWS Bedrock (optional)
+ *   4. Create PAI/USER/ scaffold if absent
+ *   5. Run BuildSettings.ts → settings.json
+ *   6. Run BuildCLAUDE.ts  → CLAUDE.md
  */
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, lstatSync, symlinkSync, unlinkSync, readdirSync } from "fs";
-import { join, resolve, dirname, basename } from "path";
+import { existsSync, mkdirSync, writeFileSync, readFileSync, lstatSync, symlinkSync, unlinkSync } from "fs";
+import { join, resolve, dirname } from "path";
 import { execSync, spawnSync } from "child_process";
 import * as readline from "readline";
 
@@ -307,7 +306,7 @@ ${JSON.stringify(local, null, 2)}
 
 // ── Main ───────────────────────────────────────────────────────────────────
 async function main() {
-  const TOTAL_STEPS = 7;
+  const TOTAL_STEPS = 6;
 
   console.log(`\n${BOLD}${LIGHT_BLUE}PAI Setup Wizard${RESET}\n`);
   info(`Repo location: ${GRAY}${PAI_ROOT}${RESET}`);
@@ -416,57 +415,8 @@ async function main() {
   });
   ok(`Identity saved  ${DIM}(${daName} / ${principalName})${RESET}`);
 
-  // ── Step 3: Knowledge domain archetype ──────────────────────────────
-  step(3, TOTAL_STEPS, "Choose knowledge domains");
-
-  const startersDir = join(PAI_ROOT, "config", "starters");
-  const domainsTarget = join(paiDir, "config", "domains.jsonc");
-  const hasExistingDomains = existsSync(domainsTarget);
-
-  let skipArchetype = false;
-  if (hasExistingDomains) {
-    skipArchetype = !(await confirm("domains.jsonc already exists. Replace with a starter archetype?", false));
-  }
-
-  if (!skipArchetype && existsSync(startersDir)) {
-    const starters = readdirSync(startersDir)
-      .filter(f => f.endsWith("-domains.jsonc"))
-      .map(f => f.replace("-domains.jsonc", ""));
-
-    const archetypeDescriptions: Record<string, string> = {
-      fullstack: "Frontend + backend + devops + security + databases (5 domains)",
-      datascience: "ML + data engineering + analysis + visualization + devops + databases (6 domains)",
-      devops: "Infrastructure + containers + CI/CD + observability + networking + security (6 domains)",
-      generic: "Backend + frontend + devops — broad coverage (3 domains)",
-    };
-
-    console.log(`\n  ${DIM}Knowledge domains shape what your assistant learns over time.${RESET}`);
-    console.log(`  ${DIM}You can edit config/domains.jsonc later to customize.${RESET}\n`);
-    for (let i = 0; i < starters.length; i++) {
-      const name = starters[i];
-      const desc = archetypeDescriptions[name] ?? "";
-      console.log(`  ${BOLD}${LIGHT_BLUE}[${i + 1}]${RESET} ${name}${desc ? `  ${GRAY}— ${desc}${RESET}` : ""}`);
-    }
-    console.log();
-
-    const choice = await prompt(`Pick an archetype (1-${starters.length})`, "1");
-    const idx = parseInt(choice, 10) - 1;
-    if (idx >= 0 && idx < starters.length) {
-      const selected = starters[idx];
-      const src = join(startersDir, `${selected}-domains.jsonc`);
-      copyFileSync(src, domainsTarget);
-      ok(`Domains configured: ${BOLD}${selected}${RESET}  ${DIM}(${starters.length} available)${RESET}`);
-    } else {
-      warn("Invalid selection — keeping default domains.jsonc");
-    }
-  } else if (skipArchetype) {
-    ok("Keeping existing domains.jsonc");
-  } else {
-    warn("No starter archetypes found — using default domains.jsonc");
-  }
-
-  // ── Step 4: AWS Bedrock (optional) ────────────────────────────────────
-  step(4, TOTAL_STEPS, "AWS Bedrock (optional)");
+  // ── Step 3: AWS Bedrock (optional) ────────────────────────────────────
+  step(3, TOTAL_STEPS, "AWS Bedrock (optional)");
   console.log(`\n  ${DIM}Skip this if you connect directly to Anthropic (most users).${RESET}\n`);
   const useBedrock = await confirm("Route Claude Code through AWS Bedrock?", false);
   if (useBedrock) {
@@ -489,8 +439,8 @@ async function main() {
     ok(`Using Anthropic direct API  ${DIM}(default)${RESET}`);
   }
 
-  // ── Step 5: USER scaffold ──────────────────────────────────────────────
-  step(5, TOTAL_STEPS, "Create USER configuration scaffold");
+  // ── Step 4: USER scaffold ──────────────────────────────────────────────
+  step(4, TOTAL_STEPS, "Create USER configuration scaffold");
   const created = createUserScaffold(paiDir);
   createMemoryDirs(paiDir);
   if (created > 0) {
@@ -499,8 +449,8 @@ async function main() {
     ok("USER scaffold already exists");
   }
 
-  // ── Step 6: Build settings.json ────────────────────────────────────────
-  step(6, TOTAL_STEPS, "Build settings.json");
+  // ── Step 5: Build settings.json ────────────────────────────────────────
+  step(5, TOTAL_STEPS, "Build settings.json");
   const buildSettingsPath = join(paiDir, "hooks", "handlers", "BuildSettings.ts");
   if (existsSync(buildSettingsPath)) {
     const built = runBun(buildSettingsPath);
@@ -514,8 +464,8 @@ async function main() {
     warn(`BuildSettings.ts not found at ${buildSettingsPath}`);
   }
 
-  // ── Step 7: Build CLAUDE.md ────────────────────────────────────────────
-  step(7, TOTAL_STEPS, "Build CLAUDE.md");
+  // ── Step 6: Build CLAUDE.md ────────────────────────────────────────────
+  step(6, TOTAL_STEPS, "Build CLAUDE.md");
   const buildClaudePath = join(paiDir, "hooks", "handlers", "BuildCLAUDE.ts");
   if (existsSync(buildClaudePath)) {
     const built = runBun(buildClaudePath);
@@ -535,9 +485,7 @@ async function main() {
   console.log(`  ${DIM}Board: bun ~/.claude/scripts/board.ts${RESET}\n`);
 }
 
-if (import.meta.main) {
-  main().catch(e => {
-    console.error(`\n  ${RED}✗${RESET} ${e.message}`);
-    process.exit(1);
-  });
-}
+main().catch(e => {
+  console.error(`\n  ${RED}✗${RESET} ${e.message}`);
+  process.exit(1);
+});

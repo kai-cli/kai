@@ -4,21 +4,13 @@
  * Run: bun test ./.claude/tests/BuildSettings.test.ts
  */
 
-import { test, expect, describe, beforeAll } from 'bun:test';
+import { test, expect, describe } from 'bun:test';
 import { parseJSONC, validateConfig, buildSettings, needsRebuild } from '../hooks/handlers/BuildSettings.ts';
-import { existsSync, copyFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
 
 // The release .claude directory — used for integration tests
 const RELEASE_PAI_DIR = join(import.meta.dir, '..');
-
-beforeAll(() => {
-  const identityPath = join(RELEASE_PAI_DIR, 'config', 'identity.jsonc');
-  const templatePath = identityPath + '.template';
-  if (!existsSync(identityPath) && existsSync(templatePath)) {
-    copyFileSync(templatePath, identityPath);
-  }
-});
 
 // ── parseJSONC ────────────────────────────────────────────────────────────
 

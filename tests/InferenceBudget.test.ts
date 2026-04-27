@@ -58,17 +58,17 @@ describe('inference-budget', () => {
 
   test('budget decrements after recordInferenceCall', async () => {
     const { recordInferenceCall, remainingBudget } = await getBudget();
-    recordInferenceCall('ReflectionHarvester', 'firmware');
+    recordInferenceCall('KnowledgeSync', 'firmware');
     expect(remainingBudget()).toBe(2);
-    recordInferenceCall('ReflectionHarvester', 'products');
+    recordInferenceCall('KnowledgeSync', 'products');
     expect(remainingBudget()).toBe(1);
   });
 
   test('canCallInference returns false when budget exhausted', async () => {
     const { recordInferenceCall, canCallInference } = await getBudget();
-    recordInferenceCall('ReflectionHarvester', 'firmware');
-    recordInferenceCall('ReflectionHarvester', 'products');
-    recordInferenceCall('ReflectionHarvester', 'devops');
+    recordInferenceCall('KnowledgeSync', 'firmware');
+    recordInferenceCall('KnowledgeSync', 'products');
+    recordInferenceCall('KnowledgeSync', 'devops');
     expect(canCallInference()).toBe(false);
     expect(canCallInference()).toBe(false); // stable
   });
@@ -82,7 +82,7 @@ describe('inference-budget', () => {
   test('budgetStatus returns correct format', async () => {
     const { recordInferenceCall, budgetStatus } = await getBudget();
     expect(budgetStatus()).toMatch(/^0\/3 calls used/);
-    recordInferenceCall('ReflectionHarvester', 'firmware');
+    recordInferenceCall('KnowledgeSync', 'firmware');
     expect(budgetStatus()).toMatch(/^1\/3 calls used/);
     expect(budgetStatus()).toContain('2 remaining');
   });
@@ -90,9 +90,9 @@ describe('inference-budget', () => {
   test('new session resets budget to full', async () => {
     const { recordInferenceCall, remainingBudget } = await getBudget();
     // Exhaust budget under session A
-    recordInferenceCall('ReflectionHarvester', 'firmware');
-    recordInferenceCall('ReflectionHarvester', 'products');
-    recordInferenceCall('ReflectionHarvester', 'devops');
+    recordInferenceCall('KnowledgeSync', 'firmware');
+    recordInferenceCall('KnowledgeSync', 'products');
+    recordInferenceCall('KnowledgeSync', 'devops');
     expect(remainingBudget()).toBe(0);
 
     // Switch to a new session ID
@@ -112,14 +112,14 @@ describe('inference-budget', () => {
     const { readFileSync, existsSync } = await import('fs');
     const { join } = await import('path');
 
-    recordInferenceCall('ReflectionHarvester', 'firmware');
+    recordInferenceCall('KnowledgeSync', 'firmware');
 
     const budgetFile = join(tmpDir, 'MEMORY', 'STATE', '.inference-budget.json');
     expect(existsSync(budgetFile)).toBe(true);
 
     const state = JSON.parse(readFileSync(budgetFile, 'utf-8'));
     expect(state.calls).toHaveLength(1);
-    expect(state.calls[0].hook).toBe('ReflectionHarvester');
+    expect(state.calls[0].hook).toBe('KnowledgeSync');
     expect(state.calls[0].domain).toBe('firmware');
     expect(state.calls[0].timestamp).toBeTruthy();
   });

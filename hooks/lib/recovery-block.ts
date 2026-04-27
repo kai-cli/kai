@@ -25,14 +25,14 @@ export function buildRecoveryBlock(opts: RecoveryBlockOpts): string {
 
 **Response format (MANDATORY — restore after compaction):**
 Every response MUST use exactly one mode:
-- **ALGORITHM** — for multi-step, complex work (load PAI/Algorithm/v3.12.0.md and follow it)
+- **ALGORITHM** — for multi-step, complex work (load PAI/Algorithm/v3.10.0.md and follow it)
 - **NATIVE** — for simple single-step tasks
 - **MINIMAL** — for greetings, ratings, acknowledgments
 
 No freeform output. The format IS the context.
 
 **Critical behavioral rules restored after compaction:**
-1. ALGORITHM mode requires Read tool to load PAI/Algorithm/v3.12.0.md — then follow that file exactly
+1. ALGORITHM mode requires Read tool to load PAI/Algorithm/v3.10.0.md — then follow that file exactly
 2. PRD is YOUR responsibility — edit it directly with Write/Edit tools at every phase transition
 3. Capability selection creates a binding commitment — every selected capability MUST be invoked via Skill or Task tool
 4. No phantom capabilities — selection without a tool call is a CRITICAL FAILURE

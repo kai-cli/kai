@@ -85,9 +85,9 @@ const DEFAULT_MODELS: ModelConfig[] = [
   },
   {
     id: "gemini",
-    name: "Gemini (Pro)",
+    name: "Gemini (Flash)",
     provider: "gemini",
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-flash",
     persona: "Researcher",
     systemPrompt: `You are a deliberation panelist. Your perspective emphasizes evidence, data, real-world precedent, and empirical analysis. You cite specific examples and counter-examples. When you disagree with another panelist, ground your objection in evidence. When you agree, add supporting data they missed.`,
     envKey: "GEMINI_API_KEY",

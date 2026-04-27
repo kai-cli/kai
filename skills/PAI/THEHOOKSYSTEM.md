@@ -1,6 +1,6 @@
 # Hook System
 
-> **PAI 3.0 Alpha** — This system is under active development. APIs, configuration formats, and features may change without notice.
+> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
 
 **Event-Driven Automation Infrastructure**
 
@@ -136,10 +136,6 @@ Claude Code supports the following hook events:
         },
         {
           "type": "command",
-          "command": "${PAI_DIR}/hooks/AutoWorkCreation.hook.ts"
-        },
-        {
-          "type": "command",
           "command": "${PAI_DIR}/hooks/UpdateTabTitle.hook.ts"
         },
         {
@@ -161,12 +157,6 @@ Claude Code supports the following hook events:
 - Low ratings (<6) auto-capture as learning opportunities
 - Writes to `~/.claude/MEMORY/SIGNALS/ratings.jsonl`
 - Uses shared libraries: `hooks/lib/learning-utils.ts`, `hooks/lib/time.ts`
-- **Inference:** `import { inference } from '../skills/PAI/Tools/Inference'` → `inference({ level: 'fast', expectJson: true })`
-
-**AutoWorkCreation.hook.ts** - Automatic Work Directory Creation
-- Analyzes user prompt to determine if it represents substantive work
-- Creates timestamped work directory in `MEMORY/WORK/` with META.yaml
-- Updates `MEMORY/STATE/current-work.json` with active session tracking
 - **Inference:** `import { inference } from '../skills/PAI/Tools/Inference'` → `inference({ level: 'fast', expectJson: true })`
 
 **UpdateTabTitle.hook.ts** - Tab Title + Working State
@@ -822,7 +812,7 @@ setTimeout(() => {
 
 **Check:**
 1. Does `~/.claude/MEMORY/` directory exist?
-2. Is AutoWorkCreation hook running? Check `~/.claude/MEMORY/STATE/current-work.json`
+2. Is WorkCompletionLearning hook running? Check `~/.claude/MEMORY/STATE/current-work.json`
 3. Is hook actually running? Check `~/.claude/MEMORY/RAW/` for events
 4. File permissions? `ls -la ~/.claude/MEMORY/WORK/`
 
@@ -840,7 +830,7 @@ tail ~/.claude/MEMORY/RAW/$(date +%Y-%m)/$(date +%Y-%m-%d)_all-events.jsonl
 ```
 
 **Common Issues:**
-- Missing current-work.json → AutoWorkCreation hook not running
+- Missing current-work.json → WorkCompletionLearning hook not running
 - Work not updating → capture handler not finding current work
 - Learning detection too strict → Adjust `isLearningCapture()` logic
 
@@ -1072,9 +1062,8 @@ SESSION END (5 hooks):
   UpdateCounts.hook.ts           Refresh system counts (skills, hooks, signals)
   IntegrityCheck.hook.ts         Doc cross-ref + system integrity checks
 
-USER PROMPT SUBMIT (4 hooks):
+USER PROMPT SUBMIT (3 hooks):
   RatingCapture.hook.ts          Unified rating capture (explicit + implicit)
-  AutoWorkCreation.hook.ts       Auto-create WORK dir from prompt
   UpdateTabTitle.hook.ts         Tab title + working state (orange)
   SessionAutoName.hook.ts        Auto-name session from first prompt
 
@@ -1209,7 +1198,7 @@ interface InferenceResult {
 }
 ```
 
-**Used by:** RatingCapture, UpdateTabTitle, AutoWorkCreation
+**Used by:** RatingCapture, UpdateTabTitle, WorkCompletionLearning
 
 ---
 

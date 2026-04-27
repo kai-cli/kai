@@ -15,7 +15,7 @@ Initial public release of KAI (Kaizen AI).
 - **Security hooks** — SecretScanner, GitHubWriteGuard, SecurityValidator
 - **Kanban board** — `scripts/board.ts` with REST API at localhost:3333
 - **Multi-model deliberation** — `scripts/deliberate.ts` for cross-model debate and research
-- **335 tests passing (all green)** — Coverage across hooks, tools, and integration paths
+- **338 tests passing (all green)** — Coverage across hooks, tools, and integration paths
 
 ### Infrastructure
 - Template-based configuration (`config/identity.jsonc`, `.env.example`)

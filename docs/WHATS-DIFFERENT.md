@@ -1,19 +1,19 @@
-# What's Different: KAI 5.0.0 vs. Daniel Miessler's Original PAI
+# What's Different: KAI 4.8.0 vs. Daniel Miessler's Original
 
-PAI (Personal AI Infrastructure) was originally created by [Daniel Miessler](https://danielmiessler.com), the creator of [Fabric](https://github.com/danielmiessler/fabric). His public release (v4.0.3) established the foundational architecture for turning Claude Code into a personalized AI assistant.
+KAI (Personal AI Infrastructure) was originally created by [Daniel Miessler](https://danielmiessler.com), the creator of [Fabric](https://github.com/danielmiessler/fabric). His public release (v4.0.3) established the foundational architecture for turning Claude Code into a personalized AI assistant.
 
-This fork has evolved significantly. Here's what changed, what was added, and what you gain by deploying KAI 5.0.0.
+This fork has evolved significantly. Here's what changed, what was added, and what you gain by deploying KAI 4.8.0.
 
 ---
 
 ## At a Glance
 
-| | Daniel's PAI (v4.0.3) | KAI (v5.0.0) |
+| | Daniel's Original (v4.0.3) | This Fork (KAI) |
 |---|---|---|
-| **Skills** | 63 (12 categories) | 41 (streamlined, no dead skills) |
-| **Hooks** | 21 | 37 (all through stderr wrapper) |
-| **Agents** | ~6 generic | 18 specialized (named personas) |
-| **Algorithm** | v3.5.0 | v3.12.0 |
+| **Skills** | 63 (12 categories) | <!-- KAI:counts:skills:begin -->41<!-- KAI:counts:skills:end --> (streamlined, no dead skills) |
+| **Hooks** | 21 | <!-- KAI:counts:hooks:begin -->35<!-- KAI:counts:hooks:end --> (all through stderr wrapper) |
+| **Agents** | ~6 generic | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> specialized (named personas) |
+| **Algorithm** | v3.5.0 | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> |
 | **Context footprint** | ~19% at startup | Optimized with lazy loading |
 | **Installer** | Drop-in `.claude/` directory | Interactive setup wizard with symlink |
 | **Config management** | Single `settings.json` | 7 domain config files, auto-merged |
@@ -28,7 +28,7 @@ This fork has evolved significantly. Here's what changed, what was added, and wh
 
 ### 1. Clean Separation of Personal Data
 
-The original PAI shipped with the author's personal files embedded in the repo. This fork:
+The original shipped with the author's personal files embedded in the repo. This fork:
 
 - **Gitignores all personal data** (`PAI/USER/`, `skills/PAI/USER/`)
 - **Gitignores `settings.json`** — it's generated from 7 domain config files at install time
@@ -39,7 +39,7 @@ Your coworkers clone the repo, run the installer, and get their own identity wit
 
 ### 2. Interactive Installer
 
-The original required manually copying a `.claude/` directory. KAI includes:
+The original required manually copying a `.claude/` directory. KAI 4.6.0 includes:
 
 - **`install.sh`** — bootstrap script that installs prerequisites (Bun, Git)
 - **`PAI-Install/main.ts`** — 6-step interactive wizard:
@@ -68,7 +68,7 @@ Instead of one monolithic `settings.json`, configuration is split into purpose-s
 
 ### 4. Hook System Hardening
 
-All 35 hooks now go through `run-hook.sh`, which:
+All <!-- KAI:counts:hooks:begin -->35<!-- KAI:counts:hooks:end --> hooks now go through `run-hook.sh`, which:
 
 - **Redirects stderr to `/tmp/pai-hooks/`** — prevents "hook error" messages in Claude Code UI
 - **Async flags on analytics hooks** — PromptAnalysis, RatingCapture, StopOrchestrator, and other inference-heavy hooks run in the background instead of blocking the UI for 15+ seconds
@@ -82,7 +82,7 @@ All 35 hooks now go through `run-hook.sh`, which:
   - `PromptAnalysis` — batched inference for session naming + tab titles
   - `PreCompact` — preserves critical context before compaction
 
-### 5. Algorithm v3.12.0
+### 5. Algorithm <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->
 
 Upgraded from v3.5.0 with:
 
@@ -167,4 +167,4 @@ Multi-agent research with parallel execution:
 
 ## Credits
 
-PAI's core architecture — the Algorithm, TELOS framework, skill hierarchy, hook lifecycle, and CLAUDE.md approach — was designed by Daniel Miessler. This fork builds on that foundation with production hardening, professional workflow integration, and deployability improvements.
+KAI's core architecture — the Algorithm, TELOS framework, skill hierarchy, hook lifecycle, and CLAUDE.md approach — was designed by Daniel Miessler. This fork builds on that foundation with production hardening, professional workflow integration, and deployability improvements.

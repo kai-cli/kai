@@ -24,8 +24,7 @@ export function alreadyRanForSession(hookName: string, sessionId: string | null)
 export function markRanForSession(hookName: string, sessionId: string | null): void {
   if (!sessionId) return;
   try {
-    const dir = stateDir();
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, `.once-${hookName}`), sessionId);
+    mkdirSync(stateDir(), { recursive: true });
+    writeFileSync(join(stateDir(), `.once-${hookName}`), sessionId);
   } catch { /* non-fatal */ }
 }

@@ -1,6 +1,6 @@
-# KAI 5.0.0 — Personal AI Infrastructure
+# KAI.8.0 — Personal AI Infrastructure
 
-> A production-ready Claude Code configuration system. Fork of Daniel Miessler's [PAI](https://danielmiessler.com), hardened for team deployment.
+> A production-ready Claude Code configuration system. Fork of Daniel Miessler's [original project](https://danielmiessler.com), hardened for team deployment.
 
 ## Prerequisites
 
@@ -25,10 +25,10 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 
 | Directory | Contents |
 |-----------|----------|
-| `PAI/` | Core system: Algorithm v3.12.0, context routing, system docs |
-| `skills/` | 41 skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
-| `hooks/` | 35 lifecycle hooks (security guards, formatters, analytics, cleanup) |
-| `agents/` | 18 named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
+| `PAI/` | Core system: Algorithm <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->, context routing, system docs |
+| `skills/` | <!-- KAI:counts:skills:begin -->41<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
+| `hooks/` | <!-- KAI:counts:hooks:begin -->35<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, formatters, analytics, cleanup) |
+| `agents/` | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
 | `config/` | 7 domain config files that generate settings.json |
 | `scripts/` | KAI Board dashboard, deployment packager |
 | `PAI-Install/` | Interactive setup wizard |
@@ -36,9 +36,9 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 
 ## What's Different From the Original
 
-See **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** for a detailed comparison with Daniel Miessler's original PAI.
+See **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** for a detailed comparison with Daniel Miessler's original.
 
-Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, 18 named agents, Algorithm v3.12.0 with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
+Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> named agents, Algorithm <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
 
 ## Configuration
 
@@ -82,9 +82,10 @@ bun ~/.claude/scripts/deploy.ts
 ## Documentation
 
 - **[docs/QUICKSTART.md](docs/QUICKSTART.md)** — Getting started guide (start here)
-- **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with original PAI
-- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Roadmap & next steps
-- **[docs/architecture/](docs/architecture/)** — Architecture reference docs
+- **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with the original
+- **[docs/planning/ROADMAP.md](docs/planning/ROADMAP.md)** — Product roadmap
+- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Current work
+- **[docs/architecture/SYSTEM-ATLAS.md](docs/architecture/SYSTEM-ATLAS.md)** — System architecture
 - **[PAI/THEHOOKSYSTEM.md](PAI/THEHOOKSYSTEM.md)** — Hook system docs
 - **[PAI/SKILL.md](PAI/SKILL.md)** — Full system documentation
 

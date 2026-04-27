@@ -1,366 +1,225 @@
-# PAI Tools - CLI Utilities Reference
+# PAI Tools — CLI Utilities Reference
 
-This file documents single-purpose CLI utilities that have been consolidated from individual skills. These are pure command-line tools that wrap APIs or external commands.
+Single-purpose CLI utilities in `~/.claude/PAI/Tools/`. Simple utilities don't need separate skills.
 
-**Philosophy:** Simple utilities don't need separate skills. Document them here, execute them directly.
-
-**Model:** Following the `Tools/fabric/` pattern - 242+ Fabric patterns documented as utilities rather than individual skills.
+**Last Updated:** 2026-04-27 | **Total:** 39 active tools
 
 ---
 
-## Inference.ts - Unified AI Inference Tool
+## Core Infrastructure
 
-**Location:** `~/.claude/PAI/Tools/Inference.ts`
-
-Single inference tool with three run levels for different speed/capability trade-offs.
-
-**Usage:**
+### pai.ts — PAI CLI
+Launch Claude with profile management, dynamic MCP loading, updates, and version checking.
 ```bash
-# Fast (Haiku) - quick tasks, simple generation
-bun ~/.claude/PAI/Tools/Inference.ts --level fast "System prompt" "User prompt"
-
-# Standard (Sonnet) - balanced reasoning, typical analysis
-bun ~/.claude/PAI/Tools/Inference.ts --level standard "System prompt" "User prompt"
-
-# Smart (Opus) - deep reasoning, strategic decisions
-bun ~/.claude/PAI/Tools/Inference.ts --level smart "System prompt" "User prompt"
-
-# With JSON output
-bun ~/.claude/PAI/Tools/Inference.ts --json --level fast "Return JSON" "Input"
-
-# Custom timeout
-bun ~/.claude/PAI/Tools/Inference.ts --level standard --timeout 60000 "Prompt" "Input"
+pai                    # Launch Claude (default profile)
+pai -m bd              # Launch with Bright Data MCP
+pai upgrade            # Upgrade PAI
+pai version            # Show version info
 ```
 
-**Run Levels:**
+### algorithm.ts — Algorithm CLI
+Run the PAI Algorithm in loop or interactive mode against PRDs.
+```bash
+bun algorithm.ts loop PRD.md       # Autonomous iteration
+bun algorithm.ts interactive PRD.md # Interactive mode
+```
+
+### upgrade.ts — Upgrade Engine
+Handles backup, manifest validation, file installation, post-upgrade migration, and auto-rollback. Consumed by `pai.ts upgrade`.
+
+### bump-version.ts — Version Updater
+Reads VERSION file as source of truth, updates all known locations.
+```bash
+bun bump-version.ts                    # Sync all files to VERSION
+bun bump-version.ts 4.9.0              # Set new version + sync
+bun bump-version.ts 4.9.0 --algo 3.13.0  # Set both versions
+```
+
+### GenerateManifest.ts — Release Manifest
+Computes SHA-256 checksums for all PAI system files for release validation.
+
+### BuildCLAUDE.ts — CLAUDE.md Generator
+Generates CLAUDE.md from template + settings.json variables.
+
+### RebuildPAI.ts — SKILL.md Assembler
+Assembles SKILL.md from Components/ directory.
+
+### LoadSkillConfig.ts — Skill Config Loader
+Shared utility for loading skill JSON/YAML configs with automatic user customization merging.
+
+### GetCounts.ts — System Counts
+Single source of truth for PAI system counts (skills, hooks, workflows, files).
+
+### FeatureRegistry.ts — Feature Tracking
+JSON-based feature tracking for complex multi-feature tasks.
+
+---
+
+## AI Inference
+
+### Inference.ts — Unified AI Inference
+Single inference tool with three run levels.
+
 | Level | Model | Default Timeout | Use Case |
 |-------|-------|-----------------|----------|
-| **fast** | Haiku | 15s | Quick tasks, simple generation, basic classification |
-| **standard** | Sonnet | 30s | Balanced reasoning, typical analysis, decisions |
-| **smart** | Opus | 90s | Deep reasoning, strategic decisions, complex analysis |
+| **fast** | Haiku | 15s | Quick tasks, classification |
+| **standard** | Sonnet | 30s | Balanced reasoning, analysis |
+| **smart** | Opus | 90s | Deep reasoning, strategic decisions |
 
-**Programmatic Usage:**
+```bash
+bun Inference.ts --level fast "System prompt" "User prompt"
+bun Inference.ts --json --level standard "Return JSON" "Input"
+```
+
 ```typescript
 import { inference } from '../PAI/Tools/Inference';
-
-const result = await inference({
-  systemPrompt: 'Analyze this',
-  userPrompt: 'Content to analyze',
-  level: 'standard',  // 'fast' | 'standard' | 'smart'
-  expectJson: true,   // optional: parse JSON response
-  timeout: 30000,     // optional: custom timeout
-});
-
-if (result.success) {
-  console.log(result.output);
-  console.log(result.parsed);  // if expectJson: true
-}
+const result = await inference({ systemPrompt: '...', userPrompt: '...', level: 'standard' });
 ```
-
-**When to Use:**
-- "quick inference" → fast
-- "analyze this" → standard
-- "deep analysis" → smart
-- Hooks use this for sentiment analysis, tab titles, work classification
-
-**Technical Details:**
-- Uses Claude CLI with subscription (not API key)
-- Disables tools and hooks to prevent recursion
-- Returns latency metrics for monitoring
 
 ---
 
-## RemoveBg.ts - Remove Image Backgrounds
+## Session & Learning
 
-**Location:** `~/.claude/PAI/Tools/RemoveBg.ts`
+### SessionHarvester.ts — Session Learning Extraction
+Harvests insights from `~/.claude/projects/` session transcripts, writes to LEARNING/.
 
-Remove backgrounds from images using the remove.bg API.
+### SessionProgress.ts — Session Continuity
+Manages session continuity files for multi-session work.
 
-**Usage:**
-```bash
-# Remove background from single image (overwrites original)
-bun ~/.claude/PAI/Tools/RemoveBg.ts /path/to/image.png
+### ActivityParser.ts — Session Activity Parser
+Parses session activity for PAI repo update documentation.
 
-# Remove background and save to different path
-bun ~/.claude/PAI/Tools/RemoveBg.ts /path/to/input.png /path/to/output.png
+### LearningPatternSynthesis.ts — Rating Aggregation
+Analyzes LEARNING/SIGNALS/ratings.jsonl to find recurring patterns and synthesize actionable insights.
 
-# Process multiple images
-bun ~/.claude/PAI/Tools/RemoveBg.ts image1.png image2.png image3.png
-```
+### FailureCapture.ts — Failure Analysis
+Full context failure analysis system for capturing and learning from errors.
 
-**Environment Variables:**
-- `REMOVEBG_API_KEY` - Required for background removal (from `${PAI_DIR}/.env`)
-
-**When to Use:**
-- "remove background from this image"
-- "remove the background"
-- "make this image transparent"
+### AlgorithmPhaseReport.ts — Algorithm State Writer
+Writes current algorithm state to algorithm-phase.json for status line and monitoring.
 
 ---
 
-## AddBg.ts - Add Background Color
+## Memory & Knowledge
 
-**Location:** `~/.claude/PAI/Tools/AddBg.ts`
+### MemoryCurate.ts — Memory Curation CLI
+5-section interactive review for weekly memory curation (3-7 minutes).
 
-Add solid background color to transparent images.
+### KnowledgeHarvester.ts — Knowledge Extraction
+Scans sessions and extracts domain knowledge. Supports `--scan`, `--dry-run`, `--domain`.
 
-**Usage:**
-```bash
-# Add specific background color
-bun ~/.claude/PAI/Tools/AddBg.ts /path/to/transparent.png "#EAE9DF" /path/to/output.png
+### ReflectionHarvester.ts — Behavioral Lessons
+Extracts behavioral lessons from algorithm-reflections.jsonl using Jaccard deduplication.
 
-# Add brand background color
-bun ~/.claude/PAI/Tools/AddBg.ts /path/to/transparent.png --brand /path/to/output.png
-```
+### OpinionTracker.ts — Confidence-Based Opinions
+Tracks and evolves confidence-based opinions over time.
 
-**When to Use:**
-- "add background to this image"
-- "create thumbnail with brand background"
-- "add the brand color background"
+### RelationshipReflect.ts — Relationship Growth
+Periodic reflection on relationship growth patterns.
 
-**Brand Color:** `#EAE9DF` (warm paper/sepia tone)
+### ResearchIndex.ts — Research Catalog
+Searchable catalog of prior research across sessions. Two modes: index and search.
 
 ---
 
-## GetTranscript.ts - Extract YouTube Transcripts
+## Wisdom System
 
-**Location:** `~/.claude/PAI/Tools/GetTranscript.ts`
+### WisdomDomainClassifier.ts — Request Router
+Keyword-based classifier mapping requests to relevant Wisdom Frame files.
 
+### WisdomFrameUpdater.ts — Frame Updater
+Takes domain + observation, updates the appropriate Wisdom Frame file.
+
+### WisdomCrossFrameSynthesizer.ts — Cross-Frame Synthesis
+Scans all frames for repeated principles, anti-patterns, and predictions.
+
+---
+
+## Media & Transcription
+
+### GetTranscript.ts — YouTube Transcripts
 Extract transcripts from YouTube videos using yt-dlp (via fabric).
-
-**Usage:**
 ```bash
-# Extract transcript to stdout
-bun ~/.claude/PAI/Tools/GetTranscript.ts "https://www.youtube.com/watch?v=VIDEO_ID"
-
-# Save transcript to file
-bun ~/.claude/PAI/Tools/GetTranscript.ts "https://www.youtube.com/watch?v=VIDEO_ID" --save /path/to/transcript.txt
+bun GetTranscript.ts "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
 
-**Supported URL Formats:**
-- `https://www.youtube.com/watch?v=VIDEO_ID`
-- `https://youtu.be/VIDEO_ID`
-- `https://www.youtube.com/watch?v=VIDEO_ID&t=123` (with timestamp)
-- `https://youtube.com/shorts/VIDEO_ID` (YouTube Shorts)
-
-**When to Use:**
-- "get the transcript from this YouTube video"
-- "extract transcript from this video"
-- "fabric -y <url>" (user explicitly mentions fabric)
-
-**Technical Details:**
-- Uses `fabric -y` under the hood
-- Prioritizes manual captions when available
-- Falls back to auto-generated captions
-- Multi-language support (detects automatically)
-
----
-
-## extract-transcript.py - Transcribe Audio/Video Files
-
-**Location:** `~/.claude/PAI/Tools/extract-transcript.py`
-
-Local transcription using faster-whisper (4x faster than OpenAI Whisper, 50% less memory). Self-contained UV script for offline transcription.
-
-**Usage:**
+### extract-transcript.py — Local Audio/Video Transcription
+Local transcription using faster-whisper. Self-contained UV script.
 ```bash
-# Transcribe single file (base.en model - recommended)
-cd ~/.claude/PAI/Tools/
 uv run extract-transcript.py /path/to/audio.m4a
-
-# Use different model
-uv run extract-transcript.py audio.m4a --model small.en
-
-# Generate subtitles
 uv run extract-transcript.py video.mp4 --format srt
-
-# Batch transcribe folder
-uv run extract-transcript.py /path/to/folder/ --batch --model base.en
 ```
 
-**Supported Formats:**
-- **Audio:** m4a, mp3, wav, flac, ogg, aac, wma
-- **Video:** mp4, mov, avi, mkv, webm, flv
+### ExtractTranscript.ts — Whisper API Transcription
+CLI for extracting transcripts using OpenAI Whisper API (cloud).
 
-**Output Formats:**
-- **txt** - Plain text transcript (default)
-- **json** - Structured JSON with timestamps
-- **srt** - SubRip subtitle format
-- **vtt** - WebVTT subtitle format
+### SplitAndTranscribe.ts — Large File Splitter
+Splits large audio files and transcribes them in chunks.
 
-**Model Options:**
-| Model | Size | Speed | Accuracy | Use Case |
-|-------|------|-------|----------|----------|
-| tiny.en | 75MB | Fastest | Basic | Quick drafts, testing |
-| **base.en** | 150MB | Fast | Good | **General use (recommended)** |
-| small.en | 500MB | Medium | Very Good | Important recordings |
-| medium | 1.5GB | Slow | Excellent | Production quality |
-| large-v3 | 3GB | Slowest | Best | Critical accuracy needs |
-
-**When to Use:**
-- "transcribe this audio"
-- "transcribe recording"
-- "extract transcript from audio"
-- "convert audio to text"
-- "generate subtitles"
-
-**Technical Details:**
-- 100% local processing (no API calls, completely offline)
-- First run auto-installs dependencies via UV (~30 seconds)
-- Models auto-download from HuggingFace on first use
-- Apple Silicon (M1/M2/M3) optimized
-- Processing speed: ~3-5 minutes for 36MB audio file (base.en model)
-
-**Prerequisites:**
-- UV package manager: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- No manual model download required (auto-downloads on first use)
+### TranscriptParser.ts — Transcript Parsing Library
+Shared library for extracting content from Claude Code transcript files. Used by hooks.
 
 ---
 
-## YouTubeApi.ts - YouTube Channel & Video Stats
+## Image Tools
 
-**Location:** `~/.claude/PAI/Tools/YouTubeApi.ts`
-
-Wrapper around YouTube Data API v3 for channel statistics and video metrics.
-
-**Usage:**
+### RemoveBg.ts — Background Removal
+Remove backgrounds using the remove.bg API.
 ```bash
-# Get channel statistics
-bun ~/.claude/PAI/Tools/YouTubeApi.ts --channel-stats
-
-# Get video statistics
-bun ~/.claude/PAI/Tools/YouTubeApi.ts --video-stats VIDEO_ID
-
-# Get latest uploads
-bun ~/.claude/PAI/Tools/YouTubeApi.ts --latest-videos
+bun RemoveBg.ts /path/to/image.png
+bun RemoveBg.ts input.png output.png
 ```
 
-**Environment Variables:**
-- `YOUTUBE_API_KEY` - Required for API access (from `${PAI_DIR}/.env`)
-- `YOUTUBE_CHANNEL_ID` - Default channel ID
-
-**When to Use:**
-- "get YouTube stats"
-- "YouTube channel statistics"
-- "video performance metrics"
-- "subscriber count"
-
-**Data Retrieved:**
-- Total subscribers
-- Total views
-- Total videos
-- Recent upload performance
-- View counts, likes, comments per video
-
-**Technical Details:**
-- Uses YouTube Data API v3 REST endpoints
-- Quota: 10,000 units per day (free tier)
-- Each API call costs ~3-5 quota units
+### AddBg.ts — Add Background Color
+Add solid background to transparent images.
+```bash
+bun AddBg.ts transparent.png "#EAE9DF" output.png
+```
 
 ---
 
-## TruffleHog - Scan for Exposed Secrets
+## APIs & External
 
-**Location:** System-installed CLI tool (`brew install trufflehog`)
+### YouTubeApi.ts — YouTube Channel Stats
+YouTube Data API v3 wrapper for channel/video statistics.
 
-Scan directories for 700+ types of credentials and secrets.
+### SecretScan.ts — Secret Scanning CLI
+Scan directories for sensitive information using TruffleHog.
 
-**Usage:**
-```bash
-# Scan directory
-trufflehog filesystem /path/to/directory
-
-# Scan git repository
-trufflehog git file:///path/to/repo
-
-# Scan with verified findings only
-trufflehog filesystem /path/to/directory --only-verified
-```
-
-**Installation:**
-```bash
-brew install trufflehog
-```
-
-**When to Use:**
-- "check for secrets"
-- "scan for sensitive data"
-- "find API keys"
-- "detect credentials"
-- "security audit before commit"
-
-**What It Detects:**
-- API keys (OpenAI, AWS, GitHub, Stripe, 700+ services)
-- OAuth tokens
-- Private keys (SSH, PGP, SSL/TLS)
-- Database connection strings
-- Passwords in code
-- Cloud provider credentials
-
-**Technical Details:**
-- Scans files, git history, and commits
-- Uses entropy detection + regex patterns
-- Verifies findings when possible (calls APIs to check if keys are valid)
-- No API key required (standalone CLI tool)
+### PreviewMarkdown.ts — Markdown Preview
+Opens a markdown file preview in the browser.
 
 ---
 
-## Integration with Other Skills
+## Pipeline System
 
-### Art Skill
-- Background removal: `RemoveBg.ts`
-- Add backgrounds: `AddBg.ts`
+### PipelineOrchestrator.ts — Pipeline Runner
+Run pipelines with monitoring and progress tracking.
 
-### Blogging Skill
-- Image optimization: `RemoveBg.ts`, `AddBg.ts`
-- Social preview thumbnails
+### PipelineMonitor.ts — Pipeline Dashboard
+Real-time WebSocket server + UI for pipeline monitoring.
 
-### Research Skill
-- YouTube transcripts: `GetTranscript.ts`
-- Audio/video transcription: `extract-transcript.py`
+---
 
-### Metrics Skill
-- YouTube analytics: `YouTubeApi.ts`
+## System Integrity
 
-### Security Workflows
-- Secret scanning: `trufflehog` (system tool)
+### IntegrityMaintenance.ts — Background Integrity
+Background script for system integrity and update documentation. Receives change data from SystemIntegrity.ts handler.
+
+---
+
+## Display (Legacy)
+
+### Banner.ts — Compact Startup Banner
+4-line status summary. Currently unused (status line replaced it).
+
+### BannerMatrix.ts, BannerNeofetch.ts, BannerPrototypes.ts, BannerRetro.ts, BannerTokyo.ts, NeofetchBanner.ts, PAILogo.ts
+Legacy banner variants. Candidates for removal (~3,200 lines total).
 
 ---
 
 ## Adding New Tools
 
-When adding a new utility tool to this system:
-
-1. **Add tool file:** Place `.ts` or `.py` file directly in `~/.claude/PAI/Tools/`
-   - Use **Title Case** for filenames (e.g., `GetTranscript.ts`, not `get-transcript.ts`)
-   - Keep the directory flat - NO subdirectories
-
-2. **Document here:** Add section to this file with:
-   - Tool location (e.g., `~/.claude/PAI/Tools/ToolName.ts`)
-   - Usage examples
-   - When to use triggers
-   - Environment variables (if any)
-
-3. **Update PAI/SKILL.md:** Ensure SYSTEM/TOOLS.md is in the documentation index
-
-4. **Test:** Verify tool works from new location
-
-**Don't create a separate skill** if the entire functionality is just a CLI command with parameters.
-
----
-
-## Deprecated Skills
-
-The following skills have been consolidated into this Tools system:
-
-- **Images** → `Tools/RemoveBg.ts`, `Tools/AddBg.ts` (2024-12-22)
-- **VideoTranscript** → `Tools/GetTranscript.ts` (2024-12-22)
-- **ExtractTranscript** → `Tools/extract-transcript.py`, `Tools/ExtractTranscript.ts` (2024-12-22)
-- **YouTube** → `Tools/YouTubeApi.ts` (2024-12-22)
-- **Sensitive** → `trufflehog` system tool (2024-12-22)
-
-Archived skill files have been removed.
-
----
-
-**Last Updated:** 2026-03-10
+1. Place `.ts` or `.py` in `~/.claude/PAI/Tools/` (Title Case, flat — no subdirectories)
+2. Document in this file
+3. Test: `bun ~/.claude/PAI/Tools/ToolName.ts --help`

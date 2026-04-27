@@ -1,6 +1,6 @@
 # Flows
 
-> **PAI 4.0** — This system is under active development. APIs, configuration formats, and features may change without notice.
+> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
 
 **Connecting Sources to Pipelines on a Schedule**
 
@@ -441,7 +441,7 @@ async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
 
 ---
 
-**Last Updated:** 2026-02-22
+**Last Updated:** 2026-04-23
 
 ---
 

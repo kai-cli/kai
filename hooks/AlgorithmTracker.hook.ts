@@ -2,14 +2,14 @@
 /**
  * AlgorithmTracker.hook.ts — Consolidated Algorithm State Tracker (PostToolUse)
  *
- * Single hook replaces CriteriaTracker + SessionReactivator. Four responsibilities:
+ * Consolidated hook with four responsibilities:
  * 1. Phase tracking:    Detects phase notification curls in Bash tool_input → phaseTransition()
  * 2. Criteria tracking: Intercepts TaskCreate for ISC criteria → criteriaAdd()
  * 3. Criteria updates:  Intercepts TaskUpdate status changes → criteriaUpdate()
  * 4. Agent tracking:    Intercepts Task tool for agent spawns → agentAdd()
  *
  * Session activation is folded in: on any matched tool call, checks if session
- * needs activation (replaces SessionReactivator.hook.ts).
+ * needs activation.
  *
  * TRIGGER: PostToolUse (matcher: Bash, TaskCreate, TaskUpdate, Task)
  * PERFORMANCE: ~3ms. Never blocks — outputs continue immediately.
@@ -89,7 +89,7 @@ function parseCriterion(text: string): { id: string; description: string } | nul
   return null;
 }
 
-// ── Session Activation (replaces SessionReactivator) ──
+// ── Session Activation ──
 
 const BASE_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 
