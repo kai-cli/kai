@@ -58,7 +58,8 @@ jobs:
           head -1 CLAUDE.md | grep -q "^# " || { echo "FAIL: CLAUDE.md missing header"; exit 1; }
 
       - name: Verify hook runner is executable
-        run: test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
+        run: |
+          test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
 
       - name: Verify BuildSettings runs
         run: bun hooks/handlers/BuildSettings.ts
