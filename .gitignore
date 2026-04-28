@@ -67,6 +67,7 @@ mcp-needs-auth-cache.json
 
 # User hook overrides (personal, never committed)
 hooks/user/*.jsonc
+hooks/user/*.ts
 
 # Generated from config/*.jsonc — do not commit (contains expanded personal paths)
 settings.json
