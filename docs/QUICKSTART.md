@@ -165,4 +165,4 @@ bash ~/kai/install.sh
 
 - [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How KAI differs from the original
 - [SYSTEM-ATLAS.md](architecture/SYSTEM-ATLAS.md) — Full system architecture
-- [ROADMAP.md](planning/ROADMAP.md) — Product roadmap
+- [NEXT-STEPS.md](planning/NEXT-STEPS.md) — Roadmap and current work
