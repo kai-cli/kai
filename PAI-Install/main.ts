@@ -485,7 +485,9 @@ async function main() {
   console.log(`  ${DIM}Board: bun ~/.claude/scripts/board.ts${RESET}\n`);
 }
 
-main().catch(e => {
-  console.error(`\n  ${RED}✗${RESET} ${e.message}`);
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch(e => {
+    console.error(`\n  ${RED}✗${RESET} ${e.message}`);
+    process.exit(1);
+  });
+}
