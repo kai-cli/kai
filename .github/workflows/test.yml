@@ -57,8 +57,14 @@ jobs:
         run: |
           test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
 
+      - name: Bootstrap identity config if template-only
+        run: |
+          if [ ! -f config/identity.jsonc ] && [ -f config/identity.jsonc.template ]; then
+            cp config/identity.jsonc.template config/identity.jsonc
+          fi
+
       - name: Verify BuildSettings runs
-        run: bun hooks/handlers/BuildSettings.ts
+        run: PAI_DIR=$PWD bun hooks/handlers/BuildSettings.ts
 
       - name: Verify skill inventory matches filesystem
         run: |
