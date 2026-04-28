@@ -31,7 +31,12 @@ jobs:
           bun-version: latest
 
       - name: Run verify-release.sh
-        run: bash scripts/verify-release.sh
+        run: |
+          if [[ "$GITHUB_REPOSITORY" != *"/kai" ]]; then
+            echo "SKIP: verify-release.sh is kai-only (running in $GITHUB_REPOSITORY)"
+            exit 0
+          fi
+          bash scripts/verify-release.sh
 
   smoke:
     name: Config-Layer Smoke Test
@@ -43,12 +48,12 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Verify CLAUDE.md or template exists
+      - name: Verify CLAUDE.md or template exists with KAI header
         run: |
           if test -f CLAUDE.md; then
-            head -1 CLAUDE.md | grep -q "^# " || { echo "FAIL: CLAUDE.md missing header"; exit 1; }
+            head -1 CLAUDE.md | grep -qE "^# (KAI|PAI) " || { echo "FAIL: CLAUDE.md missing KAI/PAI header"; exit 1; }
           elif test -f CLAUDE.md.template; then
-            head -1 CLAUDE.md.template | grep -q "^# " || { echo "FAIL: CLAUDE.md.template missing header"; exit 1; }
+            head -1 CLAUDE.md.template | grep -qE "^# (KAI|PAI) " || { echo "FAIL: CLAUDE.md.template missing KAI/PAI header"; exit 1; }
           else
             echo "FAIL: neither CLAUDE.md nor CLAUDE.md.template found"; exit 1
           fi
@@ -77,6 +82,25 @@ jobs:
           HOOK_COUNT=$(find hooks -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' ')
           echo "Found $HOOK_COUNT hooks"
           test "$HOOK_COUNT" -gt 0 || { echo "FAIL: no hooks found"; exit 1; }
+
+      - name: Verify manifest counts match filesystem
+        run: |
+          if test -f manifest.json; then
+            M_SKILLS=$(grep -oE '"skills":\s*[0-9]+' manifest.json | grep -oE '[0-9]+')
+            M_HOOKS=$(grep -oE '"hooks":\s*[0-9]+' manifest.json | grep -oE '[0-9]+')
+            M_AGENTS=$(grep -oE '"agents":\s*[0-9]+' manifest.json | grep -oE '[0-9]+')
+            F_SKILLS=$(find skills -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')
+            F_HOOKS=$(find hooks -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' ')
+            F_AGENTS=$(find agents -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')
+            echo "Manifest: $M_SKILLS skills, $M_HOOKS hooks, $M_AGENTS agents"
+            echo "Filesystem: $F_SKILLS skills, $F_HOOKS hooks, $F_AGENTS agents"
+            test "$M_SKILLS" = "$F_SKILLS" || { echo "FAIL: manifest skills ($M_SKILLS) != filesystem ($F_SKILLS)"; exit 1; }
+            test "$M_HOOKS" = "$F_HOOKS" || { echo "FAIL: manifest hooks ($M_HOOKS) != filesystem ($F_HOOKS)"; exit 1; }
+            test "$M_AGENTS" = "$F_AGENTS" || { echo "FAIL: manifest agents ($M_AGENTS) != filesystem ($F_AGENTS)"; exit 1; }
+            echo "PASS: manifest counts match filesystem"
+          else
+            echo "SKIP: no manifest.json"
+          fi
 
   # BuildDocs check — enable after Phase 2 (items 2.1-2.2) land:
   # build-docs:

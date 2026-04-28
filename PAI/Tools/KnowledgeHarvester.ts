@@ -10,6 +10,7 @@ import { parseArgs } from "util";
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from "fs";
 import { join, basename } from "path";
 import { getPaiDir, paiPath } from "../../hooks/lib/paths";
+import { loadDomainDefinitions } from "../../hooks/lib/config-loader";
 import { inference } from "./Inference";
 
 // ============================================================================
@@ -58,35 +59,22 @@ const PROJECTS_DIR = join(CLAUDE_DIR, "projects");
 const KNOWLEDGE_DIR = paiPath("MEMORY", "KNOWLEDGE");
 const STALE_THRESHOLD_DAYS = 30;
 
-// Domain classification - generic starter domains.
-// Replace with your own in config/domains.jsonc (KAI v5.0.0+).
-const DOMAIN_DEFINITIONS: Array<{ name: string; description: string; keywords: string[] }> = [
-  {
-    name: "backend",
-    description: "Backend services, APIs, databases, and server-side logic",
-    keywords: ["api", "server", "database", "sql", "rest", "graphql", "service", "endpoint", "auth", "cache", "microservice"],
-  },
-  {
-    name: "frontend",
-    description: "Frontend frameworks, UI components, and web interfaces",
-    keywords: ["ui", "react", "vue", "angular", "css", "html", "component", "frontend", "web", "interface", "typescript"],
-  },
-  {
-    name: "devops",
-    description: "CI/CD pipelines, containerization, infrastructure, and deployment",
-    keywords: ["docker", "kubernetes", "ci", "cd", "pipeline", "github", "actions", "deploy", "devops", "terraform", "helm"],
-  },
-  {
-    name: "security",
-    description: "Security practices, vulnerability management, and privacy",
-    keywords: ["security", "patch", "vulnerability", "cve", "pii", "privacy", "encryption", "ssl", "tls", "audit"],
-  },
-  {
-    name: "ai-infrastructure",
-    description: "KAI system, hooks, skills, memory, and AI agents",
-    keywords: ["kai", "hook", "skill", "agent", "algorithm", "memory", "inference", "claude", "ai", "llm"],
-  },
+// Domain classification — loaded from config/domains.jsonc via config-loader.
+// Falls back to built-in defaults if config is missing or empty.
+const BUILTIN_DOMAINS: Array<{ name: string; description: string; keywords: string[] }> = [
+  { name: "backend", description: "Backend services, APIs, databases, and server-side logic", keywords: ["api", "server", "database", "sql", "rest", "graphql", "service", "endpoint", "auth", "cache", "microservice"] },
+  { name: "frontend", description: "Frontend frameworks, UI components, and web interfaces", keywords: ["ui", "react", "vue", "angular", "css", "html", "component", "frontend", "web", "interface", "typescript"] },
+  { name: "devops", description: "CI/CD pipelines, containerization, infrastructure, and deployment", keywords: ["docker", "kubernetes", "ci", "cd", "pipeline", "github", "actions", "deploy", "devops", "terraform", "helm"] },
+  { name: "security", description: "Security practices, vulnerability management, and privacy", keywords: ["security", "patch", "vulnerability", "cve", "pii", "privacy", "encryption", "ssl", "tls", "audit"] },
+  { name: "ai-infrastructure", description: "KAI system, hooks, skills, memory, and AI agents", keywords: ["kai", "hook", "skill", "agent", "algorithm", "memory", "inference", "claude", "ai", "llm"] },
 ];
+
+function getDomainDefinitions(): Array<{ name: string; description: string; keywords: string[] }> {
+  const configured = loadDomainDefinitions();
+  return configured.length > 0 ? configured : BUILTIN_DOMAINS;
+}
+
+const DOMAIN_DEFINITIONS = getDomainDefinitions();
 
 // ============================================================================
 // Scanning

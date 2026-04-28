@@ -1,11 +1,12 @@
 {
-  "version": "4.9.0",
+  "version": "5.0.0",
   "productName": "PAI",
   "algorithmVersion": "v3.13.0",
   "counts": {
     "skills": 41,
-    "hooks": 35,
-    "agents": 18
+    "hooks": 36,
+    "agents": 18,
+    "tests": 18
   },
   "hookInventory": [
     "AgentExecutionGuard.hook",
@@ -14,6 +15,7 @@
     "ConfigChange.hook",
     "FormatReminder.hook",
     "GitHubWriteGuard.hook",
+    "HealthCheck.hook",
     "IntegrityCheck.hook",
     "LastResponseCache.hook",
     "LoadContext.hook",

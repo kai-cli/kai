@@ -591,7 +591,7 @@ hooks/lib/context-loaders/
 
 **Priority order for new tests:**
 
-- [ ] `SecurityValidator.test.ts` — test pattern matching, decision thresholds, block/ask/allow paths
+- [x] `SecurityValidator.integration.test.ts` — test pattern matching, decision thresholds, block/ask/allow paths
 - [ ] `AgentExecutionGuard.test.ts` — test guard logic
 - [ ] `GitHubWriteGuard.test.ts` — test write protection
 - [ ] `algorithm-prd.test.ts` — test PRD frontmatter parsing (when algorithm.ts is split)
