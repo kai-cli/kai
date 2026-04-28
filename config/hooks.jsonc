@@ -128,6 +128,8 @@
     "SessionStart": [
       {
         "hooks": [
+          // Verify environment integrity (symlink, config health)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh HealthCheck.hook.ts" },
           // Initialize terminal state tracking
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
           // Inject relationship, learning, and work context
