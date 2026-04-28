@@ -16,7 +16,8 @@ const HOOK = new URL(
   "../hooks/SecretScanner.hook.ts",
   import.meta.url
 ).pathname;
-const REAL_PAI_DIR = process.env.PAI_DIR || join(homedir(), ".claude");
+const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const REAL_PAI_DIR = process.env.PAI_DIR || REPO_ROOT;
 
 async function runScanner(
   userPrompt: string
