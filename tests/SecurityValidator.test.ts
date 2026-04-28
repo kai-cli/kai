@@ -20,7 +20,8 @@ import { tmpdir, homedir } from 'os';
 
 const TEST_LOG_DIR = mkdtempSync(join(tmpdir(), 'pai-sv-test-'));
 mkdirSync(join(TEST_LOG_DIR, 'MEMORY', 'SECURITY'), { recursive: true });
-const REAL_PAI_DIR = process.env.PAI_DIR || join(homedir(), '.claude');
+const REPO_ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const REAL_PAI_DIR = process.env.PAI_DIR || REPO_ROOT;
 
 async function runValidator(
   toolName: string,
