@@ -6,89 +6,92 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-# ── 1. Identity Gate ─────────────────────────────────────────
-EXPECTED_EMAIL="maintainer@kai-cli.com"
-ACTUAL_EMAIL="$(git config user.email 2>/dev/null || echo '')"
+# ── 1. Identity Gate (kai repo only) ─────────────────────────
+REPO_NAME="$(basename "$REPO_ROOT")"
+if [[ "$REPO_NAME" == "kai" ]]; then
+  EXPECTED_EMAIL="maintainer@kai-cli.com"
+  ACTUAL_EMAIL="$(git config user.email 2>/dev/null || echo '')"
 
-if [[ "$ACTUAL_EMAIL" != "$EXPECTED_EMAIL" ]]; then
-  echo ""
-  echo "╔══════════════════════════════════════════════════════════╗"
-  echo "║  🛡️  IDENTITY CHECK — COMMIT BLOCKED                    ║"
-  echo "╠══════════════════════════════════════════════════════════╣"
-  echo "║  git config user.email must be $EXPECTED_EMAIL   ║"
-  echo "║  Current: ${ACTUAL_EMAIL:-<not set>}"
-  echo "╚══════════════════════════════════════════════════════════╝"
-  echo ""
-  echo "Fix: git config user.email \"$EXPECTED_EMAIL\""
-  exit 1
+  if [[ "$ACTUAL_EMAIL" != "$EXPECTED_EMAIL" ]]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  🛡️  IDENTITY CHECK — COMMIT BLOCKED                    ║"
+    echo "╠══════════════════════════════════════════════════════════╣"
+    echo "║  git config user.email must be $EXPECTED_EMAIL   ║"
+    echo "║  Current: ${ACTUAL_EMAIL:-<not set>}"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "Fix: git config user.email \"$EXPECTED_EMAIL\""
+    exit 1
+  fi
 fi
-
-# ── 2. PII Denylist ──────────────────────────────────────────
-PII_PATTERNS=(
-  'Deven'
-  'Ducommun'
-  'dducommun'
-  'linksys'
-  'EITC'
-  'du\.ae'
-  'friendlylab'
-  '10\.94\.107'
-  '10\.18\.3\.'
-  '@linksys\.com'
-  '799870512242'
-  'Deven_Ducommun'
-)
 
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
 if [[ -z "$STAGED_FILES" ]]; then
   exit 0
 fi
 
-PII_COMBINED=""
-for p in "${PII_PATTERNS[@]}"; do
-  if [[ -z "$PII_COMBINED" ]]; then
-    PII_COMBINED="$p"
-  else
-    PII_COMBINED="$PII_COMBINED|$p"
+# ── 2. PII Denylist (kai repo only — pai-config legitimately contains PII) ──
+if [[ "$REPO_NAME" == "kai" ]]; then
+  PII_PATTERNS=(
+    'Deven'
+    'Ducommun'
+    'dducommun'
+    'linksys'
+    'EITC'
+    'du\.ae'
+    'friendlylab'
+    '10\.94\.107'
+    '10\.18\.3\.'
+    '@linksys\.com'
+    '799870512242'
+    'Deven_Ducommun'
+  )
+
+  PII_COMBINED=""
+  for p in "${PII_PATTERNS[@]}"; do
+    if [[ -z "$PII_COMBINED" ]]; then
+      PII_COMBINED="$p"
+    else
+      PII_COMBINED="$PII_COMBINED|$p"
+    fi
+  done
+
+  PII_FOUND=0
+  PII_FINDINGS=""
+
+  while IFS= read -r file; do
+    [[ -f "$file" ]] || continue
+    if file "$file" 2>/dev/null | grep -q "binary"; then continue; fi
+    case "$file" in
+      scripts/hooks/pre-commit|scripts/verify-release.sh) continue ;;
+    esac
+
+    CONTENT=$(git show ":$file" 2>/dev/null || true)
+    [[ -z "$CONTENT" ]] && continue
+
+    MATCHES=$(echo "$CONTENT" | grep -nEi "$PII_COMBINED" 2>/dev/null || true)
+    [[ -z "$MATCHES" ]] && continue
+
+    PII_FOUND=1
+    PII_FINDINGS="${PII_FINDINGS}\n🔴 ${file}:\n"
+    while IFS= read -r line; do
+      PII_FINDINGS="${PII_FINDINGS}   ${line}\n"
+    done <<< "$MATCHES"
+  done <<< "$STAGED_FILES"
+
+  if [[ "$PII_FOUND" -eq 1 ]]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  🛡️  PII DENYLIST — COMMIT BLOCKED                      ║"
+    echo "╠══════════════════════════════════════════════════════════╣"
+    echo "║  Personal identifiers detected in staged files.         ║"
+    echo "║  Remove PII before committing to the public repo.       ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+    echo -e "$PII_FINDINGS"
+    exit 1
   fi
-done
-
-PII_FOUND=0
-PII_FINDINGS=""
-
-while IFS= read -r file; do
-  [[ -f "$file" ]] || continue
-  # Skip binary files
-  if file "$file" 2>/dev/null | grep -q "binary"; then continue; fi
-  # Skip this hook itself and verify-release.sh (contain pattern definitions)
-  case "$file" in
-    scripts/hooks/pre-commit|scripts/verify-release.sh) continue ;;
-  esac
-
-  CONTENT=$(git show ":$file" 2>/dev/null || true)
-  [[ -z "$CONTENT" ]] && continue
-
-  MATCHES=$(echo "$CONTENT" | grep -nEi "$PII_COMBINED" 2>/dev/null || true)
-  [[ -z "$MATCHES" ]] && continue
-
-  PII_FOUND=1
-  PII_FINDINGS="${PII_FINDINGS}\n🔴 ${file}:\n"
-  while IFS= read -r line; do
-    PII_FINDINGS="${PII_FINDINGS}   ${line}\n"
-  done <<< "$MATCHES"
-done <<< "$STAGED_FILES"
-
-if [[ "$PII_FOUND" -eq 1 ]]; then
-  echo ""
-  echo "╔══════════════════════════════════════════════════════════╗"
-  echo "║  🛡️  PII DENYLIST — COMMIT BLOCKED                      ║"
-  echo "╠══════════════════════════════════════════════════════════╣"
-  echo "║  Personal identifiers detected in staged files.         ║"
-  echo "║  Remove PII before committing to the public repo.       ║"
-  echo "╚══════════════════════════════════════════════════════════╝"
-  echo ""
-  echo -e "$PII_FINDINGS"
-  exit 1
 fi
 
 # ── 3. Secret Scanning ──────────────────────────────────────

@@ -23,6 +23,7 @@ interface ManifestData {
     skills: number;
     hooks: number;
     agents: number;
+    tests: number;
   };
   hookInventory: string[];
   skillInventory: string[];
@@ -150,6 +151,14 @@ function buildManifest(): ManifestData {
   }
   agentInventory.sort();
 
+  const testsDir = paiPath("tests");
+  let testCount = 0;
+  if (existsSync(testsDir)) {
+    for (const entry of readdirSync(testsDir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith(".test.ts")) testCount++;
+    }
+  }
+
   return {
     version,
     productName,
@@ -158,6 +167,7 @@ function buildManifest(): ManifestData {
       skills: skillInventory.length,
       hooks: hookInventory.length,
       agents: agentInventory.length,
+      tests: testCount,
     },
     hookInventory,
     skillInventory,

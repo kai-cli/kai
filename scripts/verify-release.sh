@@ -91,7 +91,7 @@ AUTHORS=$(git log --all --format='%an <%ae>' | sort -u)
 if [[ $AUTHOR_COUNT -eq 1 ]]; then
   pass "Single author in history: $AUTHORS"
 else
-  warn "Multiple authors in history ($AUTHOR_COUNT):"
+  fail "Multiple authors in history ($AUTHOR_COUNT):"
   echo "$AUTHORS" | while read -r line; do echo "    $line"; done
 fi
 
@@ -111,16 +111,31 @@ if [[ $QUICK -eq 0 ]]; then
 
   for DOC in README.md docs/WHATS-DIFFERENT.md docs/QUICKSTART.md CHANGELOG.md; do
     if [[ -f "$DOC" ]]; then
-      DOC_SKILLS=$(grep -oE '[0-9]+ skill' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      # Extract counts — handle both marker syntax and plain "N skill/hook" text
+      # Marker: <!-- KAI:counts:skills:begin -->42<!-- KAI:counts:skills:end -->
+      DOC_SKILLS=$(grep -oE 'counts:skills:begin -->[0-9]+' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      [[ -z "$DOC_SKILLS" ]] && DOC_SKILLS=$(grep -oE '[0-9]+ skill' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
       if [[ -n "$DOC_SKILLS" && "$DOC_SKILLS" != "$ACTUAL_SKILLS" ]]; then
         fail "$DOC claims $DOC_SKILLS skills but filesystem has $ACTUAL_SKILLS"
       fi
-      DOC_HOOKS=$(grep -oE '[0-9]+ hook' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      DOC_HOOKS=$(grep -oE 'counts:hooks:begin -->[0-9]+' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      [[ -z "$DOC_HOOKS" ]] && DOC_HOOKS=$(grep -oE '[0-9]+ hook' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
       if [[ -n "$DOC_HOOKS" && "$DOC_HOOKS" != "$ACTUAL_HOOKS" ]]; then
         fail "$DOC claims $DOC_HOOKS hooks but filesystem has $ACTUAL_HOOKS"
       fi
     fi
   done
+  # Test count verification — compare bun test pass count against doc claims
+  ACTUAL_TESTS=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ pass' | grep -oE '[0-9]+' || echo "0")
+  for DOC in CHANGELOG.md; do
+    if [[ -f "$DOC" ]]; then
+      DOC_TESTS=$(grep -oE '[0-9]+ tests? passing' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      if [[ -n "$DOC_TESTS" && "$DOC_TESTS" != "$ACTUAL_TESTS" ]]; then
+        fail "$DOC claims $DOC_TESTS tests but suite has $ACTUAL_TESTS"
+      fi
+    fi
+  done
+
   pass "Count verification complete"
 fi
 
@@ -144,7 +159,7 @@ if [[ $QUICK -eq 0 ]]; then
 
   OLD_BRAND_PATTERNS=('pai-config' 'PAI Board' 'PAI Installer' 'PAI Environment')
   for pattern in "${OLD_BRAND_PATTERNS[@]}"; do
-    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' || true)
+    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' | grep -v 'docs/planning/' || true)
     if [[ -n "$MATCHES" ]]; then
       fail "Old brand '$pattern' found in: $(echo "$MATCHES" | tr '\n' ' ')"
     fi

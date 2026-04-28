@@ -24,7 +24,8 @@ No `bun install` step is needed — KAI uses only Bun built-ins and has no exter
 
 ```bash
 cd kai
-bun test   # verify everything works
+bash scripts/install-hooks.sh   # set up pre-commit hooks (identity, PII, secret scanning)
+bun test                        # verify everything works
 ```
 
 ## File Categories

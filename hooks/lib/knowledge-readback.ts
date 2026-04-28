@@ -9,40 +9,27 @@
 
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
-
-// Project path patterns -> relevant knowledge domains
-// Populated from config/domains.jsonc at runtime via config-loader (KAI v5.0.0+).
-// Until configured, these are empty — the hook injects nothing (safe default).
-// Add your own project mappings in config/domains.jsonc projectMapping field.
-const EXCLUDED_PROJECTS: string[] = [];
-
-const PROJECT_DOMAIN_MAP: Array<{ pattern: string; domains: string[] }> = [
-  // KAI system projects get ai-infrastructure domain
-  { pattern: 'kai', domains: ['ai-infrastructure'] },
-  // Add your project→domain mappings in config/domains.jsonc
-];
-
-// Default for unrecognized projects: no injection (conservative - avoid wasting tokens)
-const DEFAULT_DOMAINS: string[] = [];
-
-// Max domains to inject per session (keeps token budget reasonable)
-const MAX_DOMAINS = 3;
+import { loadProjectMapping, loadExcludedProjects, getMaxDomainsPerSession } from './config-loader';
 
 /**
  * Determine which knowledge domains are relevant for the current project.
+ * Reads mappings from config/domains.jsonc via config-loader.
  */
 function selectDomains(projectDir: string): string[] {
-  // Skip personal/non-work projects entirely
-  for (const excluded of EXCLUDED_PROJECTS) {
-    if (projectDir.includes(excluded)) return [];
+  const excluded = loadExcludedProjects();
+  const mapping = loadProjectMapping();
+  const maxDomains = getMaxDomainsPerSession();
+
+  for (const pattern of excluded) {
+    if (projectDir.includes(pattern)) return [];
   }
 
-  for (const entry of PROJECT_DOMAIN_MAP) {
+  for (const entry of mapping) {
     if (projectDir.includes(entry.pattern)) {
-      return entry.domains.slice(0, MAX_DOMAINS);
+      return entry.domains.slice(0, maxDomains);
     }
   }
-  return DEFAULT_DOMAINS;
+  return [];
 }
 
 export interface KnowledgeLoadResult {

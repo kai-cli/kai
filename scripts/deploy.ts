@@ -481,7 +481,7 @@ async function main() {
 |-----------|-------|-------------|
 | Algorithm | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> | Core reasoning engine |
 | Skills | <!-- KAI:counts:skills:begin -->41<!-- KAI:counts:skills:end --> | Research, security, writing, analysis, etc. |
-| Hooks | <!-- KAI:counts:hooks:begin -->35<!-- KAI:counts:hooks:end --> | Pre/post tool guards, format enforcement, etc. |
+| Hooks | <!-- KAI:counts:hooks:begin -->36<!-- KAI:counts:hooks:end --> | Pre/post tool guards, format enforcement, etc. |
 | Agents | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> | Specialized agent definitions |
 | Scripts | 4 | Board, Ralph Loop, deploy |
 | Config | 8 | Domain configuration files |
