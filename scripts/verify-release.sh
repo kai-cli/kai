@@ -160,6 +160,33 @@ for f in "${REQUIRED_FILES[@]}"; do
   fi
 done
 
+# ── 5b. Internal Link Check (skipped in --quick) ─────────────
+if [[ $QUICK -eq 0 ]]; then
+  echo ""
+  echo "── Internal Link Check ──"
+
+  LINK_DOCS=(README.md CONTRIBUTING.md CHANGELOG.md docs/QUICKSTART.md docs/WHATS-DIFFERENT.md docs/CUSTOMIZATION.md)
+  DEAD_LINKS=0
+  for doc in "${LINK_DOCS[@]}"; do
+    [[ -f "$doc" ]] || continue
+    while IFS= read -r link; do
+      target="${link%%#*}"
+      [[ -z "$target" ]] && continue
+      [[ "$target" == http* ]] && continue
+      dir="$(dirname "$doc")"
+      resolved="$dir/$target"
+      [[ "$target" == /* ]] && resolved=".$target"
+      if [[ ! -e "$resolved" ]]; then
+        fail "Dead link in $doc: $target"
+        DEAD_LINKS=$((DEAD_LINKS + 1))
+      fi
+    done < <(grep -oE '\]\([^)]+\)' "$doc" | sed 's/^\](\(.*\))$/\1/' | grep -v '^http' | grep -v '^mailto')
+  done
+  if [[ $DEAD_LINKS -eq 0 ]]; then
+    pass "No dead internal links"
+  fi
+fi
+
 # ── 6. Brand Consistency (skipped in --quick) ────────────────
 if [[ $QUICK -eq 0 ]]; then
   echo ""
