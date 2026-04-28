@@ -69,8 +69,9 @@ if [[ "${PII_PATTERNS[0]}" == *"YOUR_"* ]]; then
   warn "PII patterns not configured — edit scripts/verify-release.sh to add real patterns"
 else
   PII_FOUND=0
+  TRACKED_TEXT=$(git ls-files -- '*.ts' '*.md' '*.json' '*.jsonc' '*.yaml' '*.yml' '*.sh' '*.html' 2>/dev/null | grep -v verify-release.sh || true)
   for pattern in "${PII_PATTERNS[@]}"; do
-    MATCHES=$(grep -r -l -i -E "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.yaml' --include='*.yml' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh || true)
+    MATCHES=$(echo "$TRACKED_TEXT" | xargs grep -l -i -E "$pattern" 2>/dev/null || true)
     if [[ -n "$MATCHES" ]]; then
       fail "PII pattern '$pattern' found in: $MATCHES"
       PII_FOUND=1

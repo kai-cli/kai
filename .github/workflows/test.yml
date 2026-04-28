@@ -43,10 +43,15 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Verify CLAUDE.md exists and has KAI header
+      - name: Verify CLAUDE.md or template exists
         run: |
-          test -f CLAUDE.md || { echo "FAIL: CLAUDE.md missing"; exit 1; }
-          head -1 CLAUDE.md | grep -q "^# " || { echo "FAIL: CLAUDE.md missing header"; exit 1; }
+          if test -f CLAUDE.md; then
+            head -1 CLAUDE.md | grep -q "^# " || { echo "FAIL: CLAUDE.md missing header"; exit 1; }
+          elif test -f CLAUDE.md.template; then
+            head -1 CLAUDE.md.template | grep -q "^# " || { echo "FAIL: CLAUDE.md.template missing header"; exit 1; }
+          else
+            echo "FAIL: neither CLAUDE.md nor CLAUDE.md.template found"; exit 1
+          fi
 
       - name: Verify hook runner is executable
         run: |

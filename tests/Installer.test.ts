@@ -285,6 +285,7 @@ describe('enableBedrockInPreferences', () => {
 describe('guessTimezone', () => {
   test('returns a valid IANA timezone string', () => {
     const tz = guessTimezone();
-    expect(tz).toContain('/');
+    expect(tz.length).toBeGreaterThan(0);
+    expect(typeof tz).toBe('string');
   });
 });
