@@ -12,7 +12,7 @@ Release hardening — fixes verify-release.sh false confidence, corrects stale c
 - release.sh Gate 6 now fails (not skips) when RELEASE-BLOCKERS.md is absent
 - CHANGELOG test count corrected (338 → 367)
 - Brand consistency check excludes planning docs (legitimate kai references)
-- CI smoke test validates `# KAI` header specifically, not any `#` header
+- CI smoke test validates `{{PRODUCT_NAME}}` template variable in CLAUDE.md.template
 - CI smoke test now asserts manifest counts match filesystem
 - CLAUDE.md.template body uses `{{PRODUCT_NAME}}` (was hardcoded product name)
 - Pre-commit hook identity + PII gates now repo-aware (kai only)
@@ -22,7 +22,7 @@ Release hardening — fixes verify-release.sh false confidence, corrects stale c
 - `KnowledgeHarvester.ts` reads domain definitions from `config/domains.jsonc` with built-in fallback
 - `BuildManifest.ts` now tracks `counts.tests` (test file count)
 - `sync-to-kai.sh` sets `productName: "KAI"` automatically after sync
-- Version bumped to 5.0.0 in `preferences.jsonc` and `VERSION`
+- Version bumped to 5.0.0 in `preferences.jsonc`
 - Hook count updated: 35 → 36 (HealthCheck added)
 
 ## [5.0.0] — 2026-04-23
@@ -30,7 +30,7 @@ Release hardening — fixes verify-release.sh false confidence, corrects stale c
 Initial public release of KAI (Kaizen AI).
 
 ### Features
-- **Algorithm v3.12.0** — Parallelization gate, phantom capability prune, version centralization
+- **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
 - **41 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
 - **36 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists

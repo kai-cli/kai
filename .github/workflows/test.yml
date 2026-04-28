@@ -86,3 +86,7 @@ jobs:
           else
             echo "SKIP: no manifest.json"
           fi
+
+      - name: Verify BuildDocs marker regions are fresh
+        run: |
+          PAI_DIR=$PWD bun PAI/Tools/BuildDocs.ts --check

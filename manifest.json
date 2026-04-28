@@ -1,12 +1,12 @@
 {
   "version": "5.0.0",
-  "productName": "PAI",
+  "productName": "KAI",
   "algorithmVersion": "v3.13.0",
   "counts": {
     "skills": 41,
     "hooks": 36,
     "agents": 18,
-    "tests": 18
+    "tests": 19
   },
   "hookInventory": [
     "AgentExecutionGuard.hook",

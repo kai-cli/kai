@@ -48,17 +48,7 @@ cp config/starters/fullstack-domains.jsonc config/domains.jsonc
 
 ## Custom Hooks
 
-Add your own hooks in `hooks/user/` (gitignored):
-
-1. Copy the example registry: `cp hooks/user/hooks.jsonc.example hooks/user/hooks.jsonc`
-2. Create your hook: `hooks/user/MyHook.hook.ts`
-3. Register it in `hooks/user/hooks.jsonc`:
-   ```jsonc
-   { "SessionEnd": ["MyHook.hook.ts"] }
-   ```
-4. Rebuild: `bun ~/.claude/hooks/handlers/BuildSettings.ts`
-
-User hooks are appended to system hooks — they never replace or disable them.
+Custom hook support (`hooks/user/`) is planned for v5.1.0. In the meantime, you can add hooks directly to `settings.json` under the appropriate event key — see Claude Code's [hook documentation](https://docs.anthropic.com/en/docs/claude-code/hooks) for the format.
 
 ## Personal Context
 
