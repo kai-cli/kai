@@ -12,11 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
       - name: Run tests
         run: bun test
 
@@ -25,42 +23,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
       - name: Run verify-release.sh
-        run: |
-          if [[ "$GITHUB_REPOSITORY" != *"/kai" ]]; then
-            echo "SKIP: verify-release.sh is kai-only (running in $GITHUB_REPOSITORY)"
-            exit 0
-          fi
-          bash scripts/verify-release.sh
+        run: bash scripts/verify-release.sh
 
   smoke:
     name: Config-Layer Smoke Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Verify CLAUDE.md or template exists with KAI header
+      - name: Verify CLAUDE.md.template exists with product variable
         run: |
-          if test -f CLAUDE.md; then
-            head -1 CLAUDE.md | grep -qE "^# (KAI|PAI) " || { echo "FAIL: CLAUDE.md missing KAI/PAI header"; exit 1; }
-          elif test -f CLAUDE.md.template; then
-            head -1 CLAUDE.md.template | grep -qE "^# (KAI|PAI) " || { echo "FAIL: CLAUDE.md.template missing KAI/PAI header"; exit 1; }
-          else
-            echo "FAIL: neither CLAUDE.md nor CLAUDE.md.template found"; exit 1
-          fi
+          test -f CLAUDE.md.template || { echo "FAIL: CLAUDE.md.template not found"; exit 1; }
+          head -1 CLAUDE.md.template | grep -q "{{PRODUCT_NAME}}" || { echo "FAIL: template missing {{PRODUCT_NAME}} variable"; exit 1; }
 
       - name: Verify hook runner is executable
-        run: |
-          test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
+        run: test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
 
       - name: Bootstrap identity config if template-only
         run: |
@@ -101,13 +85,3 @@ jobs:
           else
             echo "SKIP: no manifest.json"
           fi
-
-  # BuildDocs check — enable after Phase 2 (items 2.1-2.2) land:
-  # build-docs:
-  #   name: BuildDocs Freshness
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: oven-sh/setup-bun@v2
-  #     - run: bun install --frozen-lockfile || bun install
-  #     - run: bun PAI/Tools/BuildDocs.ts --check
