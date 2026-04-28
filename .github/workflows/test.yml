@@ -17,9 +17,6 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile || bun install
-
       - name: Run tests
         run: bun test
 
@@ -33,9 +30,6 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile || bun install
-
       - name: Run verify-release.sh
         run: bash scripts/verify-release.sh
 
@@ -48,9 +42,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile || bun install
 
       - name: Verify CLAUDE.md exists and has KAI header
         run: |
