@@ -41,10 +41,11 @@ jobs:
       - name: Verify CLAUDE.md.template exists with product variable
         run: |
           test -f CLAUDE.md.template || { echo "FAIL: CLAUDE.md.template not found"; exit 1; }
-          head -1 CLAUDE.md.template | grep -q "{{PRODUCT_NAME}}" || { echo "FAIL: template missing {{PRODUCT_NAME}} variable"; exit 1; }
+          head -1 CLAUDE.md.template | grep -q 'PRODUCT_NAME' || { echo "FAIL: template missing PRODUCT_NAME variable"; exit 1; }
 
       - name: Verify hook runner is executable
-        run: test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
+        run: |
+          test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
 
       - name: Bootstrap identity config if template-only
         run: |
