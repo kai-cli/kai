@@ -49,7 +49,7 @@ function loadVariables(): Record<string, string> {
     "{PRINCIPAL.NAME}": settings.principal?.name || "User",
     "{PRINCIPAL.TIMEZONE}": settings.principal?.timezone || "UTC",
     "{{PAI_VERSION}}": settings.pai?.version || "4.8.0",
-    "{{PRODUCT_NAME}}": settings.pai?.productName || "PAI",
+    "{{PRODUCT_NAME}}": settings.pai?.productName || "KAI",
     "{{ALGO_VERSION}}": algoVersion,
     "{{ALGO_PATH}}": `PAI/Algorithm/${algoVersion}.md`,
   };
