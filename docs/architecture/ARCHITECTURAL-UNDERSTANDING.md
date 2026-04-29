@@ -73,7 +73,6 @@ Releases/v4.4.0/.claude/           ← THE PAI RUNTIME (installed to ~/.claude/)
 ├── skills/                        ← 12 categories, 47+ skills
 ├── MEMORY/                        ← Runtime memory hierarchy
 ├── USER/                          ← User customizations (upgrade-safe)
-├── lib/migration/                 ← v2.5/v3.0→current migration pipeline
 ├── PAI-Install/                   ← Electron installer (3.6MB, not runtime)
 └── tests/                         ← 7 test files, 143+ passing tests
 ```
@@ -591,7 +590,7 @@ hooks/lib/context-loaders/
 
 **Priority order for new tests:**
 
-- [x] `SecurityValidator.integration.test.ts` — test pattern matching, decision thresholds, block/ask/allow paths
+- [ ] `SecurityValidator.test.ts` — test pattern matching, decision thresholds, block/ask/allow paths
 - [ ] `AgentExecutionGuard.test.ts` — test guard logic
 - [ ] `GitHubWriteGuard.test.ts` — test write protection
 - [ ] `algorithm-prd.test.ts` — test PRD frontmatter parsing (when algorithm.ts is split)

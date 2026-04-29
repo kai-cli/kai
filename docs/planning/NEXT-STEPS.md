@@ -10,7 +10,9 @@
 
 | Release | Date | Highlights |
 |---------|------|-----------|
-| **v5.0.0** | 2026-04 | Algorithm v3.12.0, memory curation (`pai curate`), self-learning loop, WebFetchGuard, SecretOutputDetector, 314 tests |
+| **v5.1.0** | 2026-04-29 | Algorithm archive, config-loader, knowledge-readback migration, skill count fix (41→79), PAI/skills/PAI guard, deploy.ts version from manifest, archetype installer, 376 tests |
+| **v5.0.1** | 2026-04 | restore-memory-automation branch: KnowledgeSync+SecretOutputDetector+WebFetchGuard restored, hook counts 35→39, pre-commit fix, domains.jsonc, 367 tests |
+| **v5.0.0** | 2026-04 | Algorithm v3.13.0, memory curation (`pai curate`), self-learning loop, WebFetchGuard, SecretOutputDetector, 314 tests |
 | **v4.9.0** | 2026-04 | Parallelization gate, phantom cap prune, version centralization |
 | **v4.8.0** | 2026-03 | Memory curation, staging, `pai curate`, `pai harvest`, security hooks, 248 tests |
 | **v4.7.0** | 2026-03 | KnowledgeSync, Algorithm v3.11.0, context routing |

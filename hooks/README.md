@@ -184,7 +184,7 @@ RatingCapture ─── explicit "8 - great work"? ──► write + exit
                                               │
                                               ▼
                                       Status Line Display
-                                      (statusline-command.sh)
+                                      (statusline.ts)
 ```
 
 **Design**: Single hook handles both paths. Explicit pattern checked first (no inference). If no match, Haiku inference runs for implicit sentiment. Both paths write to `ratings.jsonl`.

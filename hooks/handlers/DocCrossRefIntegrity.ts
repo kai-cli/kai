@@ -190,7 +190,6 @@ function isSystemFileModified(modifiedFiles: Set<string>): boolean {
     if (relPath.includes('/Workflows/') && relPath.endsWith('.md')) return true;
     if (relPath.startsWith('agents/') && relPath.endsWith('.md')) return true;
     if (relPath === 'CLAUDE.md') return true;
-    if (relPath.startsWith('custom-agents/') && relPath.endsWith('.md')) return true;
   }
   return false;
 }
@@ -457,7 +456,6 @@ function buildInferenceContext(
     f.includes('skills/') ||
     f.endsWith('settings.json') ||
     f.includes('/agents/') ||
-    f.includes('/custom-agents/') ||
     f.endsWith('CLAUDE.md'),
   );
 

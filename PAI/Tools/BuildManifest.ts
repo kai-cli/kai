@@ -23,7 +23,6 @@ interface ManifestData {
     skills: number;
     hooks: number;
     agents: number;
-    tests: number;
   };
   hookInventory: string[];
   skillInventory: string[];
@@ -126,17 +125,22 @@ function buildManifest(): ManifestData {
   const hooksDir = paiPath("hooks");
   const agentsDir = paiPath("agents");
 
-  // Match verify-release.sh: find skills/ -name 'SKILL.md' -maxdepth 2
-  // This counts category-level skills (skills/X/SKILL.md) — maxdepth 2 from skills/
+  // Recursive walk — counts every directory containing SKILL.md at any depth.
+  // Matches: find skills/ -name 'SKILL.md' | wc -l
   const skillInventory: string[] = [];
   if (existsSync(skillsDir)) {
-    for (const cat of readdirSync(skillsDir, { withFileTypes: true })) {
-      if (!cat.isDirectory()) continue;
-      const catPath = join(skillsDir, cat.name);
-      if (existsSync(join(catPath, "SKILL.md"))) {
-        skillInventory.push(cat.name);
+    function walkSkills(dir: string, rel: string) {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const fullPath = join(dir, entry.name);
+        const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+        if (existsSync(join(fullPath, "SKILL.md"))) {
+          skillInventory.push(relPath);
+        }
+        walkSkills(fullPath, relPath);
       }
     }
+    walkSkills(skillsDir, "");
   }
   skillInventory.sort();
 
@@ -151,14 +155,6 @@ function buildManifest(): ManifestData {
   }
   agentInventory.sort();
 
-  const testsDir = paiPath("tests");
-  let testCount = 0;
-  if (existsSync(testsDir)) {
-    for (const entry of readdirSync(testsDir, { withFileTypes: true })) {
-      if (entry.isFile() && entry.name.endsWith(".test.ts")) testCount++;
-    }
-  }
-
   return {
     version,
     productName,
@@ -167,7 +163,6 @@ function buildManifest(): ManifestData {
       skills: skillInventory.length,
       hooks: hookInventory.length,
       agents: agentInventory.length,
-      tests: testCount,
     },
     hookInventory,
     skillInventory,

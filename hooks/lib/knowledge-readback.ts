@@ -13,16 +13,15 @@ import { loadProjectMapping, loadExcludedProjects, getMaxDomainsPerSession } fro
 
 /**
  * Determine which knowledge domains are relevant for the current project.
- * Reads mappings from config/domains.jsonc via config-loader.
  */
 function selectDomains(projectDir: string): string[] {
   const excluded = loadExcludedProjects();
-  const mapping = loadProjectMapping();
-  const maxDomains = getMaxDomainsPerSession();
-
   for (const pattern of excluded) {
     if (projectDir.includes(pattern)) return [];
   }
+
+  const mapping = loadProjectMapping();
+  const maxDomains = getMaxDomainsPerSession();
 
   for (const entry of mapping) {
     if (projectDir.includes(entry.pattern)) {

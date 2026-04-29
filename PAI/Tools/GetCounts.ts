@@ -5,7 +5,7 @@
  *
  * PURPOSE:
  * Provides deterministic, consistent counts for PAI system metrics.
- * Both Banner.ts and statusline-command.sh MUST use this tool to ensure
+ * Both Banner.ts and statusline.ts MUST use this tool to ensure
  * the same numbers are displayed everywhere.
  *
  * COUNTING METHODOLOGY:

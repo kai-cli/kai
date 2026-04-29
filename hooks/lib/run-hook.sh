@@ -26,7 +26,6 @@ LOG_FILE="${LOG_DIR}/${LOG_BASE}.log"
 # Known slow hooks get longer timeouts. All others: 30s default.
 case "$LOG_BASE" in
   KnowledgeSync)             DEFAULT_TIMEOUT=180 ;;  # Full harvest: 7 domains × ~25s each
-  ReflectionHarvester)       DEFAULT_TIMEOUT=120 ;;  # LLM synthesis
   SessionSummary)            DEFAULT_TIMEOUT=60  ;;  # LLM summarization
   WorkCompletionLearning)    DEFAULT_TIMEOUT=60  ;;  # LLM learning capture
   RelationshipMemory)        DEFAULT_TIMEOUT=45  ;;  # LLM relationship note
