@@ -121,6 +121,14 @@ if [[ $QUICK -eq 0 ]]; then
       fi
     fi
   done
+  # Manifest brand check — productName must be "KAI"
+  if [[ -f manifest.json ]]; then
+    MANIFEST_PRODUCT=$(grep -oE '"productName":\s*"[^"]+"' manifest.json | grep -oE '"[^"]+"\s*$' | tr -d '"' | tr -d ' ')
+    if [[ "$MANIFEST_PRODUCT" != "KAI" ]]; then
+      fail "manifest.json productName is \"$MANIFEST_PRODUCT\" (expected \"KAI\")"
+    fi
+  fi
+
   pass "Count verification complete"
 fi
 

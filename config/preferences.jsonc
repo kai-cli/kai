@@ -55,12 +55,12 @@
     }
   },
 
-  // PAI version information
+  // KAI version information
   "pai": {
-    "repoUrl": "github.com/YourNameYourLastName/kai",
-    "version": "4.9.0",
+    "repoUrl": "github.com/kai-cli/kai",
+    "version": "5.1.0",
     "algorithmVersion": "3.13.0",
-    "productName": "PAI"
+    "productName": "KAI"
   },
 
   // User preferences
