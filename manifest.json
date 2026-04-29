@@ -1,6 +1,6 @@
 {
-  "version": "4.9.0",
-  "productName": "PAI",
+  "version": "5.1.0",
+  "productName": "KAI",
   "algorithmVersion": "v3.13.0",
   "counts": {
     "skills": 79,
