@@ -99,7 +99,7 @@
   "settings.json is the single source of truth for all PAI configuration.",
   "daidentity in settings.json controls {DAIDENTITY.NAME}'s name, color, voice, and personality.",
   "principal in settings.json stores {PRINCIPAL.NAME}'s name, timezone, and voice clone.",
-  "The statusline command runs from statusline-command.sh.",
+  "The statusline is powered by statusline.ts — the TypeScript implementation.",
   "Personality traits (0-100) shape how emotions are expressed vocally.",
   "Never hardcode paths. Use ${PAI_DIR}, ${PROJECTS_DIR}, {principal.name}.",
   "Browser-first: if you haven't SEEN it with Browser skill, you can't claim it works.",

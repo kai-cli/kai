@@ -1,10 +1,10 @@
 /**
- * SecurityValidator.integration.test.ts — Subprocess tests for hooks/SecurityValidator.hook.ts
+ * SecurityValidator.test.ts — Subprocess tests for hooks/SecurityValidator.hook.ts
  *
  * Tests the three decision types: block (exit 2), confirm (ask), allow (continue).
  * Covers: catastrophic Bash commands, zero-access paths, confirm-level ops, safe ops.
  *
- * Run: bun test tests/SecurityValidator.integration.test.ts
+ * Run: bun test tests/SecurityValidator.test.ts
  */
 
 import { describe, test, expect } from 'bun:test';

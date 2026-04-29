@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * PAI Deployment Packager
+ * KAI Deployment Packager
  *
- * Creates a distributable PAI package for coworker machines.
+ * Creates a distributable KAI package for coworker machines.
  * Includes all system components, strips personal data,
  * creates USER scaffolding with placeholders.
  *
@@ -19,7 +19,10 @@ import { execSync } from "child_process";
 
 const HOME = process.env.HOME!;
 const PAI_ROOT = join(HOME, ".claude");
-const VERSION = "4.5.0";
+const _manifestRaw = existsSync(join(PAI_ROOT, "manifest.json"))
+  ? JSON.parse(readFileSync(join(PAI_ROOT, "manifest.json"), "utf-8"))
+  : null;
+const VERSION: string = _manifestRaw?.version ?? "unknown";
 
 // --- CLI args ---
 const args = process.argv.slice(2);
@@ -118,7 +121,7 @@ const INCLUDE: CopySpec[] = [
   { src: ".gitignore", required: false },
 
   // Statusline
-  { src: "statusline-command.sh", required: false },
+  { src: "statusline.ts", required: false },
 
   // Tests
   { src: "tests", required: false },
@@ -351,10 +354,10 @@ const ENV_TEMPLATE = `# KAI Environment Configuration
 
 // --- Main ---
 async function main() {
-  console.log(`\n${BOLD}PAI Deployment Packager v${VERSION}${RESET}\n`);
+  console.log(`\n${BOLD}KAI Deployment Packager v${VERSION}${RESET}\n`);
 
   const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
-  const pkgName = `pai-${VERSION}-${timestamp}`;
+  const pkgName = `kai-${VERSION}-${timestamp}`;
   const pkgDir = join(outputDir, pkgName);
   const tarball = `${pkgDir}.tar.gz`;
 
@@ -459,7 +462,7 @@ async function main() {
   ok("MEMORY directory structure");
 
   // Create quick-start README
-  writeFileSync(join(pkgDir, "DEPLOY-README.md"), `# PAI ${VERSION} Deployment Package
+  writeFileSync(join(pkgDir, "DEPLOY-README.md"), `# KAI ${VERSION} Deployment Package
 
 ## Quick Start
 
@@ -480,8 +483,8 @@ async function main() {
 | Component | Count | Description |
 |-----------|-------|-------------|
 | Algorithm | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> | Core reasoning engine |
-| Skills | <!-- KAI:counts:skills:begin -->41<!-- KAI:counts:skills:end --> | Research, security, writing, analysis, etc. |
-| Hooks | <!-- KAI:counts:hooks:begin -->36<!-- KAI:counts:hooks:end --> | Pre/post tool guards, format enforcement, etc. |
+| Skills | <!-- KAI:counts:skills:begin -->79<!-- KAI:counts:skills:end --> | Research, security, writing, analysis, etc. |
+| Hooks | <!-- KAI:counts:hooks:begin -->39<!-- KAI:counts:hooks:end --> | Pre/post tool guards, format enforcement, etc. |
 | Agents | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> | Specialized agent definitions |
 | Scripts | 4 | Board, Ralph Loop, deploy |
 | Config | 8 | Domain configuration files |

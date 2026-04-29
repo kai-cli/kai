@@ -31,7 +31,7 @@ describe('PostCompactRecovery', () => {
 
   test('recovery block contains algorithm version',
     () => expect(buildRecoveryBlock({ daName: 'DA', principalName: 'User', timezone: 'UTC' }))
-      .toContain('v3.10.0'));
+      .toContain('v3.13.0'));
 
   // ── Mode format ──
   test('recovery block contains all three modes', () => {

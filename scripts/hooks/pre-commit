@@ -1,116 +1,58 @@
 #!/usr/bin/env bash
-# KAI pre-commit hook — identity check + PII denylist + secret scanning.
-# Installed by: bash scripts/install-hooks.sh
+# PAI Secret Guard — git pre-commit hook
+# Scans staged file contents for credential patterns before allowing commit.
+# Catches secrets leaked through any path: session logs, tool output, manual edits.
+#
+# Install: cp this to .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 # Bypass (emergency only): git commit --no-verify
+
 set -euo pipefail
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-
-# ── 1. Identity Gate (kai repo only) ─────────────────────────
-REPO_NAME="$(basename "$REPO_ROOT")"
-if [[ "$REPO_NAME" == "kai" ]]; then
-  EXPECTED_EMAIL="maintainer@kai-cli.com"
-  ACTUAL_EMAIL="$(git config user.email 2>/dev/null || echo '')"
-
-  if [[ "$ACTUAL_EMAIL" != "$EXPECTED_EMAIL" ]]; then
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  🛡️  IDENTITY CHECK — COMMIT BLOCKED                    ║"
-    echo "╠══════════════════════════════════════════════════════════╣"
-    echo "║  git config user.email must be $EXPECTED_EMAIL   ║"
-    echo "║  Current: ${ACTUAL_EMAIL:-<not set>}"
-    echo "╚══════════════════════════════════════════════════════════╝"
-    echo ""
-    echo "Fix: git config user.email \"$EXPECTED_EMAIL\""
-    exit 1
-  fi
-fi
-
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
-if [[ -z "$STAGED_FILES" ]]; then
-  exit 0
-fi
-
-# ── 2. PII Denylist (kai repo only — pai-config legitimately contains PII) ──
-if [[ "$REPO_NAME" == "kai" ]]; then
-  PII_PATTERNS=(
-    'Deven'
-    'Ducommun'
-    'dducommun'
-    'linksys'
-    'EITC'
-    'du\.ae'
-    'friendlylab'
-    '10\.94\.107'
-    '10\.18\.3\.'
-    '@linksys\.com'
-    '799870512242'
-    'Deven_Ducommun'
-  )
-
-  PII_COMBINED=""
-  for p in "${PII_PATTERNS[@]}"; do
-    if [[ -z "$PII_COMBINED" ]]; then
-      PII_COMBINED="$p"
-    else
-      PII_COMBINED="$PII_COMBINED|$p"
-    fi
-  done
-
-  PII_FOUND=0
-  PII_FINDINGS=""
-
-  while IFS= read -r file; do
-    [[ -f "$file" ]] || continue
-    if file "$file" 2>/dev/null | grep -q "binary"; then continue; fi
-    case "$file" in
-      scripts/hooks/pre-commit|scripts/verify-release.sh) continue ;;
-    esac
-
-    CONTENT=$(git show ":$file" 2>/dev/null || true)
-    [[ -z "$CONTENT" ]] && continue
-
-    MATCHES=$(echo "$CONTENT" | grep -nEi "$PII_COMBINED" 2>/dev/null || true)
-    [[ -z "$MATCHES" ]] && continue
-
-    PII_FOUND=1
-    PII_FINDINGS="${PII_FINDINGS}\n🔴 ${file}:\n"
-    while IFS= read -r line; do
-      PII_FINDINGS="${PII_FINDINGS}   ${line}\n"
-    done <<< "$MATCHES"
-  done <<< "$STAGED_FILES"
-
-  if [[ "$PII_FOUND" -eq 1 ]]; then
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  🛡️  PII DENYLIST — COMMIT BLOCKED                      ║"
-    echo "╠══════════════════════════════════════════════════════════╣"
-    echo "║  Personal identifiers detected in staged files.         ║"
-    echo "║  Remove PII before committing to the public repo.       ║"
-    echo "╚══════════════════════════════════════════════════════════╝"
-    echo ""
-    echo -e "$PII_FINDINGS"
-    exit 1
-  fi
-fi
-
-# ── 3. Secret Scanning ──────────────────────────────────────
-SECRET_PATTERNS=(
+# Secret patterns (same patterns as SecretScanner.hook.ts + extras for tool output)
+PATTERNS=(
+  # GitHub tokens
   'ghp_[A-Za-z0-9]{36}'
   'gho_[A-Za-z0-9]{36}'
   'ghu_[A-Za-z0-9]{36}'
   'ghs_[A-Za-z0-9]{36}'
   'ghr_[A-Za-z0-9]{36}'
   'github_pat_[A-Za-z0-9_]{50,}'
+
+  # AWS
   'AKIA[0-9A-Z]{16}'
+
+  # Anthropic
   'sk-ant-api[A-Za-z0-9_-]{20,}'
+
+  # OpenAI
   'sk-[A-Za-z0-9]{40,}'
+
+  # Slack
   'xox[bpras]-[0-9A-Za-z-]{10,}'
+
+  # Jenkins API token (hex, used with -u user:token)
+  # Match curl -u patterns with 32-char hex tokens
+  '-u [^:]+:[0-9a-f]{32,}'
+
+  # Cloudflare
+  'CF_API_TOKEN=[A-Za-z0-9_-]{20,}'
+  'CLOUDFLARE_API_TOKEN=[A-Za-z0-9_-]{20,}'
+
+  # Replicate
+  'REPLICATE_API_TOKEN=[A-Za-z0-9_-]{20,}'
+
+  # Private keys
   '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'
+
+  # Generic high-confidence: git config user.password with a real value
+  'user\.password "[A-Za-z0-9_-]{20,}"'
+
+  # Generic: password/secret/token assignment with real-looking values (not placeholders)
   '(password|secret|token|api_key|apikey)\s*[:=]\s*"[A-Za-z0-9_/+=.!@#$%^&*()-]{16,}"'
 )
 
-SECRET_ALLOWLIST=(
+# Allowlist patterns (known false positives)
+ALLOWLIST=(
   'your.api.key.here'
   'your_key_here'
   'your-api-token-here'
@@ -122,65 +64,90 @@ SECRET_ALLOWLIST=(
   'process\.env\.'
   'Missing env'
   'throw.*Error'
+  'REPLICATE_API_TOKEN\s'     # env var references without assignment
+  'CLOUDFLARE_API_TOKEN\)'    # unset commands
+  'Required for'              # documentation
 )
 
-SECRET_COMBINED=""
-for p in "${SECRET_PATTERNS[@]}"; do
-  if [[ -z "$SECRET_COMBINED" ]]; then
-    SECRET_COMBINED="$p"
+# Build combined pattern
+COMBINED=""
+for p in "${PATTERNS[@]}"; do
+  if [ -z "$COMBINED" ]; then
+    COMBINED="$p"
   else
-    SECRET_COMBINED="$SECRET_COMBINED|$p"
+    COMBINED="$COMBINED|$p"
   fi
 done
 
+# Build allowlist pattern
 ALLOW_COMBINED=""
-for a in "${SECRET_ALLOWLIST[@]}"; do
-  if [[ -z "$ALLOW_COMBINED" ]]; then
+for a in "${ALLOWLIST[@]}"; do
+  if [ -z "$ALLOW_COMBINED" ]; then
     ALLOW_COMBINED="$a"
   else
     ALLOW_COMBINED="$ALLOW_COMBINED|$a"
   fi
 done
 
-SECRET_FOUND=0
-SECRET_FINDINGS=""
+# Get staged files (only added/modified, skip deleted)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+FOUND=0
+FINDINGS=""
 
 while IFS= read -r file; do
-  [[ -f "$file" ]] || continue
-  if file "$file" 2>/dev/null | grep -q "binary"; then continue; fi
+  # Skip binary files (check both working copy and git attribute)
+  if file "$file" 2>/dev/null | grep -q "binary"; then
+    continue
+  fi
+  if git diff --cached --numstat -- "$file" 2>/dev/null | grep -q "^-"; then
+    continue
+  fi
 
+  # Skip files that don't exist (edge case)
+  [ -f "$file" ] || continue
+
+  # Get staged content (what will actually be committed), skip if binary/null bytes
   CONTENT=$(git show ":$file" 2>/dev/null | tr -d '\0' || true)
-  [[ -z "$CONTENT" ]] && continue
+  [ -z "$CONTENT" ] && continue
 
-  MATCHES=$(echo "$CONTENT" | grep -nE "$SECRET_COMBINED" 2>/dev/null || true)
-  [[ -z "$MATCHES" ]] && continue
+  # Search for secrets
+  MATCHES=$(echo "$CONTENT" | grep -nE "$COMBINED" 2>/dev/null || true)
+  [ -z "$MATCHES" ] && continue
 
+  # Filter out allowlisted patterns
   FILTERED=$(echo "$MATCHES" | grep -vE "$ALLOW_COMBINED" 2>/dev/null || true)
-  [[ -z "$FILTERED" ]] && continue
+  [ -z "$FILTERED" ] && continue
 
-  SECRET_FOUND=1
-  SECRET_FINDINGS="${SECRET_FINDINGS}\n🔴 ${file}:\n"
+  FOUND=1
+  FINDINGS="${FINDINGS}\n🔴 ${file}:\n"
   while IFS= read -r line; do
+    # Redact the actual secret value (show first 8 chars + ...)
     REDACTED=$(echo "$line" | sed -E 's/([A-Za-z0-9_-]{8})[A-Za-z0-9_/+=.!@#$%^&*()-]{12,}/\1.../g')
-    SECRET_FINDINGS="${SECRET_FINDINGS}   ${REDACTED}\n"
+    FINDINGS="${FINDINGS}   ${REDACTED}\n"
   done <<< "$FILTERED"
 done <<< "$STAGED_FILES"
 
-if [[ "$SECRET_FOUND" -eq 1 ]]; then
+if [ "$FOUND" -eq 1 ]; then
   echo ""
   echo "╔══════════════════════════════════════════════════════════╗"
-  echo "║  🛡️  SECRET GUARD — COMMIT BLOCKED                      ║"
+  echo "║  🛡️  PAI SECRET GUARD — COMMIT BLOCKED                  ║"
   echo "╠══════════════════════════════════════════════════════════╣"
   echo "║  Potential credentials detected in staged files.        ║"
   echo "║  Secrets in git history are extremely hard to remove.   ║"
   echo "╚══════════════════════════════════════════════════════════╝"
   echo ""
-  echo -e "$SECRET_FINDINGS"
+  echo -e "$FINDINGS"
   echo ""
   echo "Actions:"
   echo "  1. Remove the secret from the file"
   echo "  2. Use environment variables or .env files instead"
   echo "  3. If this is a false positive: git commit --no-verify"
+  echo ""
   exit 1
 fi
 

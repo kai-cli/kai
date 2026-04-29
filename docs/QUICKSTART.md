@@ -72,7 +72,7 @@ All configuration lives in `~/.claude/config/*.jsonc` (JSON with comments):
 | File | What it controls |
 |------|-----------------|
 | `identity.jsonc` | Your name, assistant name, timezone |
-| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->36<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
+| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->39<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
 | `permissions.jsonc` | Tool permissions (allow/deny/ask rules) |
 | `preferences.jsonc` | Environment variables, MCP servers, tech stack |
 | `notifications.jsonc` | Alert routing (disabled by default) |
@@ -87,7 +87,7 @@ bun ~/.claude/hooks/handlers/BuildSettings.ts
 
 ## What You Get
 
-### Skills (<!-- KAI:counts:skills:begin -->41<!-- KAI:counts:skills:end --> modules)
+### Skills (<!-- KAI:counts:skills:begin -->79<!-- KAI:counts:skills:end --> modules)
 KAI includes specialized skills invoked with slash commands or automatically:
 - **Research** — multi-agent parallel research with dedup
 - **Security** — recon, web assessment, prompt injection testing
@@ -108,7 +108,7 @@ For complex tasks, KAI uses a 7-phase execution framework:
 
 Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
-### Hooks (<!-- KAI:counts:hooks:begin -->36<!-- KAI:counts:hooks:end --> lifecycle events)
+### Hooks (<!-- KAI:counts:hooks:begin -->39<!-- KAI:counts:hooks:end --> lifecycle events)
 Automated behaviors that fire on specific events:
 - **SecretScanner** — warns if you're about to commit secrets
 - **GitHubWriteGuard** — requires confirmation before git push
@@ -165,4 +165,4 @@ bash ~/kai/install.sh
 
 - [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How KAI differs from the original
 - [SYSTEM-ATLAS.md](architecture/SYSTEM-ATLAS.md) — Full system architecture
-- [NEXT-STEPS.md](planning/NEXT-STEPS.md) — Roadmap and current work
+- [ROADMAP.md](planning/ROADMAP.md) — Product roadmap

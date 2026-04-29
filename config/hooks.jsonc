@@ -60,6 +60,15 @@
         // Skill invocation guard — validates skill calls
         "matcher": "Skill",
         "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SkillGuard.hook.ts" }]
+      },
+      {
+        // URL validation — blocks internal network ranges, flags suspicious domains
+        "matcher": "WebFetch",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WebFetchGuard.hook.ts" }]
+      },
+      {
+        "matcher": "WebSearch",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WebFetchGuard.hook.ts" }]
       }
     ],
 
@@ -78,6 +87,15 @@
       {
         "matcher": "Edit",
         "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PRDSync.hook.ts" }]
+      },
+      {
+        // Scan tool output for leaked secrets (API keys, tokens, private keys)
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecretOutputDetector.hook.ts" }]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecretOutputDetector.hook.ts" }]
       }
     ],
 
@@ -90,7 +108,9 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionSummary.hook.ts", "async": true },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RelationshipMemory.hook.ts", "async": true },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateCounts.hook.ts", "async": true },
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh IntegrityCheck.hook.ts", "async": true }
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh IntegrityCheck.hook.ts", "async": true },
+          // Knowledge distillation — runs LAST (needs other hooks to write first, uses inference budget)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh KnowledgeSync.hook.ts", "async": true }
         ]
       }
     ],

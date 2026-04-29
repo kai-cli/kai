@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * statusline.ts — PAI Status Line (TypeScript port of statusline-command.sh)
+ * statusline.ts — PAI Status Line
  *
  * Responsive status line with 4 display modes based on terminal width:
  *   nano   (<35 cols): Minimal

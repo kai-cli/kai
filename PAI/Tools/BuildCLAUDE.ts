@@ -27,8 +27,8 @@ const LATEST_PATH = paiPath("PAI/Algorithm", "LATEST");
 
 function getAlgorithmVersion(): string {
   if (!existsSync(LATEST_PATH)) {
-    console.error("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.12.0");
-    return "v3.12.0";
+    console.error("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.13.0");
+    return "v3.13.0";
   }
   return readFileSync(LATEST_PATH, "utf-8").trim();
 }
@@ -49,7 +49,7 @@ function loadVariables(): Record<string, string> {
     "{PRINCIPAL.NAME}": settings.principal?.name || "User",
     "{PRINCIPAL.TIMEZONE}": settings.principal?.timezone || "UTC",
     "{{PAI_VERSION}}": settings.pai?.version || "4.8.0",
-    "{{PRODUCT_NAME}}": settings.pai?.productName || "KAI",
+    "{{PRODUCT_NAME}}": settings.pai?.productName || "PAI",
     "{{ALGO_VERSION}}": algoVersion,
     "{{ALGO_PATH}}": `PAI/Algorithm/${algoVersion}.md`,
   };

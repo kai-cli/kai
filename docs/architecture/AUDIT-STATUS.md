@@ -62,7 +62,7 @@ Both are registered in hooks.jsonc Stop event. This creates race conditions on s
 **Problem:** Multiple PAI tabs are indistinguishable. Tab titles show current action but not which project/domain.
 
 **Approach TBD:**
-- [ ] Investigate `statusline-command.sh` and Claude Code statusline API
+- [ ] Investigate `statusline.ts` and Claude Code statusline API
 - [ ] Detect `cwd` or project name from session
 - [ ] Prepend domain to tab title: `release-notes | Fixing auth bug.`
 

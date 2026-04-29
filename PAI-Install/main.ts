@@ -304,9 +304,38 @@ ${JSON.stringify(local, null, 2)}
   return migrated;
 }
 
+// ── Archetype starter writer ───────────────────────────────────────────────
+
+const ARCHETYPES: Record<string, { label: string; description: string; file: string }> = {
+  "1": { label: "Generic",     description: "3 broad domains (backend, frontend, devops)",                     file: "generic-domains.jsonc" },
+  "2": { label: "Full-Stack",  description: "5 domains (backend, frontend, devops, security, databases)",      file: "fullstack-domains.jsonc" },
+  "3": { label: "Data Science", description: "6 domains (ML, data-eng, analysis, viz, devops, databases)",   file: "datascience-domains.jsonc" },
+  "4": { label: "DevOps",      description: "6 domains (infra, containers, CI/CD, observability, networking, security)", file: "devops-domains.jsonc" },
+  "5": { label: "Custom",      description: "Start with Generic, edit config/domains.jsonc afterward",        file: "generic-domains.jsonc" },
+};
+
+export function applyArchetype(paiDir: string, archetypeFile: string): boolean {
+  const starterPath = join(paiDir, "config", "starters", archetypeFile);
+  const domainsPath = join(paiDir, "config", "domains.jsonc");
+  if (!existsSync(starterPath)) return false;
+  const content = readFileSync(starterPath, "utf-8");
+  // Validate before writing — a broken starter file should not overwrite domains.jsonc
+  try {
+    const stripped = content
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(?<!:)\/\/[^\n]*/g, '')
+      .replace(/,(\s*[}\]])/g, '$1');
+    JSON.parse(stripped);
+  } catch {
+    return false;
+  }
+  writeFileSync(domainsPath, content, "utf-8");
+  return true;
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
 async function main() {
-  const TOTAL_STEPS = 6;
+  const TOTAL_STEPS = 7;
 
   console.log(`\n${BOLD}${LIGHT_BLUE}PAI Setup Wizard${RESET}\n`);
   info(`Repo location: ${GRAY}${PAI_ROOT}${RESET}`);
@@ -371,8 +400,39 @@ async function main() {
   // From here, operate on CLAUDE_DIR (which resolves to PAI_ROOT)
   const paiDir = CLAUDE_DIR;
 
-  // ── Step 2: Identity ───────────────────────────────────────────────────
-  step(2, TOTAL_STEPS, "Configure identity");
+  // ── Step 2: Archetype selection ────────────────────────────────────────
+  step(2, TOTAL_STEPS, "Choose your knowledge archetype");
+
+  const domainsPath = join(paiDir, "config", "domains.jsonc");
+  const hasExistingDomains = existsSync(domainsPath);
+
+  if (hasExistingDomains) {
+    ok(`config/domains.jsonc already exists — keeping current domain configuration`);
+    info(`${DIM}To reconfigure, delete config/domains.jsonc and re-run installer${RESET}`);
+  } else {
+    console.log(`\n  ${DIM}Select the archetype that best matches your work.${RESET}`);
+    console.log(`  ${DIM}This sets up the knowledge domains KAI uses to organize what it learns.${RESET}\n`);
+    for (const [key, arch] of Object.entries(ARCHETYPES)) {
+      console.log(`  ${BOLD}${key}${RESET}  ${arch.label.padEnd(14)} ${DIM}${arch.description}${RESET}`);
+    }
+    console.log();
+
+    const choice = await prompt("Archetype", "1");
+    const archetype = ARCHETYPES[choice] ?? ARCHETYPES["1"];
+    const applied = applyArchetype(paiDir, archetype.file);
+    if (applied) {
+      ok(`Applied ${archetype.label} archetype → config/domains.jsonc`);
+      if (choice === "5") {
+        info(`${DIM}Edit config/domains.jsonc to customize your domains${RESET}`);
+      }
+    } else {
+      warn(`Starter file not found — skipping archetype setup`);
+      warn(`Run manually: cp config/starters/generic-domains.jsonc config/domains.jsonc`);
+    }
+  }
+
+  // ── Step 3: Identity ───────────────────────────────────────────────────
+  step(3, TOTAL_STEPS, "Configure identity");
 
   // Load existing identity to use as defaults
   const identityPath = join(paiDir, "config", "identity.jsonc");
@@ -415,8 +475,8 @@ async function main() {
   });
   ok(`Identity saved  ${DIM}(${daName} / ${principalName})${RESET}`);
 
-  // ── Step 3: AWS Bedrock (optional) ────────────────────────────────────
-  step(3, TOTAL_STEPS, "AWS Bedrock (optional)");
+  // ── Step 4: AWS Bedrock (optional) ────────────────────────────────────
+  step(4, TOTAL_STEPS, "AWS Bedrock (optional)");
   console.log(`\n  ${DIM}Skip this if you connect directly to Anthropic (most users).${RESET}\n`);
   const useBedrock = await confirm("Route Claude Code through AWS Bedrock?", false);
   if (useBedrock) {
@@ -439,8 +499,8 @@ async function main() {
     ok(`Using Anthropic direct API  ${DIM}(default)${RESET}`);
   }
 
-  // ── Step 4: USER scaffold ──────────────────────────────────────────────
-  step(4, TOTAL_STEPS, "Create USER configuration scaffold");
+  // ── Step 5: USER scaffold ──────────────────────────────────────────────
+  step(5, TOTAL_STEPS, "Create USER configuration scaffold");
   const created = createUserScaffold(paiDir);
   createMemoryDirs(paiDir);
   if (created > 0) {
@@ -449,8 +509,8 @@ async function main() {
     ok("USER scaffold already exists");
   }
 
-  // ── Step 5: Build settings.json ────────────────────────────────────────
-  step(5, TOTAL_STEPS, "Build settings.json");
+  // ── Step 6: Build settings.json ────────────────────────────────────────
+  step(6, TOTAL_STEPS, "Build settings.json");
   const buildSettingsPath = join(paiDir, "hooks", "handlers", "BuildSettings.ts");
   if (existsSync(buildSettingsPath)) {
     const built = runBun(buildSettingsPath);
@@ -464,8 +524,8 @@ async function main() {
     warn(`BuildSettings.ts not found at ${buildSettingsPath}`);
   }
 
-  // ── Step 6: Build CLAUDE.md ────────────────────────────────────────────
-  step(6, TOTAL_STEPS, "Build CLAUDE.md");
+  // ── Step 7: Build CLAUDE.md ────────────────────────────────────────────
+  step(7, TOTAL_STEPS, "Build CLAUDE.md");
   const buildClaudePath = join(paiDir, "hooks", "handlers", "BuildCLAUDE.ts");
   if (existsSync(buildClaudePath)) {
     const built = runBun(buildClaudePath);
@@ -480,7 +540,7 @@ async function main() {
 
   // ── Done ───────────────────────────────────────────────────────────────
   console.log(`\n${STEEL}─────────────────────────────────────────────────${RESET}`);
-  console.log(`\n  ${GREEN}${BOLD}PAI installed successfully!${RESET}\n`);
+  console.log(`\n  ${GREEN}${BOLD}KAI installed successfully!${RESET}\n`);
   console.log(`  ${DIM}Start a new Claude Code session to activate.${RESET}`);
   console.log(`  ${DIM}Board: bun ~/.claude/scripts/board.ts${RESET}\n`);
 }

@@ -2,6 +2,17 @@
 
 PAI is a general problem-solving system that magnifies human capabilities. It runs inside Claude Code as an interconnected set of skills, hooks, tools, memory, and configuration — all orchestrated by The Algorithm.
 
+## PAI/ vs skills/PAI/ — Intended Split
+
+There are two `PAI/` directories in this repo:
+
+| Directory | Purpose |
+|-----------|---------|
+| `PAI/` (this directory) | **Runtime system** — algorithm files, tools, user context, agent system docs, memory docs. Loaded by Claude Code natively or on-demand by the routing table. Not user-facing skill discovery. |
+| `skills/PAI/` | **Skill discovery + workflow docs** — `SKILL.md` entry point and markdown docs users read when the PAI skill is invoked. User-facing descriptions of capabilities. |
+
+These directories share ~19 common docs but have intentionally different content. Full consolidation is deferred to v5.2.0. A guard in `scripts/verify-release.sh` flags new asymmetric files that don't appear in both directories.
+
 ## How It Works
 
 **CLAUDE.md** is the master config — generated from `CLAUDE.md.template` via `BuildCLAUDE.ts`. It defines execution modes, The Algorithm, and the context routing table. Claude Code loads it natively every session. A SessionStart hook keeps it fresh automatically.

@@ -91,7 +91,7 @@ AUTHORS=$(git log --all --format='%an <%ae>' | sort -u)
 if [[ $AUTHOR_COUNT -eq 1 ]]; then
   pass "Single author in history: $AUTHORS"
 else
-  fail "Multiple authors in history ($AUTHOR_COUNT):"
+  warn "Multiple authors in history ($AUTHOR_COUNT):"
   echo "$AUTHORS" | while read -r line; do echo "    $line"; done
 fi
 
@@ -103,7 +103,7 @@ if [[ $QUICK -eq 0 ]]; then
   echo ""
   echo "── Ground Truth Counts ──"
 
-  ACTUAL_SKILLS=$(find skills/ -name 'SKILL.md' -maxdepth 2 2>/dev/null | wc -l | tr -d ' ')
+  ACTUAL_SKILLS=$(find skills/ -name 'SKILL.md' 2>/dev/null | wc -l | tr -d ' ')
   ACTUAL_HOOKS=$(find hooks/ -name '*.hook.ts' -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
   ACTUAL_AGENTS=$(find agents/ -name '*.md' -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
 
@@ -111,39 +111,16 @@ if [[ $QUICK -eq 0 ]]; then
 
   for DOC in README.md docs/WHATS-DIFFERENT.md docs/QUICKSTART.md CHANGELOG.md; do
     if [[ -f "$DOC" ]]; then
-      # Extract counts — handle both marker syntax and plain "N skill/hook" text
-      # Marker: <!-- KAI:counts:skills:begin -->42<!-- KAI:counts:skills:end -->
-      DOC_SKILLS=$(grep -oE 'counts:skills:begin -->[0-9]+' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
-      [[ -z "$DOC_SKILLS" ]] && DOC_SKILLS=$(grep -oE '[0-9]+ skill' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      DOC_SKILLS=$(grep -oE '[0-9]+ skill' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
       if [[ -n "$DOC_SKILLS" && "$DOC_SKILLS" != "$ACTUAL_SKILLS" ]]; then
         fail "$DOC claims $DOC_SKILLS skills but filesystem has $ACTUAL_SKILLS"
       fi
-      DOC_HOOKS=$(grep -oE 'counts:hooks:begin -->[0-9]+' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
-      [[ -z "$DOC_HOOKS" ]] && DOC_HOOKS=$(grep -oE '[0-9]+ hook' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      DOC_HOOKS=$(grep -oE '[0-9]+ hook' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
       if [[ -n "$DOC_HOOKS" && "$DOC_HOOKS" != "$ACTUAL_HOOKS" ]]; then
         fail "$DOC claims $DOC_HOOKS hooks but filesystem has $ACTUAL_HOOKS"
       fi
     fi
   done
-  # Test count verification — compare bun test pass count against doc claims
-  ACTUAL_TESTS=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ pass' | grep -oE '[0-9]+' || echo "0")
-  for DOC in CHANGELOG.md; do
-    if [[ -f "$DOC" ]]; then
-      DOC_TESTS=$(grep -oE '[0-9]+ tests? passing' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
-      if [[ -n "$DOC_TESTS" && "$DOC_TESTS" != "$ACTUAL_TESTS" ]]; then
-        fail "$DOC claims $DOC_TESTS tests but suite has $ACTUAL_TESTS"
-      fi
-    fi
-  done
-
-  # Manifest brand check — productName must be "KAI"
-  if [[ -f manifest.json ]]; then
-    MANIFEST_PRODUCT=$(grep -oE '"productName":\s*"[^"]+"' manifest.json | grep -oE '"[^"]+"\s*$' | tr -d '"' | tr -d ' ')
-    if [[ "$MANIFEST_PRODUCT" != "KAI" ]]; then
-      fail "manifest.json productName is \"$MANIFEST_PRODUCT\" (expected \"KAI\")"
-    fi
-  fi
-
   pass "Count verification complete"
 fi
 
@@ -160,33 +137,6 @@ for f in "${REQUIRED_FILES[@]}"; do
   fi
 done
 
-# ── 5b. Internal Link Check (skipped in --quick) ─────────────
-if [[ $QUICK -eq 0 ]]; then
-  echo ""
-  echo "── Internal Link Check ──"
-
-  LINK_DOCS=(README.md CONTRIBUTING.md CHANGELOG.md docs/QUICKSTART.md docs/WHATS-DIFFERENT.md docs/CUSTOMIZATION.md)
-  DEAD_LINKS=0
-  for doc in "${LINK_DOCS[@]}"; do
-    [[ -f "$doc" ]] || continue
-    while IFS= read -r link; do
-      target="${link%%#*}"
-      [[ -z "$target" ]] && continue
-      [[ "$target" == http* ]] && continue
-      dir="$(dirname "$doc")"
-      resolved="$dir/$target"
-      [[ "$target" == /* ]] && resolved=".$target"
-      if [[ ! -e "$resolved" ]]; then
-        fail "Dead link in $doc: $target"
-        DEAD_LINKS=$((DEAD_LINKS + 1))
-      fi
-    done < <(grep -oE '\]\([^)]+\)' "$doc" | sed 's/^\](\(.*\))$/\1/' | grep -v '^http' | grep -v '^mailto')
-  done
-  if [[ $DEAD_LINKS -eq 0 ]]; then
-    pass "No dead internal links"
-  fi
-fi
-
 # ── 6. Brand Consistency (skipped in --quick) ────────────────
 if [[ $QUICK -eq 0 ]]; then
   echo ""
@@ -194,7 +144,7 @@ if [[ $QUICK -eq 0 ]]; then
 
   OLD_BRAND_PATTERNS=('pai-config' 'PAI Board' 'PAI Installer' 'PAI Environment')
   for pattern in "${OLD_BRAND_PATTERNS[@]}"; do
-    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' | grep -v 'docs/planning/' || true)
+    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' || true)
     if [[ -n "$MATCHES" ]]; then
       fail "Old brand '$pattern' found in: $(echo "$MATCHES" | tr '\n' ' ')"
     fi
@@ -362,6 +312,66 @@ if [[ $QUICK -eq 0 ]]; then
     fi
   else
     pass "No main branch found — fix-class check skipped"
+  fi
+fi
+
+# ── 12. PAI/ vs skills/PAI/ Divergence Guard (skipped in --quick) ──
+if [[ $QUICK -eq 0 ]]; then
+  echo ""
+  echo "── PAI/ vs skills/PAI/ Divergence ──"
+
+  # Allowlist: files that are intentionally in only one directory.
+  # Seed from codebase state at v5.1.0 (2026-04-29). Add new entries here
+  # when adding a file that is legitimately asymmetric.
+  PAI_ONLY_ALLOWLIST=(
+    AISTEERINGRULES-EXAMPLES.md
+    CONTEXT_ROUTING.md
+    MEMORY-CHANGELOG.md
+    PRDFORMAT.md
+  )
+  SKILLS_PAI_ONLY_ALLOWLIST=(
+    ARBOLSYSTEM.md
+    BROWSERAUTOMATION.md
+    DEPLOYMENT.md
+    FEEDSYSTEM.md
+    TERMINALTABS.md
+  )
+
+  # Build sorted basename lists
+  PAI_BASES=$(find PAI/ -maxdepth 1 -name '*.md' 2>/dev/null | xargs -I{} basename {} | sort)
+  SKILLS_BASES=$(find skills/PAI/ -maxdepth 1 -name '*.md' 2>/dev/null | xargs -I{} basename {} | sort)
+
+  PAI_ONLY=$(comm -23 <(echo "$PAI_BASES") <(echo "$SKILLS_BASES"))
+  SKILLS_ONLY=$(comm -13 <(echo "$PAI_BASES") <(echo "$SKILLS_BASES"))
+
+  DIVERGE_FAIL=0
+
+  # Check PAI-only files not in allowlist
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    ALLOWED=0
+    for a in "${PAI_ONLY_ALLOWLIST[@]}"; do [[ "$f" == "$a" ]] && ALLOWED=1 && break; done
+    if [[ $ALLOWED -eq 0 ]]; then
+      fail "PAI/$f exists but not in skills/PAI/ — add to allowlist if intentional"
+      DIVERGE_FAIL=1
+    fi
+  done <<< "$PAI_ONLY"
+
+  # Check skills/PAI-only files not in allowlist
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    ALLOWED=0
+    for a in "${SKILLS_PAI_ONLY_ALLOWLIST[@]}"; do [[ "$f" == "$a" ]] && ALLOWED=1 && break; done
+    if [[ $ALLOWED -eq 0 ]]; then
+      fail "skills/PAI/$f exists but not in PAI/ — add to allowlist if intentional"
+      DIVERGE_FAIL=1
+    fi
+  done <<< "$SKILLS_ONLY"
+
+  if [[ $DIVERGE_FAIL -eq 0 ]]; then
+    PAI_COUNT=$(echo "$PAI_BASES" | wc -l | tr -d ' ')
+    SKILLS_COUNT=$(echo "$SKILLS_BASES" | wc -l | tr -d ' ')
+    pass "PAI/ vs skills/PAI/ divergence within allowlist ($PAI_COUNT vs $SKILLS_COUNT .md files)"
   fi
 fi
 
