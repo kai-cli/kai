@@ -15,6 +15,7 @@
 //   Updates: MEMORY/KNOWLEDGE/.harvest-state.json (mtime tracking)
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'fs';
+import { spawn } from 'child_process';
 import { join } from 'path';
 import { getPaiDir, paiPath } from './lib/paths';
 import { inference } from '../PAI/Tools/Inference';
@@ -33,7 +34,7 @@ interface HarvestState {
 
 const FULL_HARVEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-interface ChangedFile {
+export interface ChangedFile {
   project: string;
   filename: string;
   path: string;
@@ -162,7 +163,7 @@ function detectChanges(state: HarvestState): ChangedFile[] {
 // Domain identification
 // ============================================================================
 
-function identifyAffectedDomains(changedFiles: ChangedFile[]): Set<string> {
+export function identifyAffectedDomains(changedFiles: ChangedFile[]): Set<string> {
   const affected = new Set<string>();
   const domainKeywords = getDomainKeywords();
 
@@ -190,7 +191,7 @@ function identifyAffectedDomains(changedFiles: ChangedFile[]): Set<string> {
 // Extraction (lightweight - reuses KnowledgeHarvester logic)
 // ============================================================================
 
-function extractFacts(content: string, filename: string): string[] {
+export function extractFacts(content: string, filename: string): string[] {
   const facts: string[] = [];
   const lines = content.split('\n');
 
@@ -278,7 +279,6 @@ function countLines(filePath: string): number {
 }
 
 function spawnDetached(tool: string, args: string[] = []): void {
-  const { spawn } = require('child_process');
   const proc = spawn('bun', ['run', tool, ...args], {
     detached: true,
     stdio: 'ignore',
@@ -511,4 +511,4 @@ async function runFullHarvest(state: HarvestState): Promise<void> {
   console.error('[KnowledgeSync] Full harvest complete');
 }
 
-main();
+if (import.meta.main) { main(); }

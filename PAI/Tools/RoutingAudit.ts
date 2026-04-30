@@ -3,21 +3,25 @@
  * RoutingAudit.ts — Audit and sync CONTEXT_ROUTING.md
  *
  * Modes:
- *   audit  — Check all paths, report stale/missing (default)
- *   sync   — Discover new project memory dirs, add to routing table
- *   fix    — Remove dead paths + add discovered ones
+ *   audit    — Check all paths, report stale/missing (default)
+ *   sync     — Discover new project memory dirs, add to routing table
+ *   fix      — Remove dead paths + add discovered ones
+ *   propose  — Surface RoutingCandidates and generate copy-paste routing rows
  *
  * Usage:
- *   bun RoutingAudit.ts                # audit only
- *   bun RoutingAudit.ts sync           # audit + show proposed additions
- *   bun RoutingAudit.ts fix            # audit + apply fixes
- *   bun RoutingAudit.ts --json         # machine-readable output
+ *   bun RoutingAudit.ts                        # audit only
+ *   bun RoutingAudit.ts sync                   # audit + show proposed additions
+ *   bun RoutingAudit.ts fix                    # audit + apply fixes
+ *   bun RoutingAudit.ts propose                # generate routing rows from read-log
+ *   bun RoutingAudit.ts propose --threshold 3  # min sessions before proposing
+ *   bun RoutingAudit.ts --json                 # machine-readable output
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { homedir } from 'os';
-import { getPaiDir } from '../../hooks/lib/paths';
+import { getPaiDir, paiPath } from '../../hooks/lib/paths';
+import { inference } from './Inference';
 
 const HOME = homedir();
 const paiDir = getPaiDir();
@@ -206,4 +210,118 @@ function run() {
   }, null, 2));
 }
 
-run();
+// ── Propose mode ─────────────────────────────────────────────────────────────
+
+async function runPropose(threshold: number, jsonOutput: boolean): Promise<void> {
+  const LOG_FILE = paiPath('MEMORY', 'STATE', 'read-log.jsonl');
+
+  if (!existsSync(LOG_FILE)) {
+    console.log('No read-log.jsonl found — ReadTracker.hook.ts must run for a few sessions first.');
+    process.exit(0);
+  }
+
+  // Load and aggregate read log (same logic as RoutingCandidates.ts)
+  interface ReadEntry { timestamp: string; session_id: string; path: string; }
+  const entries: ReadEntry[] = readFileSync(LOG_FILE, 'utf-8')
+    .split('\n').filter(l => l.trim())
+    .flatMap(line => { try { return [JSON.parse(line) as ReadEntry]; } catch { return []; } });
+
+  const aggregated = new Map<string, Set<string>>();
+  for (const e of entries) {
+    if (!aggregated.has(e.path)) aggregated.set(e.path, new Set());
+    aggregated.get(e.path)!.add(e.session_id);
+  }
+
+  // Load existing routed paths
+  const routedPaths = new Set<string>();
+  if (existsSync(ROUTING_FILE)) {
+    const re = /`([^`]+)`/g;
+    let m;
+    while ((m = re.exec(readFileSync(ROUTING_FILE, 'utf-8'))) !== null) {
+      routedPaths.add(m[1]);
+    }
+  }
+
+  // Find candidates above threshold not already routed
+  const candidates = Array.from(aggregated.entries())
+    .filter(([path, sessions]) => {
+      if (sessions.size < threshold) return false;
+      if (routedPaths.has(path)) return false;
+      const bn = path.split('/').pop() ?? path;
+      return !Array.from(routedPaths).some(r => r.endsWith(bn));
+    })
+    .sort((a, b) => b[1].size - a[1].size);
+
+  if (candidates.length === 0) {
+    console.log(`No candidates above threshold (${threshold} sessions). Run more sessions or lower --threshold.`);
+    process.exit(0);
+  }
+
+  console.log(`\nGenerating routing proposals for ${candidates.length} candidate(s)...\n`);
+
+  const rows: Array<{ path: string; sessions: number; label: string; needsLabel: boolean }> = [];
+
+  for (const [path, sessions] of candidates) {
+    const fullPath = join(paiDir, path);
+    let label = '';
+    let needsLabel = false;
+
+    // Try inference (Haiku) for a 3-5 word topic label
+    if (existsSync(fullPath)) {
+      try {
+        const snippet = readFileSync(fullPath, 'utf-8').slice(0, 200);
+        const result = await inference({
+          systemPrompt: 'Generate a 3-5 word topic label for this file. Output ONLY the label, nothing else. Use title case.',
+          userPrompt: `File: ${path}\n\nContent preview:\n${snippet}`,
+          level: 'fast',
+          timeout: 10000,
+        });
+        if (result.success && result.output.trim()) {
+          label = result.output.trim().replace(/^["']|["']$/g, '');
+        } else {
+          needsLabel = true;
+        }
+      } catch {
+        needsLabel = true;
+      }
+    } else {
+      needsLabel = true;
+    }
+
+    // Offline fallback: derive from filename
+    if (!label) {
+      label = path.split('/').pop()?.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') ?? path;
+    }
+
+    rows.push({ path, sessions: sessions.size, label, needsLabel });
+  }
+
+  if (jsonOutput) {
+    console.log(JSON.stringify(rows, null, 2));
+    process.exit(0);
+  }
+
+  console.log('Copy-paste routing rows for PAI/CONTEXT_ROUTING.md:\n');
+  console.log('```');
+  for (const row of rows) {
+    const labelStr = row.needsLabel ? `${row.label} [needs-label]` : row.label;
+    console.log(`| ${labelStr.padEnd(40)} | \`${row.path}\` |`);
+  }
+  console.log('```');
+  console.log(`\n${rows.length} row(s) generated. Add to the appropriate section in PAI/CONTEXT_ROUTING.md.`);
+  if (rows.some(r => r.needsLabel)) {
+    console.log('Note: rows marked [needs-label] could not be auto-labeled — edit the topic label manually.');
+  }
+}
+
+const modeArg = process.argv[2];
+const thresholdArg = process.argv.find(a => a.startsWith('--threshold='))?.split('=')[1]
+  ?? process.argv[process.argv.indexOf('--threshold') + 1];
+const proposeThreshold = parseInt(thresholdArg ?? '3', 10) || 3;
+const jsonMode = process.argv.includes('--json');
+
+if (modeArg === 'propose') {
+  runPropose(proposeThreshold, jsonMode);
+} else {
+  run();
+}

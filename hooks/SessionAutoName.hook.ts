@@ -143,7 +143,7 @@ Output ONLY the 4-word title. Nothing else.`;
 
 // ── Lightweight mode classification (same logic as RatingCapture, zero-cost) ──
 const ALGO_ACTION_RE = /\b(implement|build|create|architect|design|migrate|deploy|refactor)\b/i;
-function isNativeMode(prompt: string): boolean {
+export function isNativeMode(prompt: string): boolean {
   return !ALGO_ACTION_RE.test(prompt.trim());
 }
 
@@ -189,7 +189,7 @@ const NOISE_WORDS = new Set([
  * Removes: UUIDs, hex IDs (7+ hex chars), task-notification XML tags and their content,
  * file paths, and other noise that produces garbage session names.
  */
-function sanitizePromptForNaming(prompt: string): string {
+export function sanitizePromptForNaming(prompt: string): string {
   return prompt
     // Remove entire system-reminder blocks INCLUDING content (not just tags)
     .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, ' ')
@@ -216,7 +216,7 @@ function sanitizePromptForNaming(prompt: string): string {
  * Produces a 4-word Topic Case name. If fewer than 4 meaningful words exist,
  * pads with generic context words to always hit exactly 4.
  */
-function extractFallbackName(prompt: string): string | null {
+export function extractFallbackName(prompt: string): string | null {
   const words = prompt
     .replace(/[^a-zA-Z\s]/g, ' ')
     .split(/\s+/)
@@ -518,7 +518,9 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((error) => {
-  console.error('[SessionAutoName] Fatal error:', error);
-  process.exit(0);
-});
+if (import.meta.main) {
+  main().catch((error) => {
+    console.error('[SessionAutoName] Fatal error:', error);
+    process.exit(0);
+  });
+}

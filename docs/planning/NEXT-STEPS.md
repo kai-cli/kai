@@ -22,11 +22,28 @@
 
 ---
 
-## v5.1.0 — Context Intelligence & Configuration
+## v5.2.0 — Foundation Completion + Routing Intelligence
+
+**Theme:** Close the gaps. Finish what the last two cycles deferred.
+**Target:** ~2 sessions (~15 hours)
+**Story:** v5.1.0 was consumed by cleanup. The routing intelligence and config-layer items from the original plan never shipped. v5.2.0 finishes them, adds test coverage to 11 high-value untested hooks, and refreshes the stale architecture docs.
+**Plan:** `docs/planning/v5.2.0-PLAN.md`
+
+### Summary of Phases
+- **H (Housekeeping):** Refresh 4 stale docs, convert 5 require() to ESM, investigate 3 unused lib files, add version consistency gate to verify-release.sh
+- **C (Config):** KnowledgeHarvester → config-loader, template files for PAI/USER/
+- **T (Tests):** 5 HIGH priority hook tests (LoadContext, SessionAutoName, SessionCleanup, WorkCompletionLearning, KnowledgeSync)
+- **R (Routing):** ReadTracker hook, RoutingCandidates CLI, RoutingAudit propose mode, BuildSettings dry-run
+- **I (Installer):** Upgrade messaging polish
+- **S (Design Spike):** Steering enforcement design doc for v5.3.0
+
+---
+
+## v5.1.0 — Context Intelligence & Configuration (CARRIED FORWARD → v5.2.0)
 
 **Theme:** KAI gets smarter about your codebase over time and easier to set up for new users.
-**Target:** ~1-2 weeks of development
-**Story:** Every session, KAI learns which files you reach for. After enough sessions, it suggests adding them to your routing table. New users get a cleaner install path.
+**Note:** Items 1-6 below were planned for v5.1.0 but never shipped — v5.1.0 was consumed by the cleanup/hardening work. All 6 items moved to v5.2.0 plan.
+**Status:** Superseded by v5.2.0-PLAN.md
 
 ### 1. Read-Tracking for Routing Candidates
 
@@ -126,7 +143,7 @@
 
 ---
 
-## v5.2.0 — Deliberate Research Mode
+## v5.3.0 — Deliberate Research Mode
 
 **Theme:** Multi-model web-grounded research as a first-class KAI capability.
 **Target:** ~2-3 weeks of development
@@ -180,7 +197,7 @@ deliberate.ts --mode research "query"
    - `skills/Deliberate/Workflows/ResearchMode.md` — Scatter-Verify-Synthesize workflow
    - `skills/Deliberate/Workflows/CrossValidation.md` — multi-model cross-validation patterns
 
-### v5.2.0 Completion Gate
+### v5.3.0 Completion Gate
 
 - [ ] All 6 items implemented
 - [ ] Works with ≥2 models when only 2 API keys are present (graceful degradation)

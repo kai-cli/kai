@@ -61,12 +61,13 @@ const WORK_DIR = paiPath('MEMORY', 'WORK');
 const LEARNING_DIR = paiPath('MEMORY', 'LEARNING');
 
 // Session-scoped state file lookup with legacy fallback
-function findStateFile(sessionId?: string): string | null {
+export function findStateFile(sessionId?: string, stateDir?: string): string | null {
+  const dir = stateDir ?? STATE_DIR;
   if (sessionId) {
-    const scoped = join(STATE_DIR, `current-work-${sessionId}.json`);
+    const scoped = join(dir, `current-work-${sessionId}.json`);
     if (existsSync(scoped)) return scoped;
   }
-  const legacy = join(STATE_DIR, 'current-work.json');
+  const legacy = join(dir, 'current-work.json');
   if (existsSync(legacy)) return legacy;
   return null;
 }
@@ -82,7 +83,7 @@ interface CurrentWork {
   task_count?: number;
 }
 
-interface WorkMeta {
+export interface WorkMeta {
   id: string;
   title: string;
   created_at: string;
@@ -97,7 +98,7 @@ interface WorkMeta {
   };
 }
 
-function parseYaml(content: string): WorkMeta {
+export function parseYaml(content: string): WorkMeta {
   // Simple YAML parser for our specific format
   const meta: any = {};
   const lines = content.split('\n');
@@ -370,4 +371,4 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) { main(); }

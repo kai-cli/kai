@@ -394,4 +394,4 @@ function runRetentionCleanup(): void {
   }
 }
 
-main();
+if (import.meta.main) { main(); }

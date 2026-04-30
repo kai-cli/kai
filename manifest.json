@@ -1,10 +1,10 @@
 {
   "version": "5.1.0",
-  "productName": "KAI",
+  "productName": "PAI",
   "algorithmVersion": "v3.13.0",
   "counts": {
     "skills": 79,
-    "hooks": 39,
+    "hooks": 40,
     "agents": 18
   },
   "hookInventory": [
@@ -27,6 +27,7 @@
     "PromptAnalysis.hook",
     "QuestionAnswered.hook",
     "RatingCapture.hook",
+    "ReadTracker.hook",
     "RelationshipMemory.hook",
     "SecretOutputDetector.hook",
     "SecretScanner.hook",

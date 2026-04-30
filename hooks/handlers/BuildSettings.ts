@@ -337,6 +337,57 @@ export function build(paiDir = DEFAULT_PAI_DIR): { rebuilt: boolean; errors: str
 // ── CLI entry point ────────────────────────────────────────────────────────
 
 if (import.meta.main) {
+  const isDryRun = process.argv.includes('--dry-run');
+
+  if (isDryRun) {
+    // Dry-run: show what would change without writing
+    const settingsPath = join(DEFAULT_PAI_DIR, 'settings.json');
+    let merged: Record<string, unknown>;
+    try {
+      merged = buildSettings();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`BuildSettings: failed to build settings: ${msg}`);
+      process.exit(1);
+    }
+    const { valid, errors } = validateConfig(merged);
+    if (!valid) {
+      console.error('BuildSettings: validation errors (dry-run):');
+      for (const e of errors) console.error(`  ✗ ${e}`);
+      process.exit(1);
+    }
+    const proposed = JSON.stringify(merged, null, 2) + '\n';
+    const existing = existsSync(settingsPath)
+      ? readFileSync(settingsPath, 'utf-8')
+      : null;
+    if (existing === proposed) {
+      console.log('BuildSettings: settings.json is already current — no changes');
+    } else if (!existing) {
+      console.log('BuildSettings: settings.json does not exist — would create it');
+    } else {
+      // Simple line-by-line diff
+      const existingLines = existing.split('\n');
+      const proposedLines = proposed.split('\n');
+      let changes = 0;
+      const maxLen = Math.max(existingLines.length, proposedLines.length);
+      for (let i = 0; i < maxLen; i++) {
+        const old = existingLines[i] ?? '';
+        const next = proposedLines[i] ?? '';
+        if (old !== next) {
+          if (changes === 0) console.log('BuildSettings: dry-run diff (first 20 changed lines):');
+          if (changes < 20) {
+            if (old) console.log(`  - ${old}`);
+            if (next) console.log(`  + ${next}`);
+          }
+          changes++;
+        }
+      }
+      if (changes > 20) console.log(`  ... and ${changes - 20} more changed lines`);
+      console.log(`\nBuildSettings: ${changes} line(s) would change — run without --dry-run to apply`);
+    }
+    process.exit(0);
+  }
+
   const result = build();
   if (result.errors.length > 0) {
     console.error('BuildSettings: validation errors:');

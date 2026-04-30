@@ -48,7 +48,7 @@ import { loadLearningDigest, loadWisdomFrames, loadFailurePatterns, loadSignalTr
 import { loadKnowledgeContext } from './lib/knowledge-readback';
 import { alreadyRanForSession, markRanForSession } from './lib/once-per-session';
 
-interface DynamicContextConfig {
+export interface DynamicContextConfig {
   relationshipContext?: boolean;
   learningReadback?: boolean;
   knowledgeInjection?: boolean;
@@ -60,7 +60,7 @@ interface LoadAtStartupConfig {
   files?: string[];
 }
 
-interface Settings {
+export interface Settings {
   dynamicContext?: DynamicContextConfig;
   loadAtStartup?: LoadAtStartupConfig;
   [key: string]: unknown;
@@ -70,7 +70,7 @@ interface Settings {
  * Check if a dynamic context section is enabled.
  * Defaults to true if not configured (backward compatible).
  */
-function isDynamicEnabled(settings: Settings, key: keyof DynamicContextConfig): boolean {
+export function isDynamicEnabled(settings: Settings, key: keyof DynamicContextConfig): boolean {
   if (!settings.dynamicContext) return true;
   const val = settings.dynamicContext[key];
   return val !== false;

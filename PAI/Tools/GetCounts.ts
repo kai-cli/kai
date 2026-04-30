@@ -33,7 +33,7 @@
  *   files_count=172
  */
 
-import { readdirSync, existsSync, statSync } from "fs";
+import { readdirSync, existsSync, statSync, readFileSync } from "fs";
 import { join } from "path";
 
 const HOME = process.env.HOME!;
@@ -144,8 +144,7 @@ function countHooks(): number {
 function countRatings(): number {
   const ratingsFile = join(PAI_DIR, "MEMORY/LEARNING/SIGNALS/ratings.jsonl");
   try {
-    const fs = require('fs');
-    const content = fs.readFileSync(ratingsFile, 'utf-8');
+    const content = readFileSync(ratingsFile, 'utf-8');
     return content.split('\n').filter((line: string) => line.trim()).length;
   } catch {
     return 0;

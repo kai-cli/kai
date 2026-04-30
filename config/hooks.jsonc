@@ -96,6 +96,11 @@
       {
         "matcher": "WebFetch",
         "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecretOutputDetector.hook.ts" }]
+      },
+      {
+        // Track PAI-internal file reads for routing candidate analysis (async — no stdout)
+        "matcher": "Read",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ReadTracker.hook.ts", "async": true }]
       }
     ],
 

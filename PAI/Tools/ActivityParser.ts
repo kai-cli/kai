@@ -15,6 +15,7 @@
 
 import { parseArgs } from "util";
 import * as fs from "fs";
+import { userInfo } from "os";
 import * as path from "path";
 import { getPaiDir, paiPath } from "../../hooks/lib/paths";
 
@@ -24,7 +25,7 @@ import { getPaiDir, paiPath } from "../../hooks/lib/paths";
 
 const CLAUDE_DIR = getPaiDir();
 const MEMORY_DIR = paiPath("MEMORY");
-const USERNAME = process.env.USER || require("os").userInfo().username;
+const USERNAME = process.env.USER || userInfo().username;
 const PROJECTS_DIR = paiPath("projects", `-Users-${USERNAME}--claude`);  // Claude Code native storage
 const SYSTEM_UPDATES_DIR = paiPath("MEMORY", "PAISYSTEMUPDATES");  // Canonical system change history
 

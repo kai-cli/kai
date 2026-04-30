@@ -36,7 +36,7 @@ These directories share ~19 common docs but have intentionally different content
 ## Core Subsystems
 
 ### The Algorithm (`PAI/Algorithm/`)
-The 7-phase execution engine: Observe, Think, Plan, Build, Execute, Verify, Learn. Transitions from CURRENT STATE to IDEAL STATE via verifiable criteria (ISC). Current version: v3.12.0.
+The 7-phase execution engine: Observe, Think, Plan, Build, Execute, Verify, Learn. Transitions from CURRENT STATE to IDEAL STATE via verifiable criteria (ISC). Current version: v3.13.0.
 
 ### Skills (`SKILLSYSTEM.md`)
 12 hierarchical categories with 49 total skills in `~/.claude/skills/`, each with a `SKILL.md` defining triggers, workflows, and tools. Skills are the primary capability unit.

@@ -18,7 +18,7 @@
  *   pai curate restore <file>     Restore archived file
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync, renameSync, appendFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync, renameSync, appendFileSync, unlinkSync } from 'fs';
 import { join, dirname, basename } from 'path';
 import { createInterface } from 'readline';
 import { getPaiDir, paiPath } from '../../hooks/lib/paths';
@@ -343,7 +343,6 @@ ${draft.content}
     // Remove from staging
     const stagingPath = join(paiDir, 'MEMORY', 'STAGING', draft.filename);
     if (existsSync(stagingPath)) {
-      const { unlinkSync } = require('fs');
       unlinkSync(stagingPath);
     }
 
