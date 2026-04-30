@@ -17,7 +17,7 @@
  *
  * ACTIONS:
  *   1. Create .claude/ dir in worktree (if missing)
- *   2. Write .claude/CLAUDE.md with PAI context pointer
+ *   2. Write .claude/CLAUDE.md with KAI context pointer
  *   3. Copy current-work.json into .claude/ (active task context)
  *   4. Log worktree creation to MEMORY/STATE/worktree-log.jsonl
  *
@@ -43,7 +43,7 @@ const PAI_DIR = process.env.PAI_DIR || join(homedir(), '.claude');
 
 const PAI_CLAUDE_MD = `# PAI Worktree Context
 
-This is a sandboxed worktree created by the PAI agent isolation system.
+This is a sandboxed worktree created by the KAI agent isolation system.
 
 ## PAI System Access
 - Skills and hooks: \`${PAI_DIR}/skills/PAI/\`

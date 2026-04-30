@@ -249,9 +249,9 @@ Usage:
   bun LoadSkillConfig.ts --check <skill-name>      Check if skill has customizations
 
 Examples:
-  bun LoadSkillConfig.ts ~/.claude/skills/PAIUpgrade sources.json
+  bun LoadSkillConfig.ts ~/.claude/skills/KAIUpgrade sources.json
   bun LoadSkillConfig.ts --list
-  bun LoadSkillConfig.ts --check PAIUpgrade
+  bun LoadSkillConfig.ts --check KAIUpgrade
 `);
     process.exit(0);
   }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This workflow executes the core PAIUpgrade pattern:
+This workflow executes the core KAIUpgrade pattern:
 
 1. **Thread 1:** Analyze user context (TELOS, projects, recent work, PAI state)
 2. **Thread 2:** Collect updates from sources (Anthropic, YouTube, custom)
@@ -160,7 +160,7 @@ If a video has no extractable techniques, mark it as 'skipped: no techniques fou
 Agent 3 - Custom Sources:
 "Check for any custom sources defined by the user:
 
-1. Look in ~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/PAIUpgrade/
+1. Look in ~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/KAIUpgrade/
 2. Check for additional source definitions beyond YouTube and GitHub trending
 3. If sources exist, check them for updates
 
@@ -171,7 +171,7 @@ Agent 4 - GitHub Trending Projects:
 "Discover trending GitHub projects relevant to PAI for inspiration.
 
 1. Load the github_trending config from user-sources.json:
-   Read ~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/PAIUpgrade/user-sources.json
+   Read ~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/KAIUpgrade/user-sources.json
    Parse the 'github_trending' section.
 
 2. If github_trending.enabled is false or missing, return:
@@ -350,7 +350,7 @@ Generate the final report following SKILL.md's "Primary Output Format". The repo
 3. **🎯 Technique Details** — Full extracted techniques with code examples as reference.
 
 ```markdown
-# PAI Upgrade Report
+# KAI Upgrade Report
 **Generated:** [timestamp]
 **Sources Processed:** [N] release notes parsed | [N] videos checked | [N] docs analyzed
 **Findings:** [N] techniques extracted | [N] content items skipped
@@ -555,7 +555,7 @@ User: "check for upgrades"
 
 [Agents run in parallel...]
 
-# PAI Upgrade Report
+# KAI Upgrade Report
 **Generated:** 2026-01-15 19:45:00 PST
 **Sources Processed:** 20 release notes parsed | 5 videos checked | 30 docs analyzed
 **Findings:** 3 techniques extracted | 4 content items skipped
@@ -664,4 +664,4 @@ echo "Session: ${CLAUDE_SESSION_ID}"
 
 ---
 
-**This workflow implements the core PAIUpgrade value proposition: understanding YOU first, discovering what's new second, then connecting them into actionable, personalized upgrades.**
+**This workflow implements the core KAIUpgrade value proposition: understanding YOU first, discovering what's new second, then connecting them into actionable, personalized upgrades.**

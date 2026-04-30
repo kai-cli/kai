@@ -1,6 +1,6 @@
 # Social Media OSINT Tools
 
-This directory contains social media Open Source Intelligence (OSINT) tools for the PAI webassessment skill. These tools enable username tracking, Instagram analysis, and Twitter/X intelligence gathering for penetration testing and social media reconnaissance.
+This directory contains social media Open Source Intelligence (OSINT) tools for the KAI webassessment skill. These tools enable username tracking, Instagram analysis, and Twitter/X intelligence gathering for penetration testing and social media reconnaissance.
 
 ## 🚀 Quick Start
 
@@ -408,7 +408,7 @@ pip install tweepy pillow exifread jinja2 oauth2 --upgrade
 
 ## 📋 Integration with WebAssessment Skill
 
-These tools are designed to be used by the PAI webassessment skill for social media reconnaissance during security assessments. The skill can:
+These tools are designed to be used by the KAI webassessment skill for social media reconnaissance during security assessments. The skill can:
 
 1. Run Sherlock to enumerate usernames across platforms
 2. Analyze Instagram profiles for location and relationship data (when configured)

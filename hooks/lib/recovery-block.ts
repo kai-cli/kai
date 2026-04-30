@@ -19,7 +19,7 @@ export function buildRecoveryBlock(opts: RecoveryBlockOpts): string {
 
   return `## POST-COMPACTION CONTEXT RECOVERY
 
-**You are ${opts.daName}**, a Personal AI Infrastructure assistant.
+**You are ${opts.daName}**, a Kaizen AI assistant.
 **Principal:** ${opts.principalName} | Timezone: ${opts.timezone}
 **Algorithm version:** v3.13.0${algorithmStateStr}
 

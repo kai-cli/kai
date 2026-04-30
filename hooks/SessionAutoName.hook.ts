@@ -255,7 +255,7 @@ export function extractFallbackName(prompt: string): string | null {
  */
 function getCustomTitle(sessionId: string): string | null {
   try {
-    // Search both lowercase (Claude Code native) and uppercase (PAI) project dirs
+    // Search both lowercase (Claude Code native) and uppercase (KAI) project dirs
     const searchDirs = [
       paiPath('projects'),  // Claude Code native (lowercase) — primary
       paiPath('Projects'),  // PAI uppercase — fallback

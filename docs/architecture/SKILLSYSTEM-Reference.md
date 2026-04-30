@@ -6,7 +6,7 @@
 
 ## THIS IS THE AUTHORITATIVE SOURCE
 
-This document defines the **required structure** for every skill in the PAI system.
+This document defines the **required structure** for every skill in the KAI system.
 
 **ALL skill creation MUST follow this structure** - including skills created by the CreateSkill skill.
 
@@ -441,7 +441,7 @@ Use dynamic loading for skills with:
 
 Don't bother for:
 - ❌ Simple skills (< 50 lines total)
-- ❌ Pure utility wrappers (use PAI/TOOLS.md instead)
+- ❌ Pure utility wrappers (use KAI/TOOLS.md instead)
 - ❌ Skills that are already minimal
 
 ---

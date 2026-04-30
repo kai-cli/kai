@@ -147,7 +147,7 @@ async function main(): Promise<void> {
   const patternList = matches.map(m => `  - ${m}`).join('\n');
   console.log(JSON.stringify({
     decision: 'ask',
-    message: `[PAI SECURITY] Potential credentials detected in your prompt:\n${patternList}\n\nSecrets in prompts are stored in session transcripts and sent to the API. Consider using environment variables or file references instead.\n\nProceed anyway?`
+    message: `[KAI SECURITY] Potential credentials detected in your prompt:\n${patternList}\n\nSecrets in prompts are stored in session transcripts and sent to the API. Consider using environment variables or file references instead.\n\nProceed anyway?`
   }));
 }
 

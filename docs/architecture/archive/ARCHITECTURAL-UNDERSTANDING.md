@@ -1,7 +1,7 @@
 # PAI — Architectural Index & Improvement Plan
 > v4.4.1-dev | Created 2026-03-10 | Branch: v4.4.1-dev
 >
-> This document is the **single source of architectural truth** for the PAI project. It covers what the system is, how it works, where the design flaws are, and what to do about them. Reference this before making architectural decisions.
+> This document is the **single source of architectural truth** for the KAI project. It covers what the system is, how it works, where the design flaws are, and what to do about them. Reference this before making architectural decisions.
 
 ---
 
@@ -19,9 +19,9 @@
 
 ## 1. What Is PAI?
 
-**PAI (Personal AI Infrastructure)** is a structured personal digital assistant built natively on top of Claude Code. It wraps every Claude session with a lifecycle hook system, enforces a 7-phase algorithmic problem-solving methodology, and maintains persistent memory across sessions.
+**KAI (Kaizen AI Infrastructure)** is a structured personal digital assistant built natively on top of Claude Code. It wraps every Claude session with a lifecycle hook system, enforces a 7-phase algorithmic problem-solving methodology, and maintains persistent memory across sessions.
 
-The central idea: **Claude is not the DA — PAI is.** Claude is the inference engine. PAI is the system that makes Claude behave like an intelligent, opinionated, memorious assistant with personality, security policies, and structured output.
+The central idea: **Claude is not the DA — PAI is.** Claude is the inference engine. KAI is the system that makes Claude behave like an intelligent, opinionated, memorious assistant with personality, security policies, and structured output.
 
 ### The Three Pillars
 

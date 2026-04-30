@@ -24,6 +24,6 @@
 
 ## Conventions
 
-- Files are versioned by the PAI version they describe (e.g., `ARCHITECTURE-REVIEW-v4.4.1.md`)
+- Files are versioned by the KAI version they describe (e.g., `ARCHITECTURE-REVIEW-v4.4.1.md`)
 - IMPROVEMENT-INDEX.md uses priority levels: P0 (runtime bugs), P1 (critical), P2 (high), P3 (medium), P4 (low), P5 (repo-level)
 - Status markers: ✅ FIXED, ⏳ DEFERRED, 📦 NEEDS DECISION, 🔴 OPEN

@@ -14,7 +14,7 @@ Unified skill for developer utility and tooling workflows.
 | Create CLI, build CLI, command-line tool, wrap API, TypeScript CLI, add command, upgrade tier | `CreateCLI/SKILL.md` |
 | Create skill, new skill, scaffold skill, skill template, canonicalize, validate skill, update skill, fix skill structure | `CreateSkill/SKILL.md` |
 | Parallel execution, agent teams, delegate, 3+ workstreams, agent specialization, swarm | `Delegation/SKILL.md` |
-| Upgrade, improve system, check Anthropic, system upgrade, analyze for improvements, new Claude features, algorithm upgrade, mine reflections, find sources, research upgrade, PAI upgrade | `PAIUpgrade/SKILL.md` |
+| Upgrade, improve system, check Anthropic, system upgrade, analyze for improvements, new Claude features, algorithm upgrade, mine reflections, find sources, research upgrade, PAI upgrade | `KAIUpgrade/SKILL.md` |
 | Eval, evaluate, test agent, benchmark, verify behavior, regression test, capability test, run eval, compare models, compare prompts, create judge, view results | `Evals/SKILL.md` |
 | Document, process file, create document, convert format, extract text, PDF, DOCX, XLSX, PPTX, Word, Excel, spreadsheet, PowerPoint, slides, consulting report, large PDF, merge PDF, fill form, tracked changes, redlining | `Documents/SKILL.md` |
 | Parse, extract, URL, transcript, entities, JSON, batch, YouTube, PDF content, article, newsletter, Twitter, browser extension, collision detection, detect content type, extract article, extract YouTube, parse content | `Parser/SKILL.md` |
