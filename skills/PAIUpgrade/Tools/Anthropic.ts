@@ -79,7 +79,7 @@ interface State {
 
 // Config
 const HOME = homedir();
-const SKILL_DIR = join(HOME, '.claude', 'skills', 'PAIUpgrade');
+const SKILL_DIR = join(HOME, '.claude', 'skills', 'KAIUpgrade');
 const STATE_DIR = join(SKILL_DIR, 'State');
 const STATE_FILE = join(STATE_DIR, 'last-check.json');
 const SOURCES_FILE = join(SKILL_DIR, 'sources.json');
@@ -378,39 +378,39 @@ function generateRecommendation(update: Update): string {
   const { source, type, title, category } = update;
   const titleLower = title.toLowerCase();
 
-  // SKILLS - Critical for PAI's skill system
+  // SKILLS - Critical for KAI's skill system
   if (titleLower.includes('skill') || titleLower.includes('skills')) {
     return `**PAI Impact:** CRITICAL for skills ecosystem\n` +
-      `**Why:** PAI's entire infrastructure is built on skills - any changes to skill patterns, specifications, or examples directly affect how we build and organize PAI's capabilities.\n` +
-      `**Action:** Review immediately and update PAI's skill templates/patterns if new conventions emerge. Check if new skill categories or capabilities can be adopted.`;
+      `**Why:** KAI's entire infrastructure is built on skills - any changes to skill patterns, specifications, or examples directly affect how we build and organize KAI's capabilities.\n` +
+      `**Action:** Review immediately and update KAI's skill templates/patterns if new conventions emerge. Check if new skill categories or capabilities can be adopted.`;
   }
 
   // MCP - Core infrastructure
   if (titleLower.includes('mcp') || source.toLowerCase().includes('mcp')) {
     return `**PAI Impact:** HIGH - MCP infrastructure enhancement\n` +
       `**Why:** PAI uses MCP servers for chrome-devtools, brightdata, Ref docs, content access, and Stripe. Changes to MCP spec/docs affect our integrations.\n` +
-      `**Action:** Assess compatibility with existing MCP servers in .mcp.json. Look for new MCP capabilities to expand PAI's tooling.`;
+      `**Action:** Assess compatibility with existing MCP servers in .mcp.json. Look for new MCP capabilities to expand KAI's tooling.`;
   }
 
   // Commands/Slash Commands
   if (titleLower.includes('command') || titleLower.includes('slash command')) {
     return `**PAI Impact:** HIGH - Command system update\n` +
       `**Why:** PAI uses slash commands extensively (~/.claude/Commands/). Changes affect our command architecture and user workflows.\n` +
-      `**Action:** Review for new command patterns or capabilities. Update PAI's command templates if conventions change.`;
+      `**Action:** Review for new command patterns or capabilities. Update KAI's command templates if conventions change.`;
   }
 
   // Agents/Hooks
   if (titleLower.includes('agent') || titleLower.includes('hook')) {
     return `**PAI Impact:** HIGH - Agent/Hook system change\n` +
       `**Why:** PAI uses agents (researcher, engineer, architect, etc.) and hooks (load-context, stop-hook) as core infrastructure components.\n` +
-      `**Action:** Check if this affects PAI's agent definitions or hook configurations. Test existing agent workflows.`;
+      `**Action:** Check if this affects KAI's agent definitions or hook configurations. Test existing agent workflows.`;
   }
 
   // Claude Code releases
   if (type === 'release' && source.includes('claude-code')) {
     return `**PAI Impact:** CRITICAL - Core platform update\n` +
       `**Why:** PAI runs on Claude Code - releases may include new features, breaking changes, or performance improvements.\n` +
-      `**Action:** Review changelog carefully. Test PAI's critical workflows. Update skills/commands if APIs changed.`;
+      `**Action:** Review changelog carefully. Test KAI's critical workflows. Update skills/commands if APIs changed.`;
   }
 
   // MCP releases
@@ -423,14 +423,14 @@ function generateRecommendation(update: Update): string {
   // Plugin/Marketplace
   if (titleLower.includes('plugin') || titleLower.includes('marketplace')) {
     return `**PAI Impact:** MEDIUM - Ecosystem expansion\n` +
-      `**Why:** Plugin/marketplace features could provide new capabilities to integrate into PAI's toolkit.\n` +
+      `**Why:** Plugin/marketplace features could provide new capabilities to integrate into KAI's toolkit.\n` +
       `**Action:** Explore available plugins. Assess if any solve current PAI limitations or add valuable features.`;
   }
 
   // Cookbooks/Quickstarts/Courses - Implementation patterns
   if (source.includes('cookbook') || source.includes('quickstart') || source.includes('courses')) {
     return `**PAI Impact:** MEDIUM - Implementation patterns\n` +
-      `**Why:** Cookbooks/examples show best practices and patterns we can adopt in PAI's codebase.\n` +
+      `**Why:** Cookbooks/examples show best practices and patterns we can adopt in KAI's codebase.\n` +
       `**Action:** Review for reusable patterns, especially around skills, agents, or Claude Code features. Extract learnings for PAI.`;
   }
 
@@ -452,7 +452,7 @@ function generateRecommendation(update: Update): string {
   if (source.includes('sdk')) {
     return `**PAI Impact:** LOW - SDK update\n` +
       `**Why:** SDK updates are less relevant since PAI uses Claude Code CLI, not raw API SDKs.\n` +
-      `**Action:** Note for reference. Only investigate if mentions features relevant to PAI's agent implementations.`;
+      `**Action:** Note for reference. Only investigate if mentions features relevant to KAI's agent implementations.`;
   }
 
   // Blog posts
@@ -465,7 +465,7 @@ function generateRecommendation(update: Update): string {
   // Generic
   return `**PAI Impact:** LOW - General awareness\n` +
     `**Why:** May have indirect relevance to PAI ecosystem.\n` +
-    `**Action:** Review if time permits. Low impact on PAI's core functionality.`;
+    `**Action:** Review if time permits. Low impact on KAI's core functionality.`;
 }
 
 function assessRelevance(update: Update): 'HIGH' | 'MEDIUM' | 'LOW' {
@@ -514,7 +514,7 @@ function generateNarrative(updates: Update[]): string {
   narrative += `Found **${updates.length} updates** across the Anthropic ecosystem in the monitored period. `;
 
   if (high.length > 0) {
-    narrative += `**${high.length} are HIGH priority** for PAI's infrastructure, `;
+    narrative += `**${high.length} are HIGH priority** for KAI's infrastructure, `;
   }
   if (medium.length > 0) {
     narrative += `${medium.length} are MEDIUM priority, `;
@@ -556,8 +556,8 @@ function generateNarrative(updates: Update[]): string {
     const highSkills = skillUpdates.filter(u => u.priority === 'HIGH').length;
     if (highSkills > 0) {
       narrative += `**🔥 CRITICAL: Skills System Activity**\n`;
-      narrative += `There are **${highSkills} HIGH-priority skill updates** - this is BIG because PAI's entire architecture is built on the skills system. `;
-      narrative += `Any changes to skill patterns, specifications, or conventions could require updates to PAI's ${countSkills()} existing skills. `;
+      narrative += `There are **${highSkills} HIGH-priority skill updates** - this is BIG because KAI's entire architecture is built on the skills system. `;
+      narrative += `Any changes to skill patterns, specifications, or conventions could require updates to KAI's ${countSkills()} existing skills. `;
 
       const skillsRepo = skillUpdates.some(u => u.source === 'skills');
       if (skillsRepo) {
@@ -569,7 +569,7 @@ function generateNarrative(updates: Update[]): string {
         narrative += `Skills documentation has also been updated - check for new patterns or best practices. `;
       }
 
-      narrative += `\n\n**→ Priority Action:** Review all skill updates immediately. Update PAI's skill templates if conventions changed.\n\n`;
+      narrative += `\n\n**→ Priority Action:** Review all skill updates immediately. Update KAI's skill templates if conventions changed.\n\n`;
     } else {
       narrative += `Skills system has **${skillUpdates.length} updates** but lower priority - likely documentation or minor improvements.\n\n`;
     }
@@ -588,7 +588,7 @@ function generateNarrative(updates: Update[]): string {
         narrative += `There's a new MCP release (${mcpRelease.title}) - check for new capabilities or breaking changes. `;
       }
 
-      narrative += `\n\n**→ Priority Action:** Test existing MCP servers. Look for new MCP features to expand PAI's toolkit.\n\n`;
+      narrative += `\n\n**→ Priority Action:** Test existing MCP servers. Look for new MCP features to expand KAI's toolkit.\n\n`;
     } else {
       narrative += `MCP has **${mcpUpdates.length} updates** - mostly documentation or minor improvements. Still worth monitoring.\n\n`;
     }
@@ -606,7 +606,7 @@ function generateNarrative(updates: Update[]): string {
         narrative += `New release detected: ${codeRelease.title}. This could include new features, bug fixes, or breaking changes. `;
       }
 
-      narrative += `\n\n**→ Priority Action:** Review changelog. Test PAI's core workflows after updating.\n\n`;
+      narrative += `\n\n**→ Priority Action:** Review changelog. Test KAI's core workflows after updating.\n\n`;
     } else {
       narrative += `Claude Code has **${codeUpdates.length} updates** but lower priority. Likely maintenance commits.\n\n`;
     }
@@ -675,7 +675,7 @@ function generateNarrative(updates: Update[]): string {
 
 function countSkills(): number {
   // Simple estimate - could be enhanced to actually count skills
-  return 20; // Approximate based on PAI's current skill set
+  return 20; // Approximate based on KAI's current skill set
 }
 
 // Main execution

@@ -1,23 +1,23 @@
 ---
-name: PAIUpgrade
+name: KAIUpgrade
 description: Extract system improvements from content AND monitor external sources (Anthropic ecosystem, YouTube). USE WHEN upgrade, improve system, system upgrade, analyze for improvements, check Anthropic, Anthropic changes, new Claude features, check YouTube, new videos, algorithm upgrade, mine reflections, find sources, research upgrade, PAI upgrade.
 ---
 
 ## Customization
 
 **Before executing, check for user customizations at:**
-`~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/PAIUpgrade/`
+`~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/KAIUpgrade/`
 
 If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
 
 2. **Output text notification**:
    ```
-   Running the **WorkflowName** workflow in the **PAIUpgrade** skill to ACTION...
+   Running the **WorkflowName** workflow in the **KAIUpgrade** skill to ACTION...
    ```
 
 **This is not optional. Execute this curl command immediately upon skill invocation.**
 
-# PAIUpgrade Skill
+# KAIUpgrade Skill
 
 **Primary Purpose:** Generate prioritized upgrade recommendations for the user's existing PAI setup by understanding their context and discovering what's new in the ecosystem.
 
@@ -67,7 +67,7 @@ The output has THREE major sections:
 3. **Technique Details** — Full extraction with code examples and implementation steps
 
 ```markdown
-# PAI Upgrade Report
+# KAI Upgrade Report
 **Generated:** [timestamp]
 **Sources Processed:** [N] release notes parsed | [N] videos checked | [N] docs analyzed | [N] GitHub queries run
 **Findings:** [N] techniques extracted | [N] content items skipped
@@ -294,7 +294,7 @@ Launch **parallel agents** to check:
 |-------|-------|---------|
 | **Anthropic Agent** | Official Anthropic updates | `Tools/Anthropic.ts` (30+ sources) |
 | **YouTube Agent** | Configured channels for new videos | USER customization channels |
-| **Custom Source Agent** | Any USER-defined additional sources | USER/SKILLCUSTOMIZATIONS/PAIUpgrade/ |
+| **Custom Source Agent** | Any USER-defined additional sources | USER/SKILLCUSTOMIZATIONS/KAIUpgrade/ |
 | **GitHub Trending Agent** | Trending projects for PAI inspiration | `gh api search/repositories` via user-sources.json queries |
 
 **Output:** A collection of discoveries:
@@ -349,7 +349,7 @@ From PROJECTS and recent work, identify:
 ## Thread 2: Source Collection (3 parallel agents)
 
 ### Agent 1: Anthropic Sources
-Run: bun ~/.claude/skills/Utilities/PAIUpgrade/Tools/Anthropic.ts
+Run: bun ~/.claude/skills/Utilities/KAIUpgrade/Tools/Anthropic.ts
 Check all 30+ official sources for updates
 
 ### Agent 2: YouTube Channels
@@ -393,7 +393,7 @@ Generate the prioritized recommendations report (see format above).
 - `State/youtube-videos.json` - YouTube state
 - `State/github-trending.json` - GitHub trending state (seen repos)
 
-**User Customizations** (`~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/PAIUpgrade/`):
+**User Customizations** (`~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/KAIUpgrade/`):
 - `EXTEND.yaml` - Extension manifest
 - `youtube-channels.json` - User's personal YouTube channels
 - Additional source definitions

@@ -5,5 +5,5 @@
 -->
 ---
 name: PAI
-description: Personal AI Infrastructure core. The authoritative reference for how PAI works.
+description: Kaizen AI core. The authoritative reference for how PAI works.
 ---

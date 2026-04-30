@@ -233,7 +233,7 @@ export default class Hello extends Command {
 - ❌ Steep learning curve
 - ❌ Complex setup
 - ❌ Overkill for 99% of CLIs
-- ❌ Not aligned with PAI's minimal approach
+- ❌ Not aligned with KAI's minimal approach
 
 ### When to Reference (RARE)
 - Enterprise plugin systems (Heroku CLI scale)

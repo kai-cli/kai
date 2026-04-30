@@ -1,4 +1,4 @@
-# PAI v4.4.0 — Improvement Index
+# KAI v.4.0 — Improvement Index
 
 > Master index of all cleanup, streamlining, and architectural improvements identified during the full system review. Created 2026-03-11.
 >

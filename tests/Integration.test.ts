@@ -1,5 +1,5 @@
 /**
- * Integration Tests — PAI v4.3.0
+ * Integration Tests — KAI v.3.0
  *
  * These tests simulate real Claude Code session behavior: hook firing,
  * payload routing, state file outcomes, concurrent execution, and the

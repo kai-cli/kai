@@ -32,7 +32,7 @@ import { tmpdir } from 'os';
 
 // ── Test fixture helpers ──────────────────────────────────────────────────
 
-function makeTmpDir(prefix = 'pai-upgrade-test'): string {
+function makeTmpDir(prefix = 'kai-upgrade-test'): string {
   const dir = join(tmpdir(), `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(dir, { recursive: true });
   return dir;

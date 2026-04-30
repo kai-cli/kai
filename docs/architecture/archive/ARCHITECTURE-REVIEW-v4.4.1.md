@@ -1,6 +1,6 @@
-# PAI v4.4.1 — Architecture Review
+# KAI v.4.1 — Architecture Review
 
-> Holistic review of the PAI system after v4.4.0→v4.4.1-dev cleanup. Covers what the system does, what we changed, what's broken, design flaws, and improvement paths.
+> Holistic review of the KAI system after v4.4.0→v4.4.1-dev cleanup. Covers what the system does, what we changed, what's broken, design flaws, and improvement paths.
 >
 > **Date:** 2026-03-11
 > **Branch:** v4.4.1-dev
@@ -11,7 +11,7 @@
 
 ## 1. What PAI Is
 
-PAI (Personal AI Infrastructure) is a Claude Code customization framework. It wraps Claude Code with:
+KAI (Kaizen AI Infrastructure) is a Claude Code customization framework. It wraps Claude Code with:
 
 1. **Identity system** — A named Digital Assistant (DA) with personality traits, stored in `config/identity.jsonc`
 2. **Hook system** — 23 TypeScript scripts triggered on Claude Code lifecycle events (SessionStart, Stop, UserPromptSubmit, PreToolUse, etc.)

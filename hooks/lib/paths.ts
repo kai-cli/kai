@@ -26,7 +26,7 @@ export function expandPath(path: string): string {
 }
 
 /**
- * Get the PAI directory (expanded)
+ * Get the KAI directory (expanded)
  * Priority: PAI_DIR env var (expanded) → ~/.claude
  */
 export function getPaiDir(): string {

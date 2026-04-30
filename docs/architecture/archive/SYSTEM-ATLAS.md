@@ -1,6 +1,6 @@
-# PAI v4.4.0 — System Atlas
+# KAI v.4.0 — System Atlas
 
-> Complete structural map of the PAI system. Use this as the canonical reference for what exists, where it lives, and how it connects.
+> Complete structural map of the KAI system. Use this as the canonical reference for what exists, where it lives, and how it connects.
 
 ---
 

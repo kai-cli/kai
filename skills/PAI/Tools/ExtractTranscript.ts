@@ -4,7 +4,7 @@
  * ExtractTranscript.ts
  *
  * CLI tool for extracting transcripts from audio/video files using OpenAI Whisper API
- * Part of PAI's extracttranscript skill
+ * Part of KAI's extracttranscript skill
  *
  * Usage:
  *   bun ExtractTranscript.ts <file-or-folder> [options]

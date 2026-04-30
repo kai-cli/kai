@@ -418,7 +418,7 @@ function handleBash(input: HookInput): void {
         reason: result.reason,
         action_taken: 'Hard block - exit 2'
       });
-      console.error(`[PAI SECURITY] 🚨 BLOCKED: ${result.reason}`);
+      console.error(`[KAI SECURITY] 🚨 BLOCKED: ${result.reason}`);
       console.error(`Command: ${command.slice(0, 100)}`);
       process.exit(2);
       break;
@@ -436,7 +436,7 @@ function handleBash(input: HookInput): void {
       });
       console.log(JSON.stringify({
         decision: 'ask',
-        message: `[PAI SECURITY] ⚠️ ${result.reason}\n\nCommand: ${command.slice(0, 200)}\n\nProceed?`
+        message: `[KAI SECURITY] ⚠️ ${result.reason}\n\nCommand: ${command.slice(0, 200)}\n\nProceed?`
       }));
       break;
 
@@ -451,7 +451,7 @@ function handleBash(input: HookInput): void {
         reason: result.reason,
         action_taken: 'Logged alert, allowed execution'
       });
-      console.error(`[PAI SECURITY] ⚠️ ALERT: ${result.reason}`);
+      console.error(`[KAI SECURITY] ⚠️ ALERT: ${result.reason}`);
       console.error(`Command: ${command.slice(0, 100)}`);
       console.log(JSON.stringify({ continue: true }));
       break;
@@ -485,7 +485,7 @@ function handleFileWrite(input: HookInput, toolName: string): void {
         reason: result.reason,
         action_taken: 'Hard block - exit 2'
       });
-      console.error(`[PAI SECURITY] 🚨 BLOCKED: ${result.reason}`);
+      console.error(`[KAI SECURITY] 🚨 BLOCKED: ${result.reason}`);
       console.error(`Path: ${filePath}`);
       process.exit(2);
       break;
@@ -503,7 +503,7 @@ function handleFileWrite(input: HookInput, toolName: string): void {
       });
       console.log(JSON.stringify({
         decision: 'ask',
-        message: `[PAI SECURITY] ⚠️ ${result.reason}\n\nPath: ${filePath}\n\nProceed?`
+        message: `[KAI SECURITY] ⚠️ ${result.reason}\n\nPath: ${filePath}\n\nProceed?`
       }));
       break;
 
@@ -536,7 +536,7 @@ function handleRead(input: HookInput): void {
         reason: result.reason,
         action_taken: 'Hard block - exit 2'
       });
-      console.error(`[PAI SECURITY] 🚨 BLOCKED: ${result.reason}`);
+      console.error(`[KAI SECURITY] 🚨 BLOCKED: ${result.reason}`);
       console.error(`Path: ${filePath}`);
       process.exit(2);
       break;
@@ -573,7 +573,7 @@ function handleGlob(input: HookInput): void {
       reason: result.reason,
       action_taken: 'Hard block - exit 2'
     });
-    console.error(`[PAI SECURITY] BLOCKED: Glob search in protected path: ${result.reason}`);
+    console.error(`[KAI SECURITY] BLOCKED: Glob search in protected path: ${result.reason}`);
     process.exit(2);
   }
 
@@ -603,7 +603,7 @@ function handleGrep(input: HookInput): void {
       reason: result.reason,
       action_taken: 'Hard block - exit 2'
     });
-    console.error(`[PAI SECURITY] BLOCKED: Grep search in protected path: ${result.reason}`);
+    console.error(`[KAI SECURITY] BLOCKED: Grep search in protected path: ${result.reason}`);
     process.exit(2);
   }
 

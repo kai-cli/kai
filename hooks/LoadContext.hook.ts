@@ -2,7 +2,7 @@
 /**
  * LoadContext.hook.ts - Inject PAI dynamic context into Claude's Context (SessionStart)
  *
- * PAI v4.0: Core context (identity, rules, format) is now in CLAUDE.md and loaded
+ * KAI v.0: Core context (identity, rules, format) is now in CLAUDE.md and loaded
  * natively by Claude Code. This hook injects DYNAMIC context only:
  * - Relationship context (recent opinions + notes)
  * - Learning readback (signals, wisdom, failure patterns)
@@ -659,7 +659,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
       console.log(message);
       ttyLog('\n✅ PAI dynamic context loaded...');
     } else {
-      ttyLog('\n✅ PAI session ready...');
+      ttyLog('\n✅ KAI session ready...');
     }
 
     // Active work summary
@@ -712,7 +712,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ PAI session initialization complete (v4.9.0)');
+    console.error('✅ KAI session initialization complete (v4.9.0)');
     process.exit(0);
   } catch (error) {
     flushTty();

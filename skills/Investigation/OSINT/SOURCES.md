@@ -2,7 +2,7 @@
 
 > Version 1.0.0 | Last Updated: 2026-02-23 | 300+ sources across 7 categories
 
-Comprehensive collection of OSINT sources for the PAI OSINT skill. Organized by investigation domain with tools, platforms, directories, and community resources.
+Comprehensive collection of OSINT sources for the KAI OSINT skill. Organized by investigation domain with tools, platforms, directories, and community resources.
 
 ## Table of Contents
 

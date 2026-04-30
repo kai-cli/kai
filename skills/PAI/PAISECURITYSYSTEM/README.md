@@ -1,6 +1,6 @@
 # PAI Security System
 
-A foundational security framework for Personal AI Infrastructure.
+A foundational security framework for Kaizen AI.
 
 ---
 

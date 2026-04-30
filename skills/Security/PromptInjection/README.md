@@ -274,7 +274,7 @@ browser network-logs /api/
 
 ---
 
-## Integration with PAI
+## Integration with KAI
 
 ### Required Skills
 
