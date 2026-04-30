@@ -48,7 +48,7 @@ cp config/starters/fullstack-domains.jsonc config/domains.jsonc
 
 ## Custom Hooks
 
-Custom hook support (`hooks/user/`) is planned for v5.1.0. In the meantime, you can add hooks directly to `settings.json` under the appropriate event key — see Claude Code's [hook documentation](https://docs.anthropic.com/en/docs/claude-code/hooks) for the format.
+Custom hook support (`hooks/user/`) is planned for v5.3.0. In the meantime, you can add hooks directly to `settings.json` under the appropriate event key — see Claude Code's [hook documentation](https://docs.anthropic.com/en/docs/claude-code/hooks) for the format.
 
 ## Personal Context
 

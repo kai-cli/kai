@@ -1,4 +1,4 @@
-> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
+> **KAI 5.2.0** — APIs and configuration formats are stabilizing for the KAI public release.
 
 # PAI Command-Line Tools
 
