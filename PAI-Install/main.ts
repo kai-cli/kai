@@ -172,6 +172,66 @@ See PAI documentation for TELOS file format.
 
 Track your active projects here.
 `,
+  "PAI/USER/AISTEERINGRULES.md.template": `# AI Steering Rules — Personal (Template)
+<!-- Copy or rename this file to AISTEERINGRULES.md and fill in your rules. -->
+<!-- These extend and override system rules. Each rule follows this format: -->
+
+## Rule Name
+
+Statement
+: One-sentence description of the behavior you want.
+
+Bad
+: Example of what you don't want the assistant to do.
+
+Correct
+: Example of the behavior you do want.
+
+## Examples to get you started
+
+### Be concise
+Statement
+: Keep responses tight. No padding, no restating what I just said.
+
+Bad
+: "Great question! Let me explain..." followed by a 3-paragraph preamble.
+
+Correct
+: Answer the question directly in the first sentence.
+
+### Ask before refactoring
+Statement
+: Don't clean up surrounding code unless I explicitly ask.
+
+Bad
+: Fixing a bug while also renaming variables and reorganizing imports.
+
+Correct
+: Fix exactly what was asked. Note other issues separately if you spot them.
+`,
+  "PAI/USER/PROJECTS/PROJECTS.md.template": `# Projects (Template)
+<!-- Copy or rename this file to PROJECTS.md and fill in your projects. -->
+<!-- Format: one section per active project. -->
+
+## [Project Name]
+
+**Repo:** github.com/yourorg/project-name
+**Stack:** TypeScript, Node.js, PostgreSQL
+**Status:** Active
+**What it is:** One sentence describing the project.
+**Current focus:** What you're working on right now.
+**Key files:** List 2-3 files Claude should know about.
+
+---
+
+## [Another Project]
+
+**Repo:** github.com/yourorg/another-project
+**Stack:** Python, FastAPI
+**Status:** Maintenance
+**What it is:** One sentence.
+**Current focus:** Bug fixes and dependency updates.
+`,
 };
 
 export function createUserScaffold(paiDir: string) {

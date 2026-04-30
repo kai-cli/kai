@@ -2,6 +2,12 @@
 /**
  * github-approve.ts - Pre-approve GitHub write commands
  *
+ * RUNTIME INVOCATION: This script is NOT imported as a module.
+ * hooks/GitHubWriteGuard.hook.ts:43 stores the path to this file and
+ * instructs the user to run it directly:
+ *   bun hooks/lib/github-approve.ts "command" "user's response"
+ * Any rename or move of this file must be reflected in GitHubWriteGuard.hook.ts.
+ *
  * Supports two modes:
  *
  * SINGLE MODE (one command):

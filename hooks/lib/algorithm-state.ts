@@ -18,7 +18,7 @@
  *     → Multi-pattern regex extraction + heuristic fallback for effort level
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
 // ── Types ──
@@ -521,7 +521,6 @@ const DELETE_AGE_MS = 24 * 60 * 60 * 1000; // 24hr: completed files older than t
 export function sweepStaleActive(currentSessionId: string): void {
   try {
     ensureDir();
-    const { readdirSync, statSync, unlinkSync } = require('fs') as typeof import('fs');
     const now = Date.now();
     const files = (readdirSync(ALGORITHMS_DIR) as string[]).filter(f => f.endsWith('.json'));
     const liveSessionIds = new Set<string>();

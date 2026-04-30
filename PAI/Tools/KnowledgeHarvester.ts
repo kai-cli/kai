@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 
 import { join, basename } from "path";
 import { getPaiDir, paiPath } from "../../hooks/lib/paths";
 import { inference } from "./Inference";
+import { loadDomainKeywords, loadDomainDescriptions } from "../../hooks/lib/config-loader";
 
 // ============================================================================
 // Types
@@ -58,9 +59,9 @@ const PROJECTS_DIR = join(CLAUDE_DIR, "projects");
 const KNOWLEDGE_DIR = paiPath("MEMORY", "KNOWLEDGE");
 const STALE_THRESHOLD_DAYS = 30;
 
-// Domain classification - generic starter domains.
-// Replace with your own in config/domains.jsonc (KAI v5.0.0+).
-const DOMAIN_DEFINITIONS: Array<{ name: string; description: string; keywords: string[] }> = [
+// Domain classification — loaded from config/domains.jsonc via config-loader.
+// Falls back to generic built-in domains if config is absent or empty.
+const BUILTIN_DOMAIN_DEFINITIONS: Array<{ name: string; description: string; keywords: string[] }> = [
   {
     name: "backend",
     description: "Backend services, APIs, databases, and server-side logic",
@@ -87,6 +88,19 @@ const DOMAIN_DEFINITIONS: Array<{ name: string; description: string; keywords: s
     keywords: ["kai", "hook", "skill", "agent", "algorithm", "memory", "inference", "claude", "ai", "llm"],
   },
 ];
+
+function loadDomainDefinitions(): Array<{ name: string; description: string; keywords: string[] }> {
+  const keywords = loadDomainKeywords();
+  const descriptions = loadDomainDescriptions();
+  if (Object.keys(keywords).length === 0) return BUILTIN_DOMAIN_DEFINITIONS;
+  return Object.entries(keywords).map(([name, kws]) => ({
+    name,
+    description: descriptions[name] ?? name,
+    keywords: kws,
+  }));
+}
+
+const DOMAIN_DEFINITIONS = loadDomainDefinitions();
 
 // ============================================================================
 // Scanning

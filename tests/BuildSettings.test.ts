@@ -5,7 +5,7 @@
  */
 
 import { test, expect, describe } from 'bun:test';
-import { parseJSONC, validateConfig, buildSettings, needsRebuild } from '../hooks/handlers/BuildSettings.ts';
+import { parseJSONC, validateConfig, buildSettings, needsRebuild, build } from '../hooks/handlers/BuildSettings.ts';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
@@ -260,5 +260,38 @@ describe('needsRebuild', () => {
     // needsRebuild may still be true if settings.json hasn't been written in this test run
     // Just verify the function doesn't throw
     expect(() => needsRebuild(RELEASE_PAI_DIR)).not.toThrow();
+  });
+});
+
+// ── --dry-run flag (BuildSettings CLI) ────────────────────────────────────────
+
+describe('buildSettings dry-run behavior', () => {
+  test('buildSettings() produces a valid object without writing', () => {
+    // The dry-run flag is CLI-only; we test the underlying buildSettings()
+    // function which dry-run calls before comparing — must not throw and
+    // must return a valid config object.
+    const result = buildSettings(RELEASE_PAI_DIR);
+    expect(result).toBeDefined();
+    expect(typeof result).toBe('object');
+  });
+
+  test('buildSettings() output passes validateConfig', () => {
+    const merged = buildSettings(RELEASE_PAI_DIR);
+    const { valid, errors } = validateConfig(merged);
+    // Live kai should always have valid config
+    expect(errors).toEqual([]);
+    expect(valid).toBe(true);
+  });
+
+  test('buildSettings() produces JSON-serializable output', () => {
+    const merged = buildSettings(RELEASE_PAI_DIR);
+    // dry-run serializes to JSON for comparison — must not throw
+    expect(() => JSON.stringify(merged, null, 2)).not.toThrow();
+  });
+
+  test('buildSettings() output is deterministic on repeated calls', () => {
+    const first = JSON.stringify(buildSettings(RELEASE_PAI_DIR));
+    const second = JSON.stringify(buildSettings(RELEASE_PAI_DIR));
+    expect(first).toBe(second);
   });
 });

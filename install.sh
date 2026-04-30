@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════
-#  KAI Installer v4.6 — Bootstrap Script
+#  KAI Installer v5.1 — Bootstrap Script
 #  Requirements: bash, curl
 #  This script bootstraps the installer by ensuring Bun is
 #  available, then hands off to the TypeScript installer.
@@ -179,15 +179,41 @@ fi
 # ── Post-install guidance ─────────────────────────────────────────
 echo ""
 echo -e "${SILVER}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "${LIGHT_BLUE}  Installation complete!${RESET}"
+
+# Detect upgrade vs fresh install
+IS_UPGRADE=false
+if [ -f "$HOME/.claude/config/preferences.local.jsonc" ]; then
+  IS_UPGRADE=true
+fi
+
+if $IS_UPGRADE; then
+  echo -e "${LIGHT_BLUE}  Upgrade complete!${RESET}"
+else
+  echo -e "${LIGHT_BLUE}  Installation complete!${RESET}"
+fi
 echo -e "${SILVER}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo ""
-echo -e "  ${GRAY}Next steps:${RESET}"
-echo -e "    ${SILVER}1.${RESET} Make sure ${LIGHT_BLUE}ANTHROPIC_API_KEY${RESET} is set in your shell profile"
-echo -e "    ${SILVER}2.${RESET} Run ${LIGHT_BLUE}claude${RESET} to start your first session"
-echo -e "    ${SILVER}3.${RESET} Edit ${LIGHT_BLUE}~/.claude/PAI/USER/ABOUTME.md${RESET} to personalize"
+
+if $IS_UPGRADE; then
+  echo -e "  ${GRAY}What was preserved:${RESET}"
+  echo -e "    ${GREEN}✓${RESET} ${SILVER}config/preferences.local.jsonc${RESET} ${GRAY}(your machine-specific settings)${RESET}"
+  [ -f "$HOME/.claude/config/identity.jsonc" ] && \
+    echo -e "    ${GREEN}✓${RESET} ${SILVER}config/identity.jsonc${RESET} ${GRAY}(your DA name, color, timezone)${RESET}"
+  [ -d "$HOME/.claude/PAI/USER" ] && \
+    echo -e "    ${GREEN}✓${RESET} ${SILVER}PAI/USER/${RESET} ${GRAY}(your personal context files)${RESET}"
+  [ -d "$HOME/.claude/MEMORY" ] && \
+    echo -e "    ${GREEN}✓${RESET} ${SILVER}MEMORY/${RESET} ${GRAY}(your session history and knowledge)${RESET}"
+  echo ""
+  echo -e "  ${GRAY}Next steps:${RESET}"
+  echo -e "    ${SILVER}1.${RESET} Restart Claude Code to pick up the new version"
+  echo -e "    ${SILVER}2.${RESET} Check ${LIGHT_BLUE}CHANGELOG.md${RESET} for what changed"
+else
+  echo -e "  ${GRAY}Next steps:${RESET}"
+  echo -e "    ${SILVER}1.${RESET} Make sure ${LIGHT_BLUE}ANTHROPIC_API_KEY${RESET} is set in your shell profile"
+  echo -e "    ${SILVER}2.${RESET} Run ${LIGHT_BLUE}claude${RESET} to start your first session"
+  echo -e "    ${SILVER}3.${RESET} Edit ${LIGHT_BLUE}~/.claude/PAI/USER/ABOUTME.md${RESET} to personalize"
+fi
 echo ""
 echo -e "  ${GRAY}Docs:${RESET}  ${SILVER}~/.claude/docs/QUICKSTART.md${RESET}"
 echo -e "  ${GRAY}Config:${RESET} ${SILVER}~/.claude/config/*.jsonc${RESET}"
-echo -e "  ${GRAY}Keys:${RESET}   ${SILVER}~/.claude/.env.example${RESET}"
 echo ""

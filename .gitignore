@@ -55,6 +55,9 @@ MEMORY/RELATIONSHIP/
 MEMORY/LEARNING/
 MEMORY/SECURITY/
 MEMORY/RESEARCH/
+# MEMORY/KNOWLEDGE runtime state files (contain PII from distilled project knowledge)
+MEMORY/KNOWLEDGE/.harvest-state.json
+MEMORY/KNOWLEDGE/INDEX.md
 
 # Session files (machine-specific, change every session)
 sessions/

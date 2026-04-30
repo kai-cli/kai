@@ -121,11 +121,23 @@ if [[ $QUICK -eq 0 ]]; then
       fi
     fi
   done
-  # Manifest brand check — productName must be "KAI"
-  if [[ -f manifest.json ]]; then
-    MANIFEST_PRODUCT=$(grep -oE '"productName":\s*"[^"]+"' manifest.json | grep -oE '"[^"]+"\s*$' | tr -d '"' | tr -d ' ')
-    if [[ "$MANIFEST_PRODUCT" != "KAI" ]]; then
-      fail "manifest.json productName is \"$MANIFEST_PRODUCT\" (expected \"KAI\")"
+  # Version consistency — manifest.json is canonical SoT; all others must match
+  # Uses existing fail helper. manifest.json version must equal preferences.jsonc,
+  # VERSION file, and install.sh banner (major.minor match for install.sh).
+  MANIFEST_VER=$(grep -E '"version"\s*:' manifest.json 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  if [[ -n "$MANIFEST_VER" ]]; then
+    PREFS_VER=$(grep -E '"version"\s*:' config/preferences.jsonc 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    FILE_VER=$(cat VERSION 2>/dev/null | tr -d '[:space:]')
+    INSTALL_VER=$(grep "Installer v" install.sh 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
+
+    if [[ -n "$PREFS_VER" && "$PREFS_VER" != "$MANIFEST_VER" ]]; then
+      fail "preferences.jsonc version ($PREFS_VER) != manifest.json version ($MANIFEST_VER) — run BuildManifest.ts"
+    fi
+    if [[ -n "$FILE_VER" && "$FILE_VER" != "$MANIFEST_VER" ]]; then
+      fail "VERSION file ($FILE_VER) != manifest.json version ($MANIFEST_VER)"
+    fi
+    if [[ -n "$INSTALL_VER" && "$INSTALL_VER" != "${MANIFEST_VER%.*}" && "$INSTALL_VER" != "$MANIFEST_VER" ]]; then
+      fail "install.sh banner version ($INSTALL_VER) != manifest.json version ($MANIFEST_VER)"
     fi
   fi
 
@@ -136,7 +148,7 @@ fi
 echo ""
 echo "── Required Files ──"
 
-REQUIRED_FILES=(LICENSE README.md CHANGELOG.md CONTRIBUTING.md .gitignore)
+REQUIRED_FILES=(LICENSE README.md CHANGELOG.md CONTRIBUTING.md .gitignore hooks/lib/github-approve.ts)
 for f in "${REQUIRED_FILES[@]}"; do
   if [[ -f "$f" ]]; then
     pass "$f exists"
@@ -186,7 +198,7 @@ if [[ $QUICK -eq 0 ]]; then
   # Extract hook names from docs/code (FooBar.hook.ts pattern), check each exists
   # Uses \.hook\.ts to avoid false positives like SYM.hooks (property access)
   # Allowlist: example/template hook names used in documentation
-  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook"
+  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook\|PlanApprovalGuard"
 
   HOOK_REFS=$(grep -rhoE '[A-Z][A-Za-z]+\.hook\.ts' \
     --include='*.md' --include='*.ts' --include='*.sh' --include='*.jsonc' \

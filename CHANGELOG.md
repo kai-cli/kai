@@ -2,6 +2,36 @@
 
 All notable changes to KAI will be documented in this file.
 
+## [5.2.0] — 2026-04-30
+
+Foundation completion, routing intelligence, and test coverage.
+
+### Added
+- `hooks/ReadTracker.hook.ts` — PostToolUse:Read async hook; tracks KAI-internal file reads to `MEMORY/STATE/read-log.jsonl` with 90-day retention, 1MB cap, and per-session deduplication
+- `PAI/Tools/RoutingCandidates.ts` — CLI surfacing frequently-read files missing from routing table
+- `PAI/Tools/RoutingAudit.ts` propose mode — generates copy-paste routing rows with Haiku labels and offline fallback
+- `hooks/handlers/BuildSettings.ts` `--dry-run` flag — previews config diff without writing
+- `docs/planning/steering-enforcement-design.md` — full design spike for v5.3.0 plan-approval enforcement
+- `config/starters/` archetype files now canonical in source; syncs to kai
+- Template files for `PAI/USER/` scaffold (AISTEERINGRULES.md.template, PROJECTS.md.template)
+- `hooks/handlers/BuildSettings.ts --dry-run` — previews what would change before writing
+
+### Fixed
+- `VERSION` file updated to 5.1.0 (was stale at 4.9.0)
+- `KnowledgeHarvester.ts` now reads from `config/domains.jsonc` via config-loader (was using hardcoded fallback always)
+- 5 CommonJS `require()` calls converted to ESM imports across hooks and tools
+- `hooks/ReadTracker.hook.ts`, `SessionAutoName`, `WorkCompletionLearning`, `KnowledgeSync`, `SessionCleanup` all guarded with `import.meta.main` (prevents process.exit when imported by test runner)
+- `docs/architecture/SYSTEM-ATLAS.md` archived as v4.4.0 snapshot (was 9 versions stale, actively misleading)
+- `hooks/lib/metadata-extraction.ts` deleted (zero importers or runtime references)
+- `hooks/lib/github-approve.ts` documented as runtime CLI invoked by GitHubWriteGuard, not an import
+- `scripts/verify-release.sh` version consistency gate — manifest.json is canonical SoT; preferences.jsonc, VERSION, install.sh banner all checked against it
+- `hooks/README.md` footer: corrected stale counts (was 22/13, now 40/26)
+- `install.sh` header updated to KAI Installer v5.1; upgrade vs fresh-install messaging added
+
+### Changed
+- Hook count: 39 → 40 (ReadTracker)
+- Tests: 367 → 437 (+70): 5 new test files for hooks (LoadContext, SessionAutoName, SessionCleanup, WorkCompletionLearning, KnowledgeSync), 4 BuildSettings dry-run tests, 2 ConfigLoader edge-case tests
+
 ## [5.1.0] — 2026-04-29
 
 Cleanup, config layer completion, skill count fix, and archetype installer.
@@ -65,7 +95,7 @@ Initial public release of KAI (Kaizen AI).
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
 - **79 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
-- **39 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
+- **40 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation
 - **Security hooks** — SecretScanner, GitHubWriteGuard, SecurityValidator
