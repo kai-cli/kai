@@ -1,4 +1,4 @@
-# KAI.8.0 — Personal AI Infrastructure
+# KAI 5.2.0 — Personal AI Infrastructure
 
 > A production-ready Claude Code configuration system. Fork of Daniel Miessler's [original project](https://danielmiessler.com), hardened for team deployment.
 
@@ -82,10 +82,9 @@ bun ~/.claude/scripts/deploy.ts
 ## Documentation
 
 - **[docs/QUICKSTART.md](docs/QUICKSTART.md)** — Getting started guide (start here)
-- **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with the original
-- **[docs/planning/ROADMAP.md](docs/planning/ROADMAP.md)** — Product roadmap
-- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Current work
-- **[docs/architecture/SYSTEM-ATLAS.md](docs/architecture/SYSTEM-ATLAS.md)** — System architecture
+- **[docs/WHATS-DIFFERENT.md) — Full feature overview
+- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Roadmap and current work
+- **[docs/architecture/THEHOOKSYSTEM-Reference.md](docs/architecture/THEHOOKSYSTEM-Reference.md)** — System architecture
 - **[PAI/THEHOOKSYSTEM.md](PAI/THEHOOKSYSTEM.md)** — Hook system docs
 - **[PAI/SKILL.md](PAI/SKILL.md)** — Full system documentation
 

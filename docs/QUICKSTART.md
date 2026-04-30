@@ -35,10 +35,11 @@ bash ~/kai/install.sh
 The installer will:
 1. Install Bun (if missing)
 2. Symlink `~/.claude/` to your repo clone
-3. Ask for your name, assistant name, and timezone
-4. Optionally configure AWS Bedrock
-5. Create personal file templates in `PAI/USER/`
-6. Build `settings.json` from domain config files
+3. Select a domain archetype (fullstack, devops, datascience, or generic)
+4. Ask for your name, assistant name, and timezone
+5. Optionally configure AWS Bedrock
+6. Create personal file templates in `PAI/USER/`
+7. Build `settings.json` from domain config files
 
 Total time: ~60 seconds.
 
@@ -55,7 +56,7 @@ claude
 
 ### Personalize (optional but recommended)
 
-Edit these files in `~/.claude/PAI/USER/` to give PAI context about you:
+Edit these files in `~/.claude/PAI/USER/` to give KAI context about you:
 
 | File | What to add | Impact |
 |------|-------------|--------|
@@ -158,11 +159,11 @@ ls -la ~/.claude/MEMORY/STATE/*.log
 ### Want to re-run the installer
 ```bash
 bash ~/kai/install.sh
-# It detects existing config and offers to migrate or overwrite
+# It detects existing config and shows what was preserved
 ```
 
 ## Further Reading
 
-- [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How KAI differs from the original
-- [SYSTEM-ATLAS.md](architecture/SYSTEM-ATLAS.md) — Full system architecture
-- [ROADMAP.md](planning/ROADMAP.md) — Product roadmap
+- [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — Full feature overview
+- [Architecture Docs](architecture/THEHOOKSYSTEM-Reference.md) — System architecture
+- [NEXT-STEPS.md](planning/NEXT-STEPS.md) — Roadmap and current work

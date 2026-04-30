@@ -1,56 +1,39 @@
-# What's Different: KAI 4.8.0 vs. Daniel Miessler's Original
+# What KAI Includes
 
-KAI (Personal AI Infrastructure) was originally created by [Daniel Miessler](https://danielmiessler.com), the creator of [Fabric](https://github.com/danielmiessler/fabric). His public release (v4.0.3) established the foundational architecture for turning Claude Code into a personalized AI assistant.
-
-This fork has evolved significantly. Here's what changed, what was added, and what you gain by deploying KAI 4.8.0.
+KAI turns Claude Code into a structured, reliable AI assistant for engineering and research work. This document covers what's built in and why each piece exists.
 
 ---
 
 ## At a Glance
 
-| | Daniel's Original (v4.0.3) | This Fork (KAI) |
-|---|---|---|
-| **Skills** | 63 (12 categories) | <!-- KAI:counts:skills:begin -->79<!-- KAI:counts:skills:end --> (streamlined, no dead skills) |
-| **Hooks** | 21 | <!-- KAI:counts:hooks:begin -->40<!-- KAI:counts:hooks:end --> (all through stderr wrapper) |
-| **Agents** | ~6 generic | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> specialized (named personas) |
-| **Algorithm** | v3.5.0 | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> |
-| **Context footprint** | ~19% at startup | Optimized with lazy loading |
-| **Installer** | Drop-in `.claude/` directory | Interactive setup wizard with symlink |
-| **Config management** | Single `settings.json` | 7 domain config files, auto-merged |
-| **PII handling** | Personal data in repo | Gitignored, portable paths |
-| **Security** | Hook-based validation | Extended: SecretScanner, GitHubWriteGuard, patterns.yaml |
-| **EM/PLM workflows** | None | 1:1 notes, weekly status, decision log, NPI tracker |
-| **AWS Bedrock** | Not supported | Optional, configured at install |
+| Capability | Details |
+|-----------|---------|
+| **Skills** | <!-- KAI:counts:skills:begin -->79<!-- KAI:counts:skills:end --> modules across Research, Security, Thinking, EM/PLM, Analysis, Writing |
+| **Hooks** | <!-- KAI:counts:hooks:begin -->40<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, analytics, formatting, cleanup) |
+| **Agents** | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> named specialists (Architect, Engineer, 5 researchers, Pentester, etc.) |
+| **Algorithm** | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> — 7-phase execution with ISC quality gates |
+| **Config** | 7 domain config files, auto-merged into `settings.json` at session start |
+| **Installer** | 7-step interactive wizard with archetype selection, identity setup, Bedrock config |
+| **Security** | SecretScanner, GitHubWriteGuard, SecurityValidator, path protection |
 
 ---
 
-## Key Improvements
+## Core Capabilities
 
-### 1. Clean Separation of Personal Data
+### 1. The Algorithm (<!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->)
 
-The original shipped with the author's personal files embedded in the repo. This fork:
+For complex tasks, KAI uses a 7-phase execution framework:
+**Observe** → **Think** → **Plan** → **Build** → **Execute** → **Verify** → **Learn**
 
-- **Gitignores all personal data** (`PAI/USER/`, `skills/PAI/USER/`)
-- **Gitignores `settings.json`** — it's generated from 7 domain config files at install time
-- **Portable paths** — hooks use `${PAI_DIR}` instead of hardcoded home directories
-- **Generic defaults** — no personal names, timezones, or AWS profiles in tracked code
+Each task gets Ideal State Criteria (ISC) — verifiable checkboxes with quality gates. This makes KAI systematically reliable rather than just "AI that tries."
 
-Your coworkers clone the repo, run the installer, and get their own identity without touching tracked files.
+- **6 effort tiers** — Micro through Comprehensive, each with ISC count floors
+- **7 ISC Quality Gates** — mandatory before execution begins
+- **PRD as system of record** — structured documents with frontmatter tracking across sessions
+- **Reflection JSONL** — structured learning capture after every Algorithm run
+- **Context compaction** — automatic summarization at phase boundaries
 
-### 2. Interactive Installer
-
-The original required manually copying a `.claude/` directory. KAI 4.6.0 includes:
-
-- **`install.sh`** — bootstrap script that installs prerequisites (Bun, Git)
-- **`PAI-Install/main.ts`** — 6-step interactive wizard:
-  1. Symlink `~/.claude/` → repo (with backup of existing config)
-  2. Configure identity (assistant name, your name, timezone)
-  3. AWS Bedrock setup (optional — skip if using Anthropic direct)
-  4. Create `PAI/USER/` scaffold with starter templates
-  5. Build `settings.json` from domain config files
-  6. Build `CLAUDE.md` from template
-
-### 3. Domain-Based Configuration
+### 2. Domain-Based Configuration
 
 Instead of one monolithic `settings.json`, configuration is split into purpose-specific files:
 
@@ -64,46 +47,44 @@ Instead of one monolithic `settings.json`, configuration is split into purpose-s
 | `config/spinner-verbs.json` | Custom spinner text |
 | `config/spinner-tips.json` | Custom tip messages |
 
-`BuildSettings.ts` merges these into `settings.json` at session start. Edit the domain file, not the generated output.
+`BuildSettings.ts` merges these into `settings.json` at session start. Edit the domain file, not the generated output. Changes take effect automatically next session.
 
-### 4. Hook System Hardening
+### 3. Hook System (<!-- KAI:counts:hooks:begin -->40<!-- KAI:counts:hooks:end --> hooks)
 
-All <!-- KAI:counts:hooks:begin -->40<!-- KAI:counts:hooks:end --> hooks now go through `run-hook.sh`, which:
+All hooks run through `run-hook.sh`, which redirects stderr to `/tmp/pai-hooks/` (no "hook error" messages in the UI) and supports async flags for inference-heavy work.
 
-- **Redirects stderr to `/tmp/pai-hooks/`** — prevents "hook error" messages in Claude Code UI
-- **Async flags on analytics hooks** — PromptAnalysis, RatingCapture, StopOrchestrator, and other inference-heavy hooks run in the background instead of blocking the UI for 15+ seconds
-- **New hooks not in the original:**
-  - `SecretScanner` — blocks credential leaks in prompts
-  - `GitHubWriteGuard` — requires explicit confirmation for all GitHub mutations
-  - `LocalContextFirst` — injects project context before web research
-  - `FormatReminder` — enforces KAI output format compliance
-  - `AlgorithmTracker` — tracks Algorithm phase progress
-  - `PRDSync` — syncs PRD frontmatter to dashboard
-  - `PromptAnalysis` — batched inference for session naming + tab titles
-  - `PreCompact` — preserves critical context before compaction
+**Security hooks:**
+- `SecretScanner` — blocks credential leaks in prompts (14 patterns)
+- `GitHubWriteGuard` — requires confirmation + time-limited approval tokens for all git mutations
+- `SecurityValidator` — path protection and command validation on every tool call
+- `SecretOutputDetector` — scans tool output for leaked credentials
+- `WebFetchGuard` — validates URLs before external fetches
 
-### 5. Algorithm <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->
+**Context hooks:**
+- `LoadContext` — injects relationship context, learning readback, active work summary at session start
+- `LocalContextFirst` — injects domain knowledge before web research
+- `KnowledgeSync` — incremental cross-project knowledge distillation at session end
+- `ReadTracker` — tracks frequently-read files for routing candidate analysis
 
-Upgraded from v3.5.0 with:
+**Intelligence hooks:**
+- `FormatReminder` — enforces KAI output format compliance
+- `AlgorithmTracker` — tracks Algorithm phase progress
+- `RatingCapture` — captures explicit and implicit session ratings
+- `PRDSync` — syncs PRD frontmatter to dashboard
+- `PromptAnalysis` — batched inference for session naming and tab titles
+- `PreCompact` — preserves critical context before compaction
+- `ModeClassifier` — classifies effort tier from prompt
 
-- **Effort tiers** — 6 levels (Micro through Comprehensive) with ISC count floors
-- **ISC Quality Gates** — 7 mandatory gates before execution begins
-- **Confidence tags** — `[E]`xplicit, `[I]`nferred, `[R]`everse-engineered on each criterion
-- **PRD as system of record** — structured project documents with frontmatter tracking
-- **Capability selection** — mandated skill/agent invocation (no text-only theater)
-- **Context compaction** — automatic summarization at phase boundaries
-- **Reflection JSONL** — structured learning capture after every Algorithm run
+### 4. Named Agent System (<!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> specialists)
 
-### 6. Named Agent System
-
-18 specialized agents with defined personas, voice assignments, and focused capabilities:
+Spawned automatically when the task matches:
 
 | Agent | Role |
 |-------|------|
 | Architect | System design, constitutional principles |
 | Engineer | TDD implementation, Fortune 10 patterns |
 | Designer | UX/UI with shadcn/ui, accessibility |
-| QATester | Browser-based verification |
+| QATester | Browser-based verification (Gate 4) |
 | Pentester | Security assessment |
 | ProductStrategist | Roadmap, feature trade-offs |
 | TechnicalReviewer | Architecture evaluation |
@@ -111,10 +92,10 @@ Upgraded from v3.5.0 with:
 | 5 Research agents | Multi-model parallel research (Claude, Gemini, Grok, Perplexity, Codex) |
 | Artist | Visual content creation |
 | Intern | High-agency generalist |
-| BrowserAgent | Parallel headless automation |
+| BrowserAgent | Parallel headless browser automation |
 | UIReviewer | User story validation |
 
-### 7. Engineering Manager Workflows
+### 5. Engineering Manager Workflows
 
 Purpose-built skills for technical leadership:
 
@@ -122,49 +103,37 @@ Purpose-built skills for technical leadership:
 - **WeeklyStatus** — Status report generation from project state
 - **DecisionLog** — Structured decision capture with context and rationale
 - **NPITracker** — NPI risk tracking and status generation
-- **StandardsTracker** — TR-369/TR-069 compliance monitoring
-- **CompetitiveIntel** — Competitor scanning and battlecard generation
+
+### 6. Interactive Installer
+
+`install.sh` → `PAI-Install/main.ts` — 7-step wizard:
+
+1. Symlink `~/.claude/` → repo (with backup of existing config)
+2. **Archetype selection** — choose domain config template (fullstack, devops, datascience, generic)
+3. Configure identity (assistant name, your name, timezone)
+4. AWS Bedrock setup (optional)
+5. Create `PAI/USER/` scaffold with starter templates
+6. Build `settings.json` from domain config files
+7. Build `CLAUDE.md` from template
+
+Detects existing installs and shows what was preserved on upgrade.
+
+### 7. Clean Separation of Personal Data
+
+- `PAI/USER/` is gitignored — created by installer, never committed
+- `settings.json` is gitignored — generated from domain configs
+- Portable paths throughout (`${PAI_DIR}` not hardcoded home directories)
+- No personal names, timezones, or AWS profiles in tracked code
 
 ### 8. Security Hardening
 
-Beyond the original's SecurityValidator:
-
+- **`patterns.yaml`** — path protection rules and command validation
+- **`MEMORY/SECURITY/`** — security event audit log (gitignored)
+- **GitHubWriteGuard** — all push/PR/issue operations require explicit confirmation
 - **SecretScanner** — 14 credential patterns, blocks before submission
-- **GitHubWriteGuard** — all push/PR/issue operations require AskUserQuestion confirmation + time-limited approval tokens
-- **patterns.yaml** — path protection rules and command validation
-- **MEMORY/SECURITY/** — security event audit log (gitignored)
-
-### 9. Research & Analysis Pipeline
-
-Multi-agent research with parallel execution:
-
-- **Research skill** — quick/standard/extensive/deep modes
-- **5 specialized researchers** — each uses a different AI model for diverse perspectives
-- **Scraping** — Progressive escalation with Bright Data proxy
-- **OSINT/Investigation** — Structured intelligence gathering
-- **ContentAnalysis** — Wisdom extraction from videos, podcasts, articles
-
-### 10. KAI Board (Dashboard)
-
-`bun ~/.claude/scripts/board.ts` — visual dashboard on port 3333:
-
-- Active/recent sessions with status
-- Work items from PRDs
-- Backlog tracking
-- Session history
-
----
-
-## What's NOT Included (By Design)
-
-- **No personal data** — `PAI/USER/` is gitignored; created by installer
-- **No API keys** — stored in environment or `.env` (gitignored)
-- **No `settings.json`** — generated from domain configs at install
-- **No session state** — sessions, tasks, learning signals are gitignored
-- **No company-specific content — EM/PLM and workflow skills are generic frameworks
 
 ---
 
 ## Credits
 
-KAI's core architecture — the Algorithm, TELOS framework, skill hierarchy, hook lifecycle, and CLAUDE.md approach — was designed by Daniel Miessler. This fork builds on that foundation with production hardening, professional workflow integration, and deployability improvements.
+KAI's core architecture — the Algorithm, TELOS framework, skill hierarchy, hook lifecycle, and CLAUDE.md approach — was designed by [Daniel Miessler](https://danielmiessler.com). KAI builds on that foundation with production hardening, team deployability, and professional workflow integration.
