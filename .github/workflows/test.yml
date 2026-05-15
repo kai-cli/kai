@@ -66,7 +66,8 @@ jobs:
           fi
 
       - name: Verify hook runner is executable
-        run: test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
+        run: |
+          test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
 
       - name: Bootstrap identity config if template-only
         run: |
