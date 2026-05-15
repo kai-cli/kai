@@ -10,6 +10,7 @@
 
 | Release | Date | Highlights |
 |---------|------|-----------|
+| **v5.2.0** | 2026-04-30 | Foundation completion: ESM conversions, version gate, KnowledgeHarvester→config-loader, 5 new hook tests (437 total), ReadTracker, RoutingCandidates, RoutingAudit propose, BuildSettings --dry-run, memory cleanup (302MB→18MB), WISDOM/FRAMES curated, 16-project domain mapping, LearningPatternSynthesis wired |
 | **v5.1.0** | 2026-04-29 | Algorithm archive, config-loader, knowledge-readback migration, skill count fix (41→79), PAI/skills/PAI guard, deploy.ts version from manifest, archetype installer, 376 tests |
 | **v5.0.1** | 2026-04 | restore-memory-automation branch: KnowledgeSync+SecretOutputDetector+WebFetchGuard restored, hook counts 35→39, pre-commit fix, domains.jsonc, 367 tests |
 | **v5.0.0** | 2026-04 | Algorithm v3.13.0, memory curation (`pai curate`), self-learning loop, WebFetchGuard, SecretOutputDetector, 314 tests |
@@ -22,198 +23,209 @@
 
 ---
 
-## v5.2.0 — Foundation Completion + Routing Intelligence
+## v5.2.0 — SHIPPED (2026-04-30)
 
-**Theme:** Close the gaps. Finish what the last two cycles deferred.
-**Target:** ~2 sessions (~15 hours)
-**Story:** v5.1.0 was consumed by cleanup. The routing intelligence and config-layer items from the original plan never shipped. v5.2.0 finishes them, adds test coverage to 11 high-value untested hooks, and refreshes the stale architecture docs.
-**Plan:** `docs/planning/v5.2.0-PLAN.md`
-
-### Summary of Phases
-- **H (Housekeeping):** Refresh 4 stale docs, convert 5 require() to ESM, investigate 3 unused lib files, add version consistency gate to verify-release.sh
-- **C (Config):** KnowledgeHarvester → config-loader, template files for PAI/USER/
-- **T (Tests):** 5 HIGH priority hook tests (LoadContext, SessionAutoName, SessionCleanup, WorkCompletionLearning, KnowledgeSync)
-- **R (Routing):** ReadTracker hook, RoutingCandidates CLI, RoutingAudit propose mode, BuildSettings dry-run
-- **I (Installer):** Upgrade messaging polish
-- **S (Design Spike):** Steering enforcement design doc for v5.3.0
+See `docs/planning/v5.2.0-PLAN.md` for full detail. All phases complete.
+Memory improvements (302MB→18MB), hook tests, routing intelligence, installer polish,
+steering enforcement design spike. 437 tests. kai @ `f7ff18e`, kai @ `e457faa`.
 
 ---
 
-## v5.1.0 — Context Intelligence & Configuration (CARRIED FORWARD → v5.2.0)
+## v5.3.0 — Steering Enforcement + Research Mode + Memory Tests
 
-**Theme:** KAI gets smarter about your codebase over time and easier to set up for new users.
-**Note:** Items 1-6 below were planned for v5.1.0 but never shipped — v5.1.0 was consumed by the cleanup/hardening work. All 6 items moved to v5.2.0 plan.
-**Status:** Superseded by v5.2.0-PLAN.md
+**Theme:** Close the open loops from v5.2.0 and add steering enforcement.
 
-### 1. Read-Tracking for Routing Candidates
+### Memory system test coverage (4 functions, from v5.2.0 review)
 
-**What:** Log every `Read` tool call per session. Surface files that are frequently read but not in `CONTEXT_ROUTING.md` as routing candidates.
+These were flagged during the post-implementation review of memory improvements.
+Each is a new exported function with no unit test:
 
-**Implementation:**
-- `hooks/ReadTracker.hook.ts` — `PostToolUse:Read` hook, writes to `MEMORY/STATE/read-log.jsonl`
-  - Entry format: `{ timestamp, session_id, path, project_dir }`
-  - Only tracks files inside `PAI_DIR` — skip external paths
-- `PAI/Tools/RoutingCandidates.ts` — reads `read-log.jsonl`, aggregates by path, cross-references `CONTEXT_ROUTING.md`, outputs paths loaded ≥N sessions without a route entry
-  - CLI: `bun PAI/Tools/RoutingCandidates.ts [--threshold 3] [--days 30]`
-- Register `ReadTracker` in `config/hooks.jsonc` as async `PostToolUse:Read`
+- `trimOldEntries()` — `hooks/SecurityValidator.hook.ts` — test 90-day cutoff logic, line filtering, rewrite behavior
+- `synthesisToStagingContent()` — `PAI/Tools/LearningPatternSynthesis.ts` — test lesson generation, count≥2 filtering, output format
+- `loadRatings(days?)` — `PAI/Tools/LearningPatternSynthesis.ts` — test file read, JSON parse, day filtering, empty input
+- `maybeRunSynthesisBackstop()` — `hooks/SessionCleanup.hook.ts` — test 14-day gate, state file read (mock spawn)
 
-**Why threshold matters:** Too low = noise. Default 3 sessions is a signal, not an accident.
+Also: `LearningPatternSynthesis.ts` CLI runs at module scope without `import.meta.main` guard.
+Add guard before the file is ever imported directly (currently low risk — only spawned as subprocess).
 
-**Acceptance:** Running `bun PAI/Tools/RoutingCandidates.ts` after 3+ sessions shows unrouted frequently-read files.
+### Hook test coverage (architectural review #7)
 
----
+Current state: 8 of 40 hooks tested (Phase T added 5 in v5.2.0). 32 untested.
+The architectural review flagged AlgorithmTracker.hook.ts (268 LOC) specifically.
 
-### 2. Auto-Routing Proposals *(depends on #1)*
+Priority tiers for remaining hook tests:
 
-**What:** After N sessions with read-tracking data, generate proposed `CONTEXT_ROUTING.md` additions and present them for review.
+**MED priority (meaningful logic, no tests):**
+- `AlgorithmTracker.hook.ts` (268 LOC) — tracks Algorithm phase progress, writes STATE/algorithms/
+- `SkillGuard.hook.ts` — validates Skill tool invocations, fails open (flagged in v5.2.0 review as T6)
+- `PRDSync.hook.ts` — PRD frontmatter → work.json sync (needs integration harness, deferred from v5.2.0)
+- `LocalContextFirst.hook.ts` — domain-based context injection, now uses config-loader
+- `PreCompact.hook.ts` — context preservation before compaction
 
-**Implementation:**
-- Extend `RoutingAudit.ts` with a `propose` mode: `bun PAI/Tools/RoutingAudit.ts propose`
-  - Reads `RoutingCandidates.ts` output
-  - For each candidate, generates a proposed routing table entry (topic label + path)
-  - Uses fast inference to name the topic from the file's content
-  - Outputs a diff-style proposal block the user can copy into `CONTEXT_ROUTING.md`
-- Add `LoadContext` hook nudge: if proposals pending and last nudge >7 days ago, show one-liner at session start
+**LOW priority (simpler logic or already covered by integration):**
+- `RelationshipMemory.hook.ts`, `IntegrityCheck.hook.ts`, `UpdateCounts.hook.ts`,
+  `StopOrchestrator.hook.ts` (all MED from original list; can follow T1-T5 pattern)
 
-**Acceptance:** `propose` mode outputs valid CONTEXT_ROUTING.md table rows for top unrouted candidates.
+Pattern to follow: export pure functions, add import.meta.main guard, write tests against exports.
+See `tests/PostCompactRecovery.test.ts` and `tests/SessionAutoName.test.ts` as templates.
 
----
+### Skills hierarchy decision (architectural review #1)
 
-### 3. BuildSettings Dry-Run Mode
+79 SKILL.md files exist recursively; 41 at maxdepth 2 (root-category level).
+38 are at depth 3+ (subcategory: Documents/Pdf, Documents/Xlsx, Media/Art, etc.).
 
-**What:** `bun hooks/handlers/BuildSettings.ts --dry-run` previews what would change in `settings.json` without writing it.
+Two options:
+- **Option A — Accept 3-level hierarchy:** Document the nesting as intentional. BuildManifest already
+  counts recursively (fixed v5.1.0). No code change needed, just a decision and a comment.
+- **Option B — Flatten to 2 levels:** Move subcategory skills up one level. Breaks existing
+  invocation paths. Larger refactor.
 
-**Implementation:**
-- Add `--dry-run` flag to `BuildSettings.ts` CLI entry point
-- When set: run `buildSettings()` as normal, then diff result against current `settings.json`, print a unified diff to stdout, exit without writing
-- Use `diff` or a simple line-by-line comparison — no external dep needed
+Recommendation: Option A. The nesting reflects genuine subcategories (Documents/Pdf is distinct
+from Documents/Xlsx). The count is correct. Document intent and close the issue.
 
-**Acceptance:** `--dry-run` prints changes and exits 0. Without flag, behavior unchanged.
+### Config schema validation (architectural review Gap 3)
 
----
+Invalid `config/*.jsonc` files currently fail silently at BuildSettings time — wrong field
+types, misspelled keys, or missing required fields produce a settings.json that's subtly wrong
+rather than explicitly broken.
 
-### 4. Refactor KnowledgeSync / LocalContextFirst to Config Layer
+Options:
+- **JSON Schema:** Add `config/schema/` with JSON Schema files for each domain config.
+  BuildSettings validates against them before merging. CI check in verify-release.sh.
+- **Runtime guards:** Expand `validateConfig()` in BuildSettings.ts to check known field shapes
+  at merge time. Simpler, no schema files needed, but less exhaustive.
 
-**What:** These two hooks currently have hardcoded domain logic (knowledge paths, context injection rules). Move to `config/domains.jsonc` so users can customize without editing hook source.
+Recommend runtime guards first (lower friction), schema files if gaps emerge.
 
-**Scope:**
-- `hooks/LocalContextFirst.hook.ts` — replace hardcoded knowledge domain checks with `config-loader.ts` read
-- `hooks/lib/knowledge-readback.ts` — replace hardcoded path list with domains from config
-- `config/domains.jsonc` — already exists with archetype starters; verify it covers the hardcoded cases
-- KnowledgeSync excluded from this scope — it's complex enough to be a separate PR
+### Agent invocation documentation (architectural review Gap 4)
 
-**Acceptance:** Adding a new domain to `config/domains.jsonc` is reflected in `LocalContextFirst` and `knowledge-readback` without code changes.
+18 agents defined in `agents/*.md` with rich personas, capabilities, and voice. Zero
+user-facing documentation on how to actually invoke them.
 
----
+What's needed:
+- A `PAI/PAIAGENTSYSTEM.md` section (or separate doc) explaining: how agents are spawned
+  (via `Task` tool or `Agent` tool call), which tasks auto-trigger which agents, how to
+  explicitly request a specific agent type, how to pass context to agents.
+- A quick-reference table in QUICKSTART.md: "If you want X, ask for Y agent"
+- The SKILL.md for the Agents skill already has trigger words — the gap is the how-to,
+  not the discovery.
 
-### 5. install.sh — Proper Curl-Pipe Installer
+Estimated: ~2 hours of writing, no code changes.
 
-**What:** The current `get-kai.sh` handles download. `install.sh` inside the package handles setup. Close the gap: `install.sh` should handle the case where `~/.claude` already exists (upgrade path) vs fresh install.
+### Memory — Step 4a+4b (auto-promotion + scoring model — deferred from v5.2.0)
 
-**Implementation:**
-- Detect existing `~/.claude` — if present, offer upgrade (merge config, preserve env vars) vs fresh overwrite
-- Preserve `config/preferences.local.jsonc` across upgrades (already gitignored, should survive)
-- Print clear next steps on completion (set env vars, run `/help`)
-- Test: `bash install.sh` on both fresh and existing `~/.claude`
+See detailed note in Backlog section below. Revisit trigger: 3 manual curation sessions
+OR 3+ unduplicated STAGING drafts accumulated.
 
-**Acceptance:** `install.sh` runs cleanly on a machine with existing `~/.claude` without wiping `preferences.local.jsonc` or env vars.
+**Key design question added (2026-05-12):** Should WISDOM/FRAMES entries decay by recency
+(re-promote every 90 days via `pai curate` or drop to CANDIDATE/) rather than by access
+count? Access-count inflates on injection; recency decay is simpler and more appropriate
+for long-lived principles. Decide alongside auto-promotion threshold.
 
----
+### WORK/ PRD cleanup
 
-### 6. Template Files for PAI/USER/
+11 non-complete PRDs in MEMORY/WORK/ are stale abandoned shells (0/N criteria, months old).
+Add SessionCleanup TTL: PRDs in `observe`/`execute`/`plan`/`verify` phase with 0 criteria checked
+and last updated >30 days ago should be archived. Keeps WORK/ clean without manual intervention.
 
-**What:** New KAI installs have empty `PAI/USER/` — no guidance on what goes there. Provide starter templates.
-
-**Implementation:**
-- `PAI/USER/AISTEERINGRULES.md.template` — personal behavioral overrides (commented examples)
-- `PAI/USER/PROJECTS/PROJECTS.md.template` — project registry format with examples
-- `install.sh` copies `.template` → actual file only if the target doesn't already exist (safe upgrade)
-
-**Acceptance:** Fresh install produces populated `PAI/USER/` templates the user can edit immediately.
-
----
-
-### v5.1.0 Completion Gate
-
-- [ ] All 6 items implemented and tested
-- [ ] `bun test` passes (335+ tests)
-- [ ] `bash scripts/verify-release.sh` passes in kai
-- [ ] Cherry-picked to kai, conflicts resolved, no PII
-- [ ] `NEXT-STEPS.md` updated with v5.1.0 in Shipped table
-
----
-
-## v5.3.0 — Deliberate Research Mode
+### Deliberate Research Mode
 
 **Theme:** Multi-model web-grounded research as a first-class KAI capability.
-**Target:** ~2-3 weeks of development
-**Story:** Today `deliberate.ts` rotates between models for debate. v5.2.0 adds a research mode: scatter queries across Gemini, Grok, GPT, and Claude with live web search, verify findings against each other, synthesize a grounded answer. The Deliberate skill gets web eyes.
+**Target:** ~4-5 hours (simplified from original design — see v5.3.0-PLAN.md Phase R)
+**Story:** `deliberate.ts` already handles multi-model parallel calls, synthesis, and graceful
+degradation. Research mode adds a new execution path (scatter-gather-synthesize vs. debate
+rounds) and web grounding to the existing invoke functions. No new abstraction layer needed.
 
-### Architecture
-
-```
-deliberate.ts --mode research "query"
-    │
-    ├── ModelInvocation.ts (shared layer)
-    │       ├── Claude (web_search tool via Anthropic API)
-    │       ├── Gemini (Google Search grounding)
-    │       ├── Grok (xAI web search)
-    │       └── GPT (OpenAI Responses API with web_search)
-    │
-    └── Scatter-Verify-Synthesize pipeline
-            ├── Scatter: parallel queries to all 4 models
-            ├── Verify: cross-check claims that appear in ≥2 sources
-            └── Synthesize: final answer with source attribution
-```
+**Key decisions made (2026-05-12):**
+- `ModelInvocation.ts` dropped — `deliberate.ts` already has `invokeModel()` doing this work
+- `Inference.ts` tools param dropped — `--tools ''` is intentional (safety guard for hook
+  subprocess calls). Web grounding goes through direct API calls per model, not via CLI.
+- Claude contributes reasoning from training knowledge; grounded search via Gemini/GPT/Grok.
 
 ### Items
 
-1. **`PAI/Tools/ModelInvocation.ts`** — shared invocation layer
-   - Unified interface: `invoke(model, prompt, options)` → `{ text, sources, latency }`
-   - Handles: Anthropic (web_search tool), Gemini (grounding), Grok (xAI SDK), GPT (Responses API)
-   - Config-driven: which models are available based on API keys present in env
+1. **`deliberate.ts --mode research`** — scatter-gather-synthesize execution path
+   - Each model answers once with web grounding (no debate rounds)
+   - Cross-check: claims in ≥2 responses weighted higher
+   - Synthesis: Claude Opus produces final answer with source attribution
 
-2. **`Inference.ts` — add `tools` param**
-   - Add optional `tools?: AnthropicTool[]` param to all three tiers
-   - `web_search` tool definition included as a named export: `WEB_SEARCH_TOOL`
-   - Backward compatible — no tools = current behavior
+2. **Web grounding** — Gemini + Grok for v5.3.0 (GPT deferred — see backlog)
+   - Gemini: `tools: [{ google_search: {} }]`
+   - Grok: `search_parameters: { mode: "auto" }` (top-level field in OpenAI-compatible path)
+   - GPT: requires Responses API (`/v1/responses`) — different schema from Chat Completions. Deferred to v5.4.0.
 
-3. **`deliberate.ts --mode research`**
-   - Scatter-Verify-Synthesize pipeline (see architecture above)
-   - Output: synthesis with inline citations, per-model raw responses available via `--verbose`
-
-4. **`deliberate.ts --rotate`**
-   - Parallel rotation with empirical role validation
-   - Dynamic model-to-role assignment: measure which model performs best for a given role type across sessions
-   - `--roles` flag to override assignment manually
-
-5. **`deliberate.ts` web grounding**
-   - Gemini: Google Search grounding via `google.generativeai` SDK
-   - Grok: xAI API with `search_parameters`
-   - GPT: Responses API with `web_search_preview` tool
-   - Claude: Anthropic `web_search` tool (add to Inference.ts first)
-
-6. **Skill docs**
-   - `skills/Deliberate/Workflows/ResearchMode.md` — Scatter-Verify-Synthesize workflow
-   - `skills/Deliberate/Workflows/CrossValidation.md` — multi-model cross-validation patterns
-
-### v5.3.0 Completion Gate
-
-- [ ] All 6 items implemented
-- [ ] Works with ≥2 models when only 2 API keys are present (graceful degradation)
-- [ ] `bun test` passes
-- [ ] `verify-release.sh` passes in kai
-- [ ] Cherry-picked to kai
+3. **Skill docs** — `skills/Deliberate/Workflows/ResearchMode.md` + SKILL.md trigger words
 
 ---
 
 ## Backlog (unversioned)
 
 ### Quality & Reliability
+- [ ] SessionCloseGuard.hook.ts — natural-language exit detection. Fires on UserPromptSubmit (async), matches explicit exit phrases ("ok we're done", "wrapping up", etc.) and optionally implicit short acknowledgments (≤8 words, ≥10 turns). Injects session-close context so Claude produces a closing summary. Builds on `/end` skill experience. Design in v5.3.0-PLAN.md A2 section (preserved). ~70 LOC + 10 tests.
+- [ ] GPT web search via Responses API — `invokeOpenAIResponses()` function for `deliberate.ts`. Chat Completions (`/v1/chat/completions`) doesn't support `web_search_preview`; needs `/v1/responses` endpoint with different request shape (`input` string, `output[]` response). ~40 LOC. Adds a third grounded source alongside Gemini and Grok.
 - [ ] PostToolUse code quality gate — lint/syntax detection after edits
 - [ ] Agent context seeding — auto-inject prior ResearchIndex findings into spawned agents
 - [ ] Confidence calibration — track approval rate, adjust draft thresholds
 - [ ] Batch approve — `pai curate approve-all --confidence N`
+- [ ] `pai security` CLI — query `MEMORY/SECURITY/security-events.jsonl`; show blocks/alerts from last N days, filter by tool or category, summary stats. Makes the security audit log actually readable. SecurityValidator already writes blocks+alerts to the rolling log (v5.2.0); the reader is what's missing. Estimated: ~80 LOC, 1 session.
+
+### Memory System — Step 4 + 4b: Auto-Promotion Policy + Memory Scoring (DEFERRED)
+
+**Revisit trigger:** After 3 manual `pai curate` sessions OR when STAGING accumulates
+3+ unduplicated drafts — whichever comes first. Currently: 1 curation pass (2026-04-30),
+5 new ratings since last synthesis. Not enough signal yet.
+
+#### Step 4a — Auto-Promotion Policy
+
+Context: ReflectionHarvester synthesizes reflections → STAGING drafts (confidence: 0.8).
+LearningPatternSynthesis synthesizes ratings → STAGING drafts (confidence: 0.75).
+Manual curation (2026-04-30) produced a 90/85/80/75% CRYSTAL distribution from 1 pass.
+
+**Why deferred:** One sample isn't enough to know whether 0.8 is a useful confidence gate
+or whether harvest output is uniformly 0.8 regardless of quality.
+
+**Design decisions to make:**
+1. Gate: 7-day time + confidence ≥ 0.8 (not 48h — too aggressive)
+2. Dedup against existing WISDOM/FRAMES before promoting (key issue: naive auto-promote
+   creates near-duplicates every harvest cycle without an LLM dedup pass)
+3. WISDOM/CANDIDATE/ intermediate step (auto-approved at 70% CRYSTAL; manual graduation
+   to FRAMES/ at 85%+)
+4. Lower-friction manual path first (batch approve CLI) — may eliminate need for auto-promote
+
+#### Step 4b — Memory Scoring Model (new, 2026-05-12)
+
+**The core question:** Should memory entries self-prune based on usage, or only on time?
+
+**Proposed access-count model (raised by YourName):**
+- New WISDOM/FRAMES entries start at 5/10
+- Injected into a session → increment (cap at 10 = permanent)
+- Not accessed in weekly pass → decrement (floor at 0 = archived)
+
+**Problem with naive access-count:** LoadContext injects all entries ≥85% CRYSTAL on every
+session start — so every session increments everything above threshold regardless of whether
+the lesson was actually relevant. "Accessed" ≠ "useful." Score inflation, not signal.
+
+**Better split by memory type:**
+- **WISDOM/FRAMES**: recency decay only — re-promote via `pai curate` every 90 days or
+  drop to CANDIDATE/. Forces periodic review without requiring behavioral attribution.
+  Long-lived generic principles (parallelize, pre-flight) shouldn't decay on low-rated sessions.
+- **FAILURES/LEARNING**: access-count model fits well here — if a failure pattern hasn't
+  been relevant (injected AND session was well-rated) in 60 days, it's likely resolved.
+- **KNOWLEDGE/**: already has 7-day full-harvest refresh cycle — leave as-is.
+
+**What a v1 implementation looks like:**
+1. Add `last_accessed` timestamp to WISDOM/FRAMES entries (updated when LoadContext injects)
+2. SessionCleanup weekly pass: entries not injected in 90+ days → move to WISDOM/CANDIDATE/
+3. `pai curate` shows CANDIDATE entries with "last used N days ago" — one keystroke to re-promote
+4. FAILURES/: entries where failure type hasn't appeared in ratings for 60 days → archive
+
+**Unanswered:** What's the right behavioral signal for WISDOM? Rating correlation to specific
+injected frames is the ideal but requires attribution logic that doesn't exist yet. Recency
+decay is the pragmatic fallback. Design this alongside Step 4a — the two are coupled (promotion
+threshold and decay rate need to be calibrated together).
+
+**Related code:** hooks/lib/staging.ts, hooks/LoadContext.hook.ts (loadWisdomFrames),
+hooks/SessionCleanup.hook.ts (retention cleanup), PAI/Tools/MemoryCurate.ts
 
 ### KAI Public Launch
 - [ ] User reviews kai-cli/kai on GitHub and approves

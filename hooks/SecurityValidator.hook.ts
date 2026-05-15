@@ -22,7 +22,7 @@
  * - exit(2): Hard block (catastrophic operation prevented)
  *
  * SIDE EFFECTS:
- * - Writes to: MEMORY/SECURITY/YYYY/MM/security-{summary}-{timestamp}.jsonl
+ * - Writes to: MEMORY/SECURITY/security-events.jsonl (blocks + alerts only, 90-day rolling)
  * - User prompt: May trigger confirmation dialog for confirm-level operations
  *
  * INTER-HOOK RELATIONSHIPS:
@@ -60,7 +60,7 @@
  * - All decisions logged for audit trail
  */
 
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync, appendFileSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { parse as parseYaml } from 'yaml';
@@ -70,8 +70,12 @@ import { paiPath } from './lib/paths';
 // Security Event Logging
 // ========================================
 
-// Logs to individual files: MEMORY/SECURITY/YYYY/MM/security-{summary}-{timestamp}.jsonl
-// Each event gets a descriptive filename for easy scanning
+// Single rolling log: MEMORY/SECURITY/security-events.jsonl
+// Only blocks and alerts are recorded — confirms/allows are expected behavior, not incidents.
+// Rotated on write: entries older than LOG_RETENTION_DAYS are dropped.
+
+const SECURITY_LOG = paiPath('MEMORY', 'SECURITY', 'security-events.jsonl');
+const LOG_RETENTION_DAYS = 90;
 
 interface SecurityEvent {
   timestamp: string;
@@ -85,52 +89,32 @@ interface SecurityEvent {
   action_taken: string;
 }
 
-function generateEventSummary(event: SecurityEvent): string {
-  // Create a 6-word-max slug from event type and target/reason
-  const eventWord = event.event_type; // block, confirm, alert, allow
-
-  // Extract key words from target or reason
-  const source = event.reason || event.target || 'unknown';
-  const words = source
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')  // Remove special chars
-    .split(/\s+/)
-    .filter(w => w.length > 1)     // Skip tiny words
-    .slice(0, 5);                   // Max 5 words (+ event type = 6)
-
-  return [eventWord, ...words].join('-');
-}
-
-function getSecurityLogPath(event: SecurityEvent): string {
-  const now = new Date();
-  const year = now.getFullYear().toString();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  const day = now.getDate().toString().padStart(2, '0');
-  const hour = now.getHours().toString().padStart(2, '0');
-  const min = now.getMinutes().toString().padStart(2, '0');
-  const sec = now.getSeconds().toString().padStart(2, '0');
-
-  const summary = generateEventSummary(event);
-  const timestamp = `${year}${month}${day}-${hour}${min}${sec}`;
-
-  return paiPath('MEMORY', 'SECURITY', year, month, `security-${summary}-${timestamp}.jsonl`);
+export function trimOldEntries(logPath: string): void {
+  if (!existsSync(logPath)) return;
+  try {
+    const cutoff = Date.now() - LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    const lines = readFileSync(logPath, 'utf-8').split('\n').filter(l => l.trim());
+    const kept = lines.filter(line => {
+      try { return new Date(JSON.parse(line).timestamp).getTime() >= cutoff; }
+      catch { return false; }
+    });
+    if (kept.length < lines.length) {
+      writeFileSync(logPath, kept.join('\n') + (kept.length > 0 ? '\n' : ''));
+    }
+  } catch { /* non-fatal */ }
 }
 
 function logSecurityEvent(event: SecurityEvent): void {
+  // Only log incidents — blocks and alerts. Confirms/allows are expected behavior.
+  if (event.event_type === 'confirm' || event.event_type === 'allow') return;
+
   try {
-    const logPath = getSecurityLogPath(event);
-    const dir = logPath.substring(0, logPath.lastIndexOf('/'));
-
-    // Ensure directory exists
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-
-    const content = JSON.stringify(event, null, 2);
-    writeFileSync(logPath, content);
+    const dir = paiPath('MEMORY', 'SECURITY');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    trimOldEntries(SECURITY_LOG);
+    appendFileSync(SECURITY_LOG, JSON.stringify(event) + '\n');
   } catch {
     // Logging failure should not block operations
-    console.error('Warning: Failed to log security event');
   }
 }
 

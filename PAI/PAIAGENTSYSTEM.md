@@ -69,6 +69,37 @@ bun run ~/.claude/skills/Agents/Tools/ComposeAgent.ts --traits "research,analyti
 
 ---
 
+## How to Invoke Agents
+
+Three invocation mechanisms exist:
+
+| Mechanism | Syntax | When |
+|-----------|--------|------|
+| **Agent tool** | `Agent({ subagent_type: "Engineer", prompt: "..." })` | Spawning a pre-built agent from the primary conversation |
+| **Agents skill** | `Skill("Agents")` → ComposeAgent | Creating custom agents with unique personalities |
+| **Auto-triggered** | Hooks/skills spawn subagents internally | Research skill, QA workflows, development skill |
+
+**Passing context to spawned agents:**
+- Agents start with NO context from the parent conversation
+- Include: what to do, why, relevant file paths, constraints
+- Don't include: conversation history, prior attempts, task management state
+- For code tasks: specify the exact files and what to change
+- For research: specify the question, not the steps
+
+**Quick reference — "I want X, which agent?"**
+
+| Goal | Use |
+|------|-----|
+| Implement a feature | `Agent({ subagent_type: "Engineer", prompt: "..." })` |
+| Design system architecture | `Agent({ subagent_type: "Architect", prompt: "..." })` |
+| Find code in a large repo | `Agent({ subagent_type: "Explore", prompt: "..." })` |
+| Research with web sources | `Skill("Research")` or `Skill("Deliberate")` |
+| Parallel custom perspectives | `Skill("Agents")` → ComposeAgent with varied traits |
+| Security testing | `Agent({ subagent_type: "Pentester", prompt: "..." })` |
+| Browser automation/QA | `Agent({ subagent_type: "QATester", prompt: "..." })` |
+
+---
+
 ## Task Tool Subagent Types (Internal Use Only)
 
 These are pre-built agents in the Claude Code Task tool. They are for **internal workflow use**, not for user-requested "custom agents."

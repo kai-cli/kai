@@ -22,8 +22,9 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSy
 import { join, dirname, basename } from 'path';
 import { createInterface } from 'readline';
 import { getPaiDir, paiPath } from '../../hooks/lib/paths';
-import { listDrafts, cleanupExpired, rejectDraft as stagingReject } from '../../hooks/lib/staging';
+import { listDrafts, cleanupExpired, rejectDraft as stagingReject, writeDraft } from '../../hooks/lib/staging';
 import { listKnowledgeDomains } from '../../hooks/lib/knowledge-readback';
+import { loadRatings, analyzeRatings, synthesisToStagingContent } from './LearningPatternSynthesis';
 
 const paiDir = getPaiDir();
 
@@ -532,7 +533,7 @@ async function interactiveInsights(dryRun: boolean): Promise<void> {
   let highRatingCount = 0;
 
   try {
-    const ratingsPath = join(paiDir, 'MEMORY', 'STATE', 'ratings.jsonl');
+    const ratingsPath = join(paiDir, 'MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
     if (existsSync(ratingsPath)) {
       const cutoff = Date.now() - 7 * 86400000;
       const lines = readFileSync(ratingsPath, 'utf-8').trim().split('\n').filter(l => l);
@@ -551,7 +552,7 @@ async function interactiveInsights(dryRun: boolean): Promise<void> {
   // Show recent reflections count
   let reflCount = 0;
   try {
-    const reflPath = join(paiDir, 'MEMORY', 'STATE', 'algorithm-reflections.jsonl');
+    const reflPath = join(paiDir, 'MEMORY', 'LEARNING', 'REFLECTIONS', 'algorithm-reflections.jsonl');
     if (existsSync(reflPath)) {
       const cutoff = Date.now() - 7 * 86400000;
       const lines = readFileSync(reflPath, 'utf-8').trim().split('\n').filter(l => l);
@@ -582,7 +583,7 @@ function renderStats() {
 
   let totalRatings = 0, avgRating = 0, totalReflections = 0;
   try {
-    const rp = join(paiDir, 'MEMORY', 'STATE', 'ratings.jsonl');
+    const rp = join(paiDir, 'MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
     if (existsSync(rp)) {
       const lines = readFileSync(rp, 'utf-8').trim().split('\n').filter(l => l);
       totalRatings = lines.length;
@@ -591,7 +592,7 @@ function renderStats() {
     }
   } catch { /* skip */ }
   try {
-    const rp = join(paiDir, 'MEMORY', 'STATE', 'algorithm-reflections.jsonl');
+    const rp = join(paiDir, 'MEMORY', 'LEARNING', 'REFLECTIONS', 'algorithm-reflections.jsonl');
     if (existsSync(rp)) totalReflections = readFileSync(rp, 'utf-8').trim().split('\n').filter(l => l).length;
   } catch { /* skip */ }
 
@@ -708,6 +709,42 @@ async function runFullReport(dryRun: boolean, quick: boolean) {
       }
     }
     console.log();
+  }
+
+  // Run LearningPatternSynthesis and write results to STAGING if there's enough new signal
+  if (!dryRun && !quick) {
+    try {
+      const synthStatePath = join(paiDir, 'MEMORY', 'STATE', 'synthesis-state.json');
+      let lastCount = 0;
+      if (existsSync(synthStatePath)) {
+        try { lastCount = JSON.parse(readFileSync(synthStatePath, 'utf-8')).lastRatingCount || 0; } catch {}
+      }
+      const ratings = loadRatings(30); // last 30 days
+      // Compare against lastCount but clamp to 0 — window shrinkage (old ratings
+      // falling out of 30d range) should not produce a negative newCount.
+      const newCount = Math.max(0, ratings.length - lastCount);
+      if (ratings.length >= 5 && newCount >= 5) {
+        const result = analyzeRatings(ratings, 'last-30-days');
+        if (result.frustrations.length > 0 || result.successes.length > 0) {
+          const content = synthesisToStagingContent(result);
+          if (content.trim()) {
+            // Write to STAGING as a draft (same pipeline as ReflectionHarvester)
+            writeDraft({
+              type: 'pattern-insight',
+              sourceSession: 'pai-curate',
+              confidence: 0.75,
+              generated: new Date().toISOString(),
+              targetProject: 'all',
+              targetFilename: 'ratings-patterns.md',
+              title: `Rating pattern synthesis from ${ratings.length} ratings`,
+              content,
+            });
+            console.log(dim(`\n  📊 Pattern synthesis draft created from ${ratings.length} ratings → STAGING`));
+            writeFileSync(synthStatePath, JSON.stringify({ lastRatingCount: ratings.length, lastRun: new Date().toISOString() }));
+          }
+        }
+      }
+    } catch { /* non-critical — synthesis failure should not block curate */ }
   }
 
   // Write curation log

@@ -154,8 +154,40 @@ export function validateConfig(merged: Record<string, unknown>): ValidationResul
     if (typeof principal.name !== 'string') errors.push('principal.name: must be a string');
   }
 
-  // hooks
-  if (!merged.hooks || typeof merged.hooks !== 'object') errors.push('hooks: missing or not an object');
+  // hooks — validate structure of hook entries (two valid shapes: direct or matcher-grouped)
+  if (!merged.hooks || typeof merged.hooks !== 'object') {
+    errors.push('hooks: missing or not an object');
+  } else {
+    const hooks = merged.hooks as Record<string, unknown>;
+    for (const [event, entries] of Object.entries(hooks)) {
+      if (!Array.isArray(entries)) {
+        errors.push(`hooks.${event}: must be an array of hook objects`);
+        continue;
+      }
+      for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+          errors.push(`hooks.${event}[${i}]: must be an object`);
+          continue;
+        }
+        const hook = entry as Record<string, unknown>;
+        // Shape 1: { hooks: [{type, command}] } with optional matcher
+        if (Array.isArray(hook.hooks)) {
+          for (let j = 0; j < (hook.hooks as unknown[]).length; j++) {
+            const nested = (hook.hooks as unknown[])[j] as Record<string, unknown> | undefined;
+            if (!nested || typeof nested.command !== 'string' || !nested.command) {
+              errors.push(`hooks.${event}[${i}].hooks[${j}].command: required non-empty string`);
+            }
+          }
+          continue;
+        }
+        // Shape 2: { command, ... }
+        if (typeof hook.command !== 'string' || !hook.command) {
+          errors.push(`hooks.${event}[${i}]: must have 'command' string or 'matcher' + 'hooks' array`);
+        }
+      }
+    }
+  }
   if (!merged.statusLine || typeof merged.statusLine !== 'object') errors.push('statusLine: missing or not an object');
 
   // permissions
@@ -177,7 +209,6 @@ export function validateConfig(merged: Record<string, unknown>): ValidationResul
   // preferences
   if (!merged.env || typeof merged.env !== 'object') errors.push('env: missing or not an object');
   else {
-    // AWS Bedrock vars — only required when Bedrock is explicitly enabled
     const envObj = merged.env as Record<string, unknown>;
     if (envObj['CLAUDE_CODE_USE_BEDROCK'] === '1') {
       const bedrockKeys = ['AWS_REGION', 'AWS_PROFILE', 'ANTHROPIC_MODEL', 'ANTHROPIC_SMALL_FAST_MODEL'];

@@ -33,7 +33,11 @@
 
 // Skills that are known to false-positive due to list position bias.
 // These get BLOCKED unless explicitly requested via /keybindings-help
-const BLOCKED_SKILLS = ['keybindings-help'];
+export const BLOCKED_SKILLS = ['keybindings-help'];
+
+export function shouldBlockSkill(skillName: string): boolean {
+  return BLOCKED_SKILLS.includes(skillName.toLowerCase().trim());
+}
 
 interface HookInput {
   tool_name: string;
@@ -82,4 +86,4 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) main();

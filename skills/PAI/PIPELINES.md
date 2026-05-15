@@ -1,6 +1,6 @@
 # Pipelines
 
-> **KAI 5.2.0** — APIs and configuration formats are stabilizing for the KAI public release.
+> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
 
 **Orchestrating Sequences of Actions with Verification Gates**
 

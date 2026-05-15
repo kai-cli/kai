@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PAI Secret Guard — git pre-commit hook
+# KAI Secret Guard — git pre-commit hook
 # Scans staged file contents for credential patterns before allowing commit.
 # Catches secrets leaked through any path: session logs, tool output, manual edits.
 #

@@ -26,6 +26,7 @@ import { handleTabState } from './handlers/TabState';
 import { handleRebuildSkill } from './handlers/RebuildSkill';
 import { handleAlgorithmEnrichment } from './handlers/AlgorithmEnrichment';
 import { handleDocCrossRefIntegrity } from './handlers/DocCrossRefIntegrity';
+import { handlePlanDetection } from './handlers/PlanDetection';
 
 interface HookInput {
   session_id: string;
@@ -103,8 +104,9 @@ async function main() {
     handleRebuildSkill(),
     handleAlgorithmEnrichment(parsed, hookInput.session_id),
     handleDocCrossRefIntegrity(parsed, hookInput),
+    handlePlanDetection(parsed, hookInput.session_id),
   ];
-  const handlerNames = ['TabState', 'RebuildSkill', 'AlgorithmEnrichment', 'DocCrossRefIntegrity'];
+  const handlerNames = ['TabState', 'RebuildSkill', 'AlgorithmEnrichment', 'DocCrossRefIntegrity', 'PlanDetection'];
 
   const results = await Promise.allSettled(handlers);
 

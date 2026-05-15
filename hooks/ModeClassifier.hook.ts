@@ -26,11 +26,16 @@ async function main() {
   const mode = classify(prompt);
 
   // Only inject for MINIMAL and ALGORITHM — NATIVE is the default, no hint needed
-  if (mode === 'MINIMAL' || mode === 'ALGORITHM') {
+  if (mode === 'ALGORITHM') {
     console.log(JSON.stringify({
-      additionalContext: `<mode_hint>${mode}</mode_hint>\nPre-classified as ${mode} mode based on prompt pattern. Use this mode for your response format unless semantic analysis clearly overrides it.`
+      additionalContext: `<mode_hint>ALGORITHM</mode_hint>\nThis request is ALGORITHM mode. Your MANDATORY FIRST ACTION is to Read PAI/Algorithm/v3.13.0.md. Do NOT use NATIVE format. Do NOT skip the Algorithm.`
     }));
-    console.error(`[ModeClassifier] Injected mode hint: ${mode}`);
+    console.error(`[ModeClassifier] Injected mode hint: ALGORITHM`);
+  } else if (mode === 'MINIMAL') {
+    console.log(JSON.stringify({
+      additionalContext: `<mode_hint>MINIMAL</mode_hint>\nPre-classified as MINIMAL mode. Use the MINIMAL response format.`
+    }));
+    console.error(`[ModeClassifier] Injected mode hint: MINIMAL`);
   } else {
     console.error(`[ModeClassifier] NATIVE (no hint injected)`);
   }

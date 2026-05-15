@@ -51,7 +51,7 @@ interface PatternGroup {
   examples: string[];
 }
 
-interface SynthesisResult {
+export interface SynthesisResult {
   period: string;
   totalRatings: number;
   avgRating: number;
@@ -135,7 +135,7 @@ function groupToPatternGroups(
 // Analysis
 // ============================================================================
 
-function analyzeRatings(ratings: Rating[], period: string): SynthesisResult {
+export function analyzeRatings(ratings: Rating[], period: string): SynthesisResult {
   if (ratings.length === 0) {
     return {
       period,
@@ -294,8 +294,57 @@ function writeSynthesis(result: SynthesisResult, period: string): string {
 }
 
 // ============================================================================
+// Exports for pai curate integration
+// ============================================================================
+
+/** Load ratings from the JSONL file, optionally filtered to last N days. */
+export function loadRatings(days?: number): Rating[] {
+  if (!fs.existsSync(RATINGS_FILE)) return [];
+  const cutoff = days ? Date.now() - days * 86_400_000 : 0;
+  return fs.readFileSync(RATINGS_FILE, 'utf-8')
+    .trim().split('\n').filter(l => l.trim())
+    .flatMap(line => {
+      try {
+        const r = JSON.parse(line) as Rating;
+        if (cutoff && new Date(r.timestamp).getTime() < cutoff) return [];
+        return [r];
+      } catch { return []; }
+    });
+}
+
+/**
+ * Convert a SynthesisResult into STAGING draft content (numbered lesson list).
+ * Same format as ReflectionHarvester.writeLessonsToStaging() so both feed
+ * the same STAGING → curate → WISDOM/FRAMES pipeline.
+ */
+export function synthesisToStagingContent(result: SynthesisResult): string {
+  const lessons: string[] = [];
+
+  // Top frustration patterns as "avoid" lessons
+  for (const f of result.frustrations.slice(0, 3)) {
+    if (f.count >= 2) {
+      lessons.push(`Address ${f.pattern.toLowerCase()} proactively — occurs in ${f.count} sessions (avg ${f.avgRating.toFixed(1)}/10)`);
+    }
+  }
+  // Top success patterns as "reinforce" lessons
+  for (const s of result.successes.slice(0, 2)) {
+    if (s.count >= 2) {
+      lessons.push(`Maintain ${s.pattern.toLowerCase()} — associated with high satisfaction in ${s.count} sessions`);
+    }
+  }
+  // Recommendations from the analysis
+  for (const rec of result.recommendations.slice(0, 2)) {
+    lessons.push(rec);
+  }
+
+  return lessons.map((l, i) => `${i + 1}. ${l}`).join('\n');
+}
+
+// ============================================================================
 // CLI
 // ============================================================================
+
+if (import.meta.main) {
 
 const { values } = parseArgs({
   args: Bun.argv.slice(2),
@@ -397,3 +446,5 @@ if (values["dry-run"]) {
   const filepath = writeSynthesis(result, period);
   console.log(`\n✅ Created synthesis report: ${path.basename(filepath)}`);
 }
+
+} // end import.meta.main

@@ -172,6 +172,55 @@ describe('validateConfig', () => {
     const { errors } = validateConfig({});
     expect(errors.length).toBeGreaterThan(3);
   });
+
+  test('accepts hooks with direct command shape', () => {
+    const cfg = minimalValid();
+    cfg.hooks = { PostToolUse: [{ command: 'bun run tracker.ts' }] };
+    const { errors } = validateConfig(cfg);
+    expect(errors.filter(e => e.includes('hooks.'))).toHaveLength(0);
+  });
+
+  test('accepts hooks with matcher + nested hooks shape', () => {
+    const cfg = minimalValid();
+    cfg.hooks = { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'bun run guard.ts' }] }] };
+    const { errors } = validateConfig(cfg);
+    expect(errors.filter(e => e.includes('hooks.'))).toHaveLength(0);
+  });
+
+  test('accepts hooks with nested hooks but no matcher', () => {
+    const cfg = minimalValid();
+    cfg.hooks = { SessionEnd: [{ hooks: [{ type: 'command', command: 'bun run cleanup.ts' }] }] };
+    const { errors } = validateConfig(cfg);
+    expect(errors.filter(e => e.includes('hooks.'))).toHaveLength(0);
+  });
+
+  test('rejects hooks entry that is not an object', () => {
+    const cfg = minimalValid();
+    cfg.hooks = { PostToolUse: ['bad-string'] };
+    const { errors } = validateConfig(cfg);
+    expect(errors.some(e => e.includes('hooks.PostToolUse[0]'))).toBe(true);
+  });
+
+  test('rejects hooks entry with empty command', () => {
+    const cfg = minimalValid();
+    cfg.hooks = { PostToolUse: [{ command: '' }] };
+    const { errors } = validateConfig(cfg);
+    expect(errors.some(e => e.includes('hooks.PostToolUse[0]'))).toBe(true);
+  });
+
+  test('rejects nested hook with missing command', () => {
+    const cfg = minimalValid();
+    cfg.hooks = { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command' }] }] };
+    const { errors } = validateConfig(cfg);
+    expect(errors.some(e => e.includes('hooks.PreToolUse[0].hooks[0].command'))).toBe(true);
+  });
+
+  test('rejects hooks event that is not an array', () => {
+    const cfg = minimalValid();
+    cfg.hooks = { PostToolUse: 'not-an-array' };
+    const { errors } = validateConfig(cfg);
+    expect(errors.some(e => e.includes('hooks.PostToolUse: must be an array'))).toBe(true);
+  });
 });
 
 // ── buildSettings integration ─────────────────────────────────────────────

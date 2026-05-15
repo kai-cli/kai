@@ -198,7 +198,7 @@ if [[ $QUICK -eq 0 ]]; then
   # Extract hook names from docs/code (FooBar.hook.ts pattern), check each exists
   # Uses \.hook\.ts to avoid false positives like SYM.hooks (property access)
   # Allowlist: example/template hook names used in documentation
-  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook\|PlanApprovalGuard"
+  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook\|PlanApprovalGuard\|SessionCloseGuard"
 
   HOOK_REFS=$(grep -rhoE '[A-Z][A-Za-z]+\.hook\.ts' \
     --include='*.md' --include='*.ts' --include='*.sh' --include='*.jsonc' \
@@ -251,7 +251,7 @@ if [[ $QUICK -eq 0 ]]; then
   )
 
   # Allowlist patterns — legitimate PAI references in user-facing docs
-  BRAND_ALLOWLIST='PAI_DIR\|PAI/\|PAI-Install\|PAISECURITYSYSTEM\|MEMORY/STAGING\|PAI/Tools\|PAI/Algorithm\|PAI/USER\|\.pai\b\|pai-config'
+  BRAND_ALLOWLIST='PAI_DIR\|PAI/\|PAI-Install\|PAISECURITYSYSTEM\|MEMORY/STAGING\|PAI/Tools\|PAI/Algorithm\|PAI/USER\|\.pai\b\|pai-config\|Miessler.*PAI\|PAI system\|PAI infrastructure'
 
   BRAND_FOUND=0
   for doc in "${USER_FACING_DOCS[@]}"; do

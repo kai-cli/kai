@@ -1,6 +1,6 @@
 ---
 name: Deliberate
-description: Multi-model deliberation. USE WHEN deliberate, multi-model, cross-model, real models debate, genuine AI diversity, different LLMs weigh in.
+description: Multi-model deliberation and research. USE WHEN deliberate, multi-model, cross-model, real models debate, genuine AI diversity, different LLMs weigh in, research, web search, multi-source research, grounded research.
 implements: Science
 science_cycle_time: meso
 ---
@@ -38,6 +38,7 @@ Running the **WorkflowName** workflow in the **Deliberate** skill to ACTION...
 | Full multi-model deliberation (2-3 rounds, all models) | `Workflows/Full.md` |
 | Quick multi-model check (1 round, fast) | `Workflows/Quick.md` |
 | Claude-only deliberation (no external keys needed) | `Workflows/ClaudeOnly.md` |
+| Multi-source web-grounded research | `Workflows/ResearchMode.md` |
 | Simulated perspectives from one model | Council skill |
 
 ## Quick Reference
@@ -47,6 +48,7 @@ Running the **WorkflowName** workflow in the **Deliberate** skill to ACTION...
 | **FULL** | Deep multi-model debate | 2-3 | All available | Transcript + synthesis report |
 | **QUICK** | Fast model spot-check | 1 | All available | Positions only |
 | **CLAUDE-ONLY** | No external keys needed | 2 | Claude (Opus) only | Single-model multi-perspective |
+| **RESEARCH** | Web-grounded multi-source research | 1 (scatter) | All available | Citations + synthesis |
 
 ## Context Files
 
@@ -71,6 +73,12 @@ bun ~/.claude/scripts/deliberate.ts --rounds 2 --models claude "Question here"
 
 # Specific models
 bun ~/.claude/scripts/deliberate.ts --models claude,gemini --rounds 3 "Question here"
+
+# Research mode (web-grounded, single scatter round)
+bun ~/.claude/scripts/deliberate.ts --mode research "What are the latest Claude Code features?"
+
+# Research with specific models
+bun ~/.claude/scripts/deliberate.ts --mode research --models gemini,grok "Current state of X?"
 
 # Save report
 bun ~/.claude/scripts/deliberate.ts --output report.md "Question here"

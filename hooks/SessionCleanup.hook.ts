@@ -34,6 +34,7 @@
  */
 
 import { writeFileSync, existsSync, readFileSync, unlinkSync, statSync, renameSync, readdirSync, mkdirSync } from 'fs';
+import { spawn } from 'child_process';
 import { atomicWriteJSON } from './lib/atomic';
 import { join } from 'path';
 import { getISOTimestamp } from './lib/time';
@@ -217,6 +218,13 @@ async function main() {
       // Timeout or parse error — proceed without session_id
     }
 
+    // Clear plan-pending state (no plan survives session end)
+    const planPendingPath = join(STATE_DIR, 'plan-pending.json');
+    if (existsSync(planPendingPath)) {
+      try { unlinkSync(planPendingPath); } catch {}
+      console.error('[SessionCleanup] Cleared plan-pending state');
+    }
+
     // Mark work as complete and clear state
     clearSessionWork(sessionId);
 
@@ -236,6 +244,11 @@ async function main() {
 
     // ── Memory retention cleanup (daily-gated) ──
     runRetentionCleanup();
+
+    // ── LearningPatternSynthesis backstop (14-day-gated) ──
+    // Primary trigger is `pai curate`; this ensures synthesis doesn't go stale
+    // if curate isn't run for an extended period.
+    maybeRunSynthesisBackstop();
 
     console.error('[SessionCleanup] Session ended, work marked complete');
     process.exit(0);
@@ -296,7 +309,59 @@ function runRetentionCleanup(): void {
       console.error(`[SessionCleanup] events.jsonl rotation failed: ${e}`);
     }
 
-    // 2. Delete stale algorithm state files
+    // 2. Clean prompt-analysis-cache — files are valid for 30 seconds only.
+    // Any file older than 24h is permanently stale (session long gone).
+    const promptCacheDir = join(STATE_DIR, 'prompt-analysis-cache');
+    try {
+      if (existsSync(promptCacheDir)) {
+        for (const file of readdirSync(promptCacheDir)) {
+          if (!file.endsWith('.json')) continue;
+          const filePath = join(promptCacheDir, file);
+          try {
+            if (now - statSync(filePath).mtimeMs > ONE_DAY_MS) {
+              unlinkSync(filePath);
+              cleaned++;
+            }
+          } catch {}
+        }
+      }
+    } catch {}
+
+    // 2b. Clean pending-recovery-*.json — these were written by PreCompact but
+    // PostCompactRecovery reads from algorithms/ instead. Never consumed. Purge any
+    // older than 24h (and PreCompact no longer writes new ones).
+    try {
+      for (const file of readdirSync(STATE_DIR)) {
+        if (!file.startsWith('pending-recovery-') || !file.endsWith('.json')) continue;
+        const filePath = join(STATE_DIR, file);
+        try {
+          if (now - statSync(filePath).mtimeMs > ONE_DAY_MS) {
+            unlinkSync(filePath);
+            cleaned++;
+          }
+        } catch {}
+      }
+    } catch {}
+
+    // 2c. Clean orphaned current-work-*.json files whose WORK/ dir no longer exists
+    try {
+      for (const file of readdirSync(STATE_DIR)) {
+        if (!file.startsWith('current-work-') || !file.endsWith('.json')) continue;
+        const filePath = join(STATE_DIR, file);
+        try {
+          const cw = JSON.parse(readFileSync(filePath, 'utf-8'));
+          if (cw.session_dir) {
+            const workPath = join(WORK_DIR, cw.session_dir);
+            if (!existsSync(workPath)) {
+              unlinkSync(filePath);
+              cleaned++;
+            }
+          }
+        } catch {}
+      }
+    } catch {}
+
+    // 3. Delete stale algorithm state files
     const algosDir = join(STATE_DIR, 'algorithms');
     try {
       if (existsSync(algosDir)) {
@@ -339,9 +404,9 @@ function runRetentionCleanup(): void {
       }
     } catch (e) { console.error(`[SessionCleanup] reflections cap failed: ${e}`); }
 
-    // 5. Archive LEARNING category files older than 90 days
+    // 5. Archive LEARNING/ALGORITHM and LEARNING/SYSTEM files older than 90 days
     const LEARNING_TTL_MS = 90 * ONE_DAY_MS;
-    for (const category of ['ALGORITHM', 'FAILURES', 'SYSTEM']) {
+    for (const category of ['ALGORITHM', 'SYSTEM']) {
       const categoryDir = join(MEMORY_DIR, 'LEARNING', category);
       if (!existsSync(categoryDir)) continue;
       try {
@@ -356,6 +421,41 @@ function runRetentionCleanup(): void {
                 const archiveDir = join(categoryDir, '.archive', monthDir.name);
                 mkdirSync(archiveDir, { recursive: true });
                 renameSync(filePath, join(archiveDir, file));
+                cleaned++;
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+    }
+
+    // 5b. FAILURES cleanup: delete tool-calls.json after 30 days; keep CONTEXT.md + sentiment.json permanently.
+    // 30 days is sufficient — loadFailurePatterns() only surfaces 5 most recent, and tool-calls.json
+    // is only useful if you're debugging a specific failure within a month of it happening.
+    // Transcripts are not stored here — they live in native Claude Code session storage.
+    const TOOL_CALLS_TTL_MS = 30 * ONE_DAY_MS;
+    const failuresDir = join(MEMORY_DIR, 'LEARNING', 'FAILURES');
+    if (existsSync(failuresDir)) {
+      try {
+        for (const monthDir of readdirSync(failuresDir, { withFileTypes: true })) {
+          if (!monthDir.isDirectory() || monthDir.name.startsWith('.')) continue;
+          const monthPath = join(failuresDir, monthDir.name);
+          for (const failDir of readdirSync(monthPath, { withFileTypes: true })) {
+            if (!failDir.isDirectory()) continue;
+            const failPath = join(monthPath, failDir.name);
+            // Delete tool-calls.json after 30 days
+            const toolCallsPath = join(failPath, 'tool-calls.json');
+            try {
+              if (existsSync(toolCallsPath) && now - statSync(toolCallsPath).mtimeMs > TOOL_CALLS_TTL_MS) {
+                unlinkSync(toolCallsPath);
+                cleaned++;
+              }
+            } catch {}
+            // Delete any transcript.jsonl that snuck in (legacy or copied)
+            const transcriptPath = join(failPath, 'transcript.jsonl');
+            try {
+              if (existsSync(transcriptPath)) {
+                unlinkSync(transcriptPath);
                 cleaned++;
               }
             } catch {}
@@ -392,6 +492,36 @@ function runRetentionCleanup(): void {
   } catch (e) {
     console.error(`[SessionCleanup] Retention cleanup failed: ${e}`);
   }
+}
+
+/**
+ * Backstop: if LearningPatternSynthesis hasn't run in 14 days, spawn it detached.
+ * Primary trigger is `pai curate`; this ensures synthesis doesn't go stale.
+ */
+export function maybeRunSynthesisBackstop(): void {
+  const SYNTHESIS_GATE_DAYS = 14;
+  const synthStatePath = join(STATE_DIR, 'synthesis-state.json');
+  try {
+    let daysSince = SYNTHESIS_GATE_DAYS + 1; // default to stale
+    if (existsSync(synthStatePath)) {
+      const state = JSON.parse(readFileSync(synthStatePath, 'utf-8'));
+      if (state.lastRun) {
+        daysSince = (Date.now() - new Date(state.lastRun).getTime()) / 86_400_000;
+      }
+    }
+    if (daysSince >= SYNTHESIS_GATE_DAYS) {
+      const synthPath = join(paiPath(), 'PAI', 'Tools', 'LearningPatternSynthesis.ts');
+      if (existsSync(synthPath)) {
+        const proc = spawn('bun', [synthPath, '--month'], {
+          detached: true,
+          stdio: 'ignore',
+          env: { ...process.env },
+        });
+        proc.unref();
+        console.error(`[SessionCleanup] Synthesis backstop triggered (${Math.floor(daysSince)}d since last run)`);
+      }
+    }
+  } catch { /* non-critical */ }
 }
 
 if (import.meta.main) { main(); }

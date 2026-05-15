@@ -2,6 +2,43 @@
 
 All notable changes to KAI will be documented in this file.
 
+## [5.3.0] — 2026-05-15
+
+Steering enforcement, multi-model research, graceful session exit, self-learning capabilities.
+
+### Added
+- `hooks/PlanApprovalGuard.hook.ts` — detects plan presentations via signal co-occurrence (>=2 of: phase header, completion gate, time estimate, execution order), injects approval reminder at next prompt
+- `hooks/handlers/PlanDetection.ts` — Stop handler for plan signal detection, writes plan-pending state
+- `skills/PAI/End/` — `/end` command for graceful session close with structured summary
+- `scripts/deliberate.ts --mode research` — scatter-gather-synthesize research across Gemini (google_search grounding) and Grok (search_parameters)
+- `skills/Deliberate/Workflows/ResearchMode.md` — research mode documentation
+- `CAPABILITIES.md` system — cross-project capability/skill tracking, auto-learning
+- Stale PRD surfacing in LoadContext (>14 days, 0 progress) + Board API `stale` flag
+- `validateConfig()` now validates hook entry shapes (direct, matcher-grouped, grouped-no-matcher)
+- Agent invocation guide in `PAI/PAIAGENTSYSTEM.md` with quick-reference table
+- 50+ new tests: PlanApprovalGuard (28), HookFunctions (43), MemoryFunctions (14), BuildSettings hook validation (7)
+
+### Changed
+- Algorithm version reference updated to v3.13.0
+- LoadContext version string updated to v5.3.0
+- CONTEXT_ROUTING.md rewritten as clean template (personal content removed)
+- README attribution rewritten: clear credit to Daniel Miessler's PAI, clear divergence statement
+- `AlgorithmTracker.hook.ts` exports `detectPhaseFromBash()` and `parseCriterion()` for testing
+- `SkillGuard.hook.ts` exports `shouldBlockSkill()` with `import.meta.main` guard
+- `LocalContextFirst.hook.ts` exports `loadDomainPatterns()` and `matchesDomainTopics()`
+- `PreCompact.hook.ts` exports `loadIdentity()` and `loadAlgorithmState()`
+- `SecurityValidator.hook.ts` exports `trimOldEntries()`
+- `LearningPatternSynthesis.ts` CLI wrapped in `import.meta.main` guard
+
+### Fixed
+- BuildSettings validation no longer rejects hooks with `{matcher, hooks:[...]}` shape
+- SessionCleanup cleans `plan-pending.json` at session end
+
+### Test Coverage
+- Total: 529 tests across 27 files (up from 457)
+
+---
+
 ## [5.2.0] — 2026-04-30
 
 Foundation completion, routing intelligence, and test coverage.
@@ -94,8 +131,8 @@ Initial public release of KAI (Kaizen AI).
 
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
-- **79 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
-- **40 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
+- **80 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
+- **41 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation
 - **Security hooks** — SecretScanner, GitHubWriteGuard, SecurityValidator
