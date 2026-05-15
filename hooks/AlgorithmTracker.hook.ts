@@ -41,7 +41,7 @@ const PHASE_MAP: Record<string, AlgorithmPhase> = {
 
 const ALGORITHM_ENTRY = 'entering the pai algorithm';
 
-function detectPhaseFromBash(command: string): { phase: AlgorithmPhase | null; isAlgorithmEntry: boolean } {
+export function detectPhaseFromBash(command: string): { phase: AlgorithmPhase | null; isAlgorithmEntry: boolean } {
   // Only match notification curls to localhost:8888
   if (!command.includes('localhost:8888') || !command.includes('/notify')) {
     return { phase: null, isAlgorithmEntry: false };
@@ -81,7 +81,7 @@ const CRITERION_PATTERNS = [
 ];
 const TASK_NUMBER = /Task\s+#(\d+)\s+created successfully/;
 
-function parseCriterion(text: string): { id: string; description: string } | null {
+export function parseCriterion(text: string): { id: string; description: string } | null {
   for (const p of CRITERION_PATTERNS) {
     const m = text.match(p);
     if (m) return { id: m[1], description: m[2].trim() };

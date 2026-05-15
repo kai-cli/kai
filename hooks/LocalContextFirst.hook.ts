@@ -20,7 +20,7 @@ import { paiPath } from './lib/paths';
 
 const DOMAINS_CONFIG_PATH = paiPath('config', 'domains.jsonc');
 
-function loadDomainPatterns(): Array<{ domain: string; keywords: string[] }> {
+export function loadDomainPatterns(): Array<{ domain: string; keywords: string[] }> {
   if (!existsSync(DOMAINS_CONFIG_PATH)) return [];
   try {
     // Strip JSONC comments before parsing
@@ -36,7 +36,7 @@ function loadDomainPatterns(): Array<{ domain: string; keywords: string[] }> {
   } catch { return []; }
 }
 
-function matchesDomainTopics(prompt: string, patterns: Array<{ domain: string; keywords: string[] }>): string[] {
+export function matchesDomainTopics(prompt: string, patterns: Array<{ domain: string; keywords: string[] }>): string[] {
   const lower = prompt.toLowerCase();
   const matched: string[] = [];
   for (const { domain, keywords } of patterns) {
@@ -85,4 +85,4 @@ Local context is faster and more accurate than web research for your domain topi
   process.exit(0);
 }
 
-main();
+if (import.meta.main) main();

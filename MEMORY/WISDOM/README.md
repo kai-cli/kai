@@ -1,34 +1,70 @@
 # MEMORY/WISDOM — Persistent Wisdom Store
 
-Extracted insights, decisions, and patterns that survive across sessions.
-Distinct from TELOS/WISDOM.md (which is the user's personal accumulated wisdom).
-This tier is AI-maintained — KAI writes here when something worth keeping surfaces.
+Distilled, high-confidence behavioral principles that survive across sessions.
+Distinct from `TELOS/WISDOM.md` (the user's manually-curated personal wisdom).
+This tier is AI-maintained: principles are promoted here from `STAGING/` after
+curation, and the highest-confidence entries are auto-injected at session start.
 
 ## Structure
 
-| Directory | Contents |
-|-----------|----------|
-| LEADERSHIP/ | Leadership patterns, people decisions, management lessons extracted from sessions |
-| TECHNICAL/ | Technical decisions, architecture lessons, stack choices and their outcomes |
-| PRODUCT/ | Product decisions, roadmap patterns, and customer insight extractions |
+| Path | Purpose |
+|------|---------|
+| `FRAMES/<domain>.md` | Domain-grouped principle files. Read by `loadWisdomFrames()` and injected into every session start. |
+
+One file per domain (e.g. `FRAMES/algorithm.md`, `FRAMES/communication.md`).
+File contents are concatenated principle blocks; there is no overall ordering
+guarantee — each `### ... [CRYSTAL: N%]` block is read independently.
 
 ## File Format
 
-Each wisdom entry is a markdown file named `YYYYMMDD-{slug}.md` with:
-- **Observation:** What was noticed
-- **Context:** When/where it came from
-- **Principle:** The extractable lesson
-- **Application:** How to use it going forward
+Each principle is a level-3 heading with an inline confidence marker, followed
+by explanatory body text:
 
-## When KAI Writes Here
+```
+### <principle name> [CRYSTAL: <N>%]
+<one-paragraph explanation, ideally <300 chars>
+```
 
-- After a session surfaces a clear leadership or product principle
-- When a technical decision has clear future-reference value
-- When a pattern repeats across multiple sessions (promotion from LEARNING/)
-- When the user explicitly asks to capture something
+The regex `loadWisdomFrames()` matches is:
+`^### (.+?) \[CRYSTAL: (\d+)%\]`
+
+## CRYSTAL% Semantics
+
+| Range | Meaning | Behavior |
+|-------|---------|----------|
+| ≥ 85% | High-confidence principle | Auto-injected at session start by `loadWisdomFrames()` |
+| 70–84% | Approved candidate, not yet trusted enough to inject | Lives in FRAMES file, ignored by readback. Promote by editing the % up. |
+| < 70% | Should not be in WISDOM/ | Either keep in STAGING or reject |
+
+CRYSTAL% is set at promotion time. Conventions used so far:
+- 90% — Independently corroborated by ≥2 harvest cycles, broad applicability
+- 85% — Single corroboration, clear actionability
+- 80% — Specific or narrow applicability
+- 75% — Single-incident origin; awaiting recurrence
+
+## Promotion Path
+
+```
+ReflectionHarvester (auto)
+        ↓
+    STAGING/*.md  (drafts, 14d expiry, confidence 0.8)
+        ↓
+    pai curate  →  manual review  →  edit into FRAMES/<domain>.md
+        ↓
+    WISDOM/FRAMES/<domain>.md  (CRYSTAL% set by curator)
+        ↓
+    loadWisdomFrames()  →  injected at session start (if ≥85%)
+```
+
+Approvals are logged to `STATE/curation-log.jsonl`.
+Approved drafts move to `STAGING/.archive/` for audit; rejected drafts move to
+`STAGING/.rejections.jsonl` so the synthesizer can avoid resurfacing them.
 
 ## Relationship to Other Memory Tiers
 
-- **LEARNING/** — Session-level reflections, raw signals (short-lived)
-- **WISDOM/** — Distilled principles worth keeping permanently (this tier)
-- **TELOS/WISDOM.md** — The user's own wisdom, manually curated
+- `LEARNING/REFLECTIONS/` — Raw algorithm reflections (jsonl, append-only)
+- `LEARNING/SIGNALS/ratings.jsonl` — Session ratings, source for synthesis
+- `STAGING/` — Draft principles awaiting curation (14d expiry)
+- `WISDOM/FRAMES/` — Curated, durable principles (this tier)
+- `KNOWLEDGE/` — Cross-project domain knowledge (separate pipeline)
+- `TELOS/WISDOM.md` — User's manually-curated personal wisdom

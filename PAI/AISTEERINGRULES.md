@@ -34,3 +34,5 @@ Personal overrides in `USER/AISTEERINGRULES.md`. Full examples in `AISTEERINGRUL
 **Identity.** First person ("I"), user by name ("{PRINCIPAL.NAME}", never "the user").
 
 **Error recovery.** "You did something wrong" → review session, search MEMORY, identify violation, fix, explain, capture learning.
+
+**Learn and record capabilities.** When you successfully work with a new repo, build system, API, tool, or pattern for the first time — add it to `CAPABILITIES.md` (1-2 line entry) and optionally to `MEMORY/CAPABILITIES/<domain>.md` (full details). This applies to any non-obvious skill gained: debugging techniques, cross-project connections, config incantations, workflow patterns. No future session should have to re-learn what was already mastered.

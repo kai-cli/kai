@@ -125,7 +125,7 @@ function buildManifest(): ManifestData {
   const hooksDir = paiPath("hooks");
   const agentsDir = paiPath("agents");
 
-  // Recursive walk — counts every directory containing SKILL.md at any depth.
+  // Intentional 3-level nesting (e.g. Documents/Pdf, Media/Art). walkSkills() is recursive.
   // Matches: find skills/ -name 'SKILL.md' | wc -l
   const skillInventory: string[] = [];
   if (existsSync(skillsDir)) {

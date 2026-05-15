@@ -102,14 +102,9 @@ async function main() {
 
   const configPath = input.config_path || join(PAI_DIR, 'settings.json');
 
-  // Log the change
-  logChange({
-    session_id: input.session_id,
-    config_path: configPath,
-    change_type: input.change_type || 'unknown',
-  });
-
   // Only guard settings.json — other config files are lower risk
+  // Logging removed: all 1,128+ entries were change_type:"unknown" with no actionable signal.
+  // The guard (hook removal detection) works without logging.
   if (!configPath.includes('settings.json')) {
     process.exit(0);
   }
@@ -125,7 +120,7 @@ async function main() {
     process.exit(0);
   }
 
-  console.error(`[ConfigChange] Config change allowed and logged: ${configPath}`);
+  console.error(`[ConfigChange] Config change allowed: ${configPath}`);
   process.exit(0);
 }
 

@@ -102,6 +102,7 @@ interface WorkItem {
   criteria: { id: string; text: string; passed: boolean }[];
   prdPath: string;
   source: string;
+  stale: boolean;
 }
 
 // --- Process Manager ---
@@ -156,12 +157,16 @@ async function scanDirectory(scanDir: string, items: WorkItem[]): Promise<void> 
         if (!fm) continue;
         const criteria = parseCriteria(content);
         const progressMatch = fm.progress?.match(/(\d+)\/(\d+)/);
+        const passed = progressMatch ? parseInt(progressMatch[1]) : 0;
+        const updatedStr = fm.updated || fm.started || "";
+        const updatedTime = updatedStr ? new Date(updatedStr).getTime() : 0;
+        const isStale = passed === 0 && updatedTime > 0 && (Date.now() - updatedTime) > 14 * 86_400_000;
         items.push({
           slug: fm.slug || dir,
           task: fm.task || dir,
           effort: fm.effort || "standard",
           phase: fm.phase || "observe",
-          passed: progressMatch ? parseInt(progressMatch[1]) : 0,
+          passed,
           total: progressMatch ? parseInt(progressMatch[2]) : 0,
           mode: fm.mode || "interactive",
           started: fm.started || "",
@@ -169,6 +174,7 @@ async function scanDirectory(scanDir: string, items: WorkItem[]): Promise<void> 
           criteria,
           prdPath,
           source: basename(dirname(scanDir)),
+          stale: isStale,
         });
       } catch { /* skip */ }
     }

@@ -673,7 +673,41 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
       console.error('⏭️ Skipped active work summary (disabled)');
     }
 
-    // Staging nudge: if unreviewed drafts exist and curate hasn't run in >14 days, remind user
+    // Stale PRD nudge: surface PRDs with 0 progress and >14 days since update
+    try {
+      const workDir = join(paiDir, 'MEMORY', 'WORK');
+      if (existsSync(workDir)) {
+        const now = Date.now();
+        const staleThreshold = 14 * 24 * 60 * 60 * 1000;
+        let staleCount = 0;
+        let oldestDays = 0;
+        const dirs = readdirSync(workDir, { withFileTypes: true })
+          .filter(d => d.isDirectory() && /^\d{8}-\d{6}_/.test(d.name));
+        for (const d of dirs) {
+          const prdPath = join(workDir, d.name, 'PRD.md');
+          if (!existsSync(prdPath)) continue;
+          const head = readFileSync(prdPath, 'utf-8').substring(0, 600);
+          const progressMatch = head.match(/^progress:\s*(\d+)\/\d+/m);
+          const passed = progressMatch ? parseInt(progressMatch[1]) : -1;
+          if (passed !== 0) continue;
+          const updatedMatch = head.match(/^updated:\s*(.+)$/m) || head.match(/^started:\s*(.+)$/m);
+          if (!updatedMatch) continue;
+          const age = now - new Date(updatedMatch[1].trim()).getTime();
+          if (age > staleThreshold) {
+            staleCount++;
+            oldestDays = Math.max(oldestDays, Math.floor(age / 86_400_000));
+          }
+        }
+        if (staleCount > 0) {
+          const nudge = `<system-reminder>\n⚠️ ${staleCount} stale PRD(s) with no progress (oldest: ${oldestDays}d). Review with /end or on the Board.\n</system-reminder>`;
+          console.log(nudge);
+          ttyLog(`⚠️ ${staleCount} stale PRD(s) — oldest ${oldestDays}d without progress`);
+        }
+      }
+    } catch { /* non-fatal */ }
+
+    // Staging nudge: if unreviewed drafts exist and curate hasn't run in >3 days,
+    // surface in session context (not just stderr) so the model sees it too.
     try {
       const stagingDir = join(paiDir, 'MEMORY', 'STAGING');
       const curationLog = join(paiDir, 'MEMORY', 'STATE', 'curation-log.jsonl');
@@ -689,8 +723,10 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
               daysSinceCuration = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
             }
           }
-          if (daysSinceCuration >= 14) {
-            ttyLog(`💡 STAGING has ${drafts.length} unreviewed draft(s) — run \`pai curate\` to review`);
+          if (daysSinceCuration >= 3) {
+            const nudge = `<system-reminder>\n💡 STAGING has ${drafts.length} unreviewed draft(s) pending curation (${daysSinceCuration}d since last review). Run \`pai curate\` to promote lessons to WISDOM/FRAMES/ and improve future sessions.\n</system-reminder>`;
+            console.log(nudge);
+            ttyLog(`💡 STAGING: ${drafts.length} draft(s) awaiting curation`);
           }
         }
       }
@@ -712,7 +748,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete (v4.9.0)');
+    console.error('✅ KAI session initialization complete (v5.3.0)');
     process.exit(0);
   } catch (error) {
     flushTty();

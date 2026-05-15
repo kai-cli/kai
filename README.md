@@ -1,6 +1,6 @@
-# KAI 5.2.0 — Personal AI Infrastructure
+# KAI 5.3.0 — Personal AI Infrastructure
 
-> A production-ready Claude Code configuration system. Fork of Daniel Miessler's [original project](https://danielmiessler.com), hardened for team deployment.
+> Built on the foundation of Daniel Miessler's [PAI system](https://github.com/danielmiessler/Personal_AI_Infrastructure). The Algorithm, TELOS framework, skill hierarchy, and hook lifecycle originated there. KAI extends it with production hardening, multi-model inference, self-learning memory, and individual deployment.
 
 ## Prerequisites
 
@@ -26,8 +26,8 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 | Directory | Contents |
 |-----------|----------|
 | `PAI/` | Core system: Algorithm <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->, context routing, system docs |
-| `skills/` | <!-- KAI:counts:skills:begin -->79<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
-| `hooks/` | <!-- KAI:counts:hooks:begin -->40<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, formatters, analytics, cleanup) |
+| `skills/` | <!-- KAI:counts:skills:begin -->80<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
+| `hooks/` | <!-- KAI:counts:hooks:begin -->41<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, formatters, analytics, cleanup) |
 | `agents/` | <!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
 | `config/` | 7 domain config files that generate settings.json |
 | `scripts/` | KAI Board dashboard, deployment packager |
@@ -82,9 +82,10 @@ bun ~/.claude/scripts/deploy.ts
 ## Documentation
 
 - **[docs/QUICKSTART.md](docs/QUICKSTART.md)** — Getting started guide (start here)
-- **[docs/WHATS-DIFFERENT.md) — Full feature overview
-- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Roadmap and current work
-- **[docs/architecture/THEHOOKSYSTEM-Reference.md](docs/architecture/THEHOOKSYSTEM-Reference.md)** — System architecture
+- **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with the original
+- **[docs/planning/ROADMAP.md](docs/planning/ROADMAP.md)** — Product roadmap
+- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Current work
+- **[docs/architecture/SYSTEM-ATLAS.md](docs/architecture/SYSTEM-ATLAS.md)** — System architecture
 - **[PAI/THEHOOKSYSTEM.md](PAI/THEHOOKSYSTEM.md)** — Hook system docs
 - **[PAI/SKILL.md](PAI/SKILL.md)** — Full system documentation
 

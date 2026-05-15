@@ -59,7 +59,7 @@ interface AlgorithmState {
   summary?: string;
 }
 
-function loadIdentity(): { daName: string; principalName: string; timezone: string } {
+export function loadIdentity(): { daName: string; principalName: string; timezone: string } {
   try {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf-8'));
     return {
@@ -72,7 +72,7 @@ function loadIdentity(): { daName: string; principalName: string; timezone: stri
   }
 }
 
-function loadAlgorithmState(sessionId: string): AlgorithmState | null {
+export function loadAlgorithmState(sessionId: string): AlgorithmState | null {
   try {
     const path = join(STATE_DIR, 'algorithms', `${sessionId}.json`);
     if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf-8'));
@@ -117,21 +117,8 @@ async function main() {
     console.log(JSON.stringify({ additionalContext: preservationBlock }));
     console.error(`[PreCompact] Injected ${preservationBlock.length} chars as additionalContext`);
 
-    // Write sentinel for PostCompactRecovery (one-shot, TTL 5 min)
-    if (session_id) {
-      const sentinelPath = join(STATE_DIR, `pending-recovery-${session_id}.json`);
-      writeFileSync(sentinelPath, JSON.stringify({
-        session_id,
-        timestamp: Date.now(),
-        trigger,
-        daName: identity.daName,
-        principalName: identity.principalName,
-        phase,
-        effort,
-        summary: algoState?.summary?.slice(0, 200) || null,
-      }), 'utf-8');
-      console.error(`[PreCompact] Sentinel written for PostCompactRecovery`);
-    }
+    // Note: pending-recovery sentinel removed — PostCompactRecovery reads from
+    // MEMORY/STATE/algorithms/{sessionId}.json directly, not from a sentinel file.
 
     // Also write checkpoint file (breadcrumb for resume)
     let stateFile: string | null = null;
@@ -229,4 +216,4 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) main();

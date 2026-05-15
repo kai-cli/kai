@@ -5,11 +5,13 @@
  *
  * Steps:
  *   1. Ensure PAI lives at ~/.claude/ (symlink if cloned elsewhere)
- *   2. Collect identity (user name, timezone, DA name)
- *   3. Configure AWS Bedrock (optional)
- *   4. Create PAI/USER/ scaffold if absent
- *   5. Run BuildSettings.ts → settings.json
- *   6. Run BuildCLAUDE.ts  → CLAUDE.md
+ *   2. Choose knowledge archetype
+ *   3. Collect identity (user name, timezone, DA name)
+ *   4. Configure AWS Bedrock (optional)
+ *   5. Create PAI/USER/ scaffold
+ *   6. Detect tools & build TOOLS.md
+ *   7. Run BuildSettings.ts → settings.json
+ *   8. Run BuildCLAUDE.ts  → CLAUDE.md
  */
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, lstatSync, symlinkSync, unlinkSync } from "fs";
@@ -394,8 +396,182 @@ export function applyArchetype(paiDir: string, archetypeFile: string): boolean {
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
+// ── Tool Detection ────────────────────────────────────────────────────────
+interface DetectedTool {
+  name: string;
+  category: "api" | "cli" | "cloud";
+  status: "✅ Set" | "✅ Installed" | "✅ Authenticated" | "❌ Not found";
+  detail?: string;
+}
+
+function detectTools(): DetectedTool[] {
+  const tools: DetectedTool[] = [];
+
+  // API keys from environment
+  const apiKeys: [string, string][] = [
+    ["ANTHROPIC_API_KEY", "Claude API"],
+    ["GEMINI_API_KEY", "Google Gemini"],
+    ["OPENAI_API_KEY", "OpenAI GPT-4o"],
+    ["DEEPSEEK_API_KEY", "DeepSeek"],
+    ["MISTRAL_API_KEY", "Mistral"],
+    ["GROK_API_KEY", "xAI Grok"],
+    ["GITHUB_TOKEN", "GitHub API"],
+    ["ELEVENLABS_API_KEY", "ElevenLabs TTS"],
+    ["REPLICATE_API_TOKEN", "Replicate"],
+    ["APIFY_API_KEY", "Apify"],
+    ["BRIGHT_DATA_API_KEY", "Bright Data"],
+  ];
+
+  for (const [key, name] of apiKeys) {
+    if (process.env[key]) {
+      tools.push({ name, category: "api", status: "✅ Set", detail: key });
+    }
+  }
+
+  // CLI tools
+  const cliTools: [string, string][] = [
+    ["gh", "GitHub CLI"],
+    ["rg", "ripgrep (fast search)"],
+    ["ffmpeg", "Audio/video processing"],
+    ["jq", "JSON processing"],
+    ["python3", "Python"],
+    ["docker", "Docker"],
+    ["kubectl", "Kubernetes"],
+    ["terraform", "Terraform"],
+    ["aws", "AWS CLI"],
+  ];
+
+  for (const [cmd, name] of cliTools) {
+    try {
+      execSync(`which ${cmd}`, { stdio: "pipe" });
+      tools.push({ name, category: "cli", status: "✅ Installed", detail: cmd });
+    } catch {
+      // Not installed — skip
+    }
+  }
+
+  // GitHub auth
+  try {
+    const ghResult = execSync("gh auth status 2>&1", { stdio: "pipe" }).toString();
+    if (ghResult.includes("Logged in")) {
+      const accountMatch = ghResult.match(/account\s+(\S+)/);
+      tools.push({ name: "GitHub", category: "cloud", status: "✅ Authenticated", detail: accountMatch?.[1] });
+    }
+  } catch { /* not authed */ }
+
+  // AWS identity
+  try {
+    const awsResult = execSync("aws sts get-caller-identity 2>/dev/null", { stdio: "pipe" }).toString();
+    const parsed = JSON.parse(awsResult);
+    tools.push({ name: "AWS", category: "cloud", status: "✅ Authenticated", detail: parsed.Arn?.split("/").pop() });
+  } catch { /* not configured */ }
+
+  return tools;
+}
+
+function generateToolsMd(tools: DetectedTool[], extraLines: string[]): string {
+  let content = `# Tools, Services & Access Registry
+
+> Cross-project reference. Every session loads this at startup.
+> Last verified: ${new Date().toISOString().split("T")[0]}
+
+---
+
+## API Keys & AI Services
+
+| Key | Service | Status |
+|-----|---------|--------|
+`;
+
+  const apiTools = tools.filter(t => t.category === "api");
+  if (apiTools.length > 0) {
+    for (const t of apiTools) {
+      content += `| ${t.detail} | ${t.name} | ${t.status} |\n`;
+    }
+  } else {
+    content += `| ANTHROPIC_API_KEY | Claude API | ❌ Not configured |\n`;
+  }
+
+  content += `
+## Cloud & Infrastructure
+
+| Service | Account | Status |
+|---------|---------|--------|
+`;
+
+  const cloudTools = tools.filter(t => t.category === "cloud");
+  if (cloudTools.length > 0) {
+    for (const t of cloudTools) {
+      content += `| ${t.name} | ${t.detail || "—"} | ${t.status} |\n`;
+    }
+  } else {
+    content += `| — | — | No cloud services detected |\n`;
+  }
+
+  content += `
+## CLI Tools
+
+| Tool | Purpose | Status |
+|------|---------|--------|
+| bun | Runtime, package manager, test runner | ✅ Installed |
+`;
+
+  const cliDetected = tools.filter(t => t.category === "cli");
+  for (const t of cliDetected) {
+    content += `| ${t.detail} | ${t.name} | ${t.status} |\n`;
+  }
+
+  content += `
+## MCP Servers
+
+| Server | Scope | URL |
+|--------|-------|-----|
+`;
+  content += `| (add your MCP servers here) | | |\n`;
+
+  if (extraLines.length > 0) {
+    content += `
+## Additional (user-provided)
+
+`;
+    for (const line of extraLines) {
+      content += `- ${line}\n`;
+    }
+  }
+
+  content += `
+---
+
+## Maintenance Scripts
+
+Full runbook: \`scripts/MAINTENANCE.md\`
+
+| Cadence | Command | What |
+|---------|---------|------|
+| Weekly | \`bun scripts/tools-sync.ts\` | Scan projects for new tools/services |
+| Weekly | \`bun PAI/Tools/MemoryCurate.ts\` | Review STAGING memory drafts |
+| Release | \`bash scripts/verify-release.sh\` | Full system validation |
+
+**Convention:** Add a \`## Tools & Access\` section to any project's CLAUDE.md to register
+tools/services for auto-collection by \`tools-sync.ts\`.
+
+---
+
+## File Maintenance
+
+This file is maintained manually + \`bun scripts/tools-sync.ts --apply\`.
+
+To check what's actually available in a session:
+\`\`\`bash
+env | grep -E "KEY|TOKEN|SECRET" | sed 's/=.*/=✅/'
+\`\`\`
+`;
+
+  return content;
+}
+
 async function main() {
-  const TOTAL_STEPS = 7;
+  const TOTAL_STEPS = 8;
 
   console.log(`\n${BOLD}${LIGHT_BLUE}PAI Setup Wizard${RESET}\n`);
   info(`Repo location: ${GRAY}${PAI_ROOT}${RESET}`);
@@ -569,8 +745,51 @@ async function main() {
     ok("USER scaffold already exists");
   }
 
-  // ── Step 6: Build settings.json ────────────────────────────────────────
-  step(6, TOTAL_STEPS, "Build settings.json");
+  // ── Step 6: Detect tools & build TOOLS.md ──────────────────────────────
+  step(6, TOTAL_STEPS, "Detect tools, services & credentials");
+
+  const toolsMdPath = join(paiDir, "TOOLS.md");
+  if (existsSync(toolsMdPath)) {
+    ok("TOOLS.md already exists — keeping current registry");
+  } else {
+    console.log(`\n  ${DIM}Scanning your environment for API keys, CLI tools, and services...${RESET}\n`);
+    const detected = detectTools();
+
+    const apiCount = detected.filter(t => t.category === "api").length;
+    const cliCount = detected.filter(t => t.category === "cli").length;
+    const cloudCount = detected.filter(t => t.category === "cloud").length;
+
+    if (detected.length > 0) {
+      info(`Found: ${apiCount} API keys, ${cliCount} CLI tools, ${cloudCount} cloud services`);
+      console.log();
+      for (const t of detected) {
+        console.log(`    ${t.status}  ${t.name}${t.detail ? `  ${DIM}(${t.detail})${RESET}` : ""}`);
+      }
+      console.log();
+    } else {
+      info("No tools detected in environment (you can add them to TOOLS.md later)");
+    }
+
+    // Option B: ask if they want to add anything
+    const addMore = await confirm("Anything else to add? (databases, devices, internal services)", false);
+    const extraLines: string[] = [];
+    if (addMore) {
+      console.log(`\n  ${DIM}Enter items one per line. Empty line to finish.${RESET}\n`);
+      let entry = await prompt("Tool/service");
+      while (entry) {
+        extraLines.push(entry);
+        entry = await prompt("Tool/service (empty to finish)");
+      }
+    }
+
+    const toolsContent = generateToolsMd(detected, extraLines);
+    writeFileSync(toolsMdPath, toolsContent);
+    ok(`Created TOOLS.md with ${detected.length} detected items${extraLines.length > 0 ? ` + ${extraLines.length} manual` : ""}`);
+    info(`${DIM}Edit ~/.claude/TOOLS.md anytime to update. Loaded every session.${RESET}`);
+  }
+
+  // ── Step 7: Build settings.json ────────────────────────────────────────
+  step(7, TOTAL_STEPS, "Build settings.json");
   const buildSettingsPath = join(paiDir, "hooks", "handlers", "BuildSettings.ts");
   if (existsSync(buildSettingsPath)) {
     const built = runBun(buildSettingsPath);
@@ -584,8 +803,8 @@ async function main() {
     warn(`BuildSettings.ts not found at ${buildSettingsPath}`);
   }
 
-  // ── Step 7: Build CLAUDE.md ────────────────────────────────────────────
-  step(7, TOTAL_STEPS, "Build CLAUDE.md");
+  // ── Step 8: Build CLAUDE.md ────────────────────────────────────────────
+  step(8, TOTAL_STEPS, "Build CLAUDE.md");
   const buildClaudePath = join(paiDir, "hooks", "handlers", "BuildCLAUDE.ts");
   if (existsSync(buildClaudePath)) {
     const built = runBun(buildClaudePath);
