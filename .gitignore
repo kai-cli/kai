@@ -37,9 +37,7 @@ devices.json
 *.log
 
 # Accidental npm/bun debris
-/package.json
 /package-lock.json
-/bun.lock
 
 # Telemetry and analytics
 telemetry/

@@ -17,16 +17,12 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Run tests
-        run: bun test
+      - run: bun install --frozen-lockfile
+      - run: bun test
 
   verify:
     name: Release Verification
     runs-on: ubuntu-latest
-    # verify-release.sh is designed for the kai public fork (clean tree, no PII,
-    # LICENSE/CHANGELOG present). kai intentionally fails PII and required-file
-    # checks. Run for visibility but don't block CI.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +30,9 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Set up identity config for bare checkout
+      - run: bun install --frozen-lockfile
+
+      - name: Bootstrap identity config
         run: |
           if [ ! -f config/identity.jsonc ] && [ -f config/identity.jsonc.template ]; then
             cp config/identity.jsonc.template config/identity.jsonc
@@ -55,6 +53,8 @@ jobs:
         with:
           bun-version: latest
 
+      - run: bun install --frozen-lockfile
+
       - name: Verify CLAUDE.md or template exists
         run: |
           if test -f CLAUDE.md; then
@@ -66,8 +66,7 @@ jobs:
           fi
 
       - name: Verify hook runner is executable
-        run: |
-          test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
+        run: test -x hooks/lib/run-hook.sh || { echo "FAIL: run-hook.sh not executable"; exit 1; }
 
       - name: Bootstrap identity config if template-only
         run: |
@@ -78,24 +77,14 @@ jobs:
       - name: Verify BuildSettings runs
         run: PAI_DIR=$PWD bun hooks/handlers/BuildSettings.ts
 
-      - name: Verify skill inventory matches filesystem
+      - name: Verify skill inventory
         run: |
           SKILL_COUNT=$(find skills -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')
           echo "Found $SKILL_COUNT skills"
           test "$SKILL_COUNT" -gt 0 || { echo "FAIL: no skills found"; exit 1; }
 
-      - name: Verify hook inventory matches filesystem
+      - name: Verify hook inventory
         run: |
           HOOK_COUNT=$(find hooks -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' ')
           echo "Found $HOOK_COUNT hooks"
           test "$HOOK_COUNT" -gt 0 || { echo "FAIL: no hooks found"; exit 1; }
-
-  # BuildDocs check — enable after Phase 2 (items 2.1-2.2) land:
-  # build-docs:
-  #   name: BuildDocs Freshness
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: oven-sh/setup-bun@v2
-  #     - run: bun install --frozen-lockfile || bun install
-  #     - run: bun PAI/Tools/BuildDocs.ts --check
