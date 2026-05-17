@@ -41,4 +41,12 @@ TIMEOUT="${!HOOK_ENV_VAR:-${PAI_HOOK_TIMEOUT:-$DEFAULT_TIMEOUT}}"
 echo "[$(date -u +%H:%M:%S)] run-hook.sh: $LOG_BASE (timeout: ${TIMEOUT}s)" >> "$LOG_FILE"
 
 # Execute with timeout — exits 124 on timeout (logged, not fatal)
-exec timeout "$TIMEOUT" bun "$HOOK_PATH" 2>>"$LOG_FILE"
+# Detect timeout command: GNU coreutils on Linux, gtimeout via Homebrew on macOS,
+# or fall back to no-timeout (hooks can still hang, but won't block session startup)
+if command -v timeout >/dev/null 2>&1; then
+  exec timeout "$TIMEOUT" bun "$HOOK_PATH" 2>>"$LOG_FILE"
+elif command -v gtimeout >/dev/null 2>&1; then
+  exec gtimeout "$TIMEOUT" bun "$HOOK_PATH" 2>>"$LOG_FILE"
+else
+  exec bun "$HOOK_PATH" 2>>"$LOG_FILE"
+fi

@@ -42,9 +42,9 @@ echo ""
 echo ""
 echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${GRAY}\"${RESET}${LIGHT_BLUE}Lean and Mean${RESET}${GRAY}\"${RESET}"
 echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${BAR}"
-echo -e "           ${NAVY}████${RESET}        ${NAVY}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${NAVY}⬢${RESET}  ${GRAY}KAI${RESET}       ${SILVER}v5.2.0${RESET}"
+echo -e "           ${NAVY}████${RESET}        ${NAVY}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${NAVY}⬢${RESET}  ${GRAY}KAI${RESET}       ${SILVER}v5.3.0${RESET}"
 echo -e "           ${NAVY}████${RESET}        ${NAVY}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${NAVY}⚙${RESET}  ${GRAY}Algo${RESET}      ${SILVER}v3.13.0${RESET}"
-echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${LIGHT_BLUE}✦${RESET}  ${GRAY}Installer${RESET} ${SILVER}v5.2${RESET}"
+echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${LIGHT_BLUE}✦${RESET}  ${GRAY}Installer${RESET} ${SILVER}v5.3${RESET}"
 echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${BAR}"
 echo -e "           ${NAVY}████${RESET}        ${BLUE}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}"
 echo -e "           ${NAVY}████${RESET}        ${BLUE}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${LIGHT_BLUE}✦  Lean and Mean${RESET}"
@@ -136,8 +136,16 @@ fi
 if command -v claude &>/dev/null; then
   success "Claude Code found"
 else
-  warn "Claude Code not found — will install during setup"
+  warn "Claude Code not found."
+  info "Install it first: npm install -g @anthropic-ai/claude-code"
+  info "Then re-run this script."
+  exit 1
 fi
+
+# ─── Install bun dependencies ────────────────────────────
+info "Installing dependencies..."
+(cd "$SCRIPT_DIR" && bun install --silent 2>/dev/null)
+success "Dependencies installed"
 
 # ─── Launch Installer ────────────────────────────────────
 # Resolve PAI-Install directory (may be sibling or child of script location)
@@ -209,9 +217,11 @@ if $IS_UPGRADE; then
   echo -e "    ${SILVER}2.${RESET} Check ${LIGHT_BLUE}CHANGELOG.md${RESET} for what changed"
 else
   echo -e "  ${GRAY}Next steps:${RESET}"
-  echo -e "    ${SILVER}1.${RESET} Make sure ${LIGHT_BLUE}ANTHROPIC_API_KEY${RESET} is set in your shell profile"
-  echo -e "    ${SILVER}2.${RESET} Run ${LIGHT_BLUE}claude${RESET} to start your first session"
-  echo -e "    ${SILVER}3.${RESET} Edit ${LIGHT_BLUE}~/.claude/PAI/USER/ABOUTME.md${RESET} to personalize"
+  echo -e "    ${SILVER}1.${RESET} Run ${LIGHT_BLUE}claude${RESET} to start your first session"
+  echo -e "    ${SILVER}2.${RESET} Your profile is in ${LIGHT_BLUE}~/.claude/PAI/USER/ABOUTME.md${RESET} — edit to add role/org"
+  echo -e ""
+  echo -e "  ${GRAY}Optional — only needed for research agent skills:${RESET}"
+  echo -e "    ${DIM}export ANTHROPIC_API_KEY=\"sk-ant-...\" >> ~/.zshrc${RESET}"
 fi
 echo ""
 echo -e "  ${GRAY}Docs:${RESET}  ${SILVER}~/.claude/docs/QUICKSTART.md${RESET}"
