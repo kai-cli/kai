@@ -131,7 +131,7 @@ Initial public release of KAI (Kaizen AI).
 
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
-- **80 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
+- **79 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
 - **41 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation
