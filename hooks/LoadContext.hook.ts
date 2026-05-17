@@ -657,7 +657,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
 </system-reminder>`;
 
       console.log(message);
-      ttyLog('\n✅ PAI dynamic context loaded...');
+      ttyLog('\n✅ KAI dynamic context loaded...');
     } else {
       ttyLog('\n✅ KAI session ready...');
     }

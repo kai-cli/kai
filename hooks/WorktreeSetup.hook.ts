@@ -41,11 +41,11 @@ interface WorktreeCreateInput {
 
 const PAI_DIR = process.env.PAI_DIR || join(homedir(), '.claude');
 
-const PAI_CLAUDE_MD = `# PAI Worktree Context
+const PAI_CLAUDE_MD = `# KAI Worktree Context
 
 This is a sandboxed worktree created by the KAI agent isolation system.
 
-## PAI System Access
+## KAI System Access
 - Skills and hooks: \`${PAI_DIR}/skills/PAI/\`
 - User context: \`${PAI_DIR}/skills/PAI/USER/\`
 - System docs: \`${PAI_DIR}/skills/PAI/SYSTEM/\`
