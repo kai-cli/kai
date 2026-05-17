@@ -495,18 +495,18 @@ const activeTask = getActiveTask();
 const out: string[] = [];
 const p = (s: string) => out.push(s);
 
-// Line 0: PAI branding
+// Line 0: KAI branding
 if (mode === 'nano') {
-  p(`${SLATE_600}── │${R} ${PAI_P}P${PAI_A}A${PAI_I}I${R} ${SLATE_600}│ ────────────${R}`);
+  p(`${SLATE_600}── │${R} ${PAI_P}K${PAI_A}A${PAI_I}I${R} ${SLATE_600}│ ────────────${R}`);
   p(`${SLATE_400}ENV:${R} ${SLATE_500}${PAI_A}${paiVersion}${R} ${WIELD_ACCENT}${modelName}${R}`);
 } else {
-  p(`${SLATE_600}─────────────────────────────────${R} ${PAI_P}P${PAI_A}A${PAI_I}I${R} ${SLATE_600}──────────────────────────────────${R}`);
+  p(`${SLATE_600}─────────────────────────────────${R} ${PAI_P}K${PAI_A}A${PAI_I}I${R} ${SLATE_600}──────────────────────────────────${R}`);
   if (mode === 'micro') {
-    p(`${SLATE_400}ENV:${R} ${SLATE_400}claude${R} ${PAI_A}${ccVersion}${R} ${SLATE_600}│${R} ${SLATE_500}PAI:${PAI_A}${paiVersion}${R} ${SLATE_600}│${R} ${WIELD_ACCENT}${modelName}${R}`);
+    p(`${SLATE_400}ENV:${R} ${SLATE_400}claude${R} ${PAI_A}${ccVersion}${R} ${SLATE_600}│${R} ${SLATE_500}KAI:${PAI_A}${paiVersion}${R} ${SLATE_600}│${R} ${WIELD_ACCENT}${modelName}${R}`);
   } else if (mode === 'mini') {
-    p(`${SLATE_400}ENV:${R} ${SLATE_400}claude${R} ${PAI_A}${ccVersion}${R} ${SLATE_600}│${R} ${SLATE_500}PAI:${PAI_A}${paiVersion}${R} ${SLATE_400}ALG:${PAI_A}${algoVersion}${R} ${SLATE_600}│${R} ${WIELD_ACCENT}${modelName}${R}`);
+    p(`${SLATE_400}ENV:${R} ${SLATE_400}claude${R} ${PAI_A}${ccVersion}${R} ${SLATE_600}│${R} ${SLATE_500}KAI:${PAI_A}${paiVersion}${R} ${SLATE_400}ALG:${PAI_A}${algoVersion}${R} ${SLATE_600}│${R} ${WIELD_ACCENT}${modelName}${R}`);
   } else {
-    p(`${SLATE_400}ENV:${R} ${SLATE_400}claude${R} ${PAI_A}${ccVersion}${R} ${SLATE_600}│${R} ${SLATE_500}PAI:${PAI_A}${paiVersion}${R} ${SLATE_400}ALG:${PAI_A}${algoVersion}${R} ${SLATE_600}│${R} ${WIELD_ACCENT}Model:${R} ${SLATE_300}${modelName}${R}`);
+    p(`${SLATE_400}ENV:${R} ${SLATE_400}claude${R} ${PAI_A}${ccVersion}${R} ${SLATE_600}│${R} ${SLATE_500}KAI:${PAI_A}${paiVersion}${R} ${SLATE_400}ALG:${PAI_A}${algoVersion}${R} ${SLATE_600}│${R} ${WIELD_ACCENT}Model:${R} ${SLATE_300}${modelName}${R}`);
   }
 }
 p(SEP);
