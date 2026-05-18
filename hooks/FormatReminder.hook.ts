@@ -76,7 +76,7 @@ async function main() {
 
   // Format violation detected — inject reminder
   console.log(JSON.stringify({
-    additionalContext: `<format_reminder>Your previous response did NOT use the mandatory PAI output format. Every response MUST use exactly one of: ALGORITHM, NATIVE, or MINIMAL mode. Start this response with the correct mode header. Review CLAUDE.md format rules.</format_reminder>`
+    additionalContext: `<format_reminder>Your previous response did NOT use the mandatory KAI output format. Every response MUST use exactly one of: ALGORITHM, NATIVE, or MINIMAL mode. Start this response with the correct mode header. Review CLAUDE.md format rules.</format_reminder>`
   }));
   console.error('[FormatReminder] Format violation detected — reminder injected');
 

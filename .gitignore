@@ -1,3 +1,6 @@
+# Generated from CLAUDE.md.template — do not commit
+CLAUDE.md
+
 # Claude Code runtime directories (session-specific, machine-specific)
 projects/
 file-history/
