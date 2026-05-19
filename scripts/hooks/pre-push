@@ -32,15 +32,21 @@ if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
   fi
 fi
 
-# ── 3. Quick release verification ────────────────────────────
-echo ""
-echo "Running quick verification..."
-if ! bash "$REPO_ROOT/scripts/verify-release.sh" --quick 2>&1; then
+# ── 3. Quick release verification (kai-cli/kai remote only) ──
+REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+if [[ "$REMOTE_URL" == *"kai-cli/kai"* ]]; then
   echo ""
-  echo "❌ Pre-push blocked: verify-release.sh --quick failed."
-  echo "   Fix the issues above, then push again."
-  echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
-  exit 1
+  echo "Running quick verification..."
+  if ! bash "$REPO_ROOT/scripts/verify-release.sh" --quick 2>&1; then
+    echo ""
+    echo "❌ Pre-push blocked: verify-release.sh --quick failed."
+    echo "   Fix the issues above, then push again."
+    echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
+    exit 1
+  fi
+else
+  echo ""
+  echo "Skipping verify-release.sh (not kai repo)"
 fi
 
 echo ""

@@ -8,7 +8,7 @@
  * All hooks call setTabState() instead of directly running kitten commands.
  */
 
-import { existsSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, readFileSync } from 'fs';
+import { existsSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, readFileSync, openSync, closeSync, writeSync } from 'fs';
 import { atomicWriteJSON } from './atomic';
 import { join } from 'path';
 import { execSync } from 'child_process';
@@ -17,6 +17,7 @@ import { paiPath } from './paths';
 
 const TAB_TITLES_DIR = paiPath('MEMORY', 'STATE', 'tab-titles');
 const KITTY_SESSIONS_DIR = paiPath('MEMORY', 'STATE', 'kitty-sessions');
+const ITERM_SESSIONS_DIR = paiPath('MEMORY', 'STATE', 'iterm-sessions');
 
 /**
  * Get Kitty environment from env vars or persisted per-session file.
@@ -107,6 +108,75 @@ export function cleanupKittySession(sessionId: string): void {
   } catch { /* silent */ }
 }
 
+// ─── iTerm2 Support ──────────────────────────────────────────────────────────
+
+function findTTY(): string | null {
+  try {
+    let pid = process.pid;
+    for (let i = 0; i < 10; i++) {
+      const info = execSync(`ps -p ${pid} -o ppid=,tty=`, { encoding: 'utf-8', timeout: 2000 }).trim();
+      const parts = info.split(/\s+/);
+      if (parts[1] && parts[1] !== '??' && parts[1] !== '?') {
+        return `/dev/${parts[1]}`;
+      }
+      pid = parseInt(parts[0]);
+      if (!pid || pid <= 1) break;
+    }
+  } catch { /* silent */ }
+  return null;
+}
+
+function getItermEnv(sessionId?: string): { tty: string | null } {
+  if (process.env.TERM_PROGRAM !== 'iTerm.app') return { tty: null };
+
+  // Check persisted session file first
+  if (sessionId) {
+    try {
+      const sessionPath = join(ITERM_SESSIONS_DIR, `${sessionId}.json`);
+      if (existsSync(sessionPath)) {
+        const entry = JSON.parse(readFileSync(sessionPath, 'utf-8'));
+        if (entry.tty && existsSync(entry.tty)) return { tty: entry.tty };
+      }
+    } catch { /* silent */ }
+  }
+
+  // Walk process tree to find TTY
+  const tty = findTTY();
+  return { tty };
+}
+
+export function persistItermSession(sessionId: string, tty: string): void {
+  try {
+    if (!existsSync(ITERM_SESSIONS_DIR)) mkdirSync(ITERM_SESSIONS_DIR, { recursive: true });
+    writeFileSync(
+      join(ITERM_SESSIONS_DIR, `${sessionId}.json`),
+      JSON.stringify({ tty, itermSessionId: process.env.ITERM_SESSION_ID }),
+      'utf-8'
+    );
+  } catch { /* silent */ }
+}
+
+export function cleanupItermSession(sessionId: string): void {
+  try {
+    const sessionPath = join(ITERM_SESSIONS_DIR, `${sessionId}.json`);
+    if (existsSync(sessionPath)) unlinkSync(sessionPath);
+  } catch { /* silent */ }
+}
+
+function setItermTabTitle(title: string, tty: string): void {
+  try {
+    // Strip emoji for cleaner iTerm tab display
+    const clean = title.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+    // OSC 1 = tab title, OSC 0 = window+tab title
+    const osc = `\x1b]1;${clean}\x07`;
+    const fd = openSync(tty, 'w');
+    writeSync(fd, osc);
+    closeSync(fd);
+  } catch (err) {
+    console.error(`[tab-setter] iTerm2 title write failed: ${err}`);
+  }
+}
+
 interface SetTabOptions {
   title: string;
   state: TabState;
@@ -148,46 +218,45 @@ export function setTabState(opts: SetTabOptions): void {
   const { title, state, previousTitle, sessionId } = opts;
   const colors = TAB_COLORS[state];
   const kittyEnv = getKittyEnv(sessionId);
+  const itermEnv = getItermEnv(sessionId);
 
-  try {
-    // Need either TERM=xterm-kitty OR a valid KITTY_LISTEN_ON to proceed
-    const isKitty = process.env.TERM === 'xterm-kitty' || kittyEnv.listenOn;
-    if (!isKitty) return;
+  // iTerm2 path — write OSC escape to TTY device
+  if (itermEnv.tty) {
+    setItermTabTitle(title, itermEnv.tty);
+    console.error(`[tab-setter] iTerm2 tab: "${title}" via ${itermEnv.tty}`);
+    // Still persist state below for readTabState
+  } else {
+    // Kitty path
+    try {
+      const isKitty = process.env.TERM === 'xterm-kitty' || kittyEnv.listenOn;
+      if (!isKitty && !itermEnv.tty) return;
 
-    // CRITICAL: Always use --to flag for socket-based remote control.
-    // Without it, kitten @ falls back to escape-sequence IPC which leaks
-    // garbage text (e.g. "P@kitty-cmd{...}") into terminal output when
-    // running in subprocess contexts. See PR #493.
-    if (!kittyEnv.listenOn) {
-      console.error(`[tab-setter] No kitty socket available, skipping tab update to prevent escape sequence leaks`);
-      return;
+      if (!kittyEnv.listenOn) {
+        console.error(`[tab-setter] No kitty socket available, skipping tab update to prevent escape sequence leaks`);
+        return;
+      }
+
+      const escaped = title.replace(/"/g, '\\"');
+      const toFlag = `--to="${kittyEnv.listenOn}"`;
+      console.error(`[tab-setter] Setting tab: "${escaped}" with toFlag: ${toFlag}`);
+      execSync(`kitten @ ${toFlag} set-tab-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
+      execSync(`kitten @ ${toFlag} set-window-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
+
+      if (state === 'idle') {
+        execSync(
+          `kitten @ ${toFlag} set-tab-color --self active_bg=none active_fg=none inactive_bg=none inactive_fg=none`,
+          { stdio: 'ignore', timeout: 2000 }
+        );
+      } else {
+        execSync(
+          `kitten @ ${toFlag} set-tab-color --self active_bg=${ACTIVE_TAB_BG} active_fg=${ACTIVE_TAB_FG} inactive_bg=${colors.inactiveBg} inactive_fg=${INACTIVE_TAB_FG}`,
+          { stdio: 'ignore', timeout: 2000 }
+        );
+      }
+      console.error(`[tab-setter] Tab commands completed successfully`);
+    } catch (err) {
+      console.error(`[tab-setter] Error setting tab:`, err);
     }
-
-    const escaped = title.replace(/"/g, '\\"');
-    // Set BOTH tab title AND window title. Kitty's tab_title_template uses
-    // {active_window.title} (the window title). OSC escape codes from Claude Code
-    // reset set-tab-title overrides, so the template falls back to window title.
-    // By setting both, our title survives OSC resets.
-    const toFlag = `--to="${kittyEnv.listenOn}"`;
-    console.error(`[tab-setter] Setting tab: "${escaped}" with toFlag: ${toFlag}`);
-    execSync(`kitten @ ${toFlag} set-tab-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
-    execSync(`kitten @ ${toFlag} set-window-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
-
-    // For idle state, reset ALL colors to Kitty defaults (no lingering backgrounds)
-    if (state === 'idle') {
-      execSync(
-        `kitten @ ${toFlag} set-tab-color --self active_bg=none active_fg=none inactive_bg=none inactive_fg=none`,
-        { stdio: 'ignore', timeout: 2000 }
-      );
-    } else {
-      execSync(
-        `kitten @ ${toFlag} set-tab-color --self active_bg=${ACTIVE_TAB_BG} active_fg=${ACTIVE_TAB_FG} inactive_bg=${colors.inactiveBg} inactive_fg=${INACTIVE_TAB_FG}`,
-        { stdio: 'ignore', timeout: 2000 }
-      );
-    }
-    console.error(`[tab-setter] Tab commands completed successfully`);
-  } catch (err) {
-    console.error(`[tab-setter] Error setting tab:`, err);
   }
 
   // Persist per-window state (or clean up on idle/session end)
@@ -320,36 +389,42 @@ export function setPhaseTab(phase: AlgorithmTabPhase, sessionId: string, summary
     title = `${config.symbol} ${oneWord} | ${desc}`;
   }
 
-  try {
-    const isKitty = process.env.TERM === 'xterm-kitty' || kittyEnv.listenOn;
-    if (!isKitty) return;
+  const itermEnv = getItermEnv(sessionId);
 
-    // CRITICAL: Require socket for remote control. See PR #493.
-    if (!kittyEnv.listenOn) {
-      console.error(`[tab-setter] No kitty socket available, skipping phase tab update`);
-      return;
+  if (itermEnv.tty) {
+    setItermTabTitle(title, itermEnv.tty);
+    console.error(`[tab-setter] iTerm2 phase tab: "${title}" via ${itermEnv.tty}`);
+  } else {
+    try {
+      const isKitty = process.env.TERM === 'xterm-kitty' || kittyEnv.listenOn;
+      if (!isKitty) return;
+
+      if (!kittyEnv.listenOn) {
+        console.error(`[tab-setter] No kitty socket available, skipping phase tab update`);
+        return;
+      }
+
+      const escaped = title.replace(/"/g, '\\"');
+      const toFlag = `--to="${kittyEnv.listenOn}"`;
+
+      execSync(`kitten @ ${toFlag} set-tab-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
+      execSync(`kitten @ ${toFlag} set-window-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
+
+      if (phase === 'IDLE') {
+        execSync(
+          `kitten @ ${toFlag} set-tab-color --self active_bg=none active_fg=none inactive_bg=none inactive_fg=none`,
+          { stdio: 'ignore', timeout: 2000 }
+        );
+      } else {
+        execSync(
+          `kitten @ ${toFlag} set-tab-color --self active_bg=${ACTIVE_TAB_BG} active_fg=${ACTIVE_TAB_FG} inactive_bg=${config.inactiveBg} inactive_fg=${INACTIVE_TAB_FG}`,
+          { stdio: 'ignore', timeout: 2000 }
+        );
+      }
+      console.error(`[tab-setter] Phase tab: "${escaped}" (${phase}, bg=${config.inactiveBg})`);
+    } catch (err) {
+      console.error(`[tab-setter] Error setting phase tab:`, err);
     }
-
-    const escaped = title.replace(/"/g, '\\"');
-    const toFlag = `--to="${kittyEnv.listenOn}"`;
-
-    execSync(`kitten @ ${toFlag} set-tab-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
-    execSync(`kitten @ ${toFlag} set-window-title "${escaped}"`, { stdio: 'ignore', timeout: 2000 });
-
-    if (phase === 'IDLE') {
-      execSync(
-        `kitten @ ${toFlag} set-tab-color --self active_bg=none active_fg=none inactive_bg=none inactive_fg=none`,
-        { stdio: 'ignore', timeout: 2000 }
-      );
-    } else {
-      execSync(
-        `kitten @ ${toFlag} set-tab-color --self active_bg=${ACTIVE_TAB_BG} active_fg=${ACTIVE_TAB_FG} inactive_bg=${config.inactiveBg} inactive_fg=${INACTIVE_TAB_FG}`,
-        { stdio: 'ignore', timeout: 2000 }
-      );
-    }
-    console.error(`[tab-setter] Phase tab: "${escaped}" (${phase}, bg=${config.inactiveBg})`);
-  } catch (err) {
-    console.error(`[tab-setter] Error setting phase tab:`, err);
   }
 
   // Persist per-window state

@@ -15,9 +15,10 @@
 
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+import { execSync } from 'child_process';
 import { inference } from '../PAI/Tools/Inference';
 import { isValidWorkingTitle, isValidQuestionTitle, getWorkingFallback, getQuestionFallback, trimToValidTitle } from './lib/output-validators';
-import { setTabState, readTabState, getSessionOneWord, persistKittySession } from './lib/tab-setter';
+import { setTabState, readTabState, getSessionOneWord, persistKittySession, persistItermSession } from './lib/tab-setter';
 import { getIdentity, getDAName } from './lib/identity';
 import { readHookInput, parseTranscriptFromInput } from './lib/hook-io';
 import { handleTabState } from './handlers/TabState';
@@ -201,6 +202,23 @@ function handleSessionStart(data: SessionStartInput): void {
   const kittyWindowId = process.env.KITTY_WINDOW_ID;
   if (kittyListenOn && kittyWindowId && sessionId) {
     persistKittySession(sessionId, kittyListenOn, kittyWindowId);
+  }
+
+  // Persist iTerm2 TTY per-session for tab title updates
+  if (process.env.TERM_PROGRAM === 'iTerm.app' && sessionId) {
+    try {
+      let pid = process.pid;
+      for (let i = 0; i < 10; i++) {
+        const info = execSync(`ps -p ${pid} -o ppid=,tty=`, { encoding: 'utf-8', timeout: 2000 }).trim();
+        const parts = info.split(/\s+/);
+        if (parts[1] && parts[1] !== '??' && parts[1] !== '?') {
+          persistItermSession(sessionId, `/dev/${parts[1]}`);
+          break;
+        }
+        pid = parseInt(parts[0]);
+        if (!pid || pid <= 1) break;
+      }
+    } catch { /* silent */ }
   }
 
   // Legacy: also write kitty-env.json for hooks that don't have session ID

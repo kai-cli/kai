@@ -118,3 +118,11 @@ export function getMaxDomainsPerSession(): number {
 export function loadDomainsConfig(): DomainsConfig {
   return loadRaw();
 }
+
+export function loadRequiredTags(): Record<string, string[]> {
+  return {};
+}
+
+export function loadRelatedDomains(): Record<string, string[]> {
+  return {};
+}

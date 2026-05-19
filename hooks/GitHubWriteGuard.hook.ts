@@ -49,10 +49,13 @@ interface HookInput {
   };
 }
 
-// GitHub write patterns — regex-tested against the command
+// GitHub write patterns — regex-tested against each command segment
+// Git patterns use GIT_CMD to match global flags between `git` and the subcommand
+// (e.g., `git -C /path push` or `git --no-pager push`)
+const GIT_CMD = /\bgit\s+(?:(?:-[A-Za-z]\s+\S+|--\S+)\s+)*/;
 const WRITE_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
-  // git push (all variants)
-  { pattern: /\bgit\s+push\b/, description: 'git push (remote write)' },
+  // git push (all variants, including with -C <path> or other global flags)
+  { pattern: new RegExp(GIT_CMD.source + 'push\\b'), description: 'git push (remote write)' },
 
   // gh pr mutations
   { pattern: /\bgh\s+pr\s+(create|merge|close|edit|review|comment|reopen)\b/, description: 'gh pr mutation' },
@@ -69,27 +72,40 @@ const WRITE_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
   // gh branch/label/workflow mutations
   { pattern: /\bgh\s+(label|workflow)\s+(create|edit|delete|run)\b/, description: 'gh label/workflow mutation' },
 
-  // git remote branch deletion
-  { pattern: /\bgit\s+push\s+.*--delete\b/, description: 'remote branch deletion' },
+  // git remote branch deletion (with global flags)
+  { pattern: new RegExp(GIT_CMD.source + 'push\\s+.*--delete\\b'), description: 'remote branch deletion' },
 ];
 
-function extractCommandInvocations(command: string): string {
+function extractCommandInvocations(command: string): string[] {
+  // Strip heredoc bodies, quoted strings, and inline script args before splitting.
+  // This prevents "git push" inside commit messages, bun -e scripts, or
+  // heredoc content from triggering false positives.
+  let stripped = command
+    // Remove heredoc bodies: << 'EOF' ... EOF (or <<EOF, <<-EOF, <<"EOF")
+    .replace(/<<-?\s*['"]?(\w+)['"]?\s*\n[\s\S]*?\n\1\b/g, '')
+    // Remove double-quoted strings (may span lines)
+    .replace(/"[^"]*"/g, '""')
+    // Remove single-quoted strings
+    .replace(/'[^']*'/g, "''")
+    // Remove bun -e / node -e inline scripts (everything after -e "..." or -e '...')
+    .replace(/\b(bun|node|deno)\s+-e\s+\S.*/g, '');
+
   // Split on shell operators to isolate individual command invocations,
-  // then take only the first 4 tokens of each segment (enough to match
-  // "git push --force origin" or "gh pr create" etc.).
-  // This prevents heredoc bodies, grep patterns, and commit messages
-  // from being matched even when they contain write-command strings as text.
-  return command
+  // then take only the first 6 tokens of each segment (enough to match
+  // "git -C /some/path push --force origin" or "gh pr create" etc.).
+  return stripped
     .split(/&&|\|\||;|\|/)
-    .map(seg => seg.trim().split(/\s+/).slice(0, 4).join(' '))
-    .join(' ');
+    .map(seg => seg.trim().split(/\s+/).slice(0, 6).join(' '))
+    .filter(seg => seg.length > 0);
 }
 
 function isGitHubWriteCommand(command: string): { write: boolean; description: string } {
-  const invocations = extractCommandInvocations(command);
-  for (const { pattern, description } of WRITE_PATTERNS) {
-    if (pattern.test(invocations)) {
-      return { write: true, description };
+  const segments = extractCommandInvocations(command);
+  for (const segment of segments) {
+    for (const { pattern, description } of WRITE_PATTERNS) {
+      if (pattern.test(segment)) {
+        return { write: true, description };
+      }
     }
   }
   return { write: false, description: '' };

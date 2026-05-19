@@ -1,7 +1,11 @@
 # Generated from CLAUDE.md.template — do not commit
 CLAUDE.md
 
+# Claude Code local settings (machine-specific, session-specific)
+.claude/
+
 # Claude Code runtime directories (session-specific, machine-specific)
+# Project memory is personal — never tracked in the public repo
 projects/
 file-history/
 debug/
@@ -31,6 +35,12 @@ node_modules/
 
 # Credential files
 devices.json
+
+# Python bytecache
+__pycache__/
+
+# Cleanup state
+.last-cleanup
 
 # macOS
 .DS_Store
@@ -85,6 +95,9 @@ MEMORY/KNOWLEDGE/INDEX.md
 # CAPABILITIES — learned skills, contains project-specific paths and patterns (PII-adjacent)
 MEMORY/CAPABILITIES/
 CAPABILITIES.md
+CAPABILITIES.md.template
+TOOLS.md
+TOOLS.md.template
 
 # Session files (machine-specific, change every session)
 sessions/

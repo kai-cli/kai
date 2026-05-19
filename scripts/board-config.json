@@ -1,9 +1,7 @@
 {
   "port": 3333,
   "scanDirs": [
-    "~/.claude/MEMORY/WORK",
-    "~/.claude/docs/v45-staging/work",
-    "~/.claude/docs/v46-staging/work"
+    "~/.claude/MEMORY/WORK"
   ],
   "projectsDir": "~/Projects",
   "autoDiscover": true,
@@ -16,63 +14,9 @@
   ],
   "library": [
     {
-      "name": "Release Notes Generator",
-      "path": "~/Projects/release-notes/",
-      "description": "ISP release note drafting pipeline — config-driven, multi-audience output",
-      "tags": [
-        "yourcompany",
-        "releases",
-        "writing"
-      ],
-      "pinned": true
-    },
-    {
-      "name": "Release Calendar & Gap Analysis",
-      "path": "~/Projects/Knowledge/releases/",
-      "description": "7-board release tracking with gap analysis, ISP bug exposure, weekly calendar",
-      "tags": [
-        "yourcompany",
-        "releases",
-        "tracking"
-      ],
-      "pinned": false
-    },
-    {
-      "name": "TR-069/TR-369 Research",
-      "path": "~/Projects/TR-069_TR-369/",
-      "description": "Open standards compliance research, data model analysis, USP protocol work",
-      "tags": [
-        "standards",
-        "yourcompany",
-        "research"
-      ],
-      "pinned": true
-    },
-    {
-      "name": "Knowledge Base",
-      "path": "~/Projects/Knowledge/",
-      "description": "Indexed knowledge store — firmware, standards, security, AI reference material",
-      "tags": [
-        "knowledge",
-        "reference"
-      ],
-      "pinned": true
-    },
-    {
-      "name": "Serial Router Monitor",
-      "path": "~/Projects/_archive/serial-router-monitor/",
-      "description": "USB serial console tool for router log capture and device assessment (archived)",
-      "tags": [
-        "yourcompany",
-        "tools",
-        "hardware"
-      ],
-      "pinned": false
-    },
-    {
-      "name": "KAI / PAI System (v4.8.0)",
+      "name": "KAI System",
       "path": "~/.claude/",
-      "description": "Personal AI Infrastructure — Algorithm v3.12.0, skills, hooks, agents, Ralph Loop, 314 tests",
+      "description": "Personal AI Infrastructure — Algorithm, skills, hooks, agents",
       "tags": [
         "ai",
         "infrastructure"
@@ -80,26 +24,13 @@
       "pinned": true
     },
     {
-      "name": "Firmware Inspector",
-      "path": "~/Projects/Firmware_Inspector/firmware-inspector/",
-      "description": "OpenWRT device inspection toolkit — serial/SSH access, TR-181 validation, YAML rules, safety policy, evidence collection",
+      "name": "Example Project",
+      "path": "~/Projects/my-project/",
+      "description": "Add your own projects here — board auto-discovers from projectsDir",
       "tags": [
-        "yourcompany",
-        "tools",
-        "firmware",
-        "tr-181"
+        "example"
       ],
-      "pinned": true
-    },
-    {
-      "name": "CLI Hidden Commands Reference",
-      "path": "~/Projects/cli-hidden-commands/",
-      "description": "Undocumented CLI commands reference guide",
-      "tags": [
-        "reference",
-        "tools"
-      ],
-      "pinned": true
+      "pinned": false
     }
   ],
   "archived": [],

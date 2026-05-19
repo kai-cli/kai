@@ -42,7 +42,7 @@ bun ~/.claude/PAI/Tools/ResearchIndex.ts dedup "<research topic>"
 3. Check relevant GitHub repos via `gh` CLI (issues, docs)
 4. Launch an **Explore agent** to search local project files IN PARALLEL with web agents (not after)
 
-**Why:** The user has a comprehensive local knowledge base with indexed firmware docs, architecture, vendor docs (Ookla, SamKnows), build configs, and GitHub issue pointers. Web research agents are slow and the information is often not public. Local context is faster and more accurate.
+**Why:** The user may have a local knowledge base with indexed docs, architecture notes, and project context. Web research agents are slow and the information may not be public. Local context is faster and more accurate.
 
 **If local context covers >80% of the answer**, skip web agents entirely and synthesize from local sources.
 

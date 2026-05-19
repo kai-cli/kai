@@ -249,6 +249,7 @@ async function main() {
     // Primary trigger is `pai curate`; this ensures synthesis doesn't go stale
     // if curate isn't run for an extended period.
     maybeRunSynthesisBackstop();
+    maybeAutoConsolidate();
 
     console.error('[SessionCleanup] Session ended, work marked complete');
     process.exit(0);
@@ -521,6 +522,24 @@ export function maybeRunSynthesisBackstop(): void {
         console.error(`[SessionCleanup] Synthesis backstop triggered (${Math.floor(daysSince)}d since last run)`);
       }
     }
+  } catch { /* non-critical */ }
+}
+
+/**
+ * Auto-consolidate eligible STAGING entries (daily, max 3 promotions).
+ */
+export function maybeAutoConsolidate(): void {
+  try {
+    const consolidatePath = join(paiPath(), 'PAI', 'Tools', 'AutoConsolidate.ts');
+    if (!existsSync(consolidatePath)) return;
+
+    const proc = spawn('bun', [consolidatePath], {
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env },
+    });
+    proc.unref();
+    console.error('[SessionCleanup] Auto-consolidation check spawned');
   } catch { /* non-critical */ }
 }
 

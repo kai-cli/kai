@@ -28,6 +28,7 @@ case "$LOG_BASE" in
   KnowledgeSync)             DEFAULT_TIMEOUT=180 ;;  # Full harvest: 7 domains × ~25s each
   SessionSummary)            DEFAULT_TIMEOUT=60  ;;  # LLM summarization
   WorkCompletionLearning)    DEFAULT_TIMEOUT=60  ;;  # LLM learning capture
+  InsightExtractor)          DEFAULT_TIMEOUT=90  ;;  # Haiku inference (CLI cold start) + file writes
   RelationshipMemory)        DEFAULT_TIMEOUT=45  ;;  # LLM relationship note
   RatingCapture)             DEFAULT_TIMEOUT=30  ;;  # Haiku inference
   *)                         DEFAULT_TIMEOUT=30  ;;  # All others: 30s

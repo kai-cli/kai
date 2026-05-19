@@ -114,6 +114,8 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RelationshipMemory.hook.ts", "async": true },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateCounts.hook.ts", "async": true },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh IntegrityCheck.hook.ts", "async": true },
+          // Extract factual learnings from session transcript (own budget, 4h cooldown)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh InsightExtractor.hook.ts", "async": true },
           // Knowledge distillation — runs LAST (needs other hooks to write first, uses inference budget)
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh KnowledgeSync.hook.ts", "async": true }
         ]

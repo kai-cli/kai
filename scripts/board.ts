@@ -680,6 +680,30 @@ Bun.serve({
       }
     }
 
+    // --- API: Knowledge Health ---
+    if (url.pathname === "/api/knowledge-health" && method === "GET") {
+      try {
+        const { analyzeHealth } = await import("../PAI/Tools/KnowledgeHealth");
+        return Response.json(analyzeHealth());
+      } catch (err: any) {
+        return Response.json({ error: err.message, domains: [] }, { status: 500 });
+      }
+    }
+
+    // --- API: Memory Search ---
+    if (url.pathname === "/api/search" && method === "GET") {
+      const q = url.searchParams.get("q") || "";
+      const budget = parseInt(url.searchParams.get("budget") || "4000", 10);
+      try {
+        const { searchMemory } = await import("../PAI/Tools/MemorySearch");
+        const output = searchMemory(q, budget);
+        output.query = q;
+        return Response.json(output);
+      } catch (err: any) {
+        return Response.json({ error: err.message, query: q, results: [] }, { status: 500 });
+      }
+    }
+
     // --- API: Config ---
     if (url.pathname === "/api/config" && method === "GET") {
       return Response.json(config);

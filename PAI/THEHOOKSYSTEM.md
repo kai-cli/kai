@@ -188,4 +188,4 @@ For async hooks: `{ "type": "command", "command": "...", "async": true }`
 ---
 
 *Full spec with all hooks documented, handler patterns, and architecture diagrams: [PAI/dev/THEHOOKSYSTEM-Reference.md](dev/THEHOOKSYSTEM-Reference.md)*
-*Claude Code hook internals research: [Knowledge/ai-infrastructure/pai-system/docs/hooks/CLAUDE-CODE-HOOK-INTERNALS.md](~/Projects/Knowledge/ai-infrastructure/pai-system/docs/hooks/CLAUDE-CODE-HOOK-INTERNALS.md)*
+*Claude Code hook internals: See [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code/hooks) for official hook API reference.*

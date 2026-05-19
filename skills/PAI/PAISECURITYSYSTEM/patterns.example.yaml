@@ -1,33 +1,44 @@
-# PAI Security Patterns - EXAMPLE TEMPLATE
-# Single source of truth for security validation
-# Used by SecurityValidator.hook.ts
+# PAI Security Patterns
+# Loaded by SecurityValidator.hook.ts at runtime.
 #
-# INSTRUCTIONS:
-# 1. Copy this file to USER/PAISECURITYSYSTEM/patterns.yaml
-# 2. Customize patterns for your environment
-# 3. The hook will load USER patterns first, falling back to this example
+# Path priority:
+#   1. PAI/USER/PAISECURITYSYSTEM/patterns.yaml (your custom rules — this file after install)
+#   2. skills/PAI/PAISECURITYSYSTEM/patterns.example.yaml (system fallback)
+#
+# Path patterns support: ~ (home), * (single segment), ** (recursive), prefix match (trailing /)
+# Bash patterns are regex (case-insensitive).
+#
+# Containment zones:
+#   personal = readOnly (TELOS, RELATIONSHIP, SIGNALS — your private context)
+#   system   = confirmWrite (settings.json, identity.jsonc — breaks things if wrong)
+#   shared   = normal access (KNOWLEDGE, hooks, skills, config)
+#   secrets  = zeroAccess (SSH keys, credentials — never touched)
 ---
-version: "1.0"
-last_updated: "2026-01-14"
+version: "5.5.0"
+last_updated: "2026-05-15"
 
-# Philosophy: Safe but functional by default
-# Block catastrophic operations, confirm dangerous ones, allow everything else
 philosophy:
-  mode: safe_functional
-  principle: "Meaningful protection without friction that drives people to disable security"
+  mode: defensive
+  principle: "Personal data stays personal. System config requires confirmation. Destructive commands require intent."
 
 # ========================================
 # BASH COMMAND PATTERNS
 # ========================================
 bash:
+  # TRUSTED - Fast-path allow (no logging, no checks)
+  trusted:
+    - pattern: "^(git (status|log|diff|branch|show|rev-parse|remote -v)|bun test|bun run |ls |cat |head |tail |wc |grep |rg |find )"
+      reason: "Read-only git, test, and inspection commands"
+    - pattern: "^(echo|printf|date|pwd|which|type|file |stat )"
+      reason: "Pure information commands"
+
   # BLOCKED - Catastrophic/irreversible (exit 2)
-  # These operations are NEVER allowed - they cause irreversible damage
   blocked:
     # Filesystem destruction
-    - pattern: "rm -rf /"
-      reason: "Filesystem destruction"
-    - pattern: "rm -rf ~"
-      reason: "Home directory destruction"
+    - pattern: "rm\\s+(-rf?\\s+)?(/|~/?$|~/.claude/?$)"
+      reason: "Recursive delete of root, home, or PAI root"
+    - pattern: "rm\\s+-rf?\\s+~/.claude/(hooks|config|PAI|MEMORY)/?$"
+      reason: "Bulk delete of critical PAI directories"
     - pattern: "sudo rm -rf /"
       reason: "Filesystem destruction with sudo"
     - pattern: "sudo rm -rf ~"
@@ -44,9 +55,9 @@ bash:
       reason: "APFS container deletion"
     - pattern: "diskutil apfs eraseVolume"
       reason: "Volume destruction"
-    - pattern: "dd if=/dev/zero"
-      reason: "Disk overwrite"
-    - pattern: "mkfs"
+    - pattern: "dd\\s+.*of=/dev/"
+      reason: "Raw disk write"
+    - pattern: "mkfs\\."
       reason: "Filesystem format"
 
     # Repository operations
@@ -55,52 +66,49 @@ bash:
     - pattern: "gh repo edit --visibility public"
       reason: "Repository exposure"
 
-  # CONFIRM - Dangerous but sometimes legitimate (exit 0 + JSON prompt)
-  # User will be prompted to confirm before execution
+    # PAI-specific
+    - pattern: ">(\\s+)?~/.claude/settings\\.json"
+      reason: "Redirect overwrite of settings.json (use BuildSettings.ts)"
+    - pattern: "chmod\\s+777"
+      reason: "World-writable permissions"
+    - pattern: "curl.*\\|\\s*(bash|sh|zsh)"
+      reason: "Pipe from internet to shell"
+    - pattern: "git\\s+push\\s+.*--force.*\\s+(main|master)"
+      reason: "Force push to main/master"
+
+  # CONFIRM - Dangerous but sometimes legitimate
   confirm:
     # Git operations
-    - pattern: "git push --force"
-      reason: "Force push can lose commits"
-    - pattern: "git push -f"
-      reason: "Force push can lose commits"
-    - pattern: "git push origin --force"
-      reason: "Force push can lose commits"
-    - pattern: "git push origin -f"
-      reason: "Force push can lose commits"
-    - pattern: "git reset --hard"
-      reason: "Loses uncommitted changes"
+    - pattern: "git\\s+push"
+      reason: "Pushing to remote requires confirmation"
+    - pattern: "git\\s+reset\\s+--hard"
+      reason: "Hard reset discards uncommitted work"
 
-    # Cloud - AWS
+    # Destructive file operations
+    - pattern: "rm\\s+-r"
+      reason: "Recursive delete requires confirmation"
+
+    # Cloud operations
     - pattern: "aws s3 rm.*--recursive"
       reason: "Bulk S3 deletion"
     - pattern: "aws ec2 terminate"
       reason: "EC2 instance termination"
     - pattern: "aws rds delete"
       reason: "RDS deletion"
-
-    # Cloud - GCP
     - pattern: "gcloud.*delete"
       reason: "GCP resource deletion"
-
-    # Infrastructure as Code
     - pattern: "terraform destroy"
       reason: "Infrastructure destruction"
     - pattern: "terraform apply.*-auto-approve"
       reason: "Auto-approve bypasses review"
-    - pattern: "pulumi destroy"
-      reason: "Infrastructure destruction"
 
     # Containers
     - pattern: "docker system prune"
       reason: "Container/image cleanup"
-    - pattern: "docker volume rm"
-      reason: "Volume data deletion"
     - pattern: "kubectl delete namespace"
       reason: "Namespace deletion"
 
     # Databases
-    - pattern: "DELETE FROM.*WHERE"
-      reason: "Database deletion (confirm scope)"
     - pattern: "DROP DATABASE"
       reason: "Database destruction"
     - pattern: "DROP TABLE"
@@ -108,59 +116,65 @@ bash:
     - pattern: "TRUNCATE"
       reason: "Table data destruction"
 
-  # ALERT - Suspicious but allowed (log only, no block)
-  # These are logged for security review but not blocked
+    # Publishing
+    - pattern: "npm\\s+publish|bun\\s+publish"
+      reason: "Publishing packages requires confirmation"
+
+  # ALERT - Suspicious but allowed (logged, not blocked)
   alert:
-    - pattern: "curl.*\\|.*sh"
-      reason: "Piping curl to shell"
-    - pattern: "curl.*\\|.*bash"
-      reason: "Piping curl to bash"
-    - pattern: "wget.*\\|.*sh"
-      reason: "Piping wget to shell"
-    - pattern: "wget.*\\|.*bash"
-      reason: "Piping wget to bash"
+    - pattern: "curl.*-d|curl.*--data|wget"
+      reason: "Outbound data transfer (logged for awareness)"
 
 # ========================================
-# PATH PROTECTION
+# PATH PROTECTION (Containment Zones)
 # ========================================
 paths:
-  # ZERO ACCESS - Complete denial for all operations (read/write/delete)
-  # These paths contain secrets that should never be accessed
+  # ZERO ACCESS — secrets and credentials (never read or write)
   zeroAccess:
     - "~/.ssh/id_*"
     - "~/.ssh/*.pem"
     - "~/.ssh/authorized_keys"
     - "~/.aws/credentials"
     - "~/.gnupg/private*"
-    - "**/credentials.json"
-    - "**/service-account*.json"
+    - "~/.netrc"
+    - "~/.claude/settings.local.json"
 
-  # READ ONLY - Can read but cannot modify or delete
+  # READ ONLY — personal zone (can read for context, cannot modify)
+  # These contain your identity, relationships, and private signals.
+  # The AI can read them to understand you, but should never rewrite them.
   readOnly:
-    - "/etc/**"
+    - "~/.claude/PAI/USER/TELOS/"
+    - "~/.claude/MEMORY/RELATIONSHIP/"
+    - "~/.claude/MEMORY/LEARNING/SIGNALS/"
 
-  # CONFIRM WRITE - Can read freely, writing requires confirmation
+  # CONFIRM WRITE — system-critical files (one wrong edit breaks everything)
   confirmWrite:
+    - "~/.claude/settings.json"
+    - "~/.claude/config/identity.jsonc"
+    - "~/.claude/config/hooks.jsonc"
+    - "~/.claude/config/permissions.jsonc"
+    - "~/.claude/PAI/USER/PAISECURITYSYSTEM/patterns.yaml"
     - "**/.env"
     - "**/.env.*"
-    - "~/.ssh/*"
 
-  # NO DELETE - Can read and modify but cannot delete
-  # Add paths to important configuration or infrastructure files
+  # NO DELETE — knowledge and core infrastructure (can modify, cannot destroy)
   noDelete:
+    - "~/.claude/MEMORY/KNOWLEDGE/"
+    - "~/.claude/MEMORY/WISDOM/"
+    - "~/.claude/PAI/Algorithm/"
+    - "~/.claude/hooks/lib/"
+    - "~/.claude/config/"
     - ".git/**"
     - "LICENSE*"
-    - "README.md"
 
 # ========================================
-# SPECIAL PROJECT RULES
+# PROJECT-SPECIFIC RULES
 # ========================================
-# Add project-specific rules here
-# Example:
+# Add per-project overrides here. Example:
 # projects:
-#   my-project:
-#     path: "~/Projects/my-project"
+#   production-api:
+#     path: "~/Projects/prod-api"
 #     rules:
 #       - action: "block_git_push"
-#         reason: "Deploy via custom method only"
+#         reason: "Deploy via CI only — never push directly"
 projects: {}

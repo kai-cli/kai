@@ -181,7 +181,7 @@ describe('synthesisToStagingContent', () => {
 // --- maybeRunSynthesisBackstop tests ---
 // Note: This function spawns a subprocess and reads state files.
 // We test it indirectly by checking it doesn't throw.
-import { maybeRunSynthesisBackstop } from '../hooks/SessionCleanup.hook';
+import { maybeRunSynthesisBackstop, maybeAutoConsolidate } from '../hooks/SessionCleanup.hook';
 
 describe('maybeRunSynthesisBackstop', () => {
   test('does not throw when called', () => {
@@ -190,5 +190,15 @@ describe('maybeRunSynthesisBackstop', () => {
 
   test('is a function', () => {
     expect(typeof maybeRunSynthesisBackstop).toBe('function');
+  });
+});
+
+describe('maybeAutoConsolidate', () => {
+  test('does not throw when called', () => {
+    expect(() => maybeAutoConsolidate()).not.toThrow();
+  });
+
+  test('is a function', () => {
+    expect(typeof maybeAutoConsolidate).toBe('function');
   });
 });

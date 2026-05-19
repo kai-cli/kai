@@ -21,6 +21,7 @@ import { getPaiDir, paiPath } from './lib/paths';
 import { inference } from '../PAI/Tools/Inference';
 import { canCallInference, recordInferenceCall, budgetStatus } from './lib/inference-budget';
 import { loadDomainKeywords, loadDomainDescriptions } from './lib/config-loader';
+import { parseKnowledgeFile, writeKnowledgeFile, type KnowledgeFile } from './lib/knowledge-schema';
 
 // ============================================================================
 // Types
@@ -41,35 +42,28 @@ export interface ChangedFile {
   content: string;
 }
 
-// ============================================================================
 // Domain definitions — loaded from config/domains.jsonc via config-loader
-// Falls back to generic builtins if config is empty (same as KnowledgeHarvester)
-// ============================================================================
-
-const BUILTIN_KEYWORDS: Record<string, string[]> = {
-  'backend': ['api', 'server', 'database', 'sql', 'rest', 'graphql', 'service', 'endpoint', 'auth', 'cache'],
-  'frontend': ['ui', 'react', 'vue', 'angular', 'css', 'html', 'component', 'frontend', 'web', 'interface'],
-  'devops': ['docker', 'kubernetes', 'ci', 'cd', 'pipeline', 'deploy', 'terraform', 'helm', 'jenkins', 'github'],
-  'security': ['security', 'vulnerability', 'cve', 'patch', 'audit', 'encryption', 'auth', 'pii', 'privacy'],
-  'ai-infrastructure': ['kai', 'hook', 'skill', 'agent', 'algorithm', 'memory', 'inference', 'claude', 'llm'],
-};
-
-const BUILTIN_DESCRIPTIONS: Record<string, string> = {
-  'backend': 'Backend services, APIs, databases, and server-side logic',
-  'frontend': 'Frontend frameworks, UI components, and web interfaces',
-  'devops': 'CI/CD pipelines, containerization, infrastructure, and deployment',
-  'security': 'Security practices, vulnerability management, and privacy',
-  'ai-infrastructure': 'KAI system, hooks, skills, memory, and AI agents',
-};
 
 function getDomainKeywords(): Record<string, string[]> {
-  const configured = loadDomainKeywords();
-  return Object.keys(configured).length > 0 ? configured : BUILTIN_KEYWORDS;
+  return loadDomainKeywords();
 }
 
 function getDomainDescriptions(): Record<string, string> {
-  const configured = loadDomainDescriptions();
-  return Object.keys(configured).length > 0 ? configured : BUILTIN_DESCRIPTIONS;
+  return loadDomainDescriptions();
+}
+
+// ============================================================================
+// Knowledge file write helper (preserves frontmatter)
+// ============================================================================
+
+function writeKnowledgeFileWithFrontmatter(domain: string, body: string): void {
+  const filePath = join(KNOWLEDGE_DIR, `${domain}.md`);
+  const existing = parseKnowledgeFile(filePath);
+  const today = new Date().toISOString().split('T')[0];
+  const meta = existing?.meta ?? { domain, updated: today, tags: [], related: [] };
+  meta.updated = today;
+  const kf: KnowledgeFile = { meta, body: body + '\n', path: filePath, slug: domain };
+  writeKnowledgeFile(kf);
 }
 
 // ============================================================================
@@ -420,7 +414,7 @@ async function main() {
       const content = await distillDomain(domain, unique);
       if (content) {
         recordInferenceCall('KnowledgeSync', domain);
-        writeFileSync(join(KNOWLEDGE_DIR, `${domain}.md`), content + '\n');
+        writeKnowledgeFileWithFrontmatter(domain, content);
         console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars) [budget: ${budgetStatus()}]`);
       }
     }
@@ -500,7 +494,7 @@ async function runFullHarvest(state: HarvestState): Promise<void> {
     const content = await distillDomain(domain, unique);
     if (content) {
       recordInferenceCall('KnowledgeSync', domain);
-      writeFileSync(join(KNOWLEDGE_DIR, `${domain}.md`), content + '\n');
+      writeKnowledgeFileWithFrontmatter(domain, content);
       console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars) [budget: ${budgetStatus()}]`);
     }
   }

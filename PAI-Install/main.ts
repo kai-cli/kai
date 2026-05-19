@@ -236,6 +236,21 @@ Correct
 `,
 };
 
+export function createSecurityPatterns(paiDir: string): boolean {
+  const userPatternsPath = join(paiDir, "PAI", "USER", "PAISECURITYSYSTEM", "patterns.yaml");
+  if (existsSync(userPatternsPath)) return false;
+
+  const examplePath = join(paiDir, "skills", "PAI", "PAISECURITYSYSTEM", "patterns.example.yaml");
+  if (!existsSync(examplePath)) return false;
+
+  const dir = dirname(userPatternsPath);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+  const content = readFileSync(examplePath, "utf-8");
+  writeFileSync(userPatternsPath, content, "utf-8");
+  return true;
+}
+
 export function createUserScaffold(paiDir: string) {
   let created = 0;
   for (const [relPath, content] of Object.entries(USER_SCAFFOLD)) {
@@ -596,15 +611,22 @@ env | grep -E "KEY|TOKEN|SECRET" | sed 's/=.*/=✅/'
 }
 
 async function main() {
-  const TOTAL_STEPS = 8;
+  const TOTAL_STEPS = 9;
 
-  console.log(`\n${BOLD}${LIGHT_BLUE}PAI Setup Wizard${RESET}\n`);
+  // Detect upgrade vs fresh install
+  const isUpgrade = existsSync(join(PAI_ROOT, "config", "preferences.local.jsonc"))
+    || existsSync(join(PAI_ROOT, "config", "identity.jsonc"));
+
+  console.log(`\n${BOLD}${LIGHT_BLUE}KAI Setup Wizard${RESET}${isUpgrade ? `  ${DIM}(upgrade detected)${RESET}` : ""}\n`);
   info(`Repo location: ${GRAY}${PAI_ROOT}${RESET}`);
   info(`Target:        ${GRAY}${CLAUDE_DIR}${RESET}`);
+  if (isUpgrade) {
+    info(`Mode:          ${GRAY}Upgrade — skipping already-configured steps${RESET}`);
+  }
   console.log();
 
   // ── Step 1: Ensure PAI is at ~/.claude/ ───────────────────────────────
-  step(1, TOTAL_STEPS, "Link PAI to ~/.claude/");
+  step(1, TOTAL_STEPS, "Link KAI to ~/.claude/");
 
   const alreadyInPlace = resolve(PAI_ROOT) === resolve(CLAUDE_DIR);
 
@@ -683,8 +705,90 @@ async function main() {
     }
   } catch { /* not a git repo or no remote — leave as-is */ }
 
-  // ── Step 2: Archetype selection ────────────────────────────────────────
-  step(2, TOTAL_STEPS, "Choose your knowledge archetype");
+  // ── Step 2: Claude Code & Authentication ───────────────────────────────
+  step(2, TOTAL_STEPS, "Claude Code & authentication");
+
+  // Check if Claude Code CLI is available
+  let claudeInstalled = false;
+  try {
+    const ver = execSync("claude --version 2>/dev/null", { encoding: "utf-8" }).trim();
+    claudeInstalled = true;
+    ok(`Claude Code installed: ${DIM}${ver}${RESET}`);
+  } catch {
+    // not found
+  }
+
+  if (!claudeInstalled) {
+    console.log(`\n  ${RED}Claude Code is not installed.${RESET}`);
+    console.log(`  ${DIM}KAI requires Claude Code to function. Install it first:${RESET}\n`);
+    console.log(`    ${BOLD}npm install -g @anthropic-ai/claude-code${RESET}`);
+    console.log(`    ${DIM}or:${RESET} ${BOLD}brew install claude${RESET}\n`);
+    const continueAnyway = await confirm("Continue setup without Claude Code?", false);
+    if (!continueAnyway) {
+      fail("Install Claude Code first, then re-run this installer.");
+      process.exit(1);
+    }
+    warn("Continuing — you'll need to install Claude Code before using KAI");
+  }
+
+  // Check if API key already configured
+  const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
+
+  if (isUpgrade && claudeInstalled && hasApiKey) {
+    ok(`ANTHROPIC_API_KEY set in environment`);
+  } else if (isUpgrade && claudeInstalled) {
+    ok(`Using OAuth authentication`);
+  } else {
+    // Fresh install — walk through auth options
+    console.log(`\n  ${DIM}Claude Code authenticates in two ways:${RESET}`);
+    console.log(`    ${BOLD}1${RESET}  OAuth ${DIM}— log in with your claude.ai account (most users)${RESET}`);
+    console.log(`    ${BOLD}2${RESET}  API Key ${DIM}— set ANTHROPIC_API_KEY in your shell profile${RESET}`);
+    console.log(`\n  ${DIM}OAuth is simpler — just run \`claude\` and it opens a browser login.${RESET}`);
+    console.log(`  ${DIM}An API key is optional but needed for research agents and multi-model skills.${RESET}\n`);
+
+    const wantsApiKey = await confirm("Do you have an Anthropic API key to configure?", false);
+    if (wantsApiKey) {
+      const apiKey = await prompt("ANTHROPIC_API_KEY (starts with sk-ant-)");
+      if (apiKey && apiKey.startsWith("sk-")) {
+        // Detect shell profile
+        const shell = process.env.SHELL ?? "/bin/zsh";
+        const profileFile = shell.includes("zsh") ? ".zshrc" : ".bashrc";
+        const profilePath = join(HOME, profileFile);
+
+        // Check if already set
+        let alreadySet = false;
+        if (existsSync(profilePath)) {
+          const content = readFileSync(profilePath, "utf-8");
+          alreadySet = content.includes("ANTHROPIC_API_KEY");
+        }
+
+        if (alreadySet) {
+          ok(`ANTHROPIC_API_KEY already in ~/${profileFile}`);
+        } else {
+          const addToProfile = await confirm(`Add to ~/${profileFile}?`, true);
+          if (addToProfile) {
+            const line = `\nexport ANTHROPIC_API_KEY="${apiKey}"\n`;
+            const existing = existsSync(profilePath) ? readFileSync(profilePath, "utf-8") : "";
+            writeFileSync(profilePath, existing + line, "utf-8");
+            ok(`Added ANTHROPIC_API_KEY to ~/${profileFile}`);
+            info(`${DIM}Run: source ~/${profileFile} (or open a new terminal)${RESET}`);
+          } else {
+            info(`Set it yourself: export ANTHROPIC_API_KEY="${apiKey.slice(0, 8)}..."`);
+          }
+        }
+      } else if (apiKey) {
+        warn("That doesn't look like an Anthropic key (should start with sk-ant-)");
+        info(`${DIM}You can set it later: export ANTHROPIC_API_KEY=sk-ant-...${RESET}`);
+      } else {
+        ok("Skipped — you can add it later if needed");
+      }
+    } else {
+      ok(`Using OAuth  ${DIM}(run \`claude\` to log in after install)${RESET}`);
+    }
+  }
+
+  // ── Step 3: Archetype selection ────────────────────────────────────────
+  step(3, TOTAL_STEPS, "Choose your knowledge archetype");
 
   const domainsPath = join(paiDir, "config", "domains.jsonc");
   const hasExistingDomains = existsSync(domainsPath);
@@ -714,8 +818,8 @@ async function main() {
     }
   }
 
-  // ── Step 3: Identity ───────────────────────────────────────────────────
-  step(3, TOTAL_STEPS, "Configure identity");
+  // ── Step 4: Identity ───────────────────────────────────────────────────
+  step(4, TOTAL_STEPS, "Configure identity");
 
   // Load existing identity to use as defaults
   const identityPath = join(paiDir, "config", "identity.jsonc");
@@ -742,60 +846,142 @@ async function main() {
     } catch { /* use defaults */ }
   }
 
-  console.log(`\n  ${DIM}Your assistant's identity (press Enter to keep current)${RESET}\n`);
-  const daName = await prompt("Assistant name", defaultDaName);
-  const principalName = await prompt("Your name", defaultPrincipalName || undefined);
-  const timezone = await prompt("Your timezone", defaultTimezone);
+  let daName = defaultDaName;
+  let principalName = defaultPrincipalName;
+  let timezone = defaultTimezone;
 
-  writeIdentityConfig(paiDir, {
-    daName,
-    daFullName: daName,
-    daDisplayName: daName,
-    daColor: defaultDaColor,
-    daCatchphrase: `${daName.split(" ")[0]} go`,
-    principalName,
-    principalTimezone: timezone,
-  });
-  ok(`Identity saved  ${DIM}(${daName} / ${principalName})${RESET}`);
-
-  // ── Step 4: AWS Bedrock (optional) ────────────────────────────────────
-  step(4, TOTAL_STEPS, "AWS Bedrock (optional)");
-  console.log(`\n  ${DIM}Skip this if you connect directly to Anthropic (most users).${RESET}\n`);
-  const useBedrock = await confirm("Route Claude Code through AWS Bedrock?", false);
-  if (useBedrock) {
-    const region = await prompt("AWS region", "us-west-2");
-    const awsProfile = await prompt("AWS profile name");
-    if (awsProfile) {
-      const model = await prompt("Bedrock model ID", "us.anthropic.claude-opus-4-6-v1");
-      const smallModel = await prompt("Bedrock small/fast model ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0");
-      try {
-        enableBedrockInPreferences(paiDir, region, awsProfile, model, smallModel);
-        ok(`Bedrock configured  ${DIM}(profile: ${awsProfile}, region: ${region})${RESET}`);
-      } catch (e) {
-        warn(`Could not write Bedrock config: ${e instanceof Error ? e.message : e}`);
-        warn("Edit config/preferences.jsonc manually to enable Bedrock.");
-      }
-    } else {
-      warn("No profile name entered — skipping Bedrock config");
-    }
+  if (isUpgrade && defaultPrincipalName) {
+    ok(`Identity: ${DIM}${defaultDaName} / ${defaultPrincipalName} (${defaultTimezone})${RESET}`);
   } else {
-    ok(`Using Anthropic direct API  ${DIM}(default)${RESET}`);
+    console.log(`\n  ${DIM}Your assistant's identity (press Enter to keep current)${RESET}\n`);
+    daName = await prompt("Assistant name", defaultDaName);
+    principalName = await prompt("Your name", defaultPrincipalName || undefined);
+    timezone = await prompt("Your timezone", defaultTimezone);
+
+    writeIdentityConfig(paiDir, {
+      daName,
+      daFullName: daName,
+      daDisplayName: daName,
+      daColor: defaultDaColor,
+      daCatchphrase: `${daName.split(" ")[0]} go`,
+      principalName,
+      principalTimezone: timezone,
+    });
+    ok(`Identity saved  ${DIM}(${daName} / ${principalName})${RESET}`);
   }
 
-  // ── Step 5: USER scaffold ──────────────────────────────────────────────
-  step(5, TOTAL_STEPS, "Create USER configuration scaffold");
+  // ── Step 5: About You ──────────────────────────────────────────────────
+  step(5, TOTAL_STEPS, "About You");
+
+  const aboutMePath = join(paiDir, "PAI", "USER", "ABOUTME.md");
+  let aboutMeHasPlaceholders = true;
+
+  if (existsSync(aboutMePath)) {
+    const content = readFileSync(aboutMePath, "utf-8");
+    aboutMeHasPlaceholders = content.includes("[Your Name]") || content.includes("[Your Role]");
+  }
+
+  if (!aboutMeHasPlaceholders) {
+    ok("ABOUTME.md already personalized");
+  } else if (isUpgrade && principalName) {
+    // Upgrade with identity already set — auto-fill with what we know
+    const dir = dirname(aboutMePath);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const aboutContent = `# About Me\n\nName: ${principalName}\nRole: [Your Role]\nOrganization: [Your Org]\n\n## Preferences\n\n<!-- Add your communication/work preferences here -->\n`;
+    writeFileSync(aboutMePath, aboutContent, "utf-8");
+    ok(`ABOUTME.md updated with name from identity  ${DIM}(edit to add role/org)${RESET}`);
+  } else {
+    console.log(`\n  ${DIM}Your About Me profile helps KAI personalize its responses.${RESET}`);
+    console.log(`  ${DIM}It's loaded into context so the AI knows who you are.${RESET}\n`);
+    const fillAboutMe = await confirm("Would you like to fill in your profile now?", true);
+
+    if (fillAboutMe) {
+      const aboutName = principalName || await prompt("Your name");
+      const aboutRole = await prompt("Your role (e.g. Software Engineer, Data Scientist)");
+      const aboutOrg = await prompt("Organization (or 'personal')", "personal");
+      const aboutFocus = await prompt("What are you working on? (one line, optional)");
+
+      let aboutContent = `# About Me\n\nName: ${aboutName}\nRole: ${aboutRole}\nOrganization: ${aboutOrg}\n`;
+      if (aboutFocus) {
+        aboutContent += `\n## Current Focus\n\n${aboutFocus}\n`;
+      }
+      aboutContent += `\n## Preferences\n\n<!-- Add your communication/work preferences here -->\n`;
+
+      const dir = dirname(aboutMePath);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(aboutMePath, aboutContent, "utf-8");
+      ok(`ABOUTME.md saved  ${DIM}(${aboutName} / ${aboutRole})${RESET}`);
+    } else {
+      ok("Skipped — edit ~/.claude/PAI/USER/ABOUTME.md anytime");
+    }
+  }
+
+  // ── Step 6: AWS Bedrock (optional) ────────────────────────────────────
+  step(6, TOTAL_STEPS, "AWS Bedrock (optional)");
+
+  // Check if Bedrock is already configured
+  const prefsPath = join(paiDir, "config", "preferences.jsonc");
+  let bedrockAlreadyConfigured = false;
+  if (existsSync(prefsPath)) {
+    const prefsContent = readFileSync(prefsPath, "utf-8");
+    bedrockAlreadyConfigured = prefsContent.includes('"CLAUDE_CODE_USE_BEDROCK": "1"');
+  }
+
+  if (bedrockAlreadyConfigured) {
+    ok(`Bedrock already configured`);
+  } else if (isUpgrade) {
+    ok(`Anthropic direct API  ${DIM}(unchanged)${RESET}`);
+  } else {
+    console.log(`\n  ${DIM}Skip this if you connect directly to Anthropic (most users).${RESET}\n`);
+    const useBedrock = await confirm("Route Claude Code through AWS Bedrock?", false);
+    if (useBedrock) {
+      const region = await prompt("AWS region", "us-west-2");
+      const awsProfile = await prompt("AWS profile name");
+      if (awsProfile) {
+        const model = await prompt("Bedrock model ID", "us.anthropic.claude-opus-4-6-v1");
+        const smallModel = await prompt("Bedrock small/fast model ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0");
+        try {
+          enableBedrockInPreferences(paiDir, region, awsProfile, model, smallModel);
+          ok(`Bedrock configured  ${DIM}(profile: ${awsProfile}, region: ${region})${RESET}`);
+        } catch (e) {
+          warn(`Could not write Bedrock config: ${e instanceof Error ? e.message : e}`);
+          warn("Edit config/preferences.jsonc manually to enable Bedrock.");
+        }
+      } else {
+        warn("No profile name entered — skipping Bedrock config");
+      }
+    } else {
+      ok(`Using Anthropic direct API  ${DIM}(default)${RESET}`);
+    }
+  }
+
+  // ── Step 7: Scaffold, tools & dependencies ─────────────────────────────
+  step(7, TOTAL_STEPS, "Scaffold, tools & dependencies");
+
+  // USER scaffold
   const created = createUserScaffold(paiDir);
   updateAboutMeName(paiDir, principalName);
   createMemoryDirs(paiDir);
-  if (created > 0) {
-    ok(`Created ${created} scaffold files in PAI/USER/`);
+  const securityCreated = createSecurityPatterns(paiDir);
+  if (created > 0 || securityCreated) {
+    ok(`Created ${created} scaffold files in PAI/USER/${securityCreated ? ' + security patterns' : ''}`);
   } else {
     ok("USER scaffold already exists");
   }
 
-  // ── Step 6: Detect tools & build TOOLS.md ──────────────────────────────
-  step(6, TOTAL_STEPS, "Detect tools, services & credentials");
+  // Install bun dependencies
+  const pkgJsonPath = join(paiDir, "package.json");
+  if (existsSync(pkgJsonPath)) {
+    info("Installing dependencies...");
+    try {
+      execSync("bun install --silent", { cwd: paiDir, stdio: "pipe" });
+      ok("Dependencies installed");
+    } catch {
+      warn("bun install failed — run manually: cd ~/.claude && bun install");
+    }
+  }
 
+  // Detect tools & build TOOLS.md
   const toolsMdPath = join(paiDir, "TOOLS.md");
   if (existsSync(toolsMdPath)) {
     ok("TOOLS.md already exists — keeping current registry");
@@ -818,7 +1004,6 @@ async function main() {
       info("No tools detected in environment (you can add them to TOOLS.md later)");
     }
 
-    // Option B: ask if they want to add anything
     const addMore = await confirm("Anything else to add? (databases, devices, internal services)", false);
     const extraLines: string[] = [];
     if (addMore) {
@@ -833,11 +1018,12 @@ async function main() {
     const toolsContent = generateToolsMd(detected, extraLines);
     writeFileSync(toolsMdPath, toolsContent);
     ok(`Created TOOLS.md with ${detected.length} detected items${extraLines.length > 0 ? ` + ${extraLines.length} manual` : ""}`);
-    info(`${DIM}Edit ~/.claude/TOOLS.md anytime to update. Loaded every session.${RESET}`);
   }
 
-  // ── Step 7: Build settings.json ────────────────────────────────────────
-  step(7, TOTAL_STEPS, "Build settings.json");
+  // ── Step 8: Build configuration ────────────────────────────────────────
+  step(8, TOTAL_STEPS, "Build configuration");
+
+  // Build settings.json
   const buildSettingsPath = join(paiDir, "hooks", "handlers", "BuildSettings.ts");
   if (existsSync(buildSettingsPath)) {
     const built = runBun(buildSettingsPath);
@@ -851,8 +1037,7 @@ async function main() {
     warn(`BuildSettings.ts not found at ${buildSettingsPath}`);
   }
 
-  // ── Step 8: Build CLAUDE.md ────────────────────────────────────────────
-  step(8, TOTAL_STEPS, "Build CLAUDE.md");
+  // Build CLAUDE.md
   const buildClaudePath = join(paiDir, "hooks", "handlers", "BuildCLAUDE.ts");
   if (existsSync(buildClaudePath)) {
     const built = runBun(buildClaudePath);
@@ -865,9 +1050,61 @@ async function main() {
     warn("BuildCLAUDE.ts not found — skipping CLAUDE.md generation");
   }
 
+  // ── Step 9: Verify installation ─────────────────────────────────────────
+  step(9, TOTAL_STEPS, "Verify installation");
+
+  const checks: { label: string; pass: boolean; detail?: string }[] = [];
+
+  // Check ~/.claude symlink or directory
+  const claudeDirExists = existsSync(CLAUDE_DIR);
+  checks.push({ label: "~/.claude/ exists", pass: claudeDirExists });
+
+  // Check settings.json
+  const settingsExists = existsSync(join(paiDir, "settings.json"));
+  checks.push({ label: "settings.json", pass: settingsExists });
+
+  // Check CLAUDE.md
+  const claudeMdExists = existsSync(join(paiDir, "CLAUDE.md"));
+  checks.push({ label: "CLAUDE.md", pass: claudeMdExists });
+
+  // Check identity.jsonc
+  const identityExists = existsSync(join(paiDir, "config", "identity.jsonc"));
+  checks.push({ label: "config/identity.jsonc", pass: identityExists });
+
+  // Check hooks directory
+  const hooksExist = existsSync(join(paiDir, "hooks", "lib", "run-hook.sh"));
+  checks.push({ label: "hooks/lib/run-hook.sh", pass: hooksExist });
+
+  // Check node_modules
+  const depsInstalled = existsSync(join(paiDir, "node_modules"));
+  checks.push({ label: "dependencies installed", pass: depsInstalled });
+
+  // Check ABOUTME.md is not just placeholders
+  const aboutMeReady = existsSync(aboutMePath) && !readFileSync(aboutMePath, "utf-8").includes("[Your Name]");
+  checks.push({ label: "ABOUTME.md personalized", pass: aboutMeReady });
+
+  // Check Claude Code available
+  checks.push({ label: "Claude Code CLI", pass: claudeInstalled });
+
+  console.log();
+  let allPass = true;
+  for (const c of checks) {
+    if (c.pass) {
+      ok(`${c.label}${c.detail ? `  ${DIM}${c.detail}${RESET}` : ""}`);
+    } else {
+      warn(`${c.label}${c.detail ? `  ${DIM}${c.detail}${RESET}` : ""}`);
+      allPass = false;
+    }
+  }
+
   // ── Done ───────────────────────────────────────────────────────────────
   console.log(`\n${STEEL}─────────────────────────────────────────────────${RESET}`);
-  console.log(`\n  ${GREEN}${BOLD}KAI installed successfully!${RESET}\n`);
+  if (allPass) {
+    console.log(`\n  ${GREEN}${BOLD}KAI installed successfully!${RESET}  ${DIM}(${checks.length}/${checks.length} checks pass)${RESET}\n`);
+  } else {
+    const passCount = checks.filter(c => c.pass).length;
+    console.log(`\n  ${YELLOW}${BOLD}KAI installed with warnings${RESET}  ${DIM}(${passCount}/${checks.length} checks pass)${RESET}\n`);
+  }
   console.log(`  ${DIM}Start a new Claude Code session to activate.${RESET}`);
   console.log(`  ${DIM}Board: bun ~/.claude/scripts/board.ts${RESET}\n`);
 }

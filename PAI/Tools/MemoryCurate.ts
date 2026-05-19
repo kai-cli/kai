@@ -568,6 +568,34 @@ async function interactiveInsights(dryRun: boolean): Promise<void> {
     console.log(dim(`\n  ${highRatingCount} high-rated session(s) may generate success pattern drafts via RatingCapture.`));
     console.log(dim('  Run `pai curate drafts` after those sessions to review generated memories.'));
   }
+
+  // Show insight candidates from InsightExtractor
+  const insightsDir = join(paiDir, 'MEMORY', 'LEARNING', 'INSIGHTS');
+  if (existsSync(insightsDir)) {
+    const insightFiles = readdirSync(insightsDir).filter(f => f.endsWith('.md'));
+    const candidates = insightFiles.filter(f => {
+      try {
+        const content = readFileSync(join(insightsDir, f), 'utf-8');
+        return content.includes('status: candidate');
+      } catch { return false; }
+    });
+    if (candidates.length > 0) {
+      console.log(`\n  ${bold(String(candidates.length))} insight candidate(s) pending review:`);
+      for (const f of candidates.slice(0, 5)) {
+        try {
+          const content = readFileSync(join(insightsDir, f), 'utf-8');
+          const titleMatch = content.match(/title:\s*"([^"]+)"/);
+          const title = titleMatch ? titleMatch[1] : f;
+          console.log(`    • ${title}`);
+        } catch { console.log(`    • ${f}`); }
+      }
+      if (candidates.length > 5) {
+        console.log(dim(`    ... and ${candidates.length - 5} more`));
+      }
+      console.log(dim('  Promote to project memory with `pai curate promote <filename>`'));
+    }
+  }
+
   console.log();
 }
 
@@ -791,6 +819,9 @@ if (flags.includes('--help') || subcommand === 'help') {
     ${cyan('pai curate approve <n>')}        Approve draft #n
     ${cyan('pai curate reject <n>')}         Reject draft #n
     ${cyan('pai curate restore <proj> <f>')} Restore archived file
+    ${cyan('pai curate check')}              Validate knowledge + detect contradictions
+    ${cyan('pai curate approve-all')}         Auto-approve eligible drafts (≥14d, conf≥0.8)
+    ${cyan('pai curate approve-all --dry-run')} Preview what would be promoted
 `);
   process.exit(0);
 }
@@ -844,6 +875,32 @@ switch (subcommand) {
       console.log(red(`  ✗ ${result.error}`));
       process.exit(1);
     }
+    break;
+  }
+  case 'check': {
+    const { validateKnowledge, formatValidationReport } = await import('./ValidateKnowledge');
+    const { detectContradictions, formatContradictionReport } = await import('./ContradictionDetector');
+
+    console.log(bold('\n  Knowledge Quality Check\n'));
+
+    const valReport = validateKnowledge();
+    console.log(formatValidationReport(valReport));
+
+    const conReport = detectContradictions();
+    console.log(formatContradictionReport(conReport));
+
+    const hasErrors = valReport.issues.filter(i => i.severity === 'error').length > 0;
+    const hasContradictions = conReport.contradictions.length > 0;
+
+    if (!hasErrors && !hasContradictions) {
+      console.log(green('  ✓ All checks pass.'));
+    }
+    process.exit(hasErrors ? 1 : 0);
+  }
+  case 'approve-all': {
+    const { consolidate, formatConsolidationResult } = await import('./AutoConsolidate');
+    const result = consolidate(dryRun);
+    console.log(formatConsolidationResult(result));
     break;
   }
   default:

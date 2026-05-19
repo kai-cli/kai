@@ -2,6 +2,49 @@
 
 All notable changes to KAI will be documented in this file.
 
+## [5.5.0] — 2026-05-19
+
+Memory lifecycle automation, knowledge intelligence, auto-consolidation.
+
+### Added
+- `hooks/InsightExtractor.hook.ts` — auto-captures learnings from session conversations at session end
+- `PAI/Tools/AutoConsolidate.ts` — guard-railed STAGING→WISDOM promotion with dedup
+- `PAI/Tools/ContradictionDetector.ts` — finds version/claim conflicts across knowledge files
+- `PAI/Tools/KnowledgeHealth.ts` — telemetry analysis for knowledge freshness/coverage
+- `PAI/Tools/MemorySearch.ts` — fast keyword search across MEMORY/ with budget control
+- `PAI/Tools/ValidateKnowledge.ts` — schema validation for knowledge file frontmatter
+- `hooks/lib/knowledge-schema.ts` — shared knowledge file parsing/validation
+- `skills/PAI/Search/` — `/search` command for memory retrieval
+- `skills/WikiQuery/` — local engineering wiki query skill (user-customizable)
+- 7 new test files (AutoConsolidate, ContradictionDetector, InsightExtractor, KnowledgeHealth, KnowledgeSchema, MemorySearch, ValidateKnowledge)
+
+### Changed
+- Manifest updated: 81 skills, 42 hooks, 18 agents
+- README version bump to 5.5.0
+- Deep PII/brand scrub pass on all tracked files
+- Banner tools updated to reference kai-cli/kai
+- Removed stale `skills/PAIUpgrade/` (replaced by `skills/Utilities/KAIUpgrade/`)
+
+### Fixed
+- `hooks/lib/config-loader.ts` — added `loadRequiredTags()` and `loadRelatedDomains()` exports
+- Test data genericized (removed domain-specific terms from test fixtures)
+
+---
+
+## [5.4.0] — 2026-05-18
+
+Knowledge schema foundation, memory search, contradiction detection.
+
+### Added
+- Knowledge file YAML frontmatter schema (domain, updated, tags, related)
+- `scripts/migrate-knowledge-frontmatter.ts` — one-shot migration tool
+- Domain-based knowledge injection via `config/domains.jsonc`
+
+### Changed
+- 627 tests passing
+
+---
+
 ## [5.3.0] — 2026-05-15
 
 Steering enforcement, multi-model research, graceful session exit, self-learning capabilities.
@@ -131,8 +174,8 @@ Initial public release of KAI (Kaizen AI).
 
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
-- **79 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
-- **41 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
+- **81 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
+- **42 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation
 - **Security hooks** — SecretScanner, GitHubWriteGuard, SecurityValidator

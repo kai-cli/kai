@@ -624,7 +624,7 @@ async function main() {
           const readLog = join(stateDir, 'memory-reads.jsonl');
           const readEntry = {
             timestamp: new Date().toISOString(),
-            session_id: process.env.CLAUDE_SESSION_ID || 'unknown',
+            session_id: sessionId || process.env.CLAUDE_SESSION_ID || 'unknown',
             project: projectDir,
             domains_injected: result.injectedDomains,
             total_chars: result.totalChars,

@@ -12,6 +12,7 @@ import { join, basename } from "path";
 import { getPaiDir, paiPath } from "../../hooks/lib/paths";
 import { inference } from "./Inference";
 import { loadDomainKeywords, loadDomainDescriptions } from "../../hooks/lib/config-loader";
+import { parseKnowledgeFile, writeKnowledgeFile, type KnowledgeFile } from "../../hooks/lib/knowledge-schema";
 
 // ============================================================================
 // Types
@@ -60,39 +61,9 @@ const KNOWLEDGE_DIR = paiPath("MEMORY", "KNOWLEDGE");
 const STALE_THRESHOLD_DAYS = 30;
 
 // Domain classification — loaded from config/domains.jsonc via config-loader.
-// Falls back to generic built-in domains if config is absent or empty.
-const BUILTIN_DOMAIN_DEFINITIONS: Array<{ name: string; description: string; keywords: string[] }> = [
-  {
-    name: "backend",
-    description: "Backend services, APIs, databases, and server-side logic",
-    keywords: ["api", "server", "database", "sql", "rest", "graphql", "service", "endpoint", "auth", "cache", "microservice"],
-  },
-  {
-    name: "frontend",
-    description: "Frontend frameworks, UI components, and web interfaces",
-    keywords: ["ui", "react", "vue", "angular", "css", "html", "component", "frontend", "web", "interface", "typescript"],
-  },
-  {
-    name: "devops",
-    description: "CI/CD pipelines, containerization, infrastructure, and deployment",
-    keywords: ["docker", "kubernetes", "ci", "cd", "pipeline", "github", "actions", "deploy", "devops", "terraform", "helm"],
-  },
-  {
-    name: "security",
-    description: "Security practices, vulnerability management, and privacy",
-    keywords: ["security", "patch", "vulnerability", "cve", "pii", "privacy", "encryption", "ssl", "tls", "audit"],
-  },
-  {
-    name: "ai-infrastructure",
-    description: "KAI system, hooks, skills, memory, and AI agents",
-    keywords: ["kai", "hook", "skill", "agent", "algorithm", "memory", "inference", "claude", "ai", "llm"],
-  },
-];
-
 function loadDomainDefinitions(): Array<{ name: string; description: string; keywords: string[] }> {
   const keywords = loadDomainKeywords();
   const descriptions = loadDomainDescriptions();
-  if (Object.keys(keywords).length === 0) return BUILTIN_DOMAIN_DEFINITIONS;
   return Object.entries(keywords).map(([name, kws]) => ({
     name,
     description: descriptions[name] ?? name,
@@ -430,14 +401,19 @@ function writeKnowledgeFiles(
     console.error(`✅ Wrote INDEX.md`);
   }
 
-  // Write domain files
+  // Write domain files (with frontmatter)
+  const today = new Date().toISOString().split('T')[0];
   for (const [name, data] of domains) {
     const filePath = join(KNOWLEDGE_DIR, `${name}.md`);
     if (dryRun) {
       console.log(`\n📄 ${name}.md would contain (${data.content.length} chars):`);
       console.log(data.content.substring(0, 500) + (data.content.length > 500 ? "\n..." : ""));
     } else {
-      writeFileSync(filePath, data.content + "\n");
+      const existing = parseKnowledgeFile(filePath);
+      const meta = existing?.meta ?? { domain: name, updated: today, tags: [], related: [] };
+      meta.updated = today;
+      const kf: KnowledgeFile = { meta, body: data.content + "\n", path: filePath, slug: name };
+      writeKnowledgeFile(kf);
       console.error(`✅ Wrote ${name}.md (${data.factCount} facts, ${data.content.length} chars)`);
     }
   }

@@ -12,7 +12,6 @@
 | tools-sync.ts | Check for new tools/services in project CLAUDE.md files | `bun scripts/tools-sync.ts` | Run `--apply` to update TOOLS.md |
 | MemoryCurate | Review STAGING memory drafts, promote/discard | `bun PAI/Tools/MemoryCurate.ts` | KnowledgeSync fills STAGING; this empties it |
 | LearningPatternSynthesis | Synthesize rating patterns into lessons | `bun PAI/Tools/LearningPatternSynthesis.ts` | Auto-fires via 14-day backstop, but manual is faster |
-| IntegrityMaintenance | System integrity checks + fixes | `bun PAI/Tools/IntegrityMaintenance.ts` | Run after major refactors |
 
 ## Monthly / As-Needed
 

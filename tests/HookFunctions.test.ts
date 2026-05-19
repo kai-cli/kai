@@ -171,20 +171,20 @@ import { loadDomainPatterns, matchesDomainTopics } from '../hooks/LocalContextFi
 
 describe('matchesDomainTopics', () => {
   const patterns = [
-    { domain: 'firmware', keywords: ['openwrt', 'bbfdm', 'ubus', 'router'] },
-    { domain: 'usp', keywords: ['obuspa', 'tr-369', 'usp protocol'] },
+    { domain: 'firmware', keywords: ['embedded', 'kernel', 'bootloader', 'flash'] },
+    { domain: 'backend', keywords: ['postgres', 'redis', 'api server'] },
     { domain: 'flutter', keywords: ['flutter', 'dart', 'widget'] },
   ];
 
   test('matches single domain', () => {
-    const matched = matchesDomainTopics('How do I configure the openwrt feed?', patterns);
+    const matched = matchesDomainTopics('How do I configure the embedded kernel?', patterns);
     expect(matched).toEqual(['firmware']);
   });
 
   test('matches multiple domains', () => {
-    const matched = matchesDomainTopics('openwrt router with obuspa agent', patterns);
+    const matched = matchesDomainTopics('embedded bootloader with postgres connection', patterns);
     expect(matched).toContain('firmware');
-    expect(matched).toContain('usp');
+    expect(matched).toContain('backend');
   });
 
   test('case insensitive matching', () => {
@@ -198,8 +198,8 @@ describe('matchesDomainTopics', () => {
   });
 
   test('matches multi-word keywords', () => {
-    const matched = matchesDomainTopics('Implement the USP protocol handler', patterns);
-    expect(matched).toEqual(['usp']);
+    const matched = matchesDomainTopics('Implement the api server handler', patterns);
+    expect(matched).toEqual(['backend']);
   });
 
   test('handles empty prompt', () => {
@@ -207,7 +207,7 @@ describe('matchesDomainTopics', () => {
   });
 
   test('handles empty patterns', () => {
-    expect(matchesDomainTopics('openwrt stuff', [])).toEqual([]);
+    expect(matchesDomainTopics('some random stuff', [])).toEqual([]);
   });
 });
 
