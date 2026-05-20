@@ -1,6 +1,6 @@
 # Extensive Research Workflow
 
-**Mode:** 3 researcher types × multiple threads each | **Timeout:** 5 minutes
+**Mode:** 4-5 researcher types × multiple threads each | **Timeout:** 5 minutes
 
 ## 🚨 CRITICAL: URL Verification Required
 
@@ -31,7 +31,14 @@ Think deeply about the research topic:
 - Make unexpected connections across fields
 - Consider edge cases, controversies, emerging trends
 
-Generate 3 unique angles per researcher type (9 total queries).
+Generate 3 unique angles per researcher type (12-15 total queries depending on available APIs).
+
+**Researcher types available:**
+- Claude (ClaudeResearcher): academic, analytical, scholarly
+- Gemini (GeminiResearcher): multi-perspective, cross-domain
+- Grok (GrokResearcher): contrarian, unbiased, fact-based
+- Mistral (MistralResearcher): systematic, technical depth, European perspectives
+- DeepSeek (DeepSeekResearcher): cost-efficient, technical, East Asian tech perspectives
 
 ### Step 1: Launch All Research Agents in Parallel
 
@@ -52,6 +59,16 @@ Task({ subagent_type: "GeminiResearcher", description: "[topic] angle 6", prompt
 Task({ subagent_type: "GrokResearcher", description: "[topic] angle 7", prompt: "Search for: [angle 7]. Return findings." })
 Task({ subagent_type: "GrokResearcher", description: "[topic] angle 8", prompt: "Search for: [angle 8]. Return findings." })
 Task({ subagent_type: "GrokResearcher", description: "[topic] angle 9", prompt: "Search for: [angle 9]. Return findings." })
+
+// Mistral - 3 threads (systematic, technical depth)
+Task({ subagent_type: "MistralResearcher", description: "[topic] angle 10", prompt: "Search for: [angle 10]. Return findings." })
+Task({ subagent_type: "MistralResearcher", description: "[topic] angle 11", prompt: "Search for: [angle 11]. Return findings." })
+Task({ subagent_type: "MistralResearcher", description: "[topic] angle 12", prompt: "Search for: [angle 12]. Return findings." })
+
+// DeepSeek - 3 threads (technical, East Asian perspectives) — optional if API funded
+// Task({ subagent_type: "DeepSeekResearcher", description: "[topic] angle 13", prompt: "Search for: [angle 13]. Return findings." })
+// Task({ subagent_type: "DeepSeekResearcher", description: "[topic] angle 14", prompt: "Search for: [angle 14]. Return findings." })
+// Task({ subagent_type: "DeepSeekResearcher", description: "[topic] angle 15", prompt: "Search for: [angle 15]. Return findings." })
 ```
 
 **Each agent:**
@@ -92,6 +109,8 @@ Task({ subagent_type: "GrokResearcher", description: "[topic] angle 9", prompt: 
 - **Claude**: [analytical depth]
 - **Gemini**: [cross-domain connections]
 - **Grok**: [contrarian perspectives]
+- **Mistral**: [systematic reasoning, European/international perspectives]
+- **DeepSeek**: [technical depth, East Asian tech perspectives] (if enabled)
 
 ## Conflicts & Uncertainties
 [Note disagreements]
@@ -133,8 +152,8 @@ WebFetch(url, "Confirm article exists and summarize main point")
 🎯 COMPLETED: Extensive research on [topic] complete
 
 📈 RESEARCH METRICS:
-- Total Agents: 9 (3 types × 3 each)
-- Researcher Types: Claude, Gemini, Grok
+- Total Agents: 12-15 (4-5 types × 3 each)
+- Researcher Types: Claude, Gemini, Grok, Mistral (+ DeepSeek if enabled)
 - Confidence Level: [%]
 ```
 

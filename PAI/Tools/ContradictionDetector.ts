@@ -31,7 +31,7 @@ export interface ContradictionReport {
   groupsChecked: number;
 }
 
-// Match patterns like: "postgres v16.2", "kernel 5.15", "deploy_app:104", "v4.9.0"
+// Match patterns like: "bbfdm v1.18.0", "kernel 5.15", "build_wrt:104", "v4.9.0"
 const VERSION_PATTERNS = [
   /\b([a-zA-Z][\w.-]+)\s+v?(\d+\.\d+(?:\.\d+)?(?:[.-]\w+)?)\b/g,    // entity vN.N.N or entity N.N.N
   /\b([a-zA-Z][\w.-]+):(\d+)\b/g,                                       // entity:N (e.g. build_wrt:104)

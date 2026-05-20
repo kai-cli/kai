@@ -84,7 +84,7 @@ export function writeIdentityConfig(paiDir: string, values: {
   principalName: string;
   principalTimezone: string;
 }) {
-  const content = `// KAI Identity Configuration
+  const content = `// PAI Identity Configuration
 // Configures the Digital Assistant (DA) and Principal (user) identities.
 // These control how the AI presents itself and how it refers to you.
 //
@@ -264,32 +264,12 @@ export function createUserScaffold(paiDir: string) {
   return created;
 }
 
-export function updateAboutMeName(paiDir: string, principalName: string) {
-  if (!principalName) return;
-  const aboutMePath = join(paiDir, "PAI/USER/ABOUTME.md");
-  const content = `# About Me
-
-Name: ${principalName}
-Role: [Your Role]
-Organization: [Your Org]
-`;
-  writeFileSync(aboutMePath, content, "utf-8");
-}
-
 export function createMemoryDirs(paiDir: string) {
   const memDirs = [
-    "MEMORY/STATE",
-    "MEMORY/WORK",
-    "MEMORY/DECISIONS",
-    "MEMORY/SNAPSHOTS",
-    "MEMORY/RESEARCH",
-    "MEMORY/KNOWLEDGE",
-    "MEMORY/LEARNING",
-    "MEMORY/LEARNING/REFLECTIONS",
-    "MEMORY/RELATIONSHIP",
-    "MEMORY/SECURITY",
-    "MEMORY/STAGING",
-    "MEMORY/WISDOM",
+    "MEMORY/STATE", "MEMORY/WORK", "MEMORY/DECISIONS", "MEMORY/SNAPSHOTS",
+    "MEMORY/RESEARCH", "MEMORY/KNOWLEDGE", "MEMORY/LEARNING",
+    "MEMORY/LEARNING/REFLECTIONS", "MEMORY/RELATIONSHIP", "MEMORY/SECURITY",
+    "MEMORY/STAGING", "MEMORY/WISDOM",
   ];
   for (const d of memDirs) {
     const p = join(paiDir, d);
@@ -683,28 +663,6 @@ async function main() {
   // From here, operate on CLAUDE_DIR (which resolves to PAI_ROOT)
   const paiDir = CLAUDE_DIR;
 
-  // Auto-detect git remote and update repoUrl in config/preferences.jsonc
-  try {
-    const remoteUrl = execSync("git remote get-url origin", {
-      cwd: PAI_ROOT,
-      encoding: "utf-8",
-      stdio: "pipe",
-    }).trim();
-    // Normalize to github.com/owner/repo format (strip https:// or git@github.com:)
-    const normalized = remoteUrl
-      .replace(/^https?:\/\//, "")
-      .replace(/^git@([^:]+):/, "$1/")
-      .replace(/\.git$/, "");
-    const prefsPath = join(paiDir, "config", "preferences.jsonc");
-    if (existsSync(prefsPath)) {
-      const updated = readFileSync(prefsPath, "utf-8").replace(
-        /"repoUrl":\s*"[^"]*"/,
-        `"repoUrl": ${JSON.stringify(normalized)}`
-      );
-      writeFileSync(prefsPath, updated, "utf-8");
-    }
-  } catch { /* not a git repo or no remote — leave as-is */ }
-
   // ── Step 2: Claude Code & Authentication ───────────────────────────────
   step(2, TOTAL_STEPS, "Claude Code & authentication");
 
@@ -960,7 +918,6 @@ async function main() {
 
   // USER scaffold
   const created = createUserScaffold(paiDir);
-  updateAboutMeName(paiDir, principalName);
   createMemoryDirs(paiDir);
   const securityCreated = createSecurityPatterns(paiDir);
   if (created > 0 || securityCreated) {

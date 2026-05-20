@@ -101,6 +101,11 @@
         // Track PAI-internal file reads for routing candidate analysis (async — no stdout)
         "matcher": "Read",
         "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ReadTracker.hook.ts", "async": true }]
+      },
+      {
+        // v5.6: Track memory detail-file reads for eviction scoring (async — updates memory-meta.jsonl)
+        "matcher": "Read",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemoryAccessTracker.hook.ts", "async": true }]
       }
     ],
 
@@ -109,6 +114,8 @@
       {
         "hooks": [
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WorkCompletionLearning.hook.ts", "async": true },
+          // v5.6: Append session summary to timeline.jsonl (layer 2 memory)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemoryTimeline.hook.ts", "async": true },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionCleanup.hook.ts", "async": true },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionSummary.hook.ts", "async": true },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RelationshipMemory.hook.ts", "async": true },
@@ -129,6 +136,8 @@
           // --- SYNC hooks (output additionalContext or continue flags) ---
           // Secret scanning — outputs continue flag to block credential leaks
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecretScanner.hook.ts" },
+          // Surface relevant project memories next to the user's prompt
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemoryRecall.hook.ts" },
           // Local context injection — outputs additionalContext
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LocalContextFirst.hook.ts" },
           // Classify effort tier and inject context modifications
@@ -141,6 +150,8 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionAutoName.hook.ts" },
 
           // --- ASYNC hooks (inference calls, analytics — no stdout needed) ---
+          // v5.6: Detect correction patterns and capture behavioral instincts
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh InstinctCapture.hook.ts", "async": true },
           // Batched inference for tab title + session name
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PromptAnalysis.hook.ts", "async": true },
           // Capture 1-10 ratings from prompt patterns + implicit sentiment

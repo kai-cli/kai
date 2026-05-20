@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════
-#  KAI Installer v5.5 — Bootstrap Script
+#  KAI Installer v5.6 — Bootstrap Script
 #  Requirements: bash, curl
 #  This script bootstraps the installer by ensuring Bun is
 #  available, then hands off to the TypeScript installer.
@@ -43,9 +43,9 @@ echo ""
 echo ""
 echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${GRAY}\"${RESET}${LIGHT_BLUE}Lean and Mean${RESET}${GRAY}\"${RESET}"
 echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${BAR}"
-echo -e "           ${NAVY}████${RESET}        ${NAVY}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${NAVY}⬢${RESET}  ${GRAY}KAI${RESET}       ${SILVER}v5.5.0${RESET}"
+echo -e "           ${NAVY}████${RESET}        ${NAVY}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${NAVY}⬢${RESET}  ${GRAY}KAI${RESET}       ${SILVER}v5.6.0${RESET}"
 echo -e "           ${NAVY}████${RESET}        ${NAVY}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${NAVY}⚙${RESET}  ${GRAY}Algo${RESET}      ${SILVER}v3.13.0${RESET}"
-echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${LIGHT_BLUE}✦${RESET}  ${GRAY}Installer${RESET} ${SILVER}v5.5${RESET}"
+echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${LIGHT_BLUE}✦${RESET}  ${GRAY}Installer${RESET} ${SILVER}v5.6${RESET}"
 echo -e "           ${NAVY}████████████████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${BAR}"
 echo -e "           ${NAVY}████${RESET}        ${BLUE}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}"
 echo -e "           ${NAVY}████${RESET}        ${BLUE}████${RESET}${LIGHT_BLUE}████${RESET}   ${SEP}  ${LIGHT_BLUE}✦  Lean and Mean${RESET}"
@@ -219,10 +219,7 @@ if $IS_UPGRADE; then
 else
   echo -e "  ${GRAY}Next steps:${RESET}"
   echo -e "    ${SILVER}1.${RESET} Run ${LIGHT_BLUE}claude${RESET} to log in and start your first session"
-  echo -e "    ${SILVER}2.${RESET} Your profile is in ${LIGHT_BLUE}~/.claude/PAI/USER/ABOUTME.md${RESET} — edit to add role/org"
-  echo -e ""
-  echo -e "  ${GRAY}Optional — only needed for research agent skills:${RESET}"
-  echo -e "    ${DIM}export ANTHROPIC_API_KEY=\"sk-ant-...\" >> ~/.zshrc${RESET}"
+  echo -e "    ${SILVER}2.${RESET} ${DIM}Optional:${RESET} set ${LIGHT_BLUE}ANTHROPIC_API_KEY${RESET} for multi-model research skills"
 fi
 echo ""
 echo -e "  ${GRAY}Docs:${RESET}  ${SILVER}~/.claude/docs/QUICKSTART.md${RESET}"

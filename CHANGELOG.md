@@ -2,6 +2,42 @@
 
 All notable changes to KAI will be documented in this file.
 
+## [5.6.0] — 2026-05-20
+
+Progressive learning, adaptive memory, and research expansion.
+
+### Added
+- `hooks/lib/memory-disclosure.ts` — 3-layer progressive disclosure memory (index ≤50 lines, timeline JSONL, on-demand detail) with eviction scoring (P0–P3 priority, days×-1 + refs×5)
+- `hooks/MemoryTimeline.hook.ts` — SessionEnd hook appends session summaries to timeline.jsonl
+- `hooks/MemoryAccessTracker.hook.ts` — PostToolUse hook increments reference_count on detail file reads
+- `hooks/MemoryRecall.hook.ts` — UserPromptSubmit hook surfaces relevant project memories next to user prompts (keyword scoring, max 5 matches)
+- `hooks/lib/instinct-store.ts` — CRUD, decay, archival, and clustering for behavioral instincts
+- `hooks/InstinctCapture.hook.ts` — UserPromptSubmit hook detects correction patterns (3 patterns: explicit imperative + tool call, repeated instruction, low rating)
+- `hooks/lib/semantic-fallback.ts` — cosine similarity search via @huggingface/transformers@^3.8.1 (threshold 0.45, graceful degradation)
+- `hooks/LocalContextFirst.hook.ts` — Feature C semantic fallback when no explicit routing match
+- `scripts/EmbeddingIndex.ts` — CLI to build/update embedding index (--setup, --incremental, --stats)
+- `skills/Evolve/SKILL.md` — /evolve skill: instinct dashboard, --promote, --prune, --stats
+- `agents/MistralResearcher.md` — Sophia: systematic analyst using Mistral Large
+- `agents/DeepSeekResearcher.md` — Wei: cost-efficient technical researcher using DeepSeek
+- 7 new test files: MemoryDisclosure, InstinctStore, InstinctCapture, SemanticFallback, session-start integration, instinct-lifecycle integration
+- `config/settings.json` — instincts and embeddings feature flag blocks
+
+### Changed
+- `skills/Research/Workflows/ExtensiveResearch.md` — updated to 4-5 researcher types (12-15 parallel agents)
+- `hooks/LoadContext.hook.ts` — adds index memory load (Feature A) and instinct decay+surfacing (Feature B) at session start
+- `hooks/SecurityValidator.hook.ts`, `hooks/SecretScanner.hook.ts` — `[PAI SECURITY]` → `[KAI SECURITY]`
+- `hooks/lib/change-detection.ts` — `'PAI System Documentation Updated'` → `'KAI System'`
+- `PAI/Tools/RoutingAudit.ts` — MEM_PREFIX derived from HOME (portable, no hardcoded paths)
+- Manifest updated: 83 skills, 46 hooks, 20 agents
+- VERSION 5.2.0 → 5.6.0
+- README, QUICKSTART, WHATS-DIFFERENT, releases/README updated to KAI 5.6.0
+
+### Fixed
+- `hooks/lib/output-validators.ts` — removed dead `getCompletionFallback()` export (zero callers)
+- `hooks/LocalContextFirst.hook.ts` — removed dead `isKnowledgePath` import
+- Manifest hookInventory corrected: added InsightExtractor, PlanApprovalGuard, MemoryRecall
+- Stale v4.0 version strings updated in LoadContext, WorkCompletionLearning, prd-template
+
 ## [5.5.0] — 2026-05-19
 
 Memory lifecycle automation, knowledge intelligence, auto-consolidation.
@@ -23,7 +59,7 @@ Memory lifecycle automation, knowledge intelligence, auto-consolidation.
 - README version bump to 5.5.0
 - Deep PII/brand scrub pass on all tracked files
 - Banner tools updated to reference kai-cli/kai
-- Removed stale `skills/PAIUpgrade/` (replaced by `skills/Utilities/KAIUpgrade/`)
+- Removed stale `skills/KAIUpgrade/` (replaced by `skills/Utilities/KAIUpgrade/`)
 
 ### Fixed
 - `hooks/lib/config-loader.ts` — added `loadRequiredTags()` and `loadRelatedDomains()` exports
@@ -174,8 +210,8 @@ Initial public release of KAI (Kaizen AI).
 
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
-- **81 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
-- **42 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
+- **83 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
+- **46 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation
 - **Security hooks** — SecretScanner, GitHubWriteGuard, SecurityValidator

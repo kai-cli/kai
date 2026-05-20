@@ -1,11 +1,11 @@
 {
-  "version": "5.5.0",
-  "productName": "KAI",
+  "version": "5.6.0",
+  "productName": "PAI",
   "algorithmVersion": "v3.13.0",
   "counts": {
-    "skills": 81,
-    "hooks": 42,
-    "agents": 18
+    "skills": 83,
+    "hooks": 46,
+    "agents": 20
   },
   "hookInventory": [
     "AgentExecutionGuard.hook",
@@ -15,16 +15,14 @@
     "FormatReminder.hook",
     "GitHubWriteGuard.hook",
     "HealthCheck.hook",
-    "InsightExtractor.hook",
     "IntegrityCheck.hook",
     "KnowledgeSync.hook",
     "LastResponseCache.hook",
     "LoadContext.hook",
     "LocalContextFirst.hook",
     "ModeClassifier.hook",
-    "PlanApprovalGuard.hook",
-    "PostCompactRecovery.hook",
     "PRDSync.hook",
+    "PostCompactRecovery.hook",
     "PreCompact.hook",
     "PromptAnalysis.hook",
     "QuestionAnswered.hook",
@@ -49,7 +47,13 @@
     "WebFetchGuard.hook",
     "WorkCompletionLearning.hook",
     "WorktreeRemove.hook",
-    "WorktreeSetup.hook"
+    "WorktreeSetup.hook",
+    "MemoryTimeline.hook",
+    "MemoryAccessTracker.hook",
+    "InstinctCapture.hook",
+    "InsightExtractor.hook",
+    "PlanApprovalGuard.hook",
+    "MemoryRecall.hook"
   ],
   "skillInventory": [
     "Agents",
@@ -84,19 +88,18 @@
     "OSINT",
     "OneOnOne",
     "PAI",
-    "PAI/End",
-    "PAI/Search",
+    "KAIUpgrade",
     "Parser",
     "PrivateInvestigator",
     "PromptInjection",
     "Prompting",
     "RedTeam",
     "Research",
+    "SECUpdates",
     "Science",
     "Scraping",
     "Scraping/Apify",
     "Scraping/BrightData",
-    "SECUpdates",
     "Security",
     "Security/PromptInjection",
     "Security/Recon",
@@ -131,8 +134,8 @@
     "Utilities/Prompting",
     "WebAssessment",
     "WeeklyStatus",
-    "WikiQuery",
-    "WorldThreatModelHarness"
+    "WorldThreatModelHarness",
+    "Evolve"
   ],
   "agentInventory": [
     "Algorithm",
@@ -152,6 +155,8 @@
     "QATester",
     "StakeholderCommunicator",
     "TechnicalReviewer",
-    "UIReviewer"
+    "UIReviewer",
+    "MistralResearcher",
+    "DeepSeekResearcher"
   ]
 }

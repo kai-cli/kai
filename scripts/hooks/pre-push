@@ -32,7 +32,7 @@ if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
   fi
 fi
 
-# ── 3. Quick release verification (kai-cli/kai remote only) ──
+# ── 3. Quick release verification (kai only — pai-config has PII by design) ──
 REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
 if [[ "$REMOTE_URL" == *"kai-cli/kai"* ]]; then
   echo ""

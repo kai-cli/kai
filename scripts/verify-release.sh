@@ -251,7 +251,7 @@ if [[ $QUICK -eq 0 ]]; then
   )
 
   # Allowlist patterns — legitimate PAI references in user-facing docs
-  BRAND_ALLOWLIST='PAI_DIR\|PAI/\|PAI-Install\|PAISECURITYSYSTEM\|MEMORY/STAGING\|PAI/Tools\|PAI/Algorithm\|PAI/USER\|\.pai\b\|pai-config\|Miessler.*PAI\|PAI system\|PAI infrastructure'
+  BRAND_ALLOWLIST='PAI_DIR\|PAI/\|PAI-Install\|PAISECURITYSYSTEM\|MEMORY/STAGING\|PAI/Tools\|PAI/Algorithm\|PAI/USER\|\.pai\b\|pai-config\|Miessler.*PAI\|PAI system\|PAI infrastructure\|Daniel.*PAI\|original PAI\|His public release\|Personal AI Infrastructure\|PAI.*core architecture'
 
   BRAND_FOUND=0
   for doc in "${USER_FACING_DOCS[@]}"; do

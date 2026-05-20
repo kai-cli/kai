@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "@huggingface/transformers": "^3.8.1"
   }
 }

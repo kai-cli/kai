@@ -1,7 +1,8 @@
 # KAI — Roadmap & Next Steps
 
 > Canonical repo: `github.com/kai-cli/kai`
-> Development workflow: develop → verify-release.sh → push
+> kai is the private live installation. kai is the scrubbed public fork.
+> Development workflow: develop in kai → cherry-pick to kai → verify-release.sh → push
 
 ---
 
@@ -27,7 +28,7 @@
 
 See `docs/planning/v5.2.0-PLAN.md` for full detail. All phases complete.
 Memory improvements (302MB→18MB), hook tests, routing intelligence, installer polish,
-steering enforcement design spike. 437 tests.
+steering enforcement design spike. 437 tests. kai @ `f7ff18e`, kai @ `e457faa`.
 
 ---
 

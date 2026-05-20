@@ -8,6 +8,10 @@
  * (config/domains.jsonc), remind them to check local knowledge sources before
  * web research. Prevents redundant web searches when local knowledge exists.
  *
+ * Feature C (v5.6.0): Semantic fallback — when no explicit routing rule matches,
+ * attempt embedding-based context retrieval for knowledge-area queries.
+ * Gating: only fires for knowledge-path targets, skips if index not installed.
+ *
  * DESIGN: Reads domain keywords from config/domains.jsonc.
  * If not configured, exits silently (zero output, zero cost).
  * Deterministic regex matching (<5ms, no API calls).
@@ -17,6 +21,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { readHookInput } from './lib/hook-io';
 import { paiPath } from './lib/paths';
+import { semanticFallback, isIndexAvailable } from './lib/semantic-fallback';
 
 const DOMAINS_CONFIG_PATH = paiPath('config', 'domains.jsonc');
 
@@ -47,6 +52,19 @@ export function matchesDomainTopics(prompt: string, patterns: Array<{ domain: st
   return matched;
 }
 
+/**
+ * Determine if a prompt is exploring knowledge topics without an explicit routing match.
+ * Used to gate whether semantic fallback should be attempted.
+ */
+export function isKnowledgeExploration(prompt: string): boolean {
+  const knowledgeIndicators = [
+    'what do you know about', 'tell me about', 'how does', 'what is',
+    'explain', 'describe', 'documentation', 'wiki', 'knowledge',
+  ];
+  const lower = prompt.toLowerCase();
+  return knowledgeIndicators.some(kw => lower.includes(kw));
+}
+
 async function main() {
   const input = await readHookInput();
   if (!input) process.exit(0);
@@ -58,12 +76,7 @@ async function main() {
   if (/^([1-9]|10)$/.test(prompt.trim())) process.exit(0);
 
   const patterns = loadDomainPatterns();
-  if (patterns.length === 0) {
-    // Not configured — exit silently
-    process.exit(0);
-  }
-
-  const matched = matchesDomainTopics(prompt, patterns);
+  const matched = patterns.length > 0 ? matchesDomainTopics(prompt, patterns) : [];
 
   if (matched.length > 0) {
     const context = `<local-context-hint>
@@ -78,6 +91,38 @@ Local context is faster and more accurate than web research for your domain topi
 
     console.log(JSON.stringify({ additionalContext: context }));
     console.error(`[LocalContextFirst] Matched domains: ${matched.join(', ')}`);
+    process.exit(0);
+  }
+
+  // Feature C: Semantic fallback for knowledge exploration queries
+  // Only attempt when: no explicit routing match, prompt looks exploratory,
+  // and embedding index is installed.
+  if (isKnowledgeExploration(prompt)) {
+    const { getPaiDir } = await import('./lib/paths');
+    const paiDir = getPaiDir();
+
+    // Fast-path: skip if index not installed (graceful degradation)
+    if (!isIndexAvailable(paiDir)) {
+      console.error('[LocalContextFirst] Semantic fallback: index not available — skipped');
+      process.exit(0);
+    }
+
+    try {
+      const result = await semanticFallback(paiDir, prompt);
+      if (result.content && result.confidence > 0) {
+        const context = `<semantic-context>
+Retrieved from knowledge base (similarity: ${(result.confidence * 100).toFixed(0)}%, sources: ${result.sources.join(', ')}):
+
+${result.content}
+</semantic-context>`;
+        console.log(JSON.stringify({ additionalContext: context }));
+        console.error(`[LocalContextFirst] Semantic fallback: ${result.sources.length} source(s), confidence ${result.confidence.toFixed(2)}`);
+      } else {
+        console.error('[LocalContextFirst] Semantic fallback: no matches above threshold');
+      }
+    } catch (err) {
+      console.error('[LocalContextFirst] Semantic fallback error (non-fatal):', err);
+    }
   } else {
     console.error('[LocalContextFirst] No domain match — skipped');
   }

@@ -292,14 +292,14 @@ async function main() {
       process.exit(0);
     }
 
-    // Read work directory metadata — from PRD.md frontmatter (v4.0) or META.yaml (legacy)
+    // Read work directory metadata — from PRD.md frontmatter or META.yaml (legacy)
     const workPath = join(WORK_DIR, currentWork.session_dir);
     const prdPath = join(workPath, 'PRD.md');
     const metaPath = join(workPath, 'META.yaml');
 
     let workMeta: any = {};
     if (existsSync(prdPath)) {
-      // v4.0: Read from PRD.md frontmatter
+      // Read from PRD.md frontmatter
       const prdContent = readFileSync(prdPath, 'utf-8');
       const fmMatch = prdContent.match(/^---\n([\s\S]*?)\n---/);
       if (fmMatch) {
@@ -319,7 +319,7 @@ async function main() {
       workMeta.completed_at = getISOTimestamp();
     }
 
-    // Extract ISC from PRD.md ISC section (v4.0) or ISC.json (legacy)
+    // Extract ISC from PRD.md ISC section or ISC.json (legacy)
     let idealContent = '';
     if (existsSync(prdPath)) {
       try {

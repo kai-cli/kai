@@ -2,8 +2,75 @@
 
 **The unified system memory - what happened, what we learned, what we're working on.**
 
-**Version:** 7.0 (Projects-native architecture, 2026-01-12)
+**Version:** 8.0 (Progressive Learning & Adaptive Memory, 2026-05-20)
 **Location:** `~/.claude/MEMORY/`
+
+---
+
+## v5.6.0 New Features (2026-05-20)
+
+### Feature A: Progressive Disclosure Memory (3-Layer)
+
+Replaces bulk 200-line MEMORY.md load with a 3-layer architecture:
+
+```
+Layer 1: INDEX (≤50 lines, always loaded at session start)
+    ├── loadIndexMemory() in hooks/lib/memory-disclosure.ts
+    ├── Pruning: eviction score = (days_since × -1) + (reference_count × 5)
+    └── Priority: P0=never evict | P1=never evict | P2=aging | P3=evictable
+
+Layer 2: TIMELINE (user-requested, /memory recent)
+    ├── hooks/MemoryTimeline.hook.ts (SessionEnd → appends)
+    ├── MEMORY/STATE/timeline.jsonl (append-only, max 500 entries)
+    └── Read via: Read tool or "what did we work on recently?"
+
+Layer 3: DETAIL (on-demand when topic referenced)
+    ├── Individual topic files (existing memory/*.md files)
+    ├── Tracked by: hooks/MemoryAccessTracker.hook.ts
+    └── Metadata: MEMORY/STATE/memory-meta.jsonl
+```
+
+Token savings: ~3000-5000 tokens → ~500-800 tokens at session start (5-8x reduction).
+
+### Feature B: Instinct-Based Learning
+
+Behavioral nudges that surface automatically and compound over time:
+
+```
+User Message (correction/repetition/rating)
+    ↓ hooks/InstinctCapture.hook.ts (UserPromptSubmit)
+Instinct Created (confidence: 0.3)
+    ↓ reinforcement: +0.2 | decay: -0.1/30d | archive at 0.0
+Surface at Session Start (confidence ≥ 0.5, max 20)
+    ↓ /evolve (user-invoked)
+Promote to CLAUDE.md rule or skill
+```
+
+Files:
+- `MEMORY/LEARNING/INSTINCTS/instincts.jsonl` — active instincts
+- `MEMORY/LEARNING/INSTINCTS/instincts-archived.jsonl` — archived
+- `hooks/lib/instinct-store.ts` — CRUD, decay, clustering
+- `skills/Evolve/SKILL.md` — /evolve dashboard
+- Feature flag: `config/settings.json` → `instincts.enabled`
+
+### Feature C: Embedding-Based Context Routing Fallback
+
+Semantic fallback when CONTEXT_ROUTING.md has no match:
+
+```
+User query (knowledge exploration)
+    ↓ hooks/LocalContextFirst.hook.ts (UserPromptSubmit)
+Explicit routing rules (CONTEXT_ROUTING.md)
+    ↓ no match?
+Embedding similarity search (cosine ≥ 0.45)
+    ↓ match found?
+Context injected (≤2000 tokens)
+```
+
+Setup: `bun scripts/EmbeddingIndex.ts --setup`
+Model: `Xenova/jina-embeddings-v2-small-en` (@huggingface/transformers@^3.8.1)
+Graceful degradation: if index not built, skips silently.
+Config: `config/settings.json` → `embeddings.threshold`, `embeddings.maxTokens`
 
 ---
 
@@ -20,6 +87,7 @@ Hook Events trigger domain-specific captures:
     ├── Algorithm (AI) → WORK/
     ├── RatingCapture → LEARNING/SIGNALS/
     ├── WorkCompletionLearning → LEARNING/
+    ├── InstinctCapture → LEARNING/INSTINCTS/ (v5.6)
     └── SecurityValidator → SECURITY/
     ↓
 Harvesting (periodic):
@@ -202,7 +270,7 @@ This is the actual "firehose" - every message, tool call, and response. PAI leve
 4. Deduplicates across projects using Jaccard similarity
 5. Distills each domain into ~200-300 word summary via fast LLM inference (Haiku)
 
-**Session injection:** `LoadContext.hook.ts` reads KNOWLEDGE/ files at session start. Selects 2-3 domains relevant to the current project directory based on domain keywords in `config/domains.jsonc`. Controlled by `settings.dynamicContext.knowledgeInjection`.
+**Session injection:** `LoadContext.hook.ts` reads KNOWLEDGE/ files at session start. Selects 2-3 domains relevant to the current project directory (e.g., kai gets ai-infrastructure; WiFi-Troubleshooter gets products + ui + api). Controlled by `settings.dynamicContext.knowledgeInjection`.
 
 **Regeneration:** `bun run PAI/Tools/KnowledgeHarvester.ts` (full harvest) or `--scan` (inventory only)
 

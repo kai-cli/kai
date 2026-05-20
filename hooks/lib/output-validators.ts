@@ -155,10 +155,6 @@ export function getWorkingFallback(): string {
   return 'Analyzing input.';
 }
 
-export function getCompletionFallback(): string {
-  return 'Task complete.';
-}
-
 export function getQuestionFallback(): string {
   return 'Awaiting input';
 }

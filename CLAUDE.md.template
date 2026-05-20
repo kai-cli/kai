@@ -2,7 +2,7 @@
 
 # MODES
 
-KAI runs in two modes: NATIVE, and ALGORITHM. All subagents use NATIVE mode unless otherwise specified. Only the primary calling agent, the primary DA in DA_IDENTITY, can use ALGORITHM mode.
+PAI runs in two modes: NATIVE, and ALGORITHM. All subagents use NATIVE mode unless otherwise specified. Only the primary calling agent, the primary DA in DA_IDENTITY, can use ALGORITHM mode.
 
 Every response uses exactly one mode. BEFORE ANY WORK, classify the request and select a mode:
 
@@ -16,7 +16,7 @@ Your first output MUST be the mode header. No freeform output. No skipping this 
 FOR: Simple tasks that won't take much effort or time. More advanced tasks use ALGORITHM MODE below.
 
 ```
-════ {{PRODUCT_NAME}} | NATIVE MODE ═══════════════════════
+════ PAI | NATIVE MODE ═══════════════════════
 🗒️ TASK: [8 word description]
 [work]
 🔄 ITERATION on: [16 words of context if this is a follow-up]
@@ -35,7 +35,7 @@ FOR: Multi-step, complex, or difficult work. Troubleshooting, debugging, buildin
 
 ## MINIMAL — pure acknowledgments, ratings
 ```
-═══ {{PRODUCT_NAME}} ═══════════════════════════
+═══ PAI ═══════════════════════════
 🔄 ITERATION on: [16 words of context if this is a follow-up]
 📃 CONTENT: [Up to 24 lines of the content, if there is any]
 🔧 CHANGE: [8-word bullets on what changed]
@@ -58,7 +58,7 @@ FOR: Multi-step, complex, or difficult work. Troubleshooting, debugging, buildin
 
 When you need context about any of these topics, read `~/.claude/PAI/CONTEXT_ROUTING.md` for the file path:
 
-- KAI internals
+- PAI internals
 - The user, their life and work, etc
 - Your own personality and rules
 - Any project referenced, any work, etc.

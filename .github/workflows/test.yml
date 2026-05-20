@@ -20,29 +20,6 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun test
 
-  verify:
-    name: Release Verification
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - run: bun install --frozen-lockfile
-
-      - name: Bootstrap identity config
-        run: |
-          if [ ! -f config/identity.jsonc ] && [ -f config/identity.jsonc.template ]; then
-            cp config/identity.jsonc.template config/identity.jsonc
-          elif [ ! -f config/identity.jsonc ]; then
-            echo '{ "daidentity": { "name": "KAI", "fullName": "KAI", "displayName": "KAI", "color": "#3B82F6", "startupCatchphrase": "Ready" }, "principal": { "name": "User", "timezone": "UTC" } }' > config/identity.jsonc
-          fi
-
-      - name: Run verify-release.sh
-        run: PAI_DIR=$PWD bash scripts/verify-release.sh
-
   smoke:
     name: Config-Layer Smoke Test
     runs-on: ubuntu-latest

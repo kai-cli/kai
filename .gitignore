@@ -1,12 +1,14 @@
-# Generated from CLAUDE.md.template — do not commit
-CLAUDE.md
-
 # Claude Code local settings (machine-specific, session-specific)
 .claude/
 
 # Claude Code runtime directories (session-specific, machine-specific)
-# Project memory is personal — never tracked in the public repo
-projects/
+# Ignore everything in projects/ EXCEPT memory/*.md files (backup strategy)
+projects/**
+!projects/*/
+!projects/*/memory/
+!projects/*/memory/*.md
+!projects/*/memory/.archive/
+!projects/*/memory/.archive/*.md
 file-history/
 debug/
 todos/

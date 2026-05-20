@@ -7,7 +7,7 @@
  * and returns a budget-trimmed markdown summary.
  *
  * Usage: bun PAI/Tools/MemorySearch.ts "openwrt build cache"
- *        bun PAI/Tools/MemorySearch.ts --budget 2000 "auth api"
+ *        bun PAI/Tools/MemorySearch.ts --budget 2000 "jnap api"
  */
 
 import { execSync } from 'child_process';

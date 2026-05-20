@@ -1,10 +1,10 @@
 /**
- * PRD Template Generator (v4.0)
+ * PRD Template Generator (v5.5+)
  *
  * Shared PRD template used by algorithm.ts CLI.
  * Generates PRD files matching the frontmatter schema expected by algorithm.ts readPRD().
  *
- * v4.0 changes (2026-02-22):
+ * v5.5 (from v4.0 consolidation) (2026-02-22):
  * - PRD.md is now the SINGLE source of truth per work directory
  * - Frontmatter includes session metadata (previously in META.yaml)
  * - ISC section is the system of record (previously duplicated in ISC.json)
@@ -109,7 +109,7 @@ export function generatePRDId(slug: string): string {
 /**
  * Generate a consolidated PRD file — single source of truth for each work item.
  *
- * v4.0: Consolidates META.yaml, ISC.json, THREAD.md into PRD.md.
+ * Consolidates META.yaml, ISC.json, THREAD.md into PRD.md.
  * - Frontmatter includes session metadata (previously in META.yaml)
  * - ISC section is the system of record (previously duplicated in ISC.json)
  * - CHANGELOG replaces THREAD.md

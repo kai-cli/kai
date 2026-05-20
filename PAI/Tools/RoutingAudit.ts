@@ -28,7 +28,9 @@ const paiDir = getPaiDir();
 const ROUTING_FILE = join(paiDir, 'PAI', 'CONTEXT_ROUTING.md');
 const PROJECTS_DIR = join(HOME, 'Projects');
 const MEMORY_BASE = join(HOME, '.claude', 'projects');
-const MEM_PREFIX = '-Users-your.name-Projects-';
+// Derive prefix from HOME to stay portable
+const _homeEncoded = HOME.replace(/[/_]/g, '-');
+const MEM_PREFIX = `${_homeEncoded}-Projects-`;
 
 interface AuditResult {
   ok: string[];

@@ -571,7 +571,7 @@ export function generateDescriptiveTitle(changes: FileChange[]): string {
     if (docNames.length === 1) {
       title = `${docNames[0]} Documentation Updated`;
     } else {
-      title = 'PAI System Documentation Updated';
+      title = 'KAI System Documentation Updated';
     }
   }
   // Core user changes

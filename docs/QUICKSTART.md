@@ -72,7 +72,7 @@ All configuration lives in `~/.claude/config/*.jsonc` (JSON with comments):
 | File | What it controls |
 |------|-----------------|
 | `identity.jsonc` | Your name, assistant name, timezone |
-| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->44<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
+| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->46<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
 | `permissions.jsonc` | Tool permissions (allow/deny/ask rules) |
 | `preferences.jsonc` | Environment variables, MCP servers, tech stack |
 | `notifications.jsonc` | Alert routing (disabled by default) |
@@ -87,7 +87,7 @@ bun ~/.claude/hooks/handlers/BuildSettings.ts
 
 ## What You Get
 
-### Skills (<!-- KAI:counts:skills:begin -->82<!-- KAI:counts:skills:end --> modules)
+### Skills (<!-- KAI:counts:skills:begin -->83<!-- KAI:counts:skills:end --> modules)
 KAI includes specialized skills invoked with slash commands or automatically:
 - **Research** — multi-agent parallel research with dedup
 - **Security** — recon, web assessment, prompt injection testing
@@ -95,7 +95,7 @@ KAI includes specialized skills invoked with slash commands or automatically:
 - **EM/PLM** — 1:1 notes, weekly status, decision log, NPI tracking
 - And 40+ more — type `/skills` in a session to see all
 
-### Agents (<!-- KAI:counts:agents:begin -->18<!-- KAI:counts:agents:end --> named specialists)
+### Agents (<!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> named specialists)
 Spawned automatically when the task matches:
 - **Architect** — system design
 - **Engineer** — implementation with TDD
@@ -108,7 +108,7 @@ For complex tasks, KAI uses a 7-phase execution framework:
 
 Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
-### Hooks (<!-- KAI:counts:hooks:begin -->44<!-- KAI:counts:hooks:end --> lifecycle events)
+### Hooks (<!-- KAI:counts:hooks:begin -->46<!-- KAI:counts:hooks:end --> lifecycle events)
 Automated behaviors that fire on specific events:
 - **SecretScanner** — warns if you're about to commit secrets
 - **GitHubWriteGuard** — requires confirmation before git push

@@ -2,18 +2,20 @@
 /**
  * LoadContext.hook.ts - Inject PAI dynamic context into Claude's Context (SessionStart)
  *
- * KAI v.0: Core context (identity, rules, format) is now in CLAUDE.md and loaded
+ * v5.6.0: Core context (identity, rules, format) is now in CLAUDE.md and loaded
  * natively by Claude Code. This hook injects DYNAMIC context only:
  * - Relationship context (recent opinions + notes)
  * - Learning readback (signals, wisdom, failure patterns)
  * - Active work summary (last 48h sessions + tracked projects)
+ * - Index memory (≤50 lines, Feature A)
+ * - Instinct surfacing (behavioral nudges, Feature B)
  *
  * TRIGGER: SessionStart
  *
  * INPUT:
- * - Environment: PAI_DIR
+ * - Environment: PAI_DIR, CLAUDE_PROJECT_DIR
  * - Files: PAI/USER/OPINIONS.md, MEMORY/RELATIONSHIP/*, MEMORY/LEARNING/*,
- *          MEMORY/WORK/*, MEMORY/STATE/progress/*.json
+ *          MEMORY/WORK/*, MEMORY/STATE/progress/*.json, MEMORY/STATE/memory-meta.jsonl
  *
  * OUTPUT:
  * - stdout: <system-reminder> containing dynamic context (relationship + learning)
@@ -21,7 +23,7 @@
  * - stderr: Status messages and errors
  * - exit(0): Normal completion
  *
- * DESIGN (v4.0):
+ * DESIGN:
  * CLAUDE.md handles static identity/format (loaded natively by Claude Code).
  * This hook force-loads startup files (settings.json → loadAtStartup) and
  * injects dynamic, session-specific context (relationship, learning, work).
@@ -33,6 +35,8 @@
  */
 
 import { readFileSync, existsSync, readdirSync, appendFileSync, mkdirSync } from 'fs';
+import { loadIndexMemory, initializeMeta, loadMeta } from './lib/memory-disclosure';
+import { decayInstincts, surfaceInstincts, formatInstinctContext } from './lib/instinct-store';
 
 function ttyLog(msg: string): void {
   console.error(msg);
@@ -63,6 +67,12 @@ interface LoadAtStartupConfig {
 export interface Settings {
   dynamicContext?: DynamicContextConfig;
   loadAtStartup?: LoadAtStartupConfig;
+  instincts?: {
+    enabled?: boolean;
+    surfaceAtStart?: boolean;
+    captureCorrections?: boolean;
+    maxSurfaced?: number;
+  };
   [key: string]: unknown;
 }
 
@@ -101,12 +111,12 @@ const CONDITIONAL_FILES: Record<string, 'personal-only'> = {
 
 /**
  * Determine if the current session is a "personal" project (PAI, research, etc.)
- * vs a work project (YourCompany repos, firmware, etc.)
+ * vs a work project (employer repos, firmware, etc.)
  */
 function isPersonalProject(): boolean {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const personalPatterns = [
-    'kai', 'Research-Agent', 'GranolaMCP', 'Knowledge',
+    'kai', 'kai', 'Research-Agent', 'GranolaMCP', 'Knowledge',
     'CLI-Hidden-Commands', '/.claude/',
   ];
   return personalPatterns.some(p => projectDir.includes(p)) ||
@@ -285,7 +295,7 @@ function getRecentWorkSessions(paiDir: string): WorkSession[] {
 
       const dirPath = join(workDir, dirName);
 
-      // Read metadata from PRD.md frontmatter (v4.0 consolidated) or META.yaml (legacy)
+      // Read metadata from PRD.md frontmatter (consolidated) or META.yaml (legacy)
       let status = 'UNKNOWN';
       let rawTitle = slug.replace(/-/g, ' ');
       let sessionId: string | undefined;
@@ -293,7 +303,7 @@ function getRecentWorkSessions(paiDir: string): WorkSession[] {
       const metaPath = join(dirPath, 'META.yaml');
 
       if (existsSync(prdPath)) {
-        // v4.0: Read from PRD.md frontmatter
+        // Read from PRD.md frontmatter
         try {
           const prdHead = readFileSync(prdPath, 'utf-8').substring(0, 800);
           const statusMatch = prdHead.match(/^status:\s*"?(\w+)"?/m);
@@ -335,7 +345,7 @@ function getRecentWorkSessions(paiDir: string): WorkSession[] {
 
         let prd: WorkSession['prd'] = null;
         try {
-          // v4.0: PRD.md at root; legacy: PRD-*.md
+          // PRD.md at root; legacy: PRD-*.md
           let prdFile: string | null = null;
           if (existsSync(join(dirPath, 'PRD.md'))) {
             prdFile = join(dirPath, 'PRD.md');
@@ -647,17 +657,67 @@ async function main() {
     learningContext      = budgeted.learning;
     relationshipContext  = budgeted.relationship || null;
 
+    // Feature A: load index-only memory (≤50 lines) — separate from knowledge context
+    let indexMemory = '';
+    const instinctsEnabled = settings.instincts?.enabled !== false;
+    const surfaceAtStart = settings.instincts?.surfaceAtStart !== false;
+
+    // Feature A: initialize meta if first run (no meta.jsonl yet)
+    try {
+      const meta = loadMeta(paiDir);
+      if (meta.length === 0) {
+        // First run — look for MEMORY.md to seed meta
+        const projectDir = process.env.CLAUDE_PROJECT_DIR || '';
+        const encoded = projectDir ? projectDir.replace(/[/_]/g, '-') : '';
+        const projectMemPath = encoded ? join(paiDir, 'projects', encoded, 'memory', 'MEMORY.md') : '';
+        const fallbackPath = join(paiDir, 'MEMORY.md');
+        const mdPath = (projectMemPath && existsSync(projectMemPath)) ? projectMemPath : existsSync(fallbackPath) ? fallbackPath : null;
+        if (mdPath) {
+          const content = readFileSync(mdPath, 'utf-8');
+          if (content.trim()) {
+            initializeMeta(paiDir, content);
+            console.error('[LoadContext] Feature A: meta initialized from MEMORY.md');
+          }
+        }
+      }
+      indexMemory = loadIndexMemory(paiDir);
+      if (indexMemory) {
+        console.error(`[LoadContext] Feature A: loaded index memory (${indexMemory.length} chars)`);
+      }
+    } catch (err) {
+      console.error(`[LoadContext] Feature A: index memory error (non-fatal): ${err}`);
+    }
+
+    // Feature B: instinct decay + surfacing
+    let instinctContext = '';
+    if (instinctsEnabled && surfaceAtStart) {
+      try {
+        const archived = decayInstincts(paiDir);
+        if (archived > 0) {
+          console.error(`[LoadContext] Feature B: decayed ${archived} instinct(s) to archive`);
+        }
+        const relevant = surfaceInstincts(paiDir, process.env.CLAUDE_PROJECT_DIR || process.cwd());
+        if (relevant.length > 0) {
+          instinctContext = formatInstinctContext(relevant);
+          console.error(`[LoadContext] Feature B: surfaced ${relevant.length} instinct(s)`);
+        }
+      } catch (err) {
+        console.error(`[LoadContext] Feature B: instinct surfacing error (non-fatal): ${err}`);
+      }
+    }
+
     // Inject dynamic context if we have any
-    if (relationshipContext || learningContext || knowledgeContext) {
+    if (relationshipContext || learningContext || knowledgeContext || instinctContext) {
+      const instinctSection = instinctContext ? '\n---\n' + instinctContext : '';
       const message = `<system-reminder>
 PAI Dynamic Context (Auto-loaded at Session Start)
-${relationshipContext ?? ''}${learningContext ? '\n---\n' + learningContext : ''}${knowledgeContext ? '\n---\n' + knowledgeContext : ''}
+${relationshipContext ?? ''}${learningContext ? '\n---\n' + learningContext : ''}${knowledgeContext ? '\n---\n' + knowledgeContext : ''}${instinctSection}
 ---
 Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
 </system-reminder>`;
 
       console.log(message);
-      ttyLog('\n✅ KAI dynamic context loaded...');
+      ttyLog('\n✅ PAI dynamic context loaded...');
     } else {
       ttyLog('\n✅ KAI session ready...');
     }
@@ -748,7 +808,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete (v5.3.0)');
+    console.error('✅ KAI session initialization complete (v5.6.0)');
     process.exit(0);
   } catch (error) {
     flushTty();
