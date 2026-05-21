@@ -170,9 +170,34 @@ Correct
 Configure your goals, projects, and life context here.
 See PAI documentation for TELOS file format.
 `,
+  "PAI/USER/TELOS/DIGEST.md": `# TELOS DIGEST — Life Operating System
+
+> Compact context loaded at every session start. Edit this with your goals and context.
+
+## Identity
+- Name: (your name)
+- Role: (your role)
+
+## Current Focus
+- (what you're working on right now)
+
+## Key Projects
+- (list active projects)
+
+## Preferences
+- (communication style, tools you prefer, etc.)
+`,
   "PAI/USER/PROJECTS/README.md": `# Projects
 
 Track your active projects here.
+`,
+  "PAI/USER/PROJECTS/PROJECTS.md": `# Active Projects
+
+> Loaded at session start. List your current projects so KAI has context.
+
+| Project | Path | Domain | Status |
+|---------|------|--------|--------|
+| (project name) | ~/Projects/... | (domain) | Active |
 `,
   "PAI/USER/AISTEERINGRULES.md.template": `# AI Steering Rules — Personal (Template)
 <!-- Copy or rename this file to AISTEERINGRULES.md and fill in your rules. -->
@@ -268,7 +293,8 @@ export function createMemoryDirs(paiDir: string) {
   const memDirs = [
     "MEMORY/STATE", "MEMORY/WORK", "MEMORY/DECISIONS", "MEMORY/SNAPSHOTS",
     "MEMORY/RESEARCH", "MEMORY/KNOWLEDGE", "MEMORY/LEARNING",
-    "MEMORY/LEARNING/REFLECTIONS", "MEMORY/RELATIONSHIP", "MEMORY/SECURITY",
+    "MEMORY/LEARNING/REFLECTIONS", "MEMORY/LEARNING/INSTINCTS",
+    "MEMORY/RELATIONSHIP", "MEMORY/SECURITY",
     "MEMORY/STAGING", "MEMORY/WISDOM",
   ];
   for (const d of memDirs) {

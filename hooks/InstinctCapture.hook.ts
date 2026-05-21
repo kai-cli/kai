@@ -10,7 +10,7 @@
  *   Pattern 2: Repeated instruction (≥20-char exact substring match)
  *   Pattern 3: Low rating signal (≤3) bridged from ratings.jsonl
  *   Pattern 4: File revert detection (v5.7) — user externally modified a file PAI wrote,
- *              reverting ≥50% of KAI's changes
+ *              reverting ≥50% of PAI's changes
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -21,12 +21,14 @@ import { createInstinct, createInstinctWithDedup } from './lib/instinct-store';
 import { loadLedger, type WriteEntry } from './WriteTracker.hook';
 
 // Pattern 1: explicit imperative correction
-const CORRECTION_PATTERN = /\b(no[,.]?\s+(don'?t|stop|never|quit|please\s+don'?t))\b/i;
+const CORRECTION_PATTERN = /\b(no[,.]?\s+(don'?t|stop|never|quit|please\s+don'?t)|don'?t\s+\w+|stop\s+\w+ing|never\s+\w+|quit\s+\w+ing|please\s+don'?t)\b/i;
 
 export function detectPattern1(prompt: string, transcriptMessages: Array<{ role: string; hasToolCall: boolean }>): boolean {
   if (!CORRECTION_PATTERN.test(prompt)) return false;
 
   // Gate: must follow a PAI tool call within last 3 messages before this user turn
+  // If no transcript available (empty messages), still capture — the correction itself is signal
+  if (transcriptMessages.length === 0) return true;
   const recent = transcriptMessages.slice(-3);
   return recent.some(m => m.role === 'assistant' && m.hasToolCall);
 }
@@ -93,8 +95,8 @@ import { createHash } from 'crypto';
 const REVERT_THRESHOLD = 0.5;
 
 /**
- * Pattern 4: Detect if user externally reverted KAI's writes.
- * Checks all tracked files — if current content hash differs from KAI's write
+ * Pattern 4: Detect if user externally reverted PAI's writes.
+ * Checks all tracked files — if current content hash differs from PAI's write
  * and the file has been substantially changed back, create a revert instinct.
  */
 export function detectReverts(paiDir: string): void {
@@ -112,7 +114,7 @@ export function detectReverts(paiDir: string): void {
       if (currentHash === entry.contentHash) continue;
 
       // File was modified externally. Check if it's a revert by comparing snippet presence.
-      // If KAI's snippet content is no longer in the file, it's likely reverted.
+      // If PAI's snippet content is no longer in the file, it's likely reverted.
       if (entry.snippet && entry.snippet.length > 20) {
         const snippetNormalized = entry.snippet.trim().substring(0, 60);
         if (!currentContent.includes(snippetNormalized)) {
@@ -143,6 +145,11 @@ async function main() {
   if (!prompt || prompt.length < 5) process.exit(0);
 
   const paiDir = getPaiDir();
+
+  // Diagnostic: log what we receive (temporary — remove once instincts are confirmed working)
+  const hasTranscript = !!(input as any).transcript_path;
+  const correctionMatch = CORRECTION_PATTERN.test(prompt);
+  console.error(`[InstinctCapture] prompt="${prompt.substring(0, 40)}" transcript=${hasTranscript} correction=${correctionMatch}`);
 
   // Pattern 3: low rating (≤3) → instinct from session context
   const ratingMatch = prompt.match(/^([1-3])$/);

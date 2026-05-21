@@ -34,6 +34,7 @@ export const PAYLOAD_SCHEMAS: Record<HookEventName, FieldSpec[]> = {
     ...BASE,
     { field: 'prompt', type: 'string', required: true },
     { field: 'user_prompt', type: 'string', required: false },
+    { field: 'transcript_path', type: 'string', required: false },
     { field: 'cwd', type: 'string', required: false },
   ],
   Stop: [
