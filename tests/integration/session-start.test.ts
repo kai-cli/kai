@@ -63,7 +63,7 @@ describe('Feature A integration: index memory loading', () => {
 describe('Feature B integration: instinct surfacing', () => {
   it('surfaces instincts above 0.5 threshold at session start', () => {
     const paiDir = mkPaiDir();
-    const cwd = '/Users/you/Projects/kai/hooks/';
+    const cwd = '/Users/user/Projects/kai/hooks/';
 
     // Create and reinforce one instinct above threshold
     const inst = createInstinct(paiDir, 'Always run bun test before reporting done', 'correction', 'ctx', cwd);
@@ -80,13 +80,13 @@ describe('Feature B integration: instinct surfacing', () => {
   it('does not surface instincts below 0.5 threshold', () => {
     const paiDir = mkPaiDir();
     createInstinct(paiDir, 'New instinct below threshold test case', 'correction', 'ctx');
-    const surfaced = surfaceInstincts(paiDir, '/Users/you/Projects/kai/');
+    const surfaced = surfaceInstincts(paiDir, '/Users/user/Projects/kai/');
     expect(surfaced.length).toBe(0);
   });
 
   it('full pipeline: create → decay → surface produces valid context', () => {
     const paiDir = mkPaiDir();
-    const cwd = '/Users/you/Projects/kai/';
+    const cwd = '/Users/user/Projects/kai/';
     let inst = createInstinct(paiDir, 'Use descriptive test names in all test files', 'correction', 'ctx', cwd);
     inst = reinforceInstinct(paiDir, inst.id); // 0.5
 

@@ -146,19 +146,19 @@ describe('surfaceInstincts', () => {
 
 describe('extractTags', () => {
   it('extracts project and directory tags from cwd', () => {
-    const tags = extractTags('some text', '/Users/you/Projects/kai/hooks/');
+    const tags = extractTags('some text', '/Users/user/Projects/kai/hooks/');
     expect(tags).toContain('kai');
     expect(tags).toContain('hooks');
   });
 
   it('extracts known tool names from text', () => {
-    const tags = extractTags('Use bun test --bail for testing', '/Users/you/Projects/kai/');
+    const tags = extractTags('Use bun test --bail for testing', '/Users/user/Projects/kai/');
     expect(tags).toContain('bun');
     expect(tags).toContain('testing');
   });
 
   it('caps at 5 tags', () => {
-    const tags = extractTags('bun git npm grep curl tsc node', '/Users/you/Projects/my-project/hooks/scripts/');
+    const tags = extractTags('bun git npm grep curl tsc node', '/Users/user/Projects/my-project/hooks/scripts/');
     expect(tags.length).toBeLessThanOrEqual(5);
   });
 });

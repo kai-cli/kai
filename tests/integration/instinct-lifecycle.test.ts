@@ -91,7 +91,7 @@ describe('Instinct lifecycle: decay → archive', () => {
 describe('Instinct lifecycle: cluster detection', () => {
   it('clusters instincts with shared tags and high confidence', () => {
     const paiDir = mkPaiDir();
-    const cwd = '/Users/you/Projects/kai/hooks/';
+    const cwd = '/Users/user/Projects/kai/hooks/';
 
     // Create two instincts with same project/directory tags
     let a = createInstinct(paiDir, 'Use bun test --bail for faster testing feedback', 'correction', 'ctx', cwd);
@@ -114,7 +114,7 @@ describe('Instinct lifecycle: cluster detection', () => {
 describe('getInstinctStats', () => {
   it('tracks lifecycle metrics accurately', () => {
     const paiDir = mkPaiDir();
-    const cwd = '/Users/you/Projects/kai/';
+    const cwd = '/Users/user/Projects/kai/';
 
     let inst = createInstinct(paiDir, 'Stats test instinct lifecycle tracking', 'correction', 'ctx', cwd);
     reinforceInstinct(paiDir, inst.id);

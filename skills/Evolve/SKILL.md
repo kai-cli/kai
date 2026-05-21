@@ -25,7 +25,10 @@
    - 🔥 High (0.8+): eligible for promotion
    - ✅ Active (0.5–0.79): surfacing at session start
    - 💤 Building (0.3–0.49): accumulating confidence
-3. Identify cluster candidates (≥2 instincts with ≥2 shared tags, confidence ≥0.8, trigger_count ≥3)
+3. Identify cluster candidates using `getClusteredInstincts()` from `hooks/lib/instinct-store.ts`:
+   - Embedding-based clustering (cosine similarity >0.7, max 8 per cluster)
+   - Falls back to tag-based clustering if no embeddings cached
+   - Only clusters where ALL instincts have confidence ≥0.8 AND trigger_count ≥3 are promotable
 4. Display: "Found N cluster(s) eligible for promotion. Run `/evolve --promote` to review."
 
 **Output format:**
@@ -104,14 +107,19 @@ Cap: 100 active (auto-archive lowest on overflow)
 ## Implementation Notes
 
 - Uses `hooks/lib/instinct-store.ts` for all read/write operations
+- Clustering via `getClusteredInstincts(paiDir)` — returns `InstinctCluster[]` with
+  `instincts`, `centroidScore`, and `promotable` fields
+- Embedding vectors cached at `MEMORY/STATE/embeddings/instinct-vectors.jsonl`
 - All file writes require explicit user confirmation via AskUserQuestion
 - Source instincts are archived (not deleted) after successful promotion
-- v5.7 enhancement: replace tag-based clustering with embedding similarity
 
 ## Related Files
 
 - `MEMORY/LEARNING/INSTINCTS/instincts.jsonl` — active instincts
 - `MEMORY/LEARNING/INSTINCTS/instincts-archived.jsonl` — archived instincts
-- `hooks/InstinctCapture.hook.ts` — captures new instincts
-- `hooks/lib/instinct-store.ts` — CRUD, decay, clustering
+- `hooks/InstinctCapture.hook.ts` — captures new instincts (patterns 1-4)
+- `hooks/WriteTracker.hook.ts` — tracks PAI writes for revert detection
+- `hooks/lib/instinct-store.ts` — CRUD, decay, clustering, dedup
+- `hooks/lib/instinct-dedup.ts` — semantic dedup via embeddings
+- `hooks/lib/instinct-cluster.ts` — embedding-based clustering algorithm
 - `config/settings.json` → `instincts` block — feature flags

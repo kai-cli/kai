@@ -1,12 +1,12 @@
 # KAI Release Checklist
 
-Run through this every time you sync pai-config → KAI for a new version.
+Run through this every time you sync kai → KAI for a new version.
 
-## Pre-Sync (in pai-config)
+## Pre-Sync (in kai)
 
-- [ ] `VERSION` file updated
-- [ ] `manifest.json` version, counts (skills/hooks/agents), inventories current
-- [ ] `config/preferences.jsonc` → `pai.version` matches
+- [ ] `bun PAI/Tools/bump-version.ts X.Y.Z` — bumps all 16 version locations in one shot
+- [ ] `bun PAI/Tools/bump-version.ts --check` — verify zero drift
+- [ ] `manifest.json` counts (skills/hooks/agents) and inventories current
 - [ ] `docs/planning/NEXT-STEPS.md` → new version section with shipped date
 - [ ] New plan file added to `EXCLUDE_PATHS` in `scripts/sync-to-kai.sh`
 - [ ] Any new personal/History directories added to sync exclusions
@@ -34,21 +34,21 @@ Run through this every time you sync pai-config → KAI for a new version.
 ### PII & Brand
 - [ ] `grep -wrl "jnap\|bbfdm\|obuspa\|velop\|YourCompany\|yourcompany"` → zero hits (excl verify-release)
 - [ ] `grep -rl "YourName\|YourLastName\|username\|@yourcompany"` → zero word-boundary hits
-- [ ] `grep -rl "pai-config"` → only in verify-release.sh, pre-commit, pre-push (detection rules)
+- [ ] `grep -rl "kai"` → only in verify-release.sh, pre-commit, pre-push (detection rules)
 - [ ] `grep -rl "danielmiessler/PAI"` → zero hits (all should be kai-cli/kai)
 - [ ] `grep -rl "YourNameYourLastName"` → zero (scrub artifact)
 - [ ] No `projects/*/memory/*.md` tracked (`git ls-files -- projects/`)
 - [ ] No personal project paths (`~/Projects/WARP`, `~/Projects/TR-069`, etc.)
 
 ### Stale Content
-- [ ] No `skills/PAIUpgrade/` (should only be `skills/Utilities/KAIUpgrade/`)
+- [ ] No `skills/KAIUpgrade/` (should only be `skills/Utilities/KAIUpgrade/`)
 - [ ] No STAGING archive files with personal content
 - [ ] `docs/planning/NEXT-STEPS.md` → no private/public repo description leak
 - [ ] `board-config.json` → generic (no personal project list)
 
 ### Tests & Verification
 - [ ] `bun test` → all pass, zero failures
-- [ ] `bash scripts/verify-release.sh` → 16/16 pass, RELEASE VERIFICATION PASSED
+- [ ] `bash scripts/verify-release.sh` → all pass, RELEASE VERIFICATION PASSED
 - [ ] Domain-specific test data uses generic terms (not jnap/bbfdm/etc.)
 
 ## Push

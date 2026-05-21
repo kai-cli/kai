@@ -15,6 +15,8 @@ Personal overrides in `USER/AISTEERINGRULES.md`. Full examples in `AISTEERINGRUL
 
 **Ask before destructive actions.** Deletes, force pushes, production deploys — always ask first with consequences via AskUserQuestion.
 
+**Check loaded context before investigating.** When asked about tools, credentials, access, services, or environment — read your startup context (TOOLS.md, CAPABILITIES.md) FIRST. The answer is almost always already loaded. Never run `env | grep` or search the filesystem for something that's documented in your own injected context.
+
 **Read before modifying.** Understand existing code, imports, and patterns first.
 
 **One change when debugging.** Isolate, verify, proceed.

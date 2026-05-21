@@ -128,14 +128,13 @@ function isPersonalProject(): boolean {
  * Reads each file and injects as a system-reminder block.
  * Files in CONDITIONAL_FILES are skipped based on project type.
  */
-function loadStartupFiles(paiDir: string, settings: Settings): string | null {
+function loadStartupFiles(paiDir: string, settings: Settings): string[] {
   const config = settings.loadAtStartup;
-  if (!config?.files || config.files.length === 0) return null;
+  if (!config?.files || config.files.length === 0) return [];
 
   const personal = isPersonalProject();
   const parts: string[] = [];
   for (const relPath of config.files) {
-    // Check conditional loading rules
     const condition = CONDITIONAL_FILES[relPath];
     if (condition === 'personal-only' && !personal) {
       console.error(`⏭️ Skipped ${relPath} (personal-only, work project detected)`);
@@ -156,8 +155,7 @@ function loadStartupFiles(paiDir: string, settings: Settings): string | null {
     }
   }
 
-  if (parts.length === 0) return null;
-  return parts.join('\n\n---\n\n');
+  return parts;
 }
 
 /**
@@ -566,6 +564,12 @@ async function main() {
 
     const paiDir = getPaiDir();
 
+    // Clear session-scoped write ledger (revert detection)
+    try {
+      const { clearLedger } = await import('./WriteTracker.hook');
+      clearLedger(paiDir);
+    } catch { /* WriteTracker not installed — skip */ }
+
     // Record session start time for notification timing
     recordSessionStart();
     console.error('⏱️ Session start time recorded');
@@ -574,10 +578,10 @@ async function main() {
     const settings = loadSettings(paiDir);
     console.error('✅ Loaded settings.json');
 
-    // Force-load startup files from settings.json → loadAtStartup
-    const startupContent = loadStartupFiles(paiDir, settings);
-    if (startupContent) {
-      console.log(`<system-reminder>\n${startupContent}\n</system-reminder>`);
+    // Force-load startup files from settings.json → loadAtStartup (each as its own block)
+    const startupParts = loadStartupFiles(paiDir, settings);
+    for (const part of startupParts) {
+      console.log(`<system-reminder>\n${part}\n</system-reminder>`);
     }
 
     // Load relationship context (lightweight summary)
@@ -808,7 +812,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete (v5.6.0)');
+    console.error('✅ KAI session initialization complete (v5.8.0)');
     process.exit(0);
   } catch (error) {
     flushTty();

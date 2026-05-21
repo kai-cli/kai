@@ -8,6 +8,8 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { findDuplicate } from './instinct-dedup';
+import { clusterByEmbedding, type InstinctCluster } from './instinct-cluster';
 
 export interface Instinct {
   id: string;
@@ -132,15 +134,14 @@ export function createInstinct(
 
   let instincts = loadInstincts(paiDir);
 
-  // v1 dedup: prefix-match (≥30 chars). Same phrasing → reinforces; different phrasing
-  // of same correction → separate instinct. Semantic dedup is a v5.7 enhancement.
-  const existing = instincts.find(i => {
+  // Dedup: prefix-match (≥30 chars) as fast path
+  const prefixMatch = instincts.find(i => {
     const overlap = Math.min(i.text.length, text.length);
     return overlap >= 30 && i.text.substring(0, overlap) === text.substring(0, overlap);
   });
 
-  if (existing) {
-    return reinforceInstinct(paiDir, existing.id);
+  if (prefixMatch) {
+    return reinforceInstinct(paiDir, prefixMatch.id);
   }
 
   instincts.push(instinct);
@@ -155,6 +156,32 @@ export function createInstinct(
 
   saveInstincts(paiDir, instincts);
   return instinct;
+}
+
+/**
+ * Async version of createInstinct that performs semantic dedup via embeddings.
+ * Falls back to prefix-match if embeddings unavailable.
+ */
+export async function createInstinctWithDedup(
+  paiDir: string,
+  text: string,
+  source: Instinct['source'],
+  context: string,
+  cwd: string = process.cwd()
+): Promise<Instinct> {
+  const instincts = loadInstincts(paiDir);
+
+  // Semantic dedup check (async — uses embeddings)
+  try {
+    const duplicateId = await findDuplicate(paiDir, text, instincts);
+    if (duplicateId) {
+      return reinforceInstinct(paiDir, duplicateId);
+    }
+  } catch {
+    // Embedding unavailable — fall through to sync createInstinct
+  }
+
+  return createInstinct(paiDir, text, source, context, cwd);
 }
 
 export function reinforceInstinct(paiDir: string, id: string): Instinct {
@@ -300,6 +327,23 @@ export function clusterInstincts(instincts: Instinct[]): Array<{ tags: string[];
   }
 
   return clusters;
+}
+
+/**
+ * Cluster instincts by embedding similarity for /evolve.
+ * Falls back to tag-based clustering if no vector cache exists.
+ */
+export function getClusteredInstincts(paiDir: string): InstinctCluster[] {
+  const instincts = loadInstincts(paiDir);
+  const embeddingClusters = clusterByEmbedding(paiDir, instincts);
+  if (embeddingClusters.length > 0) return embeddingClusters;
+  // Fallback: tag-based clustering (v5.6 behavior)
+  const tagClusters = clusterInstincts(instincts);
+  return tagClusters.map(c => ({
+    instincts: c.instincts,
+    centroidScore: 0,
+    promotable: c.instincts.every(i => i.confidence >= EVOLVE_THRESHOLD && i.trigger_count >= 3),
+  }));
 }
 
 export function getInstinctStats(paiDir: string): {

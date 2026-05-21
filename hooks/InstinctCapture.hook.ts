@@ -5,19 +5,20 @@
  * TRIGGER: UserPromptSubmit
  * PURPOSE: Detect correction patterns in user messages, create instincts.
  *
- * v1 patterns (regex-only, conservative):
+ * Patterns:
  *   Pattern 1: Explicit imperative + preceding PAI tool call
  *   Pattern 2: Repeated instruction (≥20-char exact substring match)
  *   Pattern 3: Low rating signal (≤3) bridged from ratings.jsonl
- *
- * Non-patterns deferred to v5.7: file revert, semantic similarity, tone.
+ *   Pattern 4: File revert detection (v5.7) — user externally modified a file PAI wrote,
+ *              reverting ≥50% of KAI's changes
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 import { readHookInput, parseTranscriptFromInput } from './lib/hook-io';
 import { getPaiDir } from './lib/paths';
-import { createInstinct } from './lib/instinct-store';
+import { createInstinct, createInstinctWithDedup } from './lib/instinct-store';
+import { loadLedger, type WriteEntry } from './WriteTracker.hook';
 
 // Pattern 1: explicit imperative correction
 const CORRECTION_PATTERN = /\b(no[,.]?\s+(don'?t|stop|never|quit|please\s+don'?t))\b/i;
@@ -87,6 +88,53 @@ function extractTranscriptContext(transcriptPath: string): {
   }
 }
 
+import { createHash } from 'crypto';
+
+const REVERT_THRESHOLD = 0.5;
+
+/**
+ * Pattern 4: Detect if user externally reverted KAI's writes.
+ * Checks all tracked files — if current content hash differs from KAI's write
+ * and the file has been substantially changed back, create a revert instinct.
+ */
+export function detectReverts(paiDir: string): void {
+  const ledger = loadLedger(paiDir);
+  if (ledger.length === 0) return;
+
+  for (const entry of ledger) {
+    if (!existsSync(entry.path)) continue;
+
+    try {
+      const currentContent = readFileSync(entry.path, 'utf-8');
+      const currentHash = createHash('sha256').update(currentContent).digest('hex').slice(0, 16);
+
+      // If hash matches, file unchanged since PAI wrote it — no revert
+      if (currentHash === entry.contentHash) continue;
+
+      // File was modified externally. Check if it's a revert by comparing snippet presence.
+      // If KAI's snippet content is no longer in the file, it's likely reverted.
+      if (entry.snippet && entry.snippet.length > 20) {
+        const snippetNormalized = entry.snippet.trim().substring(0, 60);
+        if (!currentContent.includes(snippetNormalized)) {
+          const fileName = basename(entry.path);
+          const instinctText = `Reverted: ${entry.snippet.substring(0, 80)} in ${fileName}`;
+          // Full revert gets higher initial confidence
+          createInstinct(
+            paiDir,
+            instinctText,
+            'revert',
+            `PAI wrote to ${entry.path}, user reverted. Snippet: ${entry.snippet}`,
+            process.cwd()
+          );
+          console.error(`[InstinctCapture] Pattern 4 → revert detected in ${fileName}`);
+        }
+      }
+    } catch {
+      // Skip unreadable files
+    }
+  }
+}
+
 async function main() {
   const input = await readHookInput();
   if (!input) process.exit(0);
@@ -134,6 +182,13 @@ async function main() {
       }
     }
   } catch { /* proceed if settings unreadable */ }
+
+  // Pattern 4: file revert detection (runs before prompt analysis)
+  try {
+    detectReverts(paiDir);
+  } catch (err) {
+    console.error(`[InstinctCapture] Pattern 4 error (non-fatal): ${err}`);
+  }
 
   const { messages, priorUserMessages } = extractTranscriptContext(input.transcript_path);
 

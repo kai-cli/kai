@@ -1,128 +1,93 @@
-// config-loader.ts — Centralized domain config from config/domains.jsonc
-//
-// Single cached read per process. Falls back to safe defaults if file missing.
+/**
+ * config-loader.ts — Domain config reader for kai
+ *
+ * Reads config/domains.jsonc and exposes typed accessors.
+ * All functions return empty/default values if the file is missing or malformed.
+ */
 
 import { readFileSync, existsSync } from 'fs';
-import { paiPath } from './paths';
+import { join } from 'path';
+import { getPaiDir } from './paths';
 
-// ── Types ─────────────────────────────────────────────────────────────────
-
-export interface DomainDefinition {
+interface DomainDefinition {
   description: string;
   keywords: string[];
+  requiredTags?: string[];
+  relatedDomains?: string[];
 }
 
-export interface ProjectMapping {
-  pattern: string;
-  domains: string[];
+interface DomainsConfig {
+  definitions?: Record<string, DomainDefinition>;
+  projectMapping?: Array<{ pattern: string; domains: string[] }>;
+  excludedProjects?: string[];
+  maxDomainsPerSession?: number;
 }
 
-export interface DomainsConfig {
-  definitions: Record<string, DomainDefinition>;
-  projectMapping: ProjectMapping[];
-  excludedProjects: string[];
-  maxDomainsPerSession: number;
-}
-
-// ── JSONC Parser ──────────────────────────────────────────────────────────
-
-export function parseJSONC(text: string): unknown {
-  const stripped = text
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(?<!:)\/\/[^\n]*/g, '')
-    .replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(stripped);
-}
-
-// ── Cache ─────────────────────────────────────────────────────────────────
-
-let cached: DomainsConfig | null = null;
-
-export function _resetCache(): void { cached = null; }
-
-const DEFAULTS: DomainsConfig = {
-  definitions: {},
-  projectMapping: [],
-  excludedProjects: [],
-  maxDomainsPerSession: 3,
-};
-
-// ── Loader ────────────────────────────────────────────────────────────────
-
-function loadRaw(): DomainsConfig {
-  if (cached) return cached;
-
-  const configPath = paiPath('config', 'domains.jsonc');
-  if (!existsSync(configPath)) {
-    cached = DEFAULTS;
-    return cached;
-  }
-
+function loadConfig(): DomainsConfig {
+  const configPath = join(getPaiDir(), 'config', 'domains.jsonc');
+  if (!existsSync(configPath)) return {};
   try {
-    const raw = readFileSync(configPath, 'utf-8');
-    const parsed = parseJSONC(raw) as Partial<DomainsConfig>;
-    cached = {
-      definitions: parsed.definitions ?? {},
-      projectMapping: parsed.projectMapping ?? [],
-      excludedProjects: parsed.excludedProjects ?? [],
-      maxDomainsPerSession: parsed.maxDomainsPerSession ?? 3,
-    };
+    const raw = readFileSync(configPath, 'utf-8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')     // strip /* */ block comments
+      .replace(/(?<!:)\/\/[^\n]*/g, '')     // strip // line comments (preserve http://)
+      .replace(/,(\s*[}\]])/g, '$1');       // strip trailing commas
+    return JSON.parse(raw) as DomainsConfig;
   } catch {
-    cached = DEFAULTS;
+    return {};
   }
-
-  return cached;
 }
-
-// ── Public API ────────────────────────────────────────────────────────────
 
 export function loadDomainKeywords(): Record<string, string[]> {
-  const config = loadRaw();
+  const config = loadConfig();
+  if (!config.definitions) return {};
   const result: Record<string, string[]> = {};
-  for (const [name, def] of Object.entries(config.definitions)) {
-    result[name] = def.keywords;
+  for (const [domain, def] of Object.entries(config.definitions)) {
+    result[domain] = def.keywords ?? [];
   }
   return result;
 }
 
 export function loadDomainDescriptions(): Record<string, string> {
-  const config = loadRaw();
+  const config = loadConfig();
+  if (!config.definitions) return {};
   const result: Record<string, string> = {};
-  for (const [name, def] of Object.entries(config.definitions)) {
-    result[name] = def.description;
+  for (const [domain, def] of Object.entries(config.definitions)) {
+    result[domain] = def.description ?? domain;
   }
   return result;
 }
 
-export function loadDomainDefinitions(): Array<{ name: string; description: string; keywords: string[] }> {
-  const config = loadRaw();
-  return Object.entries(config.definitions).map(([name, def]) => ({
-    name,
-    description: def.description,
-    keywords: def.keywords,
-  }));
-}
-
-export function loadProjectMapping(): ProjectMapping[] {
-  return loadRaw().projectMapping;
+export function loadProjectMapping(): Array<{ pattern: string; domains: string[] }> {
+  const config = loadConfig();
+  return config.projectMapping ?? [];
 }
 
 export function loadExcludedProjects(): string[] {
-  return loadRaw().excludedProjects;
+  const config = loadConfig();
+  return config.excludedProjects ?? [];
 }
 
 export function getMaxDomainsPerSession(): number {
-  return loadRaw().maxDomainsPerSession;
-}
-
-export function loadDomainsConfig(): DomainsConfig {
-  return loadRaw();
+  const config = loadConfig();
+  return config.maxDomainsPerSession ?? 3;
 }
 
 export function loadRequiredTags(): Record<string, string[]> {
-  return {};
+  const config = loadConfig();
+  if (!config.definitions) return {};
+  const result: Record<string, string[]> = {};
+  for (const [domain, def] of Object.entries(config.definitions)) {
+    result[domain] = def.requiredTags ?? [];
+  }
+  return result;
 }
 
 export function loadRelatedDomains(): Record<string, string[]> {
-  return {};
+  const config = loadConfig();
+  if (!config.definitions) return {};
+  const result: Record<string, string[]> = {};
+  for (const [domain, def] of Object.entries(config.definitions)) {
+    result[domain] = def.relatedDomains ?? [];
+  }
+  return result;
 }

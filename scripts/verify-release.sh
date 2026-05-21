@@ -111,16 +111,38 @@ if [[ $QUICK -eq 0 ]]; then
 
   for DOC in README.md docs/WHATS-DIFFERENT.md docs/QUICKSTART.md CHANGELOG.md; do
     if [[ -f "$DOC" ]]; then
-      DOC_SKILLS=$(grep -oE '[0-9]+ skill' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      # Marker syntax: <!-- KAI:counts:skills:begin -->42<!-- KAI:counts:skills:end -->
+      DOC_SKILLS=$(grep -oE 'counts:skills:begin -->[0-9]+' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      [[ -z "$DOC_SKILLS" ]] && DOC_SKILLS=$(grep -oE '[0-9]+ skill' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
       if [[ -n "$DOC_SKILLS" && "$DOC_SKILLS" != "$ACTUAL_SKILLS" ]]; then
         fail "$DOC claims $DOC_SKILLS skills but filesystem has $ACTUAL_SKILLS"
       fi
-      DOC_HOOKS=$(grep -oE '[0-9]+ hook' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      DOC_HOOKS=$(grep -oE 'counts:hooks:begin -->[0-9]+' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      [[ -z "$DOC_HOOKS" ]] && DOC_HOOKS=$(grep -oE '[0-9]+ hook' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
       if [[ -n "$DOC_HOOKS" && "$DOC_HOOKS" != "$ACTUAL_HOOKS" ]]; then
         fail "$DOC claims $DOC_HOOKS hooks but filesystem has $ACTUAL_HOOKS"
       fi
     fi
   done
+
+  # Test count verification
+  ACTUAL_TESTS=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ pass' | grep -oE '[0-9]+' || echo "0")
+  for DOC in CHANGELOG.md; do
+    if [[ -f "$DOC" ]]; then
+      DOC_TESTS=$(grep -oE '[0-9]+ tests? passing' "$DOC" | grep -oE '[0-9]+' | head -1 || true)
+      if [[ -n "$DOC_TESTS" && "$DOC_TESTS" != "$ACTUAL_TESTS" ]]; then
+        fail "$DOC claims $DOC_TESTS tests but suite has $ACTUAL_TESTS"
+      fi
+    fi
+  done
+
+  # Manifest brand check — productName must be "KAI"
+  if [[ -f manifest.json ]]; then
+    MANIFEST_PRODUCT=$(grep -oE '"productName":\s*"[^"]+"' manifest.json | grep -oE '"[^"]+"\s*$' | tr -d '"' | tr -d ' ')
+    if [[ "$MANIFEST_PRODUCT" != "KAI" ]]; then
+      fail "manifest.json productName is \"$MANIFEST_PRODUCT\" (expected \"KAI\")"
+    fi
+  fi
   # Version consistency — manifest.json is canonical SoT; all others must match
   # Uses existing fail helper. manifest.json version must equal preferences.jsonc,
   # VERSION file, and install.sh banner (major.minor match for install.sh).
@@ -157,6 +179,33 @@ for f in "${REQUIRED_FILES[@]}"; do
   fi
 done
 
+# ── 5b. Internal Link Check (skipped in --quick) ─────────────
+if [[ $QUICK -eq 0 ]]; then
+  echo ""
+  echo "── Internal Link Check ──"
+
+  LINK_DOCS=(README.md CONTRIBUTING.md CHANGELOG.md docs/QUICKSTART.md docs/WHATS-DIFFERENT.md docs/CUSTOMIZATION.md)
+  DEAD_LINKS=0
+  for doc in "${LINK_DOCS[@]}"; do
+    [[ -f "$doc" ]] || continue
+    while IFS= read -r link; do
+      target="${link%%#*}"
+      [[ -z "$target" ]] && continue
+      [[ "$target" == http* ]] && continue
+      dir="$(dirname "$doc")"
+      resolved="$dir/$target"
+      [[ "$target" == /* ]] && resolved=".$target"
+      if [[ ! -e "$resolved" ]]; then
+        fail "Dead link in $doc: $target"
+        DEAD_LINKS=$((DEAD_LINKS + 1))
+      fi
+    done < <(grep -oE '\]\([^)]+\)' "$doc" | sed 's/^\](\(.*\))$/\1/' | grep -v '^http' | grep -v '^mailto')
+  done
+  if [[ $DEAD_LINKS -eq 0 ]]; then
+    pass "No dead internal links"
+  fi
+fi
+
 # ── 6. Brand Consistency (skipped in --quick) ────────────────
 if [[ $QUICK -eq 0 ]]; then
   echo ""
@@ -164,7 +213,7 @@ if [[ $QUICK -eq 0 ]]; then
 
   OLD_BRAND_PATTERNS=('pai-config' 'PAI Board' 'PAI Installer' 'PAI Environment')
   for pattern in "${OLD_BRAND_PATTERNS[@]}"; do
-    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' || true)
+    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' | grep -v 'docs/planning/' || true)
     if [[ -n "$MATCHES" ]]; then
       fail "Old brand '$pattern' found in: $(echo "$MATCHES" | tr '\n' ' ')"
     fi

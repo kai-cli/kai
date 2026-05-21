@@ -13,7 +13,7 @@ import { join, basename } from 'path';
 
 const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 const PROJECTS_DIR = process.env.PROJECTS_DIR || join(process.env.HOME!, 'Projects');
-const TOOLS_PATH = join(PAI_DIR, 'TOOLS.md');
+const TOOLS_PATH = join(PAI_DIR, 'TOOLS-FULL.md');
 const APPLY = process.argv.includes('--apply');
 
 const SECTION_HEADER = /^##\s*Tools\s*[&+]\s*(Access|Services)/i;

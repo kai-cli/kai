@@ -63,7 +63,6 @@
 import { readFileSync, existsSync, writeFileSync, mkdirSync, appendFileSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { parse as parseYaml } from 'yaml';
 import { paiPath } from './lib/paths';
 
 // ========================================
@@ -162,25 +161,40 @@ interface PatternsConfig {
 // ========================================
 
 // Pattern paths in priority order:
-// 1. PAI/USER/PAISECURITYSYSTEM/patterns.yaml (user's custom rules)
-// 2. skills/PAI/PAISECURITYSYSTEM/patterns.example.yaml (default template)
-const USER_PATTERNS_PATH = paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.yaml');
-const SYSTEM_PATTERNS_PATH = paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.yaml');
+// 1. PAI/USER/PAISECURITYSYSTEM/patterns.json (user's custom rules)
+// 2. skills/PAI/PAISECURITYSYSTEM/patterns.example.json (default template)
+// Legacy YAML fallback for backwards compatibility
+const USER_PATTERNS_PATH = paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.json');
+const USER_PATTERNS_YAML = paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.yaml');
+const SYSTEM_PATTERNS_PATH = paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.json');
+const SYSTEM_PATTERNS_YAML = paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.yaml');
 
 let patternsCache: PatternsConfig | null = null;
 let patternsSource: 'user' | 'system' | 'none' = 'none';
 
 function getPatternsPath(): string | null {
-  // Try USER patterns first (user's custom rules)
+  // Try USER JSON first (fast path)
   if (existsSync(USER_PATTERNS_PATH)) {
     patternsSource = 'user';
     return USER_PATTERNS_PATH;
   }
 
-  // Fall back to SYSTEM patterns (default template)
+  // Fall back to SYSTEM JSON
   if (existsSync(SYSTEM_PATTERNS_PATH)) {
     patternsSource = 'system';
     return SYSTEM_PATTERNS_PATH;
+  }
+
+  // Legacy: fall back to YAML if JSON doesn't exist yet
+  if (existsSync(USER_PATTERNS_YAML)) {
+    patternsSource = 'user';
+    return USER_PATTERNS_YAML;
+  }
+
+  // System YAML fallback (patterns.example.yaml is tracked in git)
+  if (existsSync(SYSTEM_PATTERNS_YAML)) {
+    patternsSource = 'system';
+    return SYSTEM_PATTERNS_YAML;
   }
 
   // No patterns found
@@ -206,11 +220,17 @@ function loadPatterns(): PatternsConfig {
 
   try {
     const content = readFileSync(patternsPath, 'utf-8');
-    patternsCache = parseYaml(content) as PatternsConfig;
+    if (patternsPath.endsWith('.yaml')) {
+      // Legacy YAML fallback — dynamic import to avoid loading yaml module on fast path
+      const { parse: parseYaml } = require('yaml');
+      patternsCache = parseYaml(content) as PatternsConfig;
+    } else {
+      patternsCache = JSON.parse(content) as PatternsConfig;
+    }
     return patternsCache;
   } catch (error) {
     // Parse error - fail open
-    console.error(`Failed to parse ${patternsSource} patterns.yaml:`, error);
+    console.error(`Failed to parse ${patternsSource} patterns:`, error);
     return {
       version: '0.0',
       philosophy: { mode: 'permissive', principle: 'Parse error - fail open' },
@@ -602,30 +622,7 @@ async function main(): Promise<void> {
   let input: HookInput;
 
   try {
-    // Streaming stdin read with hard timeout.
-    // Bun.stdin.text() can hang forever if stdin never closes (known Bun issue).
-    // Use streaming reader + setTimeout that forces process.exit on timeout.
-    const reader = Bun.stdin.stream().getReader();
-    let raw = '';
-    const readLoop = (async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        raw += new TextDecoder().decode(value, { stream: true });
-      }
-    })();
-
-    // Hard timeout: if stdin doesn't close in 200ms, exit the process.
-    // setTimeout keeps the event loop alive, so we use process.exit to force cleanup.
-    const timeout = setTimeout(() => {
-      if (!raw.trim()) {
-        console.log(JSON.stringify({ continue: true }));
-        process.exit(0);
-      }
-    }, 200);
-
-    await Promise.race([readLoop, new Promise<void>(r => setTimeout(r, 200))]);
-    clearTimeout(timeout);
+    const raw = await Bun.stdin.text();
 
     if (!raw.trim()) {
       console.log(JSON.stringify({ continue: true }));
@@ -634,7 +631,7 @@ async function main(): Promise<void> {
 
     input = JSON.parse(raw);
   } catch {
-    // Parse error or timeout - fail open
+    // Parse error - fail open
     console.log(JSON.stringify({ continue: true }));
     return;
   }

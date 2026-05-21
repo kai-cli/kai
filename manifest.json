@@ -1,10 +1,10 @@
 {
-  "version": "5.6.0",
-  "productName": "PAI",
+  "version": "5.8.0",
+  "productName": "KAI",
   "algorithmVersion": "v3.13.0",
   "counts": {
     "skills": 83,
-    "hooks": 46,
+    "hooks": 47,
     "agents": 20
   },
   "hookInventory": [
@@ -53,7 +53,8 @@
     "InstinctCapture.hook",
     "InsightExtractor.hook",
     "PlanApprovalGuard.hook",
-    "MemoryRecall.hook"
+    "MemoryRecall.hook",
+    "WriteTracker.hook"
   ],
   "skillInventory": [
     "Agents",

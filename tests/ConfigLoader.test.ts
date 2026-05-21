@@ -1,282 +1,346 @@
 /**
  * ConfigLoader.test.ts — Tests for hooks/lib/config-loader.ts
  *
+ * Covers: normal load, missing config, malformed config, empty config,
+ * and graceful degradation (no crash, safe defaults) for all 5 exports.
+ *
  * Run: bun test tests/ConfigLoader.test.ts
  */
 
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'fs';
+import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
+import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-let tmpDir: string;
-let origPaiDir: string | undefined;
+// Each test suite uses an isolated temp dir as PAI_DIR
+let testDir: string;
 
-function setup() {
-  tmpDir = mkdtempSync(join(tmpdir(), 'kai-config-loader-test-'));
-  mkdirSync(join(tmpDir, 'config'), { recursive: true });
-  origPaiDir = process.env.PAI_DIR;
-  process.env.PAI_DIR = tmpDir;
-}
-
-function cleanup() {
-  rmSync(tmpDir, { recursive: true, force: true });
-  if (origPaiDir !== undefined) process.env.PAI_DIR = origPaiDir;
-  else delete process.env.PAI_DIR;
-}
-
-async function freshImport() {
-  const mod = await import('../hooks/lib/config-loader');
-  mod._resetCache();
-  return mod;
-}
-
-// ── parseJSONC ───────────────────────────────────────────────────────────────
-
-describe('parseJSONC', () => {
-  test('parses plain JSON', async () => {
-    const { parseJSONC } = await freshImport();
-    expect(parseJSONC('{"a": 1}')).toEqual({ a: 1 });
-  });
-
-  test('strips line comments', async () => {
-    const { parseJSONC } = await freshImport();
-    const result = parseJSONC('{\n  // comment\n  "key": "value"\n}');
-    expect(result).toEqual({ key: 'value' });
-  });
-
-  test('strips block comments', async () => {
-    const { parseJSONC } = await freshImport();
-    const result = parseJSONC('{ /* block */ "key": "value" }');
-    expect(result).toEqual({ key: 'value' });
-  });
-
-  test('handles trailing commas', async () => {
-    const { parseJSONC } = await freshImport();
-    const result = parseJSONC('{"a": 1, "b": 2,}');
-    expect(result).toEqual({ a: 1, b: 2 });
-  });
-
-  test('preserves URLs in strings', async () => {
-    const { parseJSONC } = await freshImport();
-    const result = parseJSONC('{"url": "https://example.com"}') as Record<string, unknown>;
-    expect(result.url).toBe('https://example.com');
-  });
+beforeEach(() => {
+  testDir = join(tmpdir(), `config-loader-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  mkdirSync(join(testDir, 'config'), { recursive: true });
+  process.env.PAI_DIR = testDir;
 });
 
-// ── Missing/invalid config → defaults ────────────────────────────────────────
-
-describe('missing config file', () => {
-  beforeEach(setup);
-  afterEach(cleanup);
-
-  test('returns empty definitions when domains.jsonc missing', async () => {
-    const { loadDomainKeywords, _resetCache } = await freshImport();
-    _resetCache();
-    expect(loadDomainKeywords()).toEqual({});
-  });
-
-  test('returns empty descriptions when domains.jsonc missing', async () => {
-    const { loadDomainDescriptions, _resetCache } = await freshImport();
-    _resetCache();
-    expect(loadDomainDescriptions()).toEqual({});
-  });
-
-  test('returns default maxDomainsPerSession when missing', async () => {
-    const { getMaxDomainsPerSession, _resetCache } = await freshImport();
-    _resetCache();
-    expect(getMaxDomainsPerSession()).toBe(3);
-  });
-
-  test('returns empty arrays when missing', async () => {
-    const { loadProjectMapping, loadExcludedProjects, _resetCache } = await freshImport();
-    _resetCache();
-    expect(loadProjectMapping()).toEqual([]);
-    expect(loadExcludedProjects()).toEqual([]);
-  });
+afterEach(() => {
+  delete process.env.PAI_DIR;
+  // Dynamic import cache is shared; clear env only (file cleanup is best-effort)
+  try { rmSync(testDir, { recursive: true, force: true }); } catch { /* ignore */ }
 });
 
-describe('malformed config file', () => {
-  beforeEach(setup);
-  afterEach(cleanup);
+function writeDomainsConfig(content: string): void {
+  writeFileSync(join(testDir, 'config', 'domains.jsonc'), content, 'utf-8');
+}
 
-  test('returns defaults on invalid JSON', async () => {
-    writeFileSync(join(tmpDir, 'config', 'domains.jsonc'), 'NOT JSON {{{');
-    const { loadDomainsConfig, _resetCache } = await freshImport();
-    _resetCache();
-    const config = loadDomainsConfig();
-    expect(config.definitions).toEqual({});
-    expect(config.maxDomainsPerSession).toBe(3);
-  });
-});
+// Re-import config-loader with fresh PAI_DIR each test by using dynamic import
+// Bun caches modules, so we call the functions directly after setting PAI_DIR
+async function loader() {
+  // Force re-evaluation by clearing the module from cache isn't needed —
+  // config-loader reads the file on every call (no module-level cache)
+  return await import('../hooks/lib/config-loader.ts');
+}
 
-// ── Valid config ─────────────────────────────────────────────────────────────
+// ── Normal load (kai domains.jsonc) ────────────────────────────────
 
-describe('valid config', () => {
+describe('loadDomainKeywords — normal config', () => {
   beforeEach(() => {
-    setup();
-    writeFileSync(join(tmpDir, 'config', 'domains.jsonc'), JSON.stringify({
-      definitions: {
-        backend: {
-          description: 'Backend services',
-          keywords: ['api', 'server'],
+    writeDomainsConfig(`{
+      "definitions": {
+        "ai-infrastructure": {
+          "description": "KAI system",
+          "keywords": ["kai", "hook", "skill"]
         },
-        frontend: {
-          description: 'Frontend apps',
-          keywords: ['react', 'css'],
-        },
-      },
-      projectMapping: [
-        { pattern: '*/api', domains: ['backend'] },
-      ],
-      excludedProjects: ['node_modules'],
-      maxDomainsPerSession: 5,
-    }));
-  });
-  afterEach(cleanup);
-
-  test('loadDomainKeywords returns keyword map', async () => {
-    const { loadDomainKeywords, _resetCache } = await freshImport();
-    _resetCache();
-    const keywords = loadDomainKeywords();
-    expect(keywords.backend).toEqual(['api', 'server']);
-    expect(keywords.frontend).toEqual(['react', 'css']);
+        "devops": {
+          "description": "CI/CD pipelines",
+          "keywords": ["docker", "kubernetes", "ci"]
+        }
+      }
+    }`);
   });
 
-  test('loadDomainDescriptions returns description map', async () => {
-    const { loadDomainDescriptions, _resetCache } = await freshImport();
-    _resetCache();
-    const descs = loadDomainDescriptions();
-    expect(descs.backend).toBe('Backend services');
-    expect(descs.frontend).toBe('Frontend apps');
+  test('returns keywords for all defined domains', async () => {
+    const { loadDomainKeywords } = await loader();
+    const result = loadDomainKeywords();
+    expect(Object.keys(result)).toContain('ai-infrastructure');
+    expect(Object.keys(result)).toContain('devops');
+    expect(result['ai-infrastructure']).toEqual(['kai', 'hook', 'skill']);
+    expect(result['devops']).toEqual(['docker', 'kubernetes', 'ci']);
   });
 
-  test('loadDomainDefinitions returns array of definitions', async () => {
-    const { loadDomainDefinitions, _resetCache } = await freshImport();
-    _resetCache();
-    const defs = loadDomainDefinitions();
-    expect(defs).toHaveLength(2);
-    expect(defs[0]).toEqual({ name: 'backend', description: 'Backend services', keywords: ['api', 'server'] });
+  test('returns non-empty object', async () => {
+    const { loadDomainKeywords } = await loader();
+    expect(Object.keys(loadDomainKeywords()).length).toBeGreaterThan(0);
+  });
+});
+
+describe('loadDomainDescriptions — normal config', () => {
+  beforeEach(() => {
+    writeDomainsConfig(`{
+      "definitions": {
+        "security": {
+          "description": "Security practices and vulnerabilities",
+          "keywords": ["security", "cve"]
+        }
+      }
+    }`);
   });
 
-  test('loadProjectMapping returns mappings', async () => {
-    const { loadProjectMapping, _resetCache } = await freshImport();
-    _resetCache();
-    const mappings = loadProjectMapping();
-    expect(mappings).toHaveLength(1);
-    expect(mappings[0].pattern).toBe('*/api');
+  test('returns description strings for defined domains', async () => {
+    const { loadDomainDescriptions } = await loader();
+    const result = loadDomainDescriptions();
+    expect(result['security']).toBe('Security practices and vulnerabilities');
+  });
+});
+
+describe('loadProjectMapping — normal config', () => {
+  beforeEach(() => {
+    writeDomainsConfig(`{
+      "definitions": {},
+      "projectMapping": [
+        { "pattern": "kai", "domains": ["ai-infrastructure"] },
+        { "pattern": "myapp", "domains": ["backend", "devops"] }
+      ]
+    }`);
   });
 
-  test('loadExcludedProjects returns exclusion list', async () => {
-    const { loadExcludedProjects, _resetCache } = await freshImport();
-    _resetCache();
-    expect(loadExcludedProjects()).toEqual(['node_modules']);
+  test('returns array of pattern/domains entries', async () => {
+    const { loadProjectMapping } = await loader();
+    const result = loadProjectMapping();
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ pattern: 'kai', domains: ['ai-infrastructure'] });
+    expect(result[1]).toEqual({ pattern: 'myapp', domains: ['backend', 'devops'] });
+  });
+});
+
+describe('loadExcludedProjects — normal config', () => {
+  beforeEach(() => {
+    writeDomainsConfig(`{
+      "definitions": {},
+      "excludedProjects": ["personal-finance", "private-notes"]
+    }`);
   });
 
-  test('getMaxDomainsPerSession returns configured value', async () => {
-    const { getMaxDomainsPerSession, _resetCache } = await freshImport();
-    _resetCache();
+  test('returns the excluded project list', async () => {
+    const { loadExcludedProjects } = await loader();
+    const result = loadExcludedProjects();
+    expect(result).toContain('personal-finance');
+    expect(result).toContain('private-notes');
+  });
+});
+
+describe('getMaxDomainsPerSession — normal config', () => {
+  test('returns configured value when present', async () => {
+    writeDomainsConfig(`{ "definitions": {}, "maxDomainsPerSession": 5 }`);
+    const { getMaxDomainsPerSession } = await loader();
     expect(getMaxDomainsPerSession()).toBe(5);
   });
 
-  test('loadDomainsConfig returns full config', async () => {
-    const { loadDomainsConfig, _resetCache } = await freshImport();
-    _resetCache();
-    const config = loadDomainsConfig();
-    expect(Object.keys(config.definitions)).toHaveLength(2);
-    expect(config.maxDomainsPerSession).toBe(5);
-    expect(config.excludedProjects).toEqual(['node_modules']);
+  test('returns default 3 when field absent', async () => {
+    writeDomainsConfig(`{ "definitions": {} }`);
+    const { getMaxDomainsPerSession } = await loader();
+    expect(getMaxDomainsPerSession()).toBe(3);
   });
 });
 
-// ── Partial config (missing fields use defaults) ─────────────────────────────
+// ── Graceful degradation: missing file ───────────────────────────────────
 
-describe('partial config', () => {
+describe('graceful degradation — missing config/domains.jsonc', () => {
+  // No writeDomainsConfig call — file does not exist
+
+  test('loadDomainKeywords returns empty object', async () => {
+    const { loadDomainKeywords } = await loader();
+    expect(loadDomainKeywords()).toEqual({});
+  });
+
+  test('loadDomainDescriptions returns empty object', async () => {
+    const { loadDomainDescriptions } = await loader();
+    expect(loadDomainDescriptions()).toEqual({});
+  });
+
+  test('loadProjectMapping returns empty array', async () => {
+    const { loadProjectMapping } = await loader();
+    expect(loadProjectMapping()).toEqual([]);
+  });
+
+  test('loadExcludedProjects returns empty array', async () => {
+    const { loadExcludedProjects } = await loader();
+    expect(loadExcludedProjects()).toEqual([]);
+  });
+
+  test('getMaxDomainsPerSession returns default 3', async () => {
+    const { getMaxDomainsPerSession } = await loader();
+    expect(getMaxDomainsPerSession()).toBe(3);
+  });
+});
+
+// ── Graceful degradation: malformed JSON ─────────────────────────────────
+
+describe('graceful degradation — malformed config/domains.jsonc', () => {
   beforeEach(() => {
-    setup();
-    writeFileSync(join(tmpDir, 'config', 'domains.jsonc'), JSON.stringify({
-      definitions: {
-        devops: { description: 'DevOps', keywords: ['docker'] },
+    writeDomainsConfig(`{ this is not valid json !!!`);
+  });
+
+  test('loadDomainKeywords returns empty object', async () => {
+    const { loadDomainKeywords } = await loader();
+    expect(loadDomainKeywords()).toEqual({});
+  });
+
+  test('loadDomainDescriptions returns empty object', async () => {
+    const { loadDomainDescriptions } = await loader();
+    expect(loadDomainDescriptions()).toEqual({});
+  });
+
+  test('loadProjectMapping returns empty array', async () => {
+    const { loadProjectMapping } = await loader();
+    expect(loadProjectMapping()).toEqual([]);
+  });
+
+  test('loadExcludedProjects returns empty array', async () => {
+    const { loadExcludedProjects } = await loader();
+    expect(loadExcludedProjects()).toEqual([]);
+  });
+
+  test('getMaxDomainsPerSession returns default 3', async () => {
+    const { getMaxDomainsPerSession } = await loader();
+    expect(getMaxDomainsPerSession()).toBe(3);
+  });
+});
+
+// ── Graceful degradation: empty definitions object ────────────────────────
+
+describe('graceful degradation — empty definitions', () => {
+  beforeEach(() => {
+    writeDomainsConfig(`{
+      "definitions": {},
+      "projectMapping": [],
+      "excludedProjects": [],
+      "maxDomainsPerSession": 3
+    }`);
+  });
+
+  test('loadDomainKeywords returns empty object', async () => {
+    const { loadDomainKeywords } = await loader();
+    expect(loadDomainKeywords()).toEqual({});
+  });
+
+  test('loadDomainDescriptions returns empty object', async () => {
+    const { loadDomainDescriptions } = await loader();
+    expect(loadDomainDescriptions()).toEqual({});
+  });
+
+  test('loadProjectMapping returns empty array', async () => {
+    const { loadProjectMapping } = await loader();
+    expect(loadProjectMapping()).toEqual([]);
+  });
+});
+
+// ── Actual kai domains.jsonc integration check ────────────────────
+
+describe('integration — actual kai domains.jsonc', () => {
+  beforeEach(() => {
+    // Point PAI_DIR at the real kai repo root
+    process.env.PAI_DIR = join(import.meta.dir, '..');
+  });
+
+  test('loads exactly 5 domains', async () => {
+    const { loadDomainKeywords } = await loader();
+    const result = loadDomainKeywords();
+    expect(Object.keys(result)).toHaveLength(5);
+  });
+
+  test('all 5 expected domains are present', async () => {
+    const { loadDomainKeywords } = await loader();
+    const domains = Object.keys(loadDomainKeywords());
+    const expected = ['ai-infrastructure', 'backend', 'devops', 'frontend', 'security'];
+    for (const d of expected) {
+      expect(domains).toContain(d);
+    }
+  });
+
+  test('each domain has at least one keyword', async () => {
+    const { loadDomainKeywords } = await loader();
+    for (const [domain, keywords] of Object.entries(loadDomainKeywords())) {
+      expect(keywords.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('each domain has a description', async () => {
+    const { loadDomainDescriptions } = await loader();
+    for (const [domain, desc] of Object.entries(loadDomainDescriptions())) {
+      expect(typeof desc).toBe('string');
+      expect(desc.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('kai project maps to ai-infrastructure', async () => {
+    const { loadProjectMapping } = await loader();
+    const mapping = loadProjectMapping();
+    const paiEntry = mapping.find(e => e.pattern === 'kai');
+    expect(paiEntry).toBeDefined();
+    expect(paiEntry!.domains).toContain('ai-infrastructure');
+  });
+
+  test('maxDomainsPerSession is 3', async () => {
+    const { getMaxDomainsPerSession } = await loader();
+    expect(getMaxDomainsPerSession()).toBe(3);
+  });
+});
+
+// ── JSONC comment stripping ───────────────────────────────────────────────
+
+describe('JSONC comment handling', () => {
+  test('line comments are stripped correctly', async () => {
+    writeDomainsConfig(`{
+      // This is a comment
+      "definitions": {
+        "backend": {
+          "description": "Backend services", // inline comment
+          "keywords": ["api", "server"]
+        }
+      }
+    }`);
+    const { loadDomainKeywords } = await loader();
+    const result = loadDomainKeywords();
+    expect(result['backend']).toEqual(['api', 'server']);
+  });
+
+  test('block comments are stripped correctly', async () => {
+    writeDomainsConfig(`{
+      /* block comment */
+      "definitions": {
+        "frontend": {
+          "description": "Frontend",
+          "keywords": ["react", "css"]
+        }
+      }
+    }`);
+    const { loadDomainKeywords } = await loader();
+    expect(loadDomainKeywords()['frontend']).toEqual(['react', 'css']);
+  });
+
+  test('URLs with // in string values are preserved', async () => {
+    writeDomainsConfig(`{
+      "definitions": {
+        "backend": {
+          "description": "See https://example.com/docs for reference",
+          "keywords": ["api", "http://internal", "service"]
+        }
+      }
+    }`);
+    const { loadDomainKeywords, loadDomainDescriptions } = await loader();
+    expect(loadDomainKeywords()['backend']).toEqual(['api', 'http://internal', 'service']);
+    expect(loadDomainDescriptions()['backend']).toBe('See https://example.com/docs for reference');
+  });
+
+  test('trailing commas in objects and arrays are handled', async () => {
+    writeDomainsConfig(`{
+      "definitions": {
+        "backend": {
+          "description": "Backend",
+          "keywords": ["api", "server",],
+        },
       },
-    }));
-  });
-  afterEach(cleanup);
-
-  test('missing fields fall back to defaults', async () => {
-    const { loadDomainsConfig, _resetCache } = await freshImport();
-    _resetCache();
-    const config = loadDomainsConfig();
-    expect(config.projectMapping).toEqual([]);
-    expect(config.excludedProjects).toEqual([]);
-    expect(config.maxDomainsPerSession).toBe(3);
-    expect(Object.keys(config.definitions)).toEqual(['devops']);
-  });
-});
-
-// ── JSONC with comments (real-world starter file format) ─────────────────────
-
-describe('JSONC with comments', () => {
-  beforeEach(() => {
-    setup();
-    writeFileSync(join(tmpDir, 'config', 'domains.jsonc'), `
-// Domain config with comments
-{
-  // The definitions
-  "definitions": {
-    "backend": {
-      "description": "Backend services",
-      "keywords": ["api", "server"],
-    },
-  },
-  /* block comment */
-  "maxDomainsPerSession": 2,
-}
-`);
-  });
-  afterEach(cleanup);
-
-  test('loads JSONC with line comments, block comments, and trailing commas', async () => {
-    const { loadDomainsConfig, _resetCache } = await freshImport();
-    _resetCache();
-    const config = loadDomainsConfig();
-    expect(config.definitions.backend.keywords).toEqual(['api', 'server']);
-    expect(config.maxDomainsPerSession).toBe(2);
-  });
-});
-
-// ── Cache behavior ───────────────────────────────────────────────────────────
-
-describe('caching', () => {
-  beforeEach(() => {
-    setup();
-    writeFileSync(join(tmpDir, 'config', 'domains.jsonc'), JSON.stringify({
-      definitions: { a: { description: 'A', keywords: ['a'] } },
-      maxDomainsPerSession: 7,
-    }));
-  });
-  afterEach(cleanup);
-
-  test('returns same object on repeated calls (cache hit)', async () => {
-    const { loadDomainsConfig, _resetCache } = await freshImport();
-    _resetCache();
-    const first = loadDomainsConfig();
-    const second = loadDomainsConfig();
-    expect(first).toBe(second);
-  });
-
-  test('_resetCache forces re-read', async () => {
-    const { loadDomainsConfig, _resetCache } = await freshImport();
-    _resetCache();
-    const first = loadDomainsConfig();
-    expect(first.maxDomainsPerSession).toBe(7);
-
-    writeFileSync(join(tmpDir, 'config', 'domains.jsonc'), JSON.stringify({
-      definitions: {},
-      maxDomainsPerSession: 10,
-    }));
-    _resetCache();
-    const second = loadDomainsConfig();
-    expect(second.maxDomainsPerSession).toBe(10);
-    expect(first).not.toBe(second);
+    }`);
+    const { loadDomainKeywords } = await loader();
+    expect(loadDomainKeywords()['backend']).toEqual(['api', 'server']);
   });
 });

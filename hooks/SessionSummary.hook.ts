@@ -52,6 +52,7 @@ import { writeFileSync, existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { getISOTimestamp } from './lib/time';
 import { setTabState, cleanupKittySession } from './lib/tab-setter';
+import { readRegistry, writeRegistry } from './lib/prd-utils';
 
 const BASE_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 const MEMORY_DIR = join(BASE_DIR, 'MEMORY');
@@ -119,6 +120,45 @@ function clearSessionWork(sessionId?: string): void {
   }
 }
 
+/** Write lifecycle.endedAt, durationMs, exitStatus, and session_end event to work.json */
+function closeSessionLifecycle(sessionId: string): void {
+  try {
+    const registry = readRegistry();
+    const now = new Date().toISOString();
+    let found = false;
+
+    for (const [slug, session] of Object.entries(registry.sessions) as [string, any][]) {
+      if (session.sessionUUID !== sessionId) continue;
+      if (session.phase === 'complete') continue;
+
+      const lifecycle = session.lifecycle || {};
+      const startedAt = lifecycle.startedAt || session.started;
+      const durationMs = startedAt ? Date.now() - new Date(startedAt).getTime() : undefined;
+
+      registry.sessions[slug].lifecycle = {
+        ...lifecycle,
+        endedAt: now,
+        ...(durationMs !== undefined ? { durationMs } : {}),
+        exitStatus: 'completed',
+      };
+
+      const events: any[] = session.events || [];
+      events.push({ type: 'session_end', at: now });
+      registry.sessions[slug].events = events.slice(-100);
+
+      found = true;
+      break;
+    }
+
+    if (found) {
+      writeRegistry(registry);
+      console.error('[SessionSummary] Closed session lifecycle in work.json');
+    }
+  } catch (err) {
+    console.error(`[SessionSummary] lifecycle close error: ${err}`);
+  }
+}
+
 async function main() {
   try {
     // Read input from stdin with timeout — SessionEnd hooks may receive
@@ -140,6 +180,9 @@ async function main() {
     // Mark work as complete and clear state
     // NOTE: Does NOT write to SESSIONS/ - WORK/ is the primary system
     clearSessionWork(sessionId);
+
+    // Close lifecycle tracking in work.json (v5.8)
+    if (sessionId) closeSessionLifecycle(sessionId);
 
     // Reset Kitty tab to neutral styling — no lingering colored backgrounds
     try {

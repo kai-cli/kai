@@ -1,5 +1,5 @@
 ---
-name: PAIUpgrade
+name: KAIUpgrade
 description: Extract system improvements from content AND monitor external sources (Anthropic ecosystem, YouTube). USE WHEN upgrade, improve system, system upgrade, analyze for improvements, check Anthropic, Anthropic changes, new Claude features, check YouTube, new videos. SkillSearch('upgrade') for docs.
 context: fork
 ---
@@ -7,18 +7,18 @@ context: fork
 ## Customization
 
 **Before executing, check for user customizations at:**
-`~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/PAIUpgrade/`
+`~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/KAIUpgrade/`
 
 If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
 
 2. **Output text notification**:
    ```
-   Running the **WorkflowName** workflow in the **PAIUpgrade** skill to ACTION...
+   Running the **WorkflowName** workflow in the **KAIUpgrade** skill to ACTION...
    ```
 
 **This is not optional. Execute this curl command immediately upon skill invocation.**
 
-# PAIUpgrade Skill
+# KAIUpgrade Skill
 
 **Primary Purpose:** Generate prioritized upgrade recommendations for the user's existing PAI setup by understanding their context and discovering what's new in the ecosystem.
 
@@ -102,7 +102,7 @@ These fix gaps, security issues, or unlock capabilities that PAI should already 
 
 ### 🟠 HIGH — Integrate this week
 
-These significantly improve PAI's capabilities or efficiency.
+These significantly improve KAI's capabilities or efficiency.
 
 | # | Recommendation | PAI Relevance | Effort | Files Affected |
 |---|---------------|---------------|--------|----------------|
@@ -140,7 +140,7 @@ Full extracted techniques for reference. Each recommendation above maps to one o
 [Describe the technique itself - what it does, how it works, what capability it provides. Must be 16-32 words, concrete and specific.]
 
 **How It Helps PAI (16-32 words):**
-[Describe the specific benefit to our PAI system - which component improves, what gap it fills, what becomes possible. Must be 16-32 words.]
+[Describe the specific benefit to our KAI system - which component improves, what gap it fills, what becomes possible. Must be 16-32 words.]
 
 **The Technique:**
 > [Exact code pattern, configuration, or approach - quoted or code-blocked]
@@ -282,7 +282,7 @@ Launch **parallel agents** to analyze:
 - User's current focus areas and priorities
 - Active projects and their tech stacks
 - Recent work patterns and themes
-- PAI system state and existing capabilities
+- KAI system state and existing capabilities
 
 ### Thread 2: Source Collection
 
@@ -294,7 +294,7 @@ Launch **parallel agents** to check:
 |-------|-------|---------|
 | **Anthropic Agent** | Official Anthropic updates | `Tools/Anthropic.ts` (30+ sources) |
 | **YouTube Agent** | Configured channels for new videos | USER customization channels |
-| **Custom Source Agent** | Any USER-defined additional sources | USER/SKILLCUSTOMIZATIONS/PAIUpgrade/ |
+| **Custom Source Agent** | Any USER-defined additional sources | USER/SKILLCUSTOMIZATIONS/KAIUpgrade/ |
 
 **Output:** A collection of discoveries:
 - New features, releases, changes from Anthropic
@@ -348,7 +348,7 @@ From PROJECTS and recent work, identify:
 ## Thread 2: Source Collection (3 parallel agents)
 
 ### Agent 1: Anthropic Sources
-Run: bun ~/.claude/skills/PAIUpgrade/Tools/Anthropic.ts
+Run: bun ~/.claude/skills/KAIUpgrade/Tools/Anthropic.ts
 Check all 30+ official sources for updates
 
 ### Agent 2: YouTube Channels
@@ -391,7 +391,7 @@ Generate the prioritized recommendations report (see format above).
 - `State/last-check.json` - Anthropic state
 - `State/youtube-videos.json` - YouTube state
 
-**User Customizations** (`~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/PAIUpgrade/`):
+**User Customizations** (`~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/KAIUpgrade/`):
 - `EXTEND.yaml` - Extension manifest
 - `youtube-channels.json` - User's personal YouTube channels
 - Additional source definitions
@@ -464,7 +464,7 @@ These output patterns are **FAILURES**. If you produce these, you have not compl
 | "Several videos covered AI agents" | Count without content | "[N] videos skipped - no extractable techniques" |
 | "This helps because it improves things" | Vague benefit, no word count | "How It Helps PAI (16-32 words): Our SecurityValidator currently only blocks commands. This technique enables injecting reasoning context before tool execution, making security decisions more nuanced." |
 | "A new hook feature" | No description of what it IS | "What It Is (16-32 words): PreToolUse hooks can return additionalContext that gets injected into the model's context before execution, enabling reasoning-based decisions rather than binary blocks." |
-| "Top 3 Actions" or flat recommendation list | No priority tiers — everything looks equally important | Recommendations section with 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW tiers, each with PAI Relevance column |
+| "Top 3 Actions" or flat recommendation list | No priority tiers — everything looks equally important | Recommendations section with 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW tiers, each with KAI Relevance column |
 | Recommendations at the bottom of the report | Actionable items buried after technique dump | 🔥 Recommendations section appears FIRST, technique details are reference material below |
 
 **The test:** If you can say "show me the technique" and there's nothing to show, you've failed.
@@ -473,4 +473,4 @@ These output patterns are **FAILURES**. If you produce these, you have not compl
 
 ---
 
-**This skill embodies PAI's commitment to continuous, personalized improvement - understanding YOU first, then discovering what's new, then EXTRACTING the actual techniques that matter to your system.**
+**This skill embodies KAI's commitment to continuous, personalized improvement - understanding YOU first, then discovering what's new, then EXTRACTING the actual techniques that matter to your system.**

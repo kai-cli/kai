@@ -89,15 +89,16 @@ describe('sanitizePromptForNaming', () => {
 // ── extractFallbackName ───────────────────────────────────────────────────────
 
 describe('extractFallbackName', () => {
-  test('returns a 4-word name from meaningful content', () => {
-    const name = extractFallbackName('implement authentication system for users');
+  test('returns a name from content with priority words (proper nouns, versions, acronyms)', () => {
+    const name = extractFallbackName('implement OAuth2 authentication for React users');
     expect(name).not.toBeNull();
     const words = name!.split(' ');
-    expect(words).toHaveLength(4);
+    expect(words.length).toBeGreaterThanOrEqual(2);
+    expect(words.length).toBeLessThanOrEqual(4);
   });
 
-  test('capitalizes each word', () => {
-    const name = extractFallbackName('refactor authentication middleware pipeline');
+  test('capitalizes each word (non-acronym)', () => {
+    const name = extractFallbackName('refactor AuthService middleware Pipeline');
     expect(name).not.toBeNull();
     for (const word of name!.split(' ')) {
       expect(word[0]).toBe(word[0].toUpperCase());
@@ -105,30 +106,40 @@ describe('extractFallbackName', () => {
   });
 
   test('returns null for all-noise input', () => {
-    // All words in NOISE_WORDS
     const name = extractFallbackName('the a an it');
     expect(name).toBeNull();
   });
 
-  test('pads to 4 words when fewer meaningful words exist', () => {
-    const name = extractFallbackName('authentication');
+  test('returns name for all-lowercase task text with meaningful words', () => {
+    const name = extractFallbackName('implement authentication system for users');
     expect(name).not.toBeNull();
-    expect(name!.split(' ')).toHaveLength(4);
+    expect(name).toContain('Authentication');
+  });
+
+  test('single priority word produces null (needs at least 2 combined)', () => {
+    const name = extractFallbackName('OAuth2');
+    expect(name).toBeNull();
+  });
+
+  test('two meaningful words with priority signal produces a name', () => {
+    const name = extractFallbackName('AWS authentication middleware');
+    expect(name).not.toBeNull();
+    const words = name!.split(' ');
+    expect(words.length).toBeGreaterThanOrEqual(2);
+    expect(words.length).toBeLessThanOrEqual(4);
   });
 
   test('deduplicates repeated words', () => {
-    const name = extractFallbackName('deploy deploy deploy deployment service');
+    const name = extractFallbackName('Deploy Deploy Deploy v2.0 service');
     expect(name).not.toBeNull();
     const words = name!.split(' ');
     const lower = words.map(w => w.toLowerCase());
-    // deploy should appear at most once
     expect(lower.filter(w => w === 'deploy').length).toBeLessThanOrEqual(1);
   });
 
   test('filters out short words (< 3 chars)', () => {
-    const name = extractFallbackName('fix an authentication bug in system');
+    const name = extractFallbackName('fix an AuthService bug in System');
     expect(name).not.toBeNull();
-    // 'an' and 'in' are too short; result should use authentication, bug, system
     expect(name!.toLowerCase()).not.toContain(' an ');
     expect(name!.toLowerCase()).not.toContain(' in ');
   });

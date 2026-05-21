@@ -31,20 +31,20 @@ describe('isIndexAvailable', () => {
 
 describe('isKnowledgePath', () => {
   it('recognizes MEMORY/ paths as knowledge', () => {
-    expect(isKnowledgePath('/Users/you/.claude/MEMORY/KNOWLEDGE/firmware.md')).toBe(true);
+    expect(isKnowledgePath('/Users/user/.claude/MEMORY/KNOWLEDGE/firmware.md')).toBe(true);
   });
 
   it('recognizes Knowledge/ paths as knowledge', () => {
-    expect(isKnowledgePath('/Users/you/Projects/Knowledge/networking.md')).toBe(true);
+    expect(isKnowledgePath('/Users/user/Projects/Knowledge/networking.md')).toBe(true);
   });
 
   it('rejects source code paths', () => {
-    expect(isKnowledgePath('/Users/you/Projects/kai/hooks/LoadContext.hook.ts')).toBe(false);
-    expect(isKnowledgePath('/Users/you/Projects/kai/src/index.ts')).toBe(false);
+    expect(isKnowledgePath('/Users/user/Projects/kai/hooks/LoadContext.hook.ts')).toBe(false);
+    expect(isKnowledgePath('/Users/user/Projects/kai/src/index.ts')).toBe(false);
   });
 
   it('recognizes CONTEXT_ROUTING.md as knowledge', () => {
-    expect(isKnowledgePath('/Users/you/.claude/PAI/CONTEXT_ROUTING.md')).toBe(true);
+    expect(isKnowledgePath('/Users/user/.claude/PAI/CONTEXT_ROUTING.md')).toBe(true);
   });
 });
 

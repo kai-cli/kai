@@ -48,12 +48,44 @@ interface HookInput {
 }
 
 const SESSION_NAMES_PATH = paiPath('MEMORY', 'STATE', 'session-names.json');
+const SESSION_LOCKED_PATH = paiPath('MEMORY', 'STATE', 'session-names-locked.json');
 const LOCK_PATH = SESSION_NAMES_PATH + '.lock';
 const LOCK_TIMEOUT = 3000;  // 3s max wait
 const LOCK_STALE = 10000;   // 10s = stale lock
 
 interface SessionNames {
   [sessionId: string]: string;
+}
+
+interface SessionLocked {
+  [sessionId: string]: boolean;
+}
+
+function readSessionLocked(): SessionLocked {
+  try {
+    if (existsSync(SESSION_LOCKED_PATH)) {
+      return JSON.parse(readFileSync(SESSION_LOCKED_PATH, 'utf-8'));
+    }
+  } catch {}
+  return {};
+}
+
+function writeSessionLocked(locked: SessionLocked): void {
+  const dir = dirname(SESSION_LOCKED_PATH);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  const tmpPath = SESSION_LOCKED_PATH + '.tmp.' + process.pid;
+  writeFileSync(tmpPath, JSON.stringify(locked, null, 2), 'utf-8');
+  renameSync(tmpPath, SESSION_LOCKED_PATH);
+}
+
+function markSessionLocked(sessionId: string): void {
+  const locked = readSessionLocked();
+  locked[sessionId] = true;
+  writeSessionLocked(locked);
+}
+
+function isSessionLocked(sessionId: string): boolean {
+  return readSessionLocked()[sessionId] === true;
 }
 
 /** Acquire mkdir-based lock (atomic on POSIX). Returns true if acquired. */
@@ -118,28 +150,23 @@ function writeSessionNames(names: SessionNames): void {
   renameSync(tmpPath, SESSION_NAMES_PATH);
 }
 
-const NAME_PROMPT = `You are naming a work session. Generate an EXACTLY 4-word title that reads like a short news headline or task description.
+const NAME_PROMPT = `Name this work session in 2-4 words. The name should tell someone at a glance what this session is about.
 
-Think: "What is the single most important thing being worked on? Describe it in 4 words like a newspaper headline."
+Think: "If I saw this on a dashboard with 5 other sessions, would I instantly know what work is happening here?"
 
 RULES:
-1. EXACTLY 4 words in Title Case. Every word must be a real English word (3+ letters).
-2. Must describe the SPECIFIC action or task — verbs are encouraged. "Fix Session Name Generation" beats "Session Name Generation Thing".
-3. Use the user's intent, not just their literal words — infer what they're actually trying to do.
-4. No articles (a/an/the). Verbs, nouns, adjectives all welcome.
-5. Prefer concrete specifics: system names, feature names, what's being fixed/built/changed.
-6. Ignore technical noise (IDs, paths, XML, hex codes). Name the TASK, not the artifacts.
+1. 2-4 words MAX. Prefer 2-3.
+2. Name the SUBJECT or GOAL, not actions. "Memory System" not "Check Memory". "PR #4 Review" not "Review This PR".
+3. Use proper nouns when present: project names, tool names, repo names, feature names.
+4. Preserve casing: MCP not Mcp, PAI not Pai, iTerm not Iterm, GitHub not Github.
+5. Strip ALL filler — "ok so let's", "go ahead with", "i want to" contribute nothing.
+6. EVERY prompt has a topic. "check memory" → "Memory Check". "fix the build" → "Build Fix". "where is our PAT" → "GitHub PAT". Only output "New Session" for literal greetings with zero content ("hi", "hey", "hello").
+7. NEVER produce noun soup — every word must be necessary. "Plan Candidate List Deferred" is 4 unrelated nouns. "v5.7 Planning" is clear.
 
-GOOD examples (headline-style, specific, verb-forward):
-"Fix Session Name Generation", "Deploy Voice Server Update", "Debug Surface Filter Bar", "Upgrade Browser Automation System", "Session Naming System Broken", "Voice Phase Announcement Fix", "Label Scoring Algorithm Update", "Surface Deploy Button Missing", "Feed Pipeline Processing Error", "Algorithm ISC Quality Gate"
+GOOD: "KAI Board", "GitHub PAT", "TR-369 Cert", "Feed BBF PR", "v5.8 Release", "MCP Auth Fix", "Session Naming"
+BAD: "Plan Candidate List Deferred" (noun soup), "Analyzing Input" (LLM action), "New Session" (lazy — find the topic)
 
-BAD examples (too vague or word-salad):
-"Through Different Discussions Ones" (random words), "I'm Not Going" (fragment), "Else Session" (meaningless), "Things Need Fixing Now" (generic)
-
-BAD examples (too short or wrong count):
-"Dashboard Redesign" (2 words), "Voice Server Fix" (3 words)
-
-Output ONLY the 4-word title. Nothing else.`;
+Output ONLY the name. Nothing else.`;
 
 // ── Lightweight mode classification (same logic as RatingCapture, zero-cost) ──
 const ALGO_ACTION_RE = /\b(implement|build|create|architect|design|migrate|deploy|refactor)\b/i;
@@ -152,9 +179,9 @@ const NOISE_WORDS = new Set([
   'the', 'a', 'an', 'i', 'my', 'we', 'you', 'your', 'this', 'that', 'it',
   'is', 'are', 'was', 'were', 'do', 'does', 'did', 'can', 'could', 'should',
   'would', 'will', 'have', 'has', 'had', 'just', 'also', 'need', 'want',
-  'please', 'session', 'help', 'work', 'task', 'update', 'new', 'check',
-  'make', 'get', 'set', 'put', 'use', 'run', 'try', 'let', 'see', 'look',
-  'fix', 'add', 'create', 'build', 'deploy', 'code', 'read', 'write',
+  'please', 'session', 'help', 'work', 'task', 'new',
+  'make', 'get', 'set', 'put', 'use', 'try', 'let', 'see', 'look',
+  'add',
   'thing', 'things', 'something', 'going', 'like', 'know', 'think', 'right',
   'whatever', 'current', 'really', 'actually', 'working', 'doing', 'change',
   'what', 'how', 'why', 'when', 'where', 'which', 'who', 'there', 'here',
@@ -212,39 +239,47 @@ export function sanitizePromptForNaming(prompt: string): string {
 }
 
 /**
- * Deterministic fallback: extract the 4 most meaningful nouns from the prompt.
- * Produces a 4-word Topic Case name. If fewer than 4 meaningful words exist,
- * pads with generic context words to always hit exactly 4.
+ * Deterministic fallback: extract the topic from the prompt.
+ * Prioritizes proper nouns and technical terms over generic words.
+ * This is a temporary placeholder — inference upgrade replaces it within seconds.
  */
 export function extractFallbackName(prompt: string): string | null {
-  const words = prompt
-    .replace(/[^a-zA-Z\s]/g, ' ')
+  const rawWords = prompt
+    .replace(/[^a-zA-Z0-9\s.-]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length >= 3 && !NOISE_WORDS.has(w.toLowerCase()));
+    .map(w => w.replace(/^[.-]+|[.-]+$/g, ''))
+    .filter(w => w.length >= 2);
 
-  if (words.length === 0) return null;
+  if (rawWords.length === 0) return null;
 
-  // Deduplicate while preserving order
+  const priority: string[] = [];
+  const regular: string[] = [];
   const seen = new Set<string>();
-  const unique: string[] = [];
-  for (const w of words) {
+
+  for (let i = 0; i < rawWords.length && priority.length + regular.length < 6; i++) {
+    const w = rawWords[i];
     const lower = w.toLowerCase();
-    if (!seen.has(lower)) {
-      seen.add(lower);
-      unique.push(w);
+    if (seen.has(lower) || NOISE_WORDS.has(lower)) continue;
+    seen.add(lower);
+
+    // High priority: proper nouns (mid-sentence caps), technical terms, version strings, acronyms
+    if (/^v\d/.test(w) || /^[A-Z]{2,}/.test(w) || /\d/.test(w) || /^[a-z]+[A-Z]/.test(w)) {
+      priority.push(w);
+    } else if (i > 0 && /^[A-Z][a-z]{2,}/.test(w)) {
+      priority.push(w);
+    } else if (w.length >= 3) {
+      regular.push(w);
     }
-    if (unique.length >= 4) break;
   }
 
-  // Pad to 4 words if we don't have enough
-  const PAD_WORDS = ['Session', 'Work', 'Task', 'Context'];
-  while (unique.length < 4) {
-    const pad = PAD_WORDS[unique.length - 1] || 'Session';
-    unique.push(pad);
-  }
+  const combined = [...priority, ...regular].slice(0, 4);
+  if (combined.length < 2) return null;
 
-  return unique.slice(0, 4)
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+  return combined
+    .map(w => {
+      if (/^[A-Z]{2,}/.test(w) || /^v\d/.test(w) || /\d/.test(w)) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
     .join(' ');
 }
 
@@ -387,13 +422,22 @@ async function upgradeWithInference(sessionId: string, promptB64: string, expect
         .replace(/[.!?,;:]/g, '')
         .trim();
 
-      const words = label.split(/\s+/).slice(0, 4);
+      const words = label.split(/\s+/).slice(0, 5);
       label = words
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .map(w => {
+          // Preserve all-caps acronyms (MCP, PAI, KAI, API, UI, etc.)
+          if (/^[A-Z]{2,}$/.test(w)) return w;
+          // Preserve version strings (v5.8, v2, etc.)
+          if (/^v\d/.test(w)) return w;
+          // Preserve camelCase / mixed-case proper nouns (iTerm, GitHub, etc.)
+          if (/[a-z][A-Z]/.test(w)) return w;
+          // Capitalize first letter only — don't lowercase the rest
+          return w.charAt(0).toUpperCase() + w.slice(1);
+        })
         .join(' ');
 
-      const allWordsSubstantial = words.every(w => w.length >= 3);
-      if (label && words.length === 4 && allWordsSubstantial) {
+      const allWordsSubstantial = words.every(w => w.length >= 2);
+      if (label && words.length >= 2 && words.length <= 5 && allWordsSubstantial) {
         // Locked version-guarded write
         const locked = acquireLock();
         if (!locked) console.error('[SessionAutoName] Lock timeout on upgrade');
@@ -413,7 +457,10 @@ async function upgradeWithInference(sessionId: string, promptB64: string, expect
         const cacheContent = `cached_session_id='${sessionId}'\ncached_session_label='${label}'\n`;
         const cachePath = paiPath('MEMORY', 'STATE', 'session-name-cache.sh');
         writeFileSync(cachePath, cacheContent, 'utf-8');
-        console.error(`[SessionAutoName] Background upgrade: "${label}"`);
+        // Lock the name — inference has set a good name, don't drift from here
+        markSessionLocked(sessionId);
+        updateSessionNameInWorkJson(sessionId, label);
+        console.error(`[SessionAutoName] Background upgrade: "${label}" (locked)`);
       } else {
         console.error(`[SessionAutoName] Background upgrade rejected: "${result.output}"`);
       }
@@ -501,14 +548,47 @@ async function main() {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // SUBSEQUENT PROMPTS: Name already exists — only sync /rename
-  // The name is set once on the first prompt. After that, the only
-  // thing that can change it is an explicit /rename command.
+  // SUBSEQUENT PROMPTS: Name already exists
+  // - /rename override always wins
+  // - "New Session" locked names get re-upgraded with the new prompt
+  // - Otherwise just bump updatedAt
   // ══════════════════════════════════════════════════════════════════
 
+  // /rename always wins — it's an explicit user override, clears lock
   const customTitle = getCustomTitle(sessionId);
   if (customTitle && existingNames[sessionId] !== customTitle) {
+    const locked = readSessionLocked();
+    delete locked[sessionId];
+    writeSessionLocked(locked);
     storeName(sessionId, customTitle, 'custom-title');
+  }
+
+  // "New Session" is a useless name — re-attempt inference on subsequent prompts
+  const currentName = existingNames[sessionId] || '';
+  if (currentName === 'New Session' && prompt) {
+    // Unlock and try again with this prompt
+    const locked = readSessionLocked();
+    delete locked[sessionId];
+    writeSessionLocked(locked);
+
+    const fallback = extractFallbackName(prompt);
+    if (fallback) {
+      storeName(sessionId, fallback, 'deterministic-retry');
+    }
+
+    // Spawn background upgrade with the new prompt
+    try {
+      const promptB64 = Buffer.from(prompt.slice(0, 800)).toString('base64');
+      const expectedName = fallback || currentName;
+      const env = { ...process.env };
+      delete env.CLAUDECODE;
+      const child = nodeSpawn('bun', [
+        import.meta.filename,
+        '--upgrade', sessionId, promptB64, expectedName,
+      ], { detached: true, stdio: 'ignore', env });
+      child.unref();
+      console.error('[SessionAutoName] Re-upgrading "New Session" with prompt from turn 2+');
+    } catch {}
   }
 
   // Keep sessions alive in work.json (bump updatedAt on each prompt)

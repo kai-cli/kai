@@ -25,10 +25,10 @@ Progressive learning, adaptive memory, and research expansion.
 ### Changed
 - `skills/Research/Workflows/ExtensiveResearch.md` — updated to 4-5 researcher types (12-15 parallel agents)
 - `hooks/LoadContext.hook.ts` — adds index memory load (Feature A) and instinct decay+surfacing (Feature B) at session start
-- `hooks/SecurityValidator.hook.ts`, `hooks/SecretScanner.hook.ts` — `[PAI SECURITY]` → `[KAI SECURITY]`
-- `hooks/lib/change-detection.ts` — `'PAI System Documentation Updated'` → `'KAI System'`
+- `hooks/SecurityValidator.hook.ts`, `hooks/SecretScanner.hook.ts` — security prefix rebranded to `[KAI SECURITY]`
+- `hooks/lib/change-detection.ts` — system label rebranded to `KAI System`
 - `PAI/Tools/RoutingAudit.ts` — MEM_PREFIX derived from HOME (portable, no hardcoded paths)
-- Manifest updated: 83 skills, 46 hooks, 20 agents
+- Manifest updated: 83 skills, 47 hooks, 20 agents
 - VERSION 5.2.0 → 5.6.0
 - README, QUICKSTART, WHATS-DIFFERENT, releases/README updated to KAI 5.6.0
 
@@ -77,7 +77,7 @@ Knowledge schema foundation, memory search, contradiction detection.
 - Domain-based knowledge injection via `config/domains.jsonc`
 
 ### Changed
-- 627 tests passing
+- 784 tests passing
 
 ---
 
@@ -211,7 +211,7 @@ Initial public release of KAI (Kaizen AI).
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
 - **83 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
-- **46 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
+- **47 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation
 - **Security hooks** — SecretScanner, GitHubWriteGuard, SecurityValidator

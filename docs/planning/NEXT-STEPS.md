@@ -10,6 +10,11 @@
 
 | Release | Date | Highlights |
 |---------|------|-----------|
+| **v5.8.0** | 2026-05-21 | Adapter architecture, session lifecycle, name locking, release hardening (PR #4 cherry-picks), board session naming fix |
+| **v5.7.0** | 2026-05-21 | Instinct pipeline maturation, marker regions, verify-release enhancements |
+| **v5.6.0** | 2026-05-20 | Progressive disclosure memory, instinct learning, embedding fallback, MistralResearcher + DeepSeekResearcher, 724 tests |
+| **v5.5.0** | 2026-05-19 | KnowledgeHealth, AutoConsolidate, ContradictionDetector, MemorySearch, WikiQuery, 661 tests |
+| **v5.4.0** | 2026-05-18 | Knowledge schema foundation, domain-based injection, 627 tests |
 | **v5.3.0** | 2026-05-15 | PlanApprovalGuard, deliberate research mode, /end skill, hook testability (SkillGuard, LocalContextFirst, PreCompact exports), BuildSettings shape validation, stale PRD nudge, 529/549 tests, kai first public release |
 | **v5.2.0** | 2026-04-30 | Foundation completion: ESM conversions, version gate, KnowledgeHarvester→config-loader, 5 new hook tests (437 total), ReadTracker, RoutingCandidates, RoutingAudit propose, BuildSettings --dry-run, memory cleanup (302MB→18MB), WISDOM/FRAMES curated, 16-project domain mapping, LearningPatternSynthesis wired |
 | **v5.1.0** | 2026-04-29 | Algorithm archive, config-loader, knowledge-readback migration, skill count fix (41→79), PAI/skills/PAI guard, deploy.ts version from manifest, archetype installer, 376 tests |
@@ -57,18 +62,51 @@ SessionCloseGuard and memory scoring model deferred to v5.6.
 
 ---
 
-## Next: v5.6.0 — TBD
+## v5.6.0 — SHIPPED (2026-05-20)
 
-Candidates: SessionCloseGuard, memory scoring model, GPT Responses API for deliberate,
-`pai security` CLI, KAI sync (v5.4+v5.5 cherry-pick).
+See `docs/planning/v5.6.0-PLAN.md` for full detail. All phases complete.
+Progressive disclosure memory (3-layer), instinct-based learning, embedding fallback,
+MistralResearcher + DeepSeekResearcher, ExtensiveResearch 4-5 types, MemoryRecall hook wired.
+724 tests (kai), 744 tests (kai). Both repos synced and pushed.
+
+---
+
+## v5.7.0 — SHIPPED (2026-05-21)
+
+Instinct pipeline maturation: marker-aware count regions across docs, verify-release enhancements,
+session lifecycle tracking, manifest version sync. 749 tests.
+
+---
+
+## v5.8.0 — SHIPPED (2026-05-21)
+
+Adapter architecture for terminal integration, session name locking (inference sets once, no drift),
+release hardening cherry-picks from PR #4 (dead-link checker, marker-aware counts, manifest brand gate,
+preferences.jsonc brand transform in sync-to-kai). Board session naming fix (no more "New Session").
+755 tests.
+
+---
+
+## Next: v5.9.0 — TBD
+
+**Theme:** TBD.
+
+See `docs/planning/v5.7.0-PLAN.md` for full detail.
+
+| # | Feature | Est. LOC |
+|---|---------|----------|
+| 1 | Semantic instinct dedup (embeddings) | ~60 |
+| 2 | Instinct file-revert detection (session write ledger) | ~120 |
+| 4 | /evolve embedding-based clustering | ~100 |
 
 ---
 
 ## Backlog (unversioned)
 
 ### Quality & Reliability
-- [ ] SessionCloseGuard.hook.ts — natural-language exit detection. Fires on UserPromptSubmit (async), matches explicit exit phrases ("ok we're done", "wrapping up", etc.) and optionally implicit short acknowledgments (≤8 words, ≥10 turns). Injects session-close context so Claude produces a closing summary. Builds on `/end` skill experience. Design in v5.3.0-PLAN.md A2 section (preserved). ~70 LOC + 10 tests.
-- [ ] GPT web search via Responses API — `invokeOpenAIResponses()` function for `deliberate.ts`. Chat Completions (`/v1/chat/completions`) doesn't support `web_search_preview`; needs `/v1/responses` endpoint with different request shape (`input` string, `output[]` response). ~40 LOC. Adds a third grounded source alongside Gemini and Grok.
+- [ ] SessionCloseGuard.hook.ts — natural-language exit detection. Fires on UserPromptSubmit (async), matches explicit exit phrases ("ok we're done", "wrapping up", etc.) and optionally implicit short acknowledgments (≤8 words, ≥10 turns). Injects session-close context so Claude produces a closing summary. Builds on `/end` skill experience. Design in v5.3.0-PLAN.md A2 section (preserved). ~70 LOC + 10 tests. *Deferred from v5.7 — `/end` covers the explicit case; auto-detection adds false-positive risk.*
+- [ ] GPT web search via Responses API — `invokeOpenAIResponses()` function for `deliberate.ts`. Chat Completions (`/v1/chat/completions`) doesn't support `web_search_preview`; needs `/v1/responses` endpoint with different request shape (`input` string, `output[]` response). ~40 LOC. Adds a third grounded source alongside Gemini and Grok. *Deferred from v5.7 — diminishing returns (Gemini + Grok already grounded).*
+- [ ] Auto-reindex external Knowledge/ paths — Detect stale embedding index at session start, trigger incremental reindex in background. Currently manual (`bun scripts/EmbeddingIndex.ts --incremental`). *Deferred from v5.7 — solve when stale index causes visible problems.*
 - [ ] PostToolUse code quality gate — lint/syntax detection after edits
 - [ ] Agent context seeding — auto-inject prior ResearchIndex findings into spawned agents
 - [ ] Confidence calibration — track approval rate, adjust draft thresholds

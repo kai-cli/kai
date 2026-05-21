@@ -20,6 +20,8 @@ import { watch, existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { readdir, readFile, writeFile, stat } from "fs/promises";
 import { join, resolve, basename, dirname } from "path";
 import { spawn, type Subprocess } from "bun";
+import { createAdapter, type TerminalAdapter } from "./adapters/terminal";
+import { MarkdownLoader } from "./loaders/markdown";
 
 const HOME = process.env.HOME!;
 const SCRIPTS_DIR = dirname(new URL(import.meta.url).pathname);
@@ -29,11 +31,13 @@ const CONFIG_PATH = join(SCRIPTS_DIR, "board-config.json");
 interface BoardConfig {
   port: number;
   scanDirs: string[];
+  workRoot: string;
   projectsDir: string;
   autoDiscover: boolean;
   ignored: string[];
   library: LibraryItem[];
   archived: string[];
+  terminal: string;
   ralphLoop: { defaultBudget: number; defaultMaxIterations: number; defaultModel: string };
   docker: { enabled: boolean; image: string; memoryLimit: string; cpuLimit: string; timeout: number };
 }
@@ -55,11 +59,13 @@ function loadConfig(): BoardConfig {
   const defaults: BoardConfig = {
     port: 3333,
     scanDirs: ["~/.claude/MEMORY/WORK"],
+    workRoot: "~/.claude/MEMORY/WORK",
     projectsDir: "~/Projects",
     autoDiscover: true,
     ignored: ["node_modules", ".git", "__pycache__", ".venv", "Personal"],
     library: [],
     archived: [],
+    terminal: "iterm",
     ralphLoop: { defaultBudget: 5, defaultMaxIterations: 5, defaultModel: "opus" },
     docker: { enabled: true, image: "oven/bun:latest", memoryLimit: "2g", cpuLimit: "2.0", timeout: 1800 },
   };
@@ -85,8 +91,18 @@ const PORT = portIdx >= 0 ? parseInt(args[portIdx + 1]) : config.port;
 
 // Resolve scan dirs
 const SCAN_DIRS = config.scanDirs.map(expandPath);
+const WORK_ROOT = expandPath(config.workRoot || config.scanDirs[0] || "~/.claude/MEMORY/WORK");
 const PROJECTS_DIR = expandPath(config.projectsDir);
 const STATE_DIR = join(HOME, ".claude", "MEMORY", "STATE");
+
+// Initialize terminal adapter
+let terminalAdapter: TerminalAdapter;
+createAdapter(config.terminal || "iterm").then(a => { terminalAdapter = a; }).catch(() => {
+  createAdapter("iterm").then(a => { terminalAdapter = a; });
+});
+
+// Work loader (initialized after broadcastUpdate is defined below)
+let workLoader: MarkdownLoader;
 
 // --- Types ---
 interface WorkItem {
@@ -144,59 +160,30 @@ function parseCriteria(content: string): { id: string; text: string; passed: boo
   return criteria;
 }
 
-// --- Work Items Loader ---
-async function scanDirectory(scanDir: string, items: WorkItem[]): Promise<void> {
-  try {
-    const dirs = await readdir(scanDir);
-    for (const dir of dirs) {
-      if (dir === "decisions" || dir.startsWith(".")) continue;
-      const prdPath = join(scanDir, dir, "PRD.md");
-      try {
-        const content = await readFile(prdPath, "utf-8");
-        const fm = parseFrontmatter(content);
-        if (!fm) continue;
-        const criteria = parseCriteria(content);
-        const progressMatch = fm.progress?.match(/(\d+)\/(\d+)/);
-        const passed = progressMatch ? parseInt(progressMatch[1]) : 0;
-        const updatedStr = fm.updated || fm.started || "";
-        const updatedTime = updatedStr ? new Date(updatedStr).getTime() : 0;
-        const isStale = passed === 0 && updatedTime > 0 && (Date.now() - updatedTime) > 14 * 86_400_000;
-        items.push({
-          slug: fm.slug || dir,
-          task: fm.task || dir,
-          effort: fm.effort || "standard",
-          phase: fm.phase || "observe",
-          passed,
-          total: progressMatch ? parseInt(progressMatch[2]) : 0,
-          mode: fm.mode || "interactive",
-          started: fm.started || "",
-          updated: fm.updated || "",
-          criteria,
-          prdPath,
-          source: basename(dirname(scanDir)),
-          stale: isStale,
-        });
-      } catch { /* skip */ }
-    }
-  } catch { /* skip */ }
-}
+
 
 async function loadWorkItems(): Promise<WorkItem[]> {
-  const items: WorkItem[] = [];
-  const seen = new Set<string>();
-  for (const scanDir of SCAN_DIRS) {
-    await scanDirectory(scanDir, items);
-  }
-  const unique = items.filter((i) => {
-    if (seen.has(i.slug)) return false;
-    seen.add(i.slug);
-    return true;
-  });
-  unique.sort((a, b) => (b.updated || "").localeCompare(a.updated || ""));
-  return unique;
+  return workLoader.loadTasks();
 }
 
 // --- Session Tracking ---
+interface SessionLifecycle {
+  startedAt?: string;
+  endedAt?: string;
+  durationMs?: number;
+  exitStatus?: string;
+  exitReason?: string;
+  commitAtStart?: string;
+}
+
+interface SessionEvent {
+  type: string;
+  at: string;
+  from?: string;
+  to?: string;
+  detail?: string;
+}
+
 interface SessionItem {
   slug: string;
   task: string;
@@ -204,6 +191,16 @@ interface SessionItem {
   sessionUUID?: string;
   startedAt?: string;
   isActive: boolean;
+  sessionName?: string;
+  taskSlug?: string;
+  lifecycle?: SessionLifecycle;
+  events?: SessionEvent[];
+}
+
+async function getActiveSessionUUIDs(): Promise<Set<string>> {
+  if (terminalAdapter) return terminalAdapter.getActiveSessions();
+  // Fallback: return empty set if adapter not yet initialized
+  return new Set<string>();
 }
 
 async function loadSessions(): Promise<SessionItem[]> {
@@ -213,15 +210,7 @@ async function loadSessions(): Promise<SessionItem[]> {
     const data = JSON.parse(raw);
     const sessionsMap = data.sessions || {};
 
-    // Get active Claude PIDs to detect running sessions
-    const activeSessions = new Set<string>();
-    try {
-      const algDir = join(STATE_DIR, "algorithms");
-      const algFiles = await readdir(algDir);
-      for (const f of algFiles) {
-        activeSessions.add(f.replace(".json", ""));
-      }
-    } catch {}
+    const activeSessions = await getActiveSessionUUIDs();
 
     // Only show sessions from last 48 hours (active sessions always shown)
     const cutoff = new Date();
@@ -248,19 +237,136 @@ async function loadSessions(): Promise<SessionItem[]> {
 
       const isActive = activeSessions.has(sess.sessionUUID || "");
 
+      // Prefer sessionName over raw task text — but "New Session" is unhelpful, fall back to task
+      const displayName = (sess.sessionName && sess.sessionName !== 'New Session') ? sess.sessionName : task;
+
       sessions.push({
         slug,
-        task: task.slice(0, 80),
+        task: displayName.slice(0, 80),
         phase: sess.phase || "native",
         sessionUUID: sess.sessionUUID,
         startedAt: slug.slice(0, 4) + "-" + slug.slice(4, 6) + "-" + slug.slice(6, 8) + "T" + slug.slice(9, 11) + ":" + slug.slice(11, 13) + ":00",
         isActive,
+        sessionName: sess.sessionName,
+        taskSlug: sess.taskSlug,
+        lifecycle: sess.lifecycle,
+        events: sess.events,
       });
     }
 
     sessions.sort((a, b) => (b.slug || "").localeCompare(a.slug || ""));
   } catch {}
   return sessions;
+}
+
+// --- GitHub Tracking ---
+interface GitHubItem {
+  repo: string;
+  number: number;
+  title: string;
+  type: "pr" | "issue";
+  state: string;
+  url: string;
+  updatedAt: string;
+  labels: string[];
+}
+
+let ghCache: { items: GitHubItem[]; fetchedAt: number } = { items: [], fetchedAt: 0 };
+const GH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function loadGitHubItems(): Promise<GitHubItem[]> {
+  if (Date.now() - ghCache.fetchedAt < GH_CACHE_TTL) return ghCache.items;
+
+  const items: GitHubItem[] = [];
+
+  try {
+    // PRs authored by user (open, awaiting review/merge)
+    const prProc = spawn({
+      cmd: ["gh", "search", "prs", "--author", "@me", "--state", "open", "--json", "repository,number,title,state,url,updatedAt,labels", "--limit", "20"],
+      stdout: "pipe", stderr: "pipe",
+    });
+    const prOut = await new Response(prProc.stdout).text();
+    await prProc.exited;
+    if (prOut.trim()) {
+      const prs = JSON.parse(prOut);
+      for (const pr of prs) {
+        items.push({
+          repo: pr.repository?.nameWithOwner || pr.repository?.name || "",
+          number: pr.number,
+          title: pr.title,
+          type: "pr",
+          state: "open",
+          url: pr.url || "",
+          updatedAt: pr.updatedAt || "",
+          labels: (pr.labels || []).map((l: any) => l.name || l),
+        });
+      }
+    }
+
+    // Issues assigned to user (open)
+    const issueProc = spawn({
+      cmd: ["gh", "search", "issues", "--assignee", "@me", "--state", "open", "--json", "repository,number,title,state,url,updatedAt,labels", "--limit", "20"],
+      stdout: "pipe", stderr: "pipe",
+    });
+    const issueOut = await new Response(issueProc.stdout).text();
+    await issueProc.exited;
+    if (issueOut.trim()) {
+      const issues = JSON.parse(issueOut);
+      for (const issue of issues) {
+        items.push({
+          repo: issue.repository?.nameWithOwner || issue.repository?.name || "",
+          number: issue.number,
+          title: issue.title,
+          type: "issue",
+          state: "open",
+          url: issue.url || "",
+          updatedAt: issue.updatedAt || "",
+          labels: (issue.labels || []).map((l: any) => l.name || l),
+        });
+      }
+    }
+
+    // Issues user has commented on recently (commenter, not just involved — last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const commentedProc = spawn({
+      cmd: ["gh", "search", "issues", "--commenter", "@me", "--state", "open", "--sort", "updated", "--json", "repository,number,title,state,url,updatedAt,labels", "--limit", "15", "--", `updated:>=${thirtyDaysAgo}`],
+      stdout: "pipe", stderr: "pipe",
+    });
+    const commentedOut = await new Response(commentedProc.stdout).text();
+    await commentedProc.exited;
+    if (commentedOut.trim()) {
+      const commented = JSON.parse(commentedOut);
+      const seen = new Set(items.map(i => `${i.repo}#${i.number}`));
+      for (const issue of commented) {
+        const repo = issue.repository?.nameWithOwner || issue.repository?.name || "";
+        const key = `${repo}#${issue.number}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push({
+          repo,
+          number: issue.number,
+          title: issue.title,
+          type: "issue",
+          state: "commented",
+          url: issue.url || "",
+          updatedAt: issue.updatedAt || "",
+          labels: (issue.labels || []).map((l: any) => l.name || l),
+        });
+      }
+    }
+
+    items.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  } catch {}
+
+  // Filter out extremely stale items (90+ days without activity)
+  const ninetyDaysAgo = Date.now() - 90 * 86400000;
+  const result = items.filter(i => {
+    if (!i.updatedAt) return true;
+    return new Date(i.updatedAt).getTime() > ninetyDaysAgo;
+  });
+
+  ghCache = { items: result, fetchedAt: Date.now() };
+  return result;
 }
 
 // --- Auto-Discovery ---
@@ -319,91 +425,19 @@ async function getLibraryItems(): Promise<LibraryItem[]> {
 
 // --- Task Operations ---
 async function createTask(title: string, description: string, effort: string, mode: string): Promise<string> {
-  const now = new Date();
-  const ts = now.toISOString().replace(/[-:T]/g, "").slice(0, 14);
-  const kebab = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
-  const slug = `${ts}_${kebab}`;
-  const workDir = join(HOME, ".claude", "MEMORY", "WORK", slug);
-  mkdirSync(workDir, { recursive: true });
-
-  const prdContent = `---
-task: ${title}
-slug: ${slug}
-effort: ${effort}
-phase: observe
-progress: 0/0
-mode: ${mode}
-started: ${now.toISOString()}
-updated: ${now.toISOString()}
----
-
-## Context
-
-${description}
-
-## Criteria
-
-## Decisions
-
-## Verification
-`;
-  await writeFile(join(workDir, "PRD.md"), prdContent);
-  broadcastUpdate();
-  return slug;
+  return workLoader.createTask(title, description, effort, mode);
 }
 
 async function updatePhase(slug: string, newPhase: string): Promise<boolean> {
-  const prdPath = await findPrdPath(slug);
-  if (!prdPath) return false;
-  const content = await readFile(prdPath, "utf-8");
-  const updated = content
-    .replace(/^phase: .+$/m, `phase: ${newPhase}`)
-    .replace(/^updated: .+$/m, `updated: ${new Date().toISOString()}`);
-  await writeFile(prdPath, updated);
-  broadcastUpdate();
-  return true;
+  return workLoader.updatePhase(slug, newPhase);
 }
 
 async function toggleCriterion(slug: string, criterionId: string): Promise<boolean> {
-  const prdPath = await findPrdPath(slug);
-  if (!prdPath) return false;
-  let content = await readFile(prdPath, "utf-8");
-
-  const checkedPattern = new RegExp(`^- \\[x\\] ${criterionId}:`, "m");
-  const uncheckedPattern = new RegExp(`^- \\[ \\] ${criterionId}:`, "m");
-
-  if (checkedPattern.test(content)) {
-    content = content.replace(checkedPattern, `- [ ] ${criterionId}:`);
-  } else if (uncheckedPattern.test(content)) {
-    content = content.replace(uncheckedPattern, `- [x] ${criterionId}:`);
-  } else {
-    return false;
-  }
-
-  // Recalculate progress
-  const criteria = parseCriteria(content);
-  const passed = criteria.filter((c) => c.passed).length;
-  content = content
-    .replace(/^progress: .+$/m, `progress: ${passed}/${criteria.length}`)
-    .replace(/^updated: .+$/m, `updated: ${new Date().toISOString()}`);
-
-  await writeFile(prdPath, content);
-  broadcastUpdate();
-  return true;
+  return workLoader.toggleCriterion(slug, criterionId);
 }
 
 async function findPrdPath(slug: string): Promise<string | null> {
-  for (const scanDir of SCAN_DIRS) {
-    try {
-      const dirs = await readdir(scanDir);
-      const dir = dirs.find((d) => d.includes(slug));
-      if (dir) {
-        const p = join(scanDir, dir, "PRD.md");
-        try { await stat(p); return p; } catch {}
-      }
-    } catch {}
-  }
-  return null;
+  return workLoader.findPrd(slug);
 }
 
 function archiveItem(slug: string): void {
@@ -533,6 +567,9 @@ function broadcastUpdate() {
   }
 }
 
+// Initialize work loader (needs broadcastUpdate, so initialized here)
+workLoader = new MarkdownLoader(SCAN_DIRS, WORK_ROOT, new Set(config.archived), broadcastUpdate);
+
 // Watch all scan directories
 try { watch(join(STATE_DIR, "work.json"), () => broadcastUpdate()); } catch {}
 for (const scanDir of SCAN_DIRS) {
@@ -590,6 +627,12 @@ Bun.serve({
       return Response.json(items);
     }
 
+    // --- API: GitHub ---
+    if (url.pathname === "/api/github" && method === "GET") {
+      const items = await loadGitHubItems();
+      return Response.json(items);
+    }
+
     // --- API: PRD Detail ---
     if (url.pathname.startsWith("/api/prd/") && method === "GET") {
       const slug = decodeURIComponent(url.pathname.slice("/api/prd/".length));
@@ -635,6 +678,24 @@ Bun.serve({
       const slug = decodeURIComponent(url.pathname.split("/")[3]);
       unarchiveItem(slug);
       return Response.json({ ok: true });
+    }
+
+    // --- API: Launch Claude Session ---
+    if (url.pathname.match(/^\/api\/task\/[^/]+\/launch$/) && method === "POST") {
+      const slug = decodeURIComponent(url.pathname.split("/")[3]);
+      const prdPath = await findPrdPath(slug);
+      if (!prdPath) return Response.json({ error: "PRD not found" }, { status: 404 });
+      const content = await readFile(prdPath, "utf-8");
+      const fm = parseFrontmatter(content);
+      const task = fm?.task || slug;
+      // Generate the claude command to open in a new terminal
+      const cmd = `claude`;
+      if (terminalAdapter) {
+        await terminalAdapter.launchSession({ workDir: dirname(prdPath), command: cmd, title: task.slice(0, 30) });
+      }
+      // Also update phase to execute
+      await updatePhase(slug, "execute");
+      return Response.json({ ok: true, cmd });
     }
 
     // --- API: Ralph Loop ---

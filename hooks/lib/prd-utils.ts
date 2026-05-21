@@ -167,6 +167,34 @@ export function syncToWorkJson(fm: Record<string, string>, prdPath: string, cont
     phaseHistory[phaseHistory.length - 1].criteriaCount = criteria.length;
   }
 
+  // Build events[] — additive parallel field to phaseHistory, never replaces it
+  const existingEvents: any[] = existing.events || [];
+  const newEvents = [...existingEvents];
+  const lastEvent = newEvents.length > 0 ? newEvents[newEvents.length - 1] : null;
+
+  // Emit phase_change event if phase changed
+  const existingPhase = (existing.phase || '').toLowerCase();
+  const incomingPhase = newPhase.toLowerCase();
+  if (existingPhase && existingPhase !== incomingPhase) {
+    newEvents.push({ type: 'phase_change', at: timestamp, from: existingPhase, to: incomingPhase });
+  } else if (!existingPhase && !lastEvent) {
+    // First sync — emit session_start if no events yet
+    newEvents.push({ type: 'session_start', at: timestamp });
+  }
+
+  // Emit criterion_pass events for newly checked criteria
+  if (content && existing.criteria) {
+    const prevPassed = new Set((existing.criteria as any[]).filter(c => c.status === 'completed').map((c: any) => c.id));
+    for (const c of criteria) {
+      if (c.status === 'completed' && !prevPassed.has(c.id)) {
+        newEvents.push({ type: 'criterion_pass', at: timestamp, detail: c.id });
+      }
+    }
+  }
+
+  // Cap events at 100 to prevent unbounded growth
+  const cappedEvents = newEvents.slice(-100);
+
   registry.sessions[fm.slug] = {
     prd: relativePrd,
     task: fm.task || '',
@@ -180,6 +208,8 @@ export function syncToWorkJson(fm: Record<string, string>, prdPath: string, cont
     updatedAt: timestamp,
     criteria,
     phaseHistory,
+    events: cappedEvents,
+    lifecycle: existing.lifecycle || { startedAt: fm.started || timestamp },
     ...(fm.iteration ? { iteration: parseInt(fm.iteration) || 1 } : {}),
   };
 
@@ -250,8 +280,7 @@ export function upsertSession(sessionUUID: string, sessionName: string, task: st
       registry.sessions[existingSlug].updatedAt = timestamp;
       if (sessionName) registry.sessions[existingSlug].sessionName = sessionName;
     } else {
-      // New session — create lightweight entry
-      // Generate slug from timestamp + sanitized task
+      // New session — create lightweight entry with lifecycle tracking
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, '0');
       const datePrefix = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}00`;
@@ -261,6 +290,13 @@ export function upsertSession(sessionUUID: string, sessionName: string, task: st
         .replace(/^-|-$/g, '')
         .slice(0, 40);
       const slug = `${datePrefix}_${taskSlug}`;
+
+      // Capture git commit at session start for context decay tracking (v5.9)
+      let commitAtStart: string | undefined;
+      try {
+        const { execSync } = require('child_process');
+        commitAtStart = execSync('git -C ' + (process.env.HOME || '') + ' rev-parse HEAD 2>/dev/null', { timeout: 1000 }).toString().trim().slice(0, 40) || undefined;
+      } catch {}
 
       registry.sessions[slug] = {
         task: task || sessionName || (mode === 'native' ? 'Native session' : 'Starting...'),
@@ -272,6 +308,11 @@ export function upsertSession(sessionUUID: string, sessionName: string, task: st
         mode: mode,
         started: timestamp,
         updatedAt: timestamp,
+        lifecycle: {
+          startedAt: timestamp,
+          ...(commitAtStart ? { commitAtStart } : {}),
+        },
+        events: [{ type: 'session_start', at: timestamp }],
       };
     }
 

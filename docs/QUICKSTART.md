@@ -72,7 +72,7 @@ All configuration lives in `~/.claude/config/*.jsonc` (JSON with comments):
 | File | What it controls |
 |------|-----------------|
 | `identity.jsonc` | Your name, assistant name, timezone |
-| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->46<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
+| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->47<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
 | `permissions.jsonc` | Tool permissions (allow/deny/ask rules) |
 | `preferences.jsonc` | Environment variables, MCP servers, tech stack |
 | `notifications.jsonc` | Alert routing (disabled by default) |
@@ -108,7 +108,7 @@ For complex tasks, KAI uses a 7-phase execution framework:
 
 Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
-### Hooks (<!-- KAI:counts:hooks:begin -->46<!-- KAI:counts:hooks:end --> lifecycle events)
+### Hooks (<!-- KAI:counts:hooks:begin -->47<!-- KAI:counts:hooks:end --> lifecycle events)
 Automated behaviors that fire on specific events:
 - **SecretScanner** — warns if you're about to commit secrets
 - **GitHubWriteGuard** — requires confirmation before git push
@@ -164,5 +164,5 @@ bash ~/kai/install.sh
 ## Further Reading
 
 - [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How KAI differs from the original
-- [SYSTEM-ATLAS.md](architecture/SYSTEM-ATLAS.md) — Full system architecture
-- [ROADMAP.md](planning/ROADMAP.md) — Product roadmap
+- [Architecture](architecture/README.md) — System architecture overview
+- [ROADMAP.md](planning/NEXT-STEPS.md) — Current work and roadmap

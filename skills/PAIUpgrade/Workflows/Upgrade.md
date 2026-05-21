@@ -2,7 +2,7 @@
 
 ## Overview
 
-This workflow executes the core PAIUpgrade pattern:
+This workflow executes the core KAIUpgrade pattern:
 
 1. **Thread 1:** Analyze user context (TELOS, projects, recent work, PAI state)
 2. **Thread 2:** Collect updates from sources (Anthropic, YouTube, custom)
@@ -52,7 +52,7 @@ Extract and return:
 Format as structured JSON."
 
 Agent 3 - PAI System State:
-"Analyze the current state of the user's PAI system:
+"Analyze the current state of the user's KAI system:
 - List skills in ~/.claude/skills/
 - List hooks in ~/.claude/hooks/
 - Read ~/.claude/settings.json
@@ -89,7 +89,7 @@ Use Task tool with subagent_type=Intern, run 3 agents in parallel:
 Agent 1 - Anthropic Sources:
 "Check Anthropic sources for updates and EXTRACT GRANULAR TECHNIQUES:
 
-Run: bun ~/.claude/skills/PAIUpgrade/Tools/Anthropic.ts
+Run: bun ~/.claude/skills/KAIUpgrade/Tools/Anthropic.ts
 
 For EACH finding, extract SPECIFIC TECHNIQUES - not summaries:
 
@@ -126,13 +126,13 @@ Agent 2 - YouTube Channels:
 "Check configured YouTube channels for new content and EXTRACT GRANULAR TECHNIQUES:
 
 1. Load channel config:
-   bun ~/.claude/skills/PAI/Tools/LoadSkillConfig.ts ~/.claude/skills/PAIUpgrade youtube-channels.json
+   bun ~/.claude/skills/PAI/Tools/LoadSkillConfig.ts ~/.claude/skills/KAIUpgrade youtube-channels.json
 
 2. For each channel, check recent videos:
    yt-dlp --flat-playlist --dump-json 'https://www.youtube.com/@channelhandle/videos' 2>/dev/null | head -5
 
 3. Compare against state:
-   cat ~/.claude/skills/PAIUpgrade/State/youtube-videos.json
+   cat ~/.claude/skills/KAIUpgrade/State/youtube-videos.json
 
 4. For NEW videos, extract transcripts:
    bun ~/.claude/skills/PAI/Tools/GetTranscript.ts '<video-url>'
@@ -160,7 +160,7 @@ If a video has no extractable techniques, mark it as 'skipped: no techniques fou
 Agent 3 - Custom Sources:
 "Check for any custom sources defined by the user:
 
-1. Look in ~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/PAIUpgrade/
+1. Look in ~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/KAIUpgrade/
 2. Check for additional source definitions beyond YouTube
 3. If sources exist, check them for updates
 
@@ -300,7 +300,7 @@ Everything interesting we found, ranked by how compelling it is. This is NOT imp
 | # | Discovery | Source | Why It's Interesting | PAI Relevance |
 |---|-----------|--------|---------------------|---------------|
 | 1 | [Most interesting thing] | [source] | [What makes this cool — 1-2 sentences] | [How it maps to PAI] |
-| 2 | [Next most interesting] | [source] | [Why it's notable] | [PAI connection] |
+| 2 | [Next most interesting] | [source] | [Why it's notable] | [KAI connection] |
 | ... | ... | ... | ... | ... |
 
 **Ranking rule:** Sort by genuine interestingness — most "whoa" at top. A LOW-priority item can be the #1 most interesting discovery. Interestingness ≠ implementation priority.
@@ -377,7 +377,7 @@ Upgrade candidates mined from our own algorithm reflections (Thread 3). These ar
 ### [Theme Name] ([N] occurrences, [HIGH/MEDIUM/LOW] signal)
 **Root cause:** [What structural issue drives this pattern]
 **Proposed fix:** [Concrete change]
-**Target:** [PAI files affected]
+**Target:** [KAI files affected]
 **Evidence:**
 - [timestamp] [task] — "[Q2 quote]"
 
@@ -580,4 +580,4 @@ echo "Session: ${CLAUDE_SESSION_ID}"
 
 ---
 
-**This workflow implements the core PAIUpgrade value proposition: understanding YOU first, discovering what's new second, then connecting them into actionable, personalized upgrades.**
+**This workflow implements the core KAIUpgrade value proposition: understanding YOU first, discovering what's new second, then connecting them into actionable, personalized upgrades.**

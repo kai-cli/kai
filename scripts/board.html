@@ -33,121 +33,134 @@
   .btn:hover { background: #30363d; border-color: #8b949e; }
   .btn-primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
   .btn-primary:hover { background: #388bfd; }
-  .btn-danger { background: #da3633; border-color: #da3633; color: #fff; }
-  .btn-danger:hover { background: #f85149; }
   .btn-sm { padding: 3px 8px; font-size: 11px; }
 
-  /* --- Process Bar --- */
-  .process-bar {
-    padding: 6px 20px; background: #161b22; border-bottom: 1px solid #21262d;
-    font-size: 11px; color: #8b949e; display: none; align-items: center; gap: 12px;
+  /* --- Dashboard Layout --- */
+  .dashboard {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    padding: 16px 20px; height: calc(100vh - 56px); overflow-y: auto;
+    align-content: start;
   }
-  .process-bar.active { display: flex; }
-  .process-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: #1f3b3b; color: #2dd4bf; padding: 2px 8px; border-radius: 4px;
-  }
-  .process-badge.docker { background: #1f2d4d; color: #58a6ff; }
-  .pulse { animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @media (max-width: 900px) { .dashboard { grid-template-columns: 1fr; } }
 
-  /* --- Board --- */
-  .board {
-    display: flex; gap: 12px; padding: 16px 20px;
-    overflow-x: auto; height: calc(100vh - 80px); align-items: flex-start;
+  .panel { display: flex; flex-direction: column; gap: 4px; }
+  .panel-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #484f58; padding: 0 4px 8px;
   }
-  .column { min-width: 260px; max-width: 300px; flex-shrink: 0; display: flex; flex-direction: column; max-height: 100%; }
-  .column-header {
-    padding: 8px 10px; font-size: 12px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px;
-    border-radius: 6px 6px 0 0; display: flex; align-items: center; gap: 6px;
-    flex-shrink: 0;
-  }
-  .column-header .count {
-    background: rgba(255,255,255,0.1); padding: 1px 6px;
-    border-radius: 8px; font-size: 10px; font-weight: 400;
-  }
-  .column-body { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; overflow-y: auto; flex: 1; min-height: 0; }
 
-  /* Column colors */
-  .col-backlog .column-header { background: #21262d; color: #8b949e; }
-  .col-progress .column-header { background: #0d1f3c; color: #58a6ff; }
-  .col-review .column-header { background: #2d2305; color: #d29922; }
-  .col-done .column-header { background: #0d2818; color: #3fb950; }
-  .col-sessions .column-header { background: #1a2e1a; color: #4ade80; }
-  .col-library .column-header { background: #1a1a2e; color: #a78bfa; }
+  /* --- Sections --- */
+  .section {
+    border: 1px solid #21262d; border-radius: 8px; overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .section-header {
+    padding: 8px 12px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    user-select: none; transition: background 0.1s;
+  }
+  .section-header:hover { background: #161b22; }
+  .section-header .arrow { font-size: 10px; color: #484f58; width: 12px; }
+  .section-header .count {
+    background: rgba(255,255,255,0.08); padding: 1px 6px;
+    border-radius: 8px; font-size: 10px; font-weight: 400; color: #8b949e;
+  }
+  .section-body { display: flex; flex-direction: column; gap: 4px; padding: 4px 8px 8px; }
+  .section.collapsed .section-body { display: none; }
+
+  /* Section colors */
+  .sec-sessions .section-header { background: #0d1f0d; color: #4ade80; }
+  .sec-progress .section-header { background: #0d1f3c; color: #58a6ff; }
+  .sec-backlog .section-header { background: #161b22; color: #8b949e; }
+  .sec-prs .section-header { background: #0d1f0d; color: #7ee787; }
+  .sec-issues .section-header { background: #161b22; color: #d29922; }
+  .sec-done .section-header { background: #0d2818; color: #3fb950; }
+  .sec-library .section-header { background: #1a1a2e; color: #a78bfa; }
 
   /* --- Cards --- */
   .card {
     background: #161b22; border: 1px solid #21262d; border-radius: 6px;
-    padding: 10px; transition: border-color 0.15s; position: relative; cursor: pointer;
+    padding: 10px; transition: border-color 0.15s; cursor: pointer;
   }
   .card:hover { border-color: #58a6ff; }
   .card-title {
     font-size: 12px; font-weight: 500; color: #e6edf3;
-    margin-bottom: 6px; line-height: 1.3; cursor: pointer;
+    margin-bottom: 4px; line-height: 1.3;
   }
-  .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .badge {
     font-size: 9px; padding: 1px 5px; border-radius: 3px;
     font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;
   }
-  .badge-micro { background: #1f2937; color: #9ca3af; }
-  .badge-standard { background: #1e3a5f; color: #58a6ff; }
-  .badge-extended { background: #2d1f4e; color: #a78bfa; }
-  .badge-advanced { background: #3b1f1f; color: #f87171; }
-  .badge-deep { background: #1f3b2d; color: #4ade80; }
-  .badge-comprehensive { background: #3b351f; color: #fbbf24; }
-  .badge-autonomous { background: #1f3b3b; color: #2dd4bf; }
-  .badge-interactive { background: #21262d; color: #8b949e; }
-  .badge-running { background: #1f3b3b; color: #2dd4bf; animation: pulse 1.5s infinite; }
-  .badge-discovered { background: #1a1a2e; color: #a78bfa; }
-  .badge-pinned { background: #2d2305; color: #d29922; }
-  .progress-bar { height: 3px; background: #21262d; border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
-  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
-  .pf-backlog { background: #484f58; }
-  .pf-progress { background: #58a6ff; }
-  .pf-review { background: #d29922; }
-  .pf-done { background: #3fb950; }
-  .progress-text { font-size: 10px; color: #8b949e; }
+  .badge-effort { background: #1e3a5f; color: #58a6ff; }
+  .badge-phase { background: #21262d; color: #8b949e; }
+  .badge-active { background: #1a3d1a; color: #4ade80; }
+  .badge-repo { background: #1a2d1a; color: #7ee787; }
+  .badge-label { background: #2d2305; color: #d29922; }
+  .badge-pr { background: #0d2818; color: #3fb950; }
+  .badge-issue { background: #2d1f00; color: #d29922; }
+  .badge-watching { background: #21262d; color: #8b949e; }
+  .badge-stale { background: #3b1f1f; color: #f87171; }
+  .badge-aging { background: #3b351f; color: #fbbf24; }
+  .repo-group { margin-bottom: 4px; }
+  .repo-group-header {
+    font-size: 10px; color: #7ee787; padding: 4px 8px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 4px;
+  }
+  .repo-group-header:hover { color: #4ade80; }
+  .repo-group-header .arrow { font-size: 9px; color: #484f58; }
+  .progress-bar { height: 3px; background: #21262d; border-radius: 2px; overflow: hidden; margin: 4px 0 2px; }
+  .progress-fill { height: 100%; border-radius: 2px; background: #58a6ff; }
   .card-time { font-size: 10px; color: #484f58; margin-top: 3px; }
-  .card-actions {
-    display: none; position: absolute; top: 6px; right: 6px;
-    gap: 4px; align-items: center;
-  }
-  .card:hover .card-actions { display: flex; }
-  .card-action-btn {
-    background: #21262d; border: 1px solid #30363d; border-radius: 4px;
-    color: #8b949e; font-size: 10px; padding: 2px 6px; cursor: pointer;
-    font-family: inherit;
-  }
-  .card-action-btn:hover { color: #e6edf3; background: #30363d; }
+  .session-duration { font-size: 10px; color: #8b949e; }
+  .session-duration.active { color: #4ade80; }
+  .exit-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 500; }
+  .exit-completed { background: #0d2818; color: #3fb950; }
+  .exit-abandoned { background: #21262d; color: #8b949e; }
+  .exit-crashed { background: #3b1f1f; color: #f87171; }
+  .exit-timeout { background: #2d2305; color: #d29922; }
 
-  /* Criteria expandable */
-  .card-criteria {
-    display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #21262d;
-  }
-  .card.expanded .card-criteria { display: block; }
-  .criterion {
-    font-size: 11px; padding: 2px 0; color: #8b949e;
-    display: flex; align-items: flex-start; gap: 5px; cursor: pointer;
-  }
-  .criterion:hover { color: #c9d1d9; }
-  .criterion.passed { color: #3fb950; }
-  .criterion .check { flex-shrink: 0; width: 14px; text-align: center; }
+  /* Events timeline */
+  .timeline { margin-top: 8px; padding-top: 8px; border-top: 1px solid #21262d; }
+  .timeline-label { font-size: 10px; color: #484f58; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .timeline-bar { position: relative; height: 8px; background: #21262d; border-radius: 4px; overflow: visible; margin-bottom: 4px; }
+  .timeline-segment { position: absolute; height: 100%; border-radius: 2px; cursor: default; transition: opacity 0.1s; }
+  .timeline-segment:hover { opacity: 0.75; }
+  .timeline-events { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .timeline-event { font-size: 9px; color: #484f58; padding: 1px 5px; background: #161b22; border-radius: 3px; border: 1px solid #21262d; }
+
+  /* Session card active */
+  .card-session { background: #1c2b1c; border-color: #2d4a2d; }
+  .card-session:hover { border-color: #4ade80; }
 
   /* Library card */
-  .library-card {
-    background: #161b22; border: 1px solid #21262d; border-radius: 6px;
-    padding: 10px; transition: border-color 0.15s;
+  .card-library { border-color: #1a1a2e; }
+  .card-library:hover { border-color: #a78bfa; }
+  .card-library .card-title { color: #a78bfa; }
+  .card-desc { font-size: 11px; color: #8b949e; margin-bottom: 4px; line-height: 1.3; }
+
+  /* Expanded card */
+  .card-expanded { border-color: #58a6ff; }
+  .card-actions {
+    display: flex; gap: 6px; margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid #21262d; flex-wrap: wrap;
   }
-  .library-card:hover { border-color: #a78bfa; }
-  .library-card .card-title { color: #a78bfa; cursor: default; }
-  .library-card .card-desc { font-size: 11px; color: #8b949e; margin-bottom: 4px; line-height: 1.3; }
-  .library-card .tag {
-    font-size: 9px; background: #21262d; color: #8b949e; padding: 1px 4px;
-    border-radius: 3px; margin-right: 3px;
+  .card-actions .btn { padding: 4px 10px; font-size: 11px; }
+  .btn-launch { background: #1a3d1a; border-color: #2d4a2d; color: #4ade80; }
+  .btn-launch:hover { background: #2d4a2d; }
+  .btn-danger { background: #3b1f1f; border-color: #5c2d2d; color: #f87171; }
+  .btn-danger:hover { background: #5c2d2d; }
+  .card-detail { margin-top: 8px; font-size: 11px; color: #8b949e; line-height: 1.5; }
+  .card-criteria { margin-top: 6px; }
+  .criterion { font-size: 11px; padding: 2px 0; color: #8b949e; display: flex; gap: 5px; }
+  .criterion.passed { color: #3fb950; }
+  .phase-select {
+    background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
+    color: #c9d1d9; font-size: 11px; padding: 3px 6px; font-family: inherit;
   }
+
+  /* --- Empty --- */
+  .empty-state { font-size: 11px; color: #484f58; padding: 12px; text-align: center; font-style: italic; }
 
   /* --- Modals --- */
   .modal-overlay {
@@ -168,15 +181,6 @@
   .modal input:focus, .modal textarea:focus, .modal select:focus { border-color: #58a6ff; }
   .modal textarea { resize: vertical; min-height: 60px; }
   .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
-  .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 12px; color: #c9d1d9; }
-  .checkbox-row input[type=checkbox] { width: auto; }
-
-  /* --- Empty --- */
-  .empty-state { font-size: 11px; color: #484f58; padding: 16px; text-align: center; font-style: italic; }
-
-  /* --- Keyboard hint --- */
-  .kbd { font-size: 10px; color: #484f58; padding: 8px 20px; border-top: 1px solid #21262d; }
-  .kbd kbd { background: #21262d; padding: 1px 5px; border-radius: 3px; font-size: 10px; }
 </style>
 </head>
 <body>
@@ -187,24 +191,17 @@
   <div class="header-actions">
     <input type="text" class="search-box" id="search" placeholder="Filter... (/)">
     <button class="btn btn-primary" onclick="showNewTaskModal()">+ New Task</button>
-    <button class="btn" id="archiveToggle" onclick="toggleArchiveView()">Archive (0)</button>
   </div>
 </header>
 
-<div class="process-bar" id="processBar"></div>
-
-<div class="board" id="board"></div>
-
-<div class="kbd">
-  <kbd>N</kbd> New task &nbsp; <kbd>/</kbd> Search &nbsp; <kbd>A</kbd> Toggle archive &nbsp; <kbd>R</kbd> Refresh
-</div>
+<div class="dashboard" id="board"></div>
 
 <!-- New Task Modal -->
 <div class="modal-overlay" id="newTaskModal">
   <div class="modal">
     <h2>New Task</h2>
     <label>Title</label>
-    <input type="text" id="taskTitle" placeholder="8-word task description">
+    <input type="text" id="taskTitle" placeholder="Task description">
     <label>Description</label>
     <textarea id="taskDesc" placeholder="Context for the task..."></textarea>
     <label>Effort</label>
@@ -219,40 +216,9 @@
       <option value="interactive">Interactive</option>
       <option value="autonomous">Autonomous</option>
     </select>
-    <div class="checkbox-row">
-      <input type="checkbox" id="taskAutoRalph"> Start Ralph Loop immediately
-    </div>
-    <div class="checkbox-row">
-      <input type="checkbox" id="taskDocker"> Run in Docker container (yolo mode)
-    </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('newTaskModal')">Cancel</button>
       <button class="btn btn-primary" onclick="createTask()">Create</button>
-    </div>
-  </div>
-</div>
-
-<!-- Ralph Loop Modal -->
-<div class="modal-overlay" id="ralphModal">
-  <div class="modal">
-    <h2>Start Ralph Loop</h2>
-    <p style="font-size:12px;color:#8b949e;margin-bottom:12px" id="ralphSlugDisplay"></p>
-    <label>Budget ($)</label>
-    <input type="number" id="ralphBudget" value="5" min="1" max="50" step="1">
-    <label>Max Iterations</label>
-    <input type="number" id="ralphMaxIter" value="5" min="1" max="20" step="1">
-    <label>Model</label>
-    <select id="ralphModel">
-      <option value="opus">Opus (strongest, most expensive)</option>
-      <option value="sonnet">Sonnet (balanced)</option>
-      <option value="haiku">Haiku (fast, cheapest)</option>
-    </select>
-    <div class="checkbox-row">
-      <input type="checkbox" id="ralphDocker"> Run in Docker (yolo mode)
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal('ralphModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="launchRalph()">Launch</button>
     </div>
   </div>
 </div>
@@ -263,20 +229,19 @@ let allItems = [];
 let archivedItems = [];
 let libraryItems = [];
 let sessionItems = [];
+let githubItems = [];
 let processes = {};
-let showArchive = false;
 let searchQuery = '';
-let ralphTargetSlug = '';
-let expandedSlug = null; // Track which card is expanded (only one at a time)
-let showRecent = false; // Toggle for recent (inactive) sessions
+let expandedSlug = null;
 
-// --- Columns ---
-const COLUMNS = [
-  { id: 'backlog', label: 'Backlog', phases: ['observe'] },
-  { id: 'progress', label: 'In Progress', phases: ['think', 'plan', 'build', 'execute'] },
-  { id: 'review', label: 'Review', phases: ['verify', 'learn'] },
-  { id: 'done', label: 'Done', phases: ['complete'] },
-];
+// Collapsed state (persisted in localStorage)
+let collapsed = JSON.parse(localStorage.getItem('pai-board-collapsed') || '{}');
+function isCollapsed(id) { return collapsed[id] === true; }
+function toggleCollapse(id) {
+  collapsed[id] = !collapsed[id];
+  localStorage.setItem('pai-board-collapsed', JSON.stringify(collapsed));
+  renderBoard();
+}
 
 // --- Utils ---
 function relativeTime(dateStr) {
@@ -291,185 +256,305 @@ function relativeTime(dateStr) {
   return days + 'd ago';
 }
 
-function elapsed(startTime) {
-  const s = Math.floor((Date.now() - startTime) / 1000);
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return m > 0 ? m + 'm ' + sec + 's' : sec + 's';
-}
-
 function esc(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function matchesSearch(item) {
+function matchesSearch(text) {
   if (!searchQuery) return true;
-  const q = searchQuery.toLowerCase();
-  return (item.task || item.name || '').toLowerCase().includes(q) ||
-         (item.effort || '').toLowerCase().includes(q) ||
-         (item.description || '').toLowerCase().includes(q) ||
-         (item.tags || []).some(t => t.toLowerCase().includes(q));
+  return (text || '').toLowerCase().includes(searchQuery.toLowerCase());
 }
 
 // --- Render ---
 function renderBoard() {
   const board = document.getElementById('board');
   const stats = document.getElementById('stats');
-  const items = allItems.filter(matchesSearch);
-  const total = allItems.length;
-  const done = allItems.filter(i => i.phase === 'complete').length;
+
   const active = allItems.filter(i => !['complete','observe'].includes(i.phase)).length;
-  const running = Object.keys(processes).length;
-  const sessCount = sessionItems.length;
-  stats.textContent = total + ' tasks | ' + active + ' active | ' + done + ' done | ' + sessCount + ' sessions' +
-    (running > 0 ? ' | ' + running + ' running' : '');
+  const sessActive = sessionItems.filter(s => s.isActive).length;
+  stats.textContent = sessActive + ' sessions | ' + active + ' active | ' + allItems.length + ' total';
 
-  // Archive button
-  document.getElementById('archiveToggle').textContent =
-    showArchive ? 'Hide Archive' : 'Archive (' + archivedItems.length + ')';
+  let leftHtml = '<div class="panel"><div class="panel-title">Active Work</div>';
+  let rightHtml = '<div class="panel"><div class="panel-title">Reference</div>';
 
-  // Process bar
-  const pbar = document.getElementById('processBar');
-  const procEntries = Object.entries(processes);
-  if (procEntries.length > 0) {
-    pbar.className = 'process-bar active';
-    pbar.innerHTML = 'Running: ' + procEntries.map(([slug, p]) =>
-      '<span class="process-badge ' + (p.type === 'docker' ? 'docker' : '') + '">' +
-      '<span class="pulse">&#x25CF;</span> ' + esc(slug.slice(0, 30)) +
-      ' (' + p.type + ', ' + elapsed(p.startTime) + ')' +
-      ' <button class="card-action-btn" onclick="stopProc(\'' + esc(slug) + '\')">stop</button>' +
-      '</span>'
-    ).join(' ');
-  } else {
-    pbar.className = 'process-bar';
-  }
+  // LEFT: Sessions
+  const sessFiltered = sessionItems.filter(s => s.isActive && matchesSearch(s.task));
+  leftHtml += renderSection('sessions', 'Sessions', sessFiltered.length, isCollapsed('sessions'),
+    sessFiltered.length === 0 ? '<div class="empty-state">No active sessions</div>' :
+    sessFiltered.map(s => renderSessionCard(s)).join(''));
 
-  let html = '';
+  // LEFT: In Progress
+  const inProgress = allItems.filter(i => ['think','plan','build','execute'].includes(i.phase) && matchesSearch(i.task));
+  leftHtml += renderSection('progress', 'In Progress', inProgress.length, isCollapsed('progress'),
+    inProgress.length === 0 ? '<div class="empty-state">Nothing in progress</div>' :
+    inProgress.map(i => renderWorkCard(i)).join(''));
 
-  // Sessions column (first — shows active work)
-  const sessAll = sessionItems.filter(s => matchesSearch({ task: s.task, name: s.task, description: '', tags: [] }));
-  const sessActive = sessAll.filter(s => s.isActive);
-  const sessRecent = sessAll.filter(s => !s.isActive);
-  html += '<div class="column col-sessions">' +
-    '<div class="column-header">Sessions <span class="count">' + sessActive.length + '</span></div>' +
-    '<div class="column-body">' +
-    (sessActive.length === 0 ? '<div class="empty-state">No active sessions</div>' :
-      sessActive.map(renderSessionCard).join('')) +
-    (sessRecent.length > 0 ? '<div class="recent-divider" onclick="showRecent=!showRecent;renderBoard()" style="cursor:pointer;padding:6px 8px;font-size:11px;color:#484f58;border-top:1px solid #21262d;margin-top:8px">' +
-      (showRecent ? '&#x25BC;' : '&#x25B6;') + ' Recent (' + sessRecent.length + ')</div>' +
-      (showRecent ? sessRecent.map(s => renderSessionCard(s, true)).join('') : '') : '') +
-    '</div></div>';
+  // LEFT: Backlog
+  const backlog = allItems.filter(i => i.phase === 'observe' && matchesSearch(i.task));
+  leftHtml += renderSection('backlog', 'Backlog', backlog.length, isCollapsed('backlog'),
+    backlog.length === 0 ? '<div class="empty-state">Backlog empty</div>' :
+    backlog.map(i => renderWorkCard(i)).join(''));
 
-  // Kanban columns
-  for (const col of COLUMNS) {
-    let colItems = items.filter(i => col.phases.includes(i.phase));
-    if (col.id === 'done' && showArchive) {
-      colItems = [...colItems, ...archivedItems.filter(matchesSearch)];
-    }
-    html += '<div class="column col-' + col.id + '">' +
-      '<div class="column-header">' + col.label +
-      '<span class="count">' + colItems.length + '</span></div>' +
-      '<div class="column-body">' +
-      (colItems.length === 0 ? '<div class="empty-state">No items</div>' :
-        colItems.map(item => renderCard(item, col.id)).join('')) +
-      '</div></div>';
-  }
+  // RIGHT: My PRs
+  const myPRs = githubItems.filter(g => g.type === 'pr' && matchesSearch(g.title));
+  rightHtml += renderSection('prs', 'My PRs', myPRs.length, isCollapsed('prs'),
+    myPRs.length === 0 ? '<div class="empty-state">No open PRs</div>' :
+    myPRs.map(renderGitHubCard).join(''));
 
-  // Library column
-  const libItems = libraryItems.filter(matchesSearch);
-  html += '<div class="column col-library">' +
-    '<div class="column-header">Library <span class="count">' + libItems.length + '</span></div>' +
-    '<div class="column-body">' +
-    (libItems.length === 0 ? '<div class="empty-state">No projects found</div>' :
-      libItems.map(renderLibraryCard).join('')) +
-    '</div></div>';
+  // RIGHT: Active Issues (assigned + recently commented) — grouped by repo
+  const activeIssues = githubItems.filter(g => g.type === 'issue' && matchesSearch(g.title));
+  rightHtml += renderSection('issues', 'Issues', activeIssues.length, isCollapsed('issues'),
+    renderIssuesGrouped(activeIssues));
 
-  board.innerHTML = html;
+  // RIGHT: Done
+  const done = allItems.filter(i => i.phase === 'complete' && matchesSearch(i.task));
+  rightHtml += renderSection('done', 'Done', done.length, isCollapsed('done') !== false ? true : false,
+    done.map(i => renderWorkCard(i)).join(''));
+
+  // RIGHT: Library
+  const lib = libraryItems.filter(i => matchesSearch(i.name || i.description));
+  rightHtml += renderSection('library', 'Library', lib.length, isCollapsed('library') !== false ? true : false,
+    lib.map(renderLibraryCard).join(''));
+
+  leftHtml += '</div>';
+  rightHtml += '</div>';
+  board.innerHTML = leftHtml + rightHtml;
 }
 
-function renderCard(item, colId) {
+function renderSection(id, label, count, isCollapsedState, bodyHtml) {
+  const cls = isCollapsedState ? ' collapsed' : '';
+  const arrow = isCollapsedState ? '&#x25B6;' : '&#x25BC;';
+  return '<div class="section sec-' + id + cls + '">' +
+    '<div class="section-header" onclick="toggleCollapse(\'' + id + '\')">' +
+      '<span class="arrow">' + arrow + '</span> ' + label +
+      ' <span class="count">' + count + '</span>' +
+    '</div>' +
+    '<div class="section-body">' + bodyHtml + '</div>' +
+  '</div>';
+}
+
+function formatDuration(ms) {
+  if (!ms || ms < 0) return null;
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return '<1m';
+  if (mins < 60) return mins + 'm';
+  const hrs = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return hrs + 'h' + (rem > 0 ? ' ' + rem + 'm' : '');
+}
+
+function renderTimeline(events) {
+  if (!events || events.length === 0) return '';
+  const phaseColors = {
+    observe: '#484f58', think: '#a78bfa', plan: '#58a6ff', build: '#22d3ee',
+    execute: '#4ade80', verify: '#fbbf24', learn: '#f97316', complete: '#3fb950', native: '#484f58',
+  };
+  // Build segments from phase_change events
+  const segments = [];
+  let sessionStart = null;
+  let sessionEnd = null;
+  let currentPhase = null;
+  let phaseStart = null;
+  for (const ev of events) {
+    if (ev.type === 'session_start') { sessionStart = new Date(ev.at).getTime(); phaseStart = sessionStart; currentPhase = 'observe'; }
+    else if (ev.type === 'phase_change') {
+      if (phaseStart && currentPhase) segments.push({ phase: currentPhase, start: phaseStart, end: new Date(ev.at).getTime() });
+      currentPhase = ev.to || currentPhase;
+      phaseStart = new Date(ev.at).getTime();
+    }
+    else if (ev.type === 'session_end') { sessionEnd = new Date(ev.at).getTime(); }
+  }
+  if (phaseStart && currentPhase) segments.push({ phase: currentPhase, start: phaseStart, end: sessionEnd || Date.now() });
+  if (segments.length === 0) return '';
+  const total = (sessionEnd || Date.now()) - (sessionStart || segments[0].start);
+  if (total <= 0) return '';
+  let barHtml = '<div class="timeline-bar">';
+  for (const seg of segments) {
+    const left = ((seg.start - (sessionStart || segments[0].start)) / total * 100).toFixed(1);
+    const width = Math.max(2, ((seg.end - seg.start) / total * 100)).toFixed(1);
+    const color = phaseColors[seg.phase] || '#484f58';
+    const dur = formatDuration(seg.end - seg.start);
+    barHtml += `<div class="timeline-segment" style="left:${left}%;width:${width}%;background:${color}" title="${seg.phase}${dur ? ' — ' + dur : ''}"></div>`;
+  }
+  barHtml += '</div>';
+  // Show criterion_pass count
+  const passed = events.filter(e => e.type === 'criterion_pass').length;
+  const eventChips = passed > 0 ? `<div class="timeline-events"><span class="timeline-event">✓ ${passed} criteria</span></div>` : '';
+  return '<div class="timeline"><div class="timeline-label">Timeline</div>' + barHtml + eventChips + '</div>';
+}
+
+function renderSessionCard(sess) {
+  const displayTitle = sess.sessionName || sess.task;
+  const lc = sess.lifecycle || {};
+  const durationMs = lc.durationMs || (lc.endedAt ? new Date(lc.endedAt).getTime() - new Date(lc.startedAt || sess.startedAt).getTime() : null);
+  const dur = durationMs ? formatDuration(durationMs) : null;
+  const exitStatus = lc.exitStatus;
+  const exitBadge = exitStatus ? `<span class="exit-badge exit-${exitStatus}">${exitStatus}</span>` : '';
+  const durHtml = dur ? `<span class="session-duration${sess.isActive ? ' active' : ''}">${dur}</span>` : '';
+  return '<div class="card card-session">' +
+    '<div class="card-title">' + esc(displayTitle) + '</div>' +
+    '<div class="card-meta">' +
+      '<span class="badge badge-active">active</span>' +
+      '<span class="badge badge-phase">' + esc(sess.phase) + '</span>' +
+      durHtml + exitBadge +
+    '</div>' +
+    '<div class="card-time">' + relativeTime(sess.startedAt) + '</div>' +
+  '</div>';
+}
+
+function renderWorkCard(item) {
   const pct = item.total > 0 ? Math.round(item.passed / item.total * 100) : 0;
-  const isArchived = archivedItems.some(a => a.slug === item.slug);
-  const isRunning = processes[item.slug];
   const isExpanded = expandedSlug === item.slug;
+  const expandedClass = isExpanded ? ' card-expanded' : '';
   const phases = ['observe','think','plan','build','execute','verify','learn','complete'];
 
-  return '<div class="card' + (isExpanded ? ' expanded' : '') + '" id="card-' + esc(item.slug) + '" onclick="toggleExpand(\'' + esc(item.slug) + '\')">' +
-    '<div class="card-actions">' +
-      (colId === 'done' && !isArchived ? '<button class="card-action-btn" onclick="event.stopPropagation();archiveItem(\'' + esc(item.slug) + '\')" title="Archive">&#x2715;</button>' : '') +
-      (isArchived ? '<button class="card-action-btn" onclick="event.stopPropagation();unarchiveItem(\'' + esc(item.slug) + '\')" title="Unarchive">&#x21A9;</button>' : '') +
-      (!isRunning ? '<button class="card-action-btn" onclick="event.stopPropagation();showRalphModal(\'' + esc(item.slug) + '\')" title="Ralph Loop">&#x25B6;</button>' : '') +
-      (isRunning ? '<button class="card-action-btn btn-danger" onclick="event.stopPropagation();stopProc(\'' + esc(item.slug) + '\')" title="Stop">&#x25A0;</button>' : '') +
-      '<select class="card-action-btn" onclick="event.stopPropagation()" onchange="changePhase(\'' + esc(item.slug) + '\', this.value); this.value=\'\'" style="width:auto">' +
-        '<option value="">Phase...</option>' +
-        phases.map(p => '<option value="' + p + '"' + (p === item.phase ? ' disabled' : '') + '>' + p + '</option>').join('') +
-      '</select>' +
-    '</div>' +
+  let html = '<div class="card' + expandedClass + '" onclick="toggleExpand(\'' + esc(item.slug) + '\')">' +
     '<div class="card-title">' + esc(item.task) + '</div>' +
     '<div class="card-meta">' +
-      '<span class="badge badge-' + item.effort + '">' + item.effort + '</span>' +
-      (item.mode === 'autonomous' ? '<span class="badge badge-autonomous">auto</span>' : '') +
-      (isRunning ? '<span class="badge badge-running">' + isRunning.type + ' ' + elapsed(isRunning.startTime) + '</span>' : '') +
-      (isArchived ? '<span class="badge" style="background:#21262d;color:#484f58">archived</span>' : '') +
+      '<span class="badge badge-effort">' + item.effort + '</span>' +
+      '<span class="badge badge-phase">' + item.phase + '</span>' +
+      (item.total > 0 ? '<span class="badge" style="background:#21262d;color:#8b949e">' + item.passed + '/' + item.total + '</span>' : '') +
     '</div>' +
-    (item.total > 0 ? (
-      '<div class="progress-bar"><div class="progress-fill pf-' + colId + '" style="width:' + pct + '%"></div></div>' +
-      '<div class="progress-text">' + item.passed + '/' + item.total + ' (' + pct + '%)</div>'
-    ) : '<div class="progress-text" style="color:#484f58">No criteria yet</div>') +
-    '<div class="card-time">' + relativeTime(item.updated) + '</div>' +
-    '<div class="card-criteria">' +
-      (item.criteria || []).map(c =>
-        '<div class="criterion ' + (c.passed ? 'passed' : '') + '" onclick="event.stopPropagation();toggleCrit(\'' + esc(item.slug) + '\',\'' + esc(c.id) + '\')">' +
-        '<span class="check">' + (c.passed ? '&#x2713;' : '&#x25CB;') + '</span>' +
-        '<span>' + esc(c.id + ': ' + c.text) + '</span></div>'
-      ).join('') +
+    (item.total > 0 ? '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' : '') +
+    '<div class="card-time">' + relativeTime(item.updated) + '</div>';
+
+  if (isExpanded) {
+    // Criteria
+    if (item.criteria && item.criteria.length > 0) {
+      html += '<div class="card-criteria">';
+      for (const c of item.criteria.slice(0, 10)) {
+        html += '<div class="criterion ' + (c.passed ? 'passed' : '') + '">' +
+          '<span>' + (c.passed ? '&#x2713;' : '&#x25CB;') + '</span>' +
+          '<span>' + esc(c.id + ': ' + c.text) + '</span></div>';
+      }
+      if (item.criteria.length > 10) {
+        html += '<div class="criterion">... +' + (item.criteria.length - 10) + ' more</div>';
+      }
+      html += '</div>';
+    }
+
+    // Timeline (from session events if bound to a session)
+    const boundSession = sessionItems.find(s => s.taskSlug === item.slug || s.slug === item.slug);
+    if (boundSession && boundSession.events) {
+      html += renderTimeline(boundSession.events);
+    }
+
+    // Actions
+    html += '<div class="card-actions" onclick="event.stopPropagation()">';
+    // Launch button
+    if (item.phase !== 'complete') {
+      html += '<button class="btn btn-launch" onclick="launchSession(\'' + esc(item.slug) + '\')">Launch Session</button>';
+    }
+    // Phase selector
+    html += '<select class="phase-select" onchange="changePhase(\'' + esc(item.slug) + '\', this.value)">' +
+      '<option value="">Move to...</option>' +
+      phases.map(function(p) { return '<option value="' + p + '"' + (p === item.phase ? ' disabled' : '') + '>' + p + '</option>'; }).join('') +
+    '</select>';
+    // Archive
+    html += '<button class="btn btn-danger" onclick="archiveItem(\'' + esc(item.slug) + '\')">Archive</button>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function toggleExpand(slug) {
+  expandedSlug = expandedSlug === slug ? null : slug;
+  renderBoard();
+}
+
+async function launchSession(slug) {
+  const res = await fetch('/api/task/' + encodeURIComponent(slug) + '/launch', { method: 'POST' });
+  const data = await res.json();
+  if (data.ok) {
+    fetchAll();
+  } else {
+    alert('Failed to launch: ' + (data.error || 'unknown'));
+  }
+}
+
+async function changePhase(slug, phase) {
+  if (!phase) return;
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/phase', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phase }),
+  });
+  fetchAll();
+}
+
+async function archiveItem(slug) {
+  await fetch('/api/task/' + encodeURIComponent(slug) + '/archive', { method: 'POST' });
+  fetchAll();
+}
+
+function getAgeBadge(dateStr) {
+  if (!dateStr) return '';
+  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  if (days >= 7) return '<span class="badge badge-stale">' + days + 'd stale</span>';
+  if (days >= 3) return '<span class="badge badge-aging">' + days + 'd</span>';
+  return '';
+}
+
+function renderGitHubCard(item) {
+  const repoShort = item.repo.split('/').pop() || item.repo;
+  const badgeClass = item.type === 'pr' ? 'badge-pr' : (item.state === 'commented' ? 'badge-watching' : 'badge-issue');
+  const stateLabel = item.state === 'commented' ? 'commented' : item.type === 'pr' ? 'PR' : 'assigned';
+  const ageBadge = getAgeBadge(item.updatedAt);
+  return '<div class="card" onclick="window.open(\'' + esc(item.url) + '\',\'_blank\')">' +
+    '<div class="card-title">' + esc(item.title.slice(0, 80)) + '</div>' +
+    '<div class="card-meta">' +
+      '<span class="badge badge-repo">' + esc(repoShort) + '</span>' +
+      '<span class="badge ' + badgeClass + '">#' + item.number + ' ' + stateLabel + '</span>' +
+      ageBadge +
+      (item.labels || []).slice(0, 2).map(function(l) {
+        return '<span class="badge badge-label">' + esc(l) + '</span>';
+      }).join('') +
     '</div>' +
+    '<div class="card-time">' + relativeTime(item.updatedAt) + '</div>' +
   '</div>';
+}
+
+function renderIssuesGrouped(issues) {
+  if (issues.length === 0) return '<div class="empty-state">No active issues</div>';
+  // Group by repo
+  const groups = {};
+  for (const issue of issues) {
+    const repo = issue.repo.split('/').pop() || issue.repo;
+    if (!groups[repo]) groups[repo] = [];
+    groups[repo].push(issue);
+  }
+  // Sort groups by count descending
+  const sorted = Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  return sorted.map(function([repo, items]) {
+    const groupId = 'gh-' + repo;
+    const isGroupCollapsed = collapsed[groupId];
+    const arrow = isGroupCollapsed ? '&#x25B6;' : '&#x25BC;';
+    return '<div class="repo-group">' +
+      '<div class="repo-group-header" onclick="event.stopPropagation();toggleCollapse(\'' + groupId + '\')">' +
+        '<span class="arrow">' + arrow + '</span> ' + esc(repo) + ' (' + items.length + ')' +
+      '</div>' +
+      (isGroupCollapsed ? '' : items.map(renderGitHubCard).join('')) +
+    '</div>';
+  }).join('');
 }
 
 function renderLibraryCard(item) {
-  const libKey = 'lib-' + (item.path || item.name).replace(/[^a-z0-9]/gi, '-');
-  const isExpanded = expandedSlug === libKey;
-  return '<div class="library-card' + (isExpanded ? ' expanded' : '') + '" onclick="toggleExpand(\'' + esc(libKey) + '\')" style="cursor:pointer">' +
+  return '<div class="card card-library">' +
     '<div class="card-title">' + esc(item.name) + '</div>' +
     '<div class="card-desc">' + esc(item.description) + '</div>' +
     '<div class="card-meta">' +
-      (item.tags || []).map(t => '<span class="tag">' + esc(t) + '</span>').join('') +
-      (item.discovered ? '<span class="badge badge-discovered">discovered</span>' : '') +
-      (item.pinned ? '<span class="badge badge-pinned">pinned</span>' : '') +
+      (item.tags || []).map(function(t) { return '<span class="badge badge-phase">' + esc(t) + '</span>'; }).join('') +
     '</div>' +
-    '<div class="card-criteria"' + (isExpanded ? ' style="display:block"' : '') + '>' +
-      '<div style="font-size:11px;color:#8b949e;margin-bottom:6px">' +
-        '<strong>Path:</strong> ' + esc(item.path) +
-      '</div>' +
-      '<div style="display:flex;gap:6px">' +
-        '<button class="btn btn-sm" onclick="event.stopPropagation();navigator.clipboard.writeText(\'' + esc(item.path) + '\');this.textContent=\'Copied!\'">Copy Path</button>' +
-        '<button class="btn btn-sm" onclick="event.stopPropagation();openInFinder(\'' + esc(item.path) + '\')">Open in Finder</button>' +
-      '</div>' +
-    '</div>' +
-    (!isExpanded ? '<div class="card-time" style="color:#484f58">' + esc(item.path) + '</div>' : '') +
-  '</div>';
-}
-
-function renderSessionCard(sess, dimmed) {
-  const color = dimmed ? '#484f58' : '#4ade80';
-  const opacity = dimmed ? 'opacity:0.6' : '';
-  return '<div class="card" style="border-left: 2px solid ' + color + ';' + opacity + '">' +
-    '<div class="card-title" style="color:' + color + '">' + esc(sess.task) + '</div>' +
-    '<div class="card-meta">' +
-      (sess.isActive ? '<span class="badge" style="background:#1a2e1a;color:#4ade80">active</span>' :
-        '<span class="badge" style="background:#1a1a2e;color:#484f58">ended</span>') +
-      '<span class="badge badge-' + (sess.phase === 'native' ? 'interactive' : sess.phase) + '">' + esc(sess.phase) + '</span>' +
-    '</div>' +
-    '<div class="card-time">' + relativeTime(sess.startedAt) + '</div>' +
   '</div>';
 }
 
 // --- API ---
 async function fetchAll() {
   try {
-    const [workRes, libRes] = await Promise.all([
-      fetch('/api/work'), fetch('/api/library')
+    const [workRes, libRes, ghRes] = await Promise.all([
+      fetch('/api/work'), fetch('/api/library'), fetch('/api/github')
     ]);
     const work = await workRes.json();
     allItems = work.items || [];
@@ -477,6 +562,7 @@ async function fetchAll() {
     sessionItems = work.sessions || [];
     processes = work.processes || {};
     libraryItems = await libRes.json();
+    githubItems = await ghRes.json();
     renderBoard();
   } catch (e) {
     document.getElementById('board').innerHTML =
@@ -490,113 +576,20 @@ async function createTask() {
   const desc = document.getElementById('taskDesc').value.trim();
   const effort = document.getElementById('taskEffort').value;
   const mode = document.getElementById('taskMode').value;
-  const autoRalph = document.getElementById('taskAutoRalph').checked;
-  const docker = document.getElementById('taskDocker').checked;
 
-  const res = await fetch('/api/task', {
+  await fetch('/api/task', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, description: desc, effort, mode }),
   });
-  const data = await res.json();
-
-  if (autoRalph && data.slug) {
-    const endpoint = docker ? '/api/task/' + data.slug + '/docker' : '/api/task/' + data.slug + '/ralph';
-    await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-  }
 
   closeModal('newTaskModal');
   document.getElementById('taskTitle').value = '';
   document.getElementById('taskDesc').value = '';
-  document.getElementById('taskAutoRalph').checked = false;
-  document.getElementById('taskDocker').checked = false;
-  fetchAll();
-}
-
-async function changePhase(slug, phase) {
-  if (!phase) return;
-  await fetch('/api/task/' + encodeURIComponent(slug) + '/phase', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phase }),
-  });
-  fetchAll();
-}
-
-async function toggleCrit(slug, criterionId) {
-  await fetch('/api/task/' + encodeURIComponent(slug) + '/criteria/' + encodeURIComponent(criterionId), {
-    method: 'PATCH',
-  });
-  fetchAll();
-}
-
-async function archiveItem(slug) {
-  await fetch('/api/task/' + encodeURIComponent(slug) + '/archive', { method: 'POST' });
-  fetchAll();
-}
-
-async function unarchiveItem(slug) {
-  await fetch('/api/task/' + encodeURIComponent(slug) + '/archive', { method: 'DELETE' });
-  fetchAll();
-}
-
-function showRalphModal(slug) {
-  ralphTargetSlug = slug;
-  document.getElementById('ralphSlugDisplay').textContent = 'Task: ' + slug;
-  document.getElementById('ralphModal').className = 'modal-overlay active';
-}
-
-async function launchRalph() {
-  const budget = parseFloat(document.getElementById('ralphBudget').value);
-  const maxIterations = parseInt(document.getElementById('ralphMaxIter').value);
-  const model = document.getElementById('ralphModel').value;
-  const docker = document.getElementById('ralphDocker').checked;
-
-  const endpoint = docker
-    ? '/api/task/' + encodeURIComponent(ralphTargetSlug) + '/docker'
-    : '/api/task/' + encodeURIComponent(ralphTargetSlug) + '/ralph';
-
-  await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ budget, maxIterations, model }),
-  });
-
-  closeModal('ralphModal');
-  fetchAll();
-
-  // Browser notification when done
-  if (Notification.permission === 'default') Notification.requestPermission();
-}
-
-async function stopProc(slug) {
-  // Try both ralph and docker endpoints
-  await fetch('/api/task/' + encodeURIComponent(slug) + '/ralph', { method: 'DELETE' }).catch(() => {});
-  await fetch('/api/task/' + encodeURIComponent(slug) + '/docker', { method: 'DELETE' }).catch(() => {});
   fetchAll();
 }
 
 // --- UI ---
-function toggleExpand(slug) {
-  if (expandedSlug === slug) {
-    expandedSlug = null; // Collapse if clicking the same card
-  } else {
-    expandedSlug = slug; // Expand this card, collapse any other
-  }
-  renderBoard();
-}
-
-function openInFinder(path) {
-  // This won't work from browser directly, but path is copied for terminal use
-  navigator.clipboard.writeText('open ' + path);
-  alert('Copied terminal command to clipboard:\nopen ' + path);
-}
-
-function toggleArchiveView() {
-  showArchive = !showArchive;
-  renderBoard();
-}
-
 function showNewTaskModal() {
   document.getElementById('newTaskModal').className = 'modal-overlay active';
   setTimeout(() => document.getElementById('taskTitle').focus(), 100);
@@ -606,7 +599,6 @@ function closeModal(id) {
   document.getElementById(id).className = 'modal-overlay';
 }
 
-// Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.className = 'modal-overlay'; });
 });
@@ -622,7 +614,6 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
   if (e.key === 'n' || e.key === 'N') { e.preventDefault(); showNewTaskModal(); }
   if (e.key === '/') { e.preventDefault(); document.getElementById('search').focus(); }
-  if (e.key === 'a' || e.key === 'A') { e.preventDefault(); toggleArchiveView(); }
   if (e.key === 'r' || e.key === 'R') { e.preventDefault(); fetchAll(); }
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay.active').forEach(el => el.className = 'modal-overlay');
@@ -635,21 +626,8 @@ const es = new EventSource('/api/events');
 es.onmessage = () => fetchAll();
 es.onerror = () => setTimeout(() => fetchAll(), 5000);
 
-// --- Notification check for process completion ---
-let prevProcesses = {};
-function checkProcessNotifications() {
-  const currentSlugs = new Set(Object.keys(processes));
-  for (const slug of Object.keys(prevProcesses)) {
-    if (!currentSlugs.has(slug) && Notification.permission === 'granted') {
-      new Notification('KAI Board', { body: 'Process completed: ' + slug.slice(0, 40), icon: '🤖' });
-    }
-  }
-  prevProcesses = { ...processes };
-}
-
 // --- Init ---
 fetchAll();
-setInterval(() => { if (Object.keys(processes).length > 0) renderBoard(); }, 5000); // Update elapsed timers
 </script>
 </body>
 </html>
