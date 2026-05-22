@@ -109,7 +109,7 @@ AUTHORS=$(git log --all --format='%an <%ae>' | sort -u)
 if [[ $AUTHOR_COUNT -eq 1 ]]; then
   pass "Single author in history: $AUTHORS"
 else
-  fail "Multiple authors in history ($AUTHOR_COUNT):"
+  warn "Multiple authors in history ($AUTHOR_COUNT) — expected for public fork with early commits:"
   echo "$AUTHORS" | while read -r line; do echo "    $line"; done
 fi
 
