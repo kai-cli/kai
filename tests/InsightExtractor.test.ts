@@ -193,8 +193,9 @@ describe('writeInsight', () => {
     if (filename) {
       expect(filename).toMatch(/^\d{4}-\d{2}-\d{2}_openwrt-cache-invalidation\.md$/);
 
-      // Read back and verify frontmatter
-      const insightsDir = join(process.env.HOME || '', '.claude', 'MEMORY', 'LEARNING', 'INSIGHTS');
+      // Read back and verify frontmatter — use PAI_DIR to match what writeInsight uses
+      const paiDir = process.env.PAI_DIR || join(process.env.HOME || '', '.claude');
+      const insightsDir = join(paiDir, 'MEMORY', 'LEARNING', 'INSIGHTS');
       const content = readFileSync(join(insightsDir, filename), 'utf-8');
       expect(content).toContain('title: "OpenWrt cache invalidation"');
       expect(content).toContain('category: debugging');
