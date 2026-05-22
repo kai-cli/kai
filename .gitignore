@@ -2,13 +2,8 @@
 .claude/
 
 # Claude Code runtime directories (session-specific, machine-specific)
-# Ignore everything in projects/ EXCEPT memory/*.md files (backup strategy)
+# Ignore all projects/ content — contains personal session memory (PII-adjacent)
 projects/**
-!projects/*/
-!projects/*/memory/
-!projects/*/memory/*.md
-!projects/*/memory/.archive/
-!projects/*/memory/.archive/*.md
 file-history/
 debug/
 todos/

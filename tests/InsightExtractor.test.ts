@@ -70,7 +70,7 @@ describe('extractConversation', () => {
       type: 'human',
       message: {
         content: [
-          { type: 'text', text: 'What is bbfdm?' },
+          { type: 'text', text: 'What is grpc?' },
           { type: 'tool_result', tool_use_id: 'abc', content: 'ignored' },
         ],
       },
@@ -78,7 +78,7 @@ describe('extractConversation', () => {
     writeFileSync(path, JSON.stringify(entry));
 
     const result = extractConversation(path);
-    expect(result).toContain('USER: What is bbfdm?');
+    expect(result).toContain('USER: What is grpc?');
     expect(result).not.toContain('ignored');
   });
 

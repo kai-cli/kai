@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-05-22T22:34:00.656Z",
+  "generated": "2026-05-22T22:58:04.319Z",
   "skills": {
     "Agents": {
       "source": "kai",
@@ -364,24 +364,6 @@
       "hash": "sha256:fa1da5adbd2716533e6ad83d154396ab7f091511bb49c9dc3ddaa4b4a8d37378",
       "workflows": [],
       "workflowHashes": {},
-      "specializes": null
-    },
-    "PAIUpgrade": {
-      "source": "kai",
-      "path": "skills/PAIUpgrade/SKILL.md",
-      "hash": "sha256:bdc6b52554424d2969a31a053418bbcff3bc59cd73e0d33bc92bbec94480da99",
-      "workflows": [
-        "AlgorithmUpgrade",
-        "MineReflections",
-        "ResearchUpgrade",
-        "Upgrade"
-      ],
-      "workflowHashes": {
-        "AlgorithmUpgrade": "sha256:4e99dbc308e8d895e5c008e934f566226f9e421a0f5f2b2b33bf467cd09b1cd1",
-        "MineReflections": "sha256:717dedd34b9301427208a579570c9c1451b60f9cae563373f47b97de64cc78c0",
-        "ResearchUpgrade": "sha256:24035fe995e68c5714ea734836c393254866398bc9b5c7cb9d2bd5b1d839a4c1",
-        "Upgrade": "sha256:cc8efb98a3e0fee04f591ddac60c74b1600bf80a7072b5468d4e6de31dc9797b"
-      },
       "specializes": null
     },
     "Parser": {
