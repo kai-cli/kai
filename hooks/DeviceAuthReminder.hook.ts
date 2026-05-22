@@ -101,7 +101,7 @@ Passwords are in env vars (loaded from ~/.zshenv). See TOOLS.md.`;
   const context = `<device-auth-reminder>
 Device access detected. Auth reference:
 - M62 (lab SSH): sshpass -p "$YOURCOMPANY_ROUTER_M62_PASS" ssh -o StrictHostKeyChecking=no root@192.168.1.1
-- M60 (remote): USP-only via ACSPlatform (env YOURCOMPANY_OKTOPUS_EMAIL/PASS) — no SSH
+- M60 (remote): USP-only via ACS platform (env vars per ~/.config/yourcompany-mcp/devices.json) — no SSH
 - MCP tools: mcp__router__router_exec (serial from ~/.config/yourcompany-mcp/devices.json)
 - Device registry: see ~/.config/yourcompany-mcp/devices.json
 </device-auth-reminder>`;
