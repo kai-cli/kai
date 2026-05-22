@@ -10,6 +10,7 @@
 
 | Release | Date | Highlights |
 |---------|------|-----------|
+| **v6.0.0** | 2026-05-22 | Input Classification (probabilistic p_shell/p_ai/p_skill), Multi-Harness Agents (claude/codex/gemini/local + router), Workflow Templates ({{var}} interpolation), Spec-Driven Development (specs/ dir, WriteSpec/ImplementSpec), Algorithm v3.14.0 — 995 tests |
 | **v5.9.2** | 2026-05-22 | kai-setup, kai-doctor, kai-keys, kai-reset, kai-upgrade CLIs; ConfigValidation + EnvironmentStatus hooks; MCP Onboarding skill; Hook integration tests (30 new); Release Audit script — 924 tests |
 | **v5.9.1** | 2026-05-22 | Installer: API Key Wizard, MCP Server Setup, Notification Setup, .env bootstrap, local overrides creation; Post-install checklist; First-Session Onboarding hook; 4 docs (MEMORY, CONFIGURATION, MCP-GUIDE, PLUGINS); devices.json.example; .env.example completeness — 905 tests |
 | **v5.9.0** | 2026-05-22 | Skills Lock (hash-verified, CI-enforced), Skill Specialization, Settings Schema + validator, Command Risk Classifier, MCP Resilience (health tools, reconnect, mcp-doctor), Board UX (Cmd+K palette, j/k nav, Focus Mode, suggestions), Hot-Reload Rules, ModeClassifier calibration — 851 tests |

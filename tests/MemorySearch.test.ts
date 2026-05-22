@@ -26,6 +26,11 @@ describe('MemorySearch', () => {
       expect(slugs).toContain('firmware');
     });
 
+    it.skipIf(!hasKnowledgeFiles)('finds results for known term "jnap"', () => {
+      const result = searchMemory('jnap');
+      expect(result.results.length).toBeGreaterThan(0);
+    });
+
     it.skipIf(!hasKnowledgeFiles)('ranks multi-term queries by combined hits', () => {
       const result = searchMemory('openwrt build');
       expect(result.results.length).toBeGreaterThan(0);

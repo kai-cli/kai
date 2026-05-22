@@ -171,8 +171,8 @@ import { loadDomainPatterns, matchesDomainTopics } from '../hooks/LocalContextFi
 
 describe('matchesDomainTopics', () => {
   const patterns = [
-    { domain: 'firmware', keywords: ['openwrt', 'buildroot', 'ubus', 'router'] },
-    { domain: 'protocol', keywords: ['grpc', 'protobuf', 'rpc protocol'] },
+    { domain: 'firmware', keywords: ['openwrt', 'bbfdm', 'ubus', 'router'] },
+    { domain: 'usp', keywords: ['obuspa', 'tr-369', 'usp protocol'] },
     { domain: 'flutter', keywords: ['flutter', 'dart', 'widget'] },
   ];
 
@@ -182,9 +182,9 @@ describe('matchesDomainTopics', () => {
   });
 
   test('matches multiple domains', () => {
-    const matched = matchesDomainTopics('openwrt router with grpc agent', patterns);
+    const matched = matchesDomainTopics('openwrt router with obuspa agent', patterns);
     expect(matched).toContain('firmware');
-    expect(matched).toContain('protocol');
+    expect(matched).toContain('usp');
   });
 
   test('case insensitive matching', () => {
@@ -198,8 +198,8 @@ describe('matchesDomainTopics', () => {
   });
 
   test('matches multi-word keywords', () => {
-    const matched = matchesDomainTopics('Implement the rpc protocol handler', patterns);
-    expect(matched).toEqual(['protocol']);
+    const matched = matchesDomainTopics('Implement the USP protocol handler', patterns);
+    expect(matched).toEqual(['usp']);
   });
 
   test('handles empty prompt', () => {

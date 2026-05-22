@@ -8,10 +8,10 @@ const hasKnowledgeFiles = existsSync(getKnowledgeDir()) && existsSync(`${getKnow
 describe('ContradictionDetector', () => {
   describe('extractClaims', () => {
     it('extracts vN.N.N version patterns', () => {
-      const file = makeKnowledgeFile('test', 'libssl v1.18.0 is the latest');
+      const file = makeKnowledgeFile('test', 'bbfdm v1.18.0 is the latest');
       const claims = extractClaims(file);
       expect(claims.length).toBeGreaterThan(0);
-      expect(claims.some(c => c.entity === 'libssl' && c.version === '1.18.0')).toBe(true);
+      expect(claims.some(c => c.entity === 'bbfdm' && c.version === '1.18.0')).toBe(true);
     });
 
     it('extracts N.N.N patterns without v prefix', () => {
@@ -27,9 +27,9 @@ describe('ContradictionDetector', () => {
     });
 
     it('skips headings and empty lines', () => {
-      const file = makeKnowledgeFile('test', '# libssl v1.18.0\n\nSome text here');
+      const file = makeKnowledgeFile('test', '# bbfdm v1.18.0\n\nSome text here');
       const claims = extractClaims(file);
-      const headingClaim = claims.find(c => c.entity === 'libssl' && c.version === '1.18.0');
+      const headingClaim = claims.find(c => c.entity === 'bbfdm' && c.version === '1.18.0');
       expect(headingClaim).toBeUndefined();
     });
 
@@ -83,10 +83,10 @@ describe('ContradictionDetector', () => {
     it('shows contradiction details when present', () => {
       const report: ContradictionReport = {
         contradictions: [{
-          entity: 'libssl',
+          entity: 'bbfdm',
           claims: [
-            { entity: 'libssl', version: '1.12.0', file: '/a.md', slug: 'a', line: 'libssl v1.12.0' },
-            { entity: 'libssl', version: '1.18.0', file: '/b.md', slug: 'b', line: 'libssl v1.18.0' },
+            { entity: 'bbfdm', version: '1.12.0', file: '/a.md', slug: 'a', line: 'bbfdm v1.12.0' },
+            { entity: 'bbfdm', version: '1.18.0', file: '/b.md', slug: 'b', line: 'bbfdm v1.18.0' },
           ],
         }],
         claimsExtracted: 20,
@@ -95,7 +95,7 @@ describe('ContradictionDetector', () => {
       };
       const formatted = formatContradictionReport(report);
       expect(formatted).toContain('Potential Contradictions');
-      expect(formatted).toContain('libssl');
+      expect(formatted).toContain('bbfdm');
       expect(formatted).toContain('1.12.0');
       expect(formatted).toContain('1.18.0');
     });
@@ -123,7 +123,7 @@ describe('ContradictionDetector', () => {
     });
 
     it('does not flag same entity with same version as contradiction', () => {
-      // This tests the logic: if two files mention "libssl v1.18.0", that's agreement not contradiction
+      // This tests the logic: if two files mention "bbfdm v1.18.0", that's agreement not contradiction
       const report = detectContradictions();
       // All current files that mention the same versions should not produce contradictions
       expect(report.contradictions.every(c => {
@@ -133,13 +133,13 @@ describe('ContradictionDetector', () => {
     });
 
     it('extracts multiple claims from a single line', () => {
-      const file = makeKnowledgeFile('multi', 'Uses kernel 5.15 with openssl v1.18.0 on board');
+      const file = makeKnowledgeFile('multi', 'Uses kernel 5.15 with bbfdm v1.18.0 on board');
       const claims = extractClaims(file);
       expect(claims.length).toBeGreaterThanOrEqual(2);
     });
 
     it('normalizes entity names for comparison (case-insensitive)', () => {
-      const file = makeKnowledgeFile('case', 'Libssl v1.18.0 is here\nlibssl v1.18.0 also here');
+      const file = makeKnowledgeFile('case', 'BBFdm v1.18.0 is here\nbbfdm v1.18.0 also here');
       const claims = extractClaims(file);
       const entities = claims.map(c => c.entity);
       // All should normalize to same entity

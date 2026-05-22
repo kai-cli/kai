@@ -39,10 +39,19 @@ async function runGuard(
     env: { ...process.env, PAI_DIR: REAL_PAI_DIR },
   });
 
-  // Wait for process exit first, then read stdout to avoid a race where
-  // the stdout stream closes before text() drains it under parallel test load.
+  // Collect stdout chunks eagerly before awaiting exit to survive parallel load.
+  // Response.text() / sequential reads can miss data when the pipe closes fast.
+  const chunks: Uint8Array[] = [];
+  const reader = proc.stdout.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+  }
   const exitCode = await proc.exited;
-  const out = await new Response(proc.stdout).text();
+  const out = new TextDecoder().decode(
+    chunks.reduce((acc, c) => { const merged = new Uint8Array(acc.length + c.length); merged.set(acc); merged.set(c, acc.length); return merged; }, new Uint8Array(0))
+  );
 
   try {
     return { ...JSON.parse(out.trim()), exitCode };

@@ -2,8 +2,8 @@
 .claude/
 
 # Claude Code runtime directories (session-specific, machine-specific)
-# Ignore all projects/ content — contains personal session memory (PII-adjacent)
-projects/**
+# Per-project Claude Code state — never commit (memory may contain PII)
+projects/
 file-history/
 debug/
 todos/
@@ -119,6 +119,9 @@ config/preferences.local.jsonc
 
 # Skill runtime state files (machine-specific)
 **/BugBountyTool/state.json
+
+# Personal board config (user data — KAI ships board-config.template.json instead)
+scripts/board-config.json
 
 # Personal data (identity, contacts, TELOS, beliefs, etc.)
 PAI/USER/

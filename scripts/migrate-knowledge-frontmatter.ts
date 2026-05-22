@@ -28,7 +28,7 @@ const migrations: MigrationEntry[] = [
     filename: 'api-and-services.md',
     domain: 'api-and-services',
     updated: '2026-05-15',
-    tags: ['api', 'rest', 'uci', 'ubus', 'rpc', 'grpc'],
+    tags: ['api', 'jnap', 'uci', 'ubus', 'usp', 'bbfdm'],
     related: ['firmware'],
   },
   {

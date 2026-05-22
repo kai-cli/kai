@@ -1,0 +1,30 @@
+{
+  "port": 3333,
+  "terminal": "iterm",
+  "workRoot": "~/.claude/MEMORY/WORK",
+  "scanDirs": [
+    "~/.claude/MEMORY/WORK"
+  ],
+  "projectsDir": "~/Projects",
+  "autoDiscover": true,
+  "ignored": [
+    "node_modules",
+    ".git",
+    "__pycache__",
+    ".venv"
+  ],
+  "library": [],
+  "archived": [],
+  "ralphLoop": {
+    "defaultBudget": 5,
+    "defaultMaxIterations": 5,
+    "defaultModel": "opus"
+  },
+  "docker": {
+    "enabled": true,
+    "image": "oven/bun:latest",
+    "memoryLimit": "2g",
+    "cpuLimit": "2.0",
+    "timeout": 1800
+  }
+}

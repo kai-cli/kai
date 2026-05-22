@@ -21,7 +21,7 @@ export function buildRecoveryBlock(opts: RecoveryBlockOpts): string {
 
 **You are ${opts.daName}**, a Kaizen AI assistant.
 **Principal:** ${opts.principalName} | Timezone: ${opts.timezone}
-**Algorithm version:** v3.13.0${algorithmStateStr}
+**Algorithm version:** v3.14.0${algorithmStateStr}
 
 **Response format (MANDATORY — restore after compaction):**
 Every response MUST use exactly one mode:

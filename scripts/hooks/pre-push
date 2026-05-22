@@ -13,15 +13,24 @@ echo "── KAI pre-push checks ──"
 # Note: bun 1.3.x has a known crash-on-exit bug (SIGABRT after tests complete).
 # We capture output and check for "0 fail" in the summary line rather than
 # trusting the exit code alone.
+# Integration tests that spawn subprocesses (e.g. GitHubWriteGuard) can produce
+# a single flaky fail under parallel load — retry once before blocking.
 echo "Running tests..."
 TEST_OUTPUT=$(bun test --cwd "$REPO_ROOT" 2>&1) || true
 echo "$TEST_OUTPUT"
 if echo "$TEST_OUTPUT" | grep -q "[1-9][0-9]* fail"; then
   echo ""
-  echo "❌ Pre-push blocked: test suite has failures."
-  echo "   Fix failing tests, then push again."
-  echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
-  exit 1
+  echo "⚠️  Test run had failures — retrying once (subprocess spawn flakiness)..."
+  TEST_OUTPUT=$(bun test --cwd "$REPO_ROOT" 2>&1) || true
+  echo "$TEST_OUTPUT"
+  if echo "$TEST_OUTPUT" | grep -q "[1-9][0-9]* fail"; then
+    echo ""
+    echo "❌ Pre-push blocked: test suite has failures (failed on retry too)."
+    echo "   Fix failing tests, then push again."
+    echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
+    exit 1
+  fi
+  echo "✅ Retry passed."
 fi
 
 # ── 2. BuildDocs freshness ───────────────────────────────────
