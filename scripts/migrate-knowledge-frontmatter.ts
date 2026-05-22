@@ -28,7 +28,7 @@ const migrations: MigrationEntry[] = [
     filename: 'api-and-services.md',
     domain: 'api-and-services',
     updated: '2026-05-15',
-    tags: ['api', 'jnap', 'uci', 'ubus', 'usp', 'bbfdm'],
+    tags: ['api', 'rest', 'rpc', 'bus', 'protocol', 'data-model'],
     related: ['firmware'],
   },
   {
@@ -42,14 +42,14 @@ const migrations: MigrationEntry[] = [
     filename: 'firmware.md',
     domain: 'firmware',
     updated: '2026-05-18',
-    tags: ['openwrt', 'embedded', 'yourcompany', 'sdk', 'build-system'],
+    tags: ['openwrt', 'embedded', 'sdk', 'build-system'],
     related: ['api-and-services', 'products'],
   },
   {
     filename: 'products.md',
     domain: 'products',
     updated: '2026-05-18',
-    tags: ['yourcompany', 'hardware', 'velop', 'mesh', 'wifi'],
+    tags: ['hardware', 'router', 'mesh', 'wifi'],
     related: ['firmware'],
   },
   {
