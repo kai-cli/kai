@@ -106,7 +106,7 @@ Spawned automatically when the task matches:
 - **5 Researchers** — Claude, Gemini, Grok, Perplexity, Codex
 - **ProductStrategist, TechnicalReviewer, StakeholderCommunicator** — EM support
 
-### The Algorithm (<!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->)
+### The Algorithm (<!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end -->)
 For complex tasks, KAI uses a 7-phase execution framework:
 **Observe** (understand) > **Think** (pressure-test) > **Plan** > **Build** > **Execute** > **Verify** > **Learn**
 

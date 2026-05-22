@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "generated": "2026-05-22T21:43:39.195Z",
+  "generated": "2026-05-22T22:34:00.656Z",
   "skills": {
     "Agents": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Agents/SKILL.md",
       "hash": "sha256:b4c421f4fda5ad794e81eced8a10ce4bf8916ad31deb6dba428f1f5cd1202bfa",
       "workflows": [
@@ -19,7 +19,7 @@
       "specializes": null
     },
     "Apify": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Apify/SKILL.md",
       "hash": "sha256:34eed16d606ed7ff2102fa85eb32faa43843a8ea90369769b7c916487bafbf3b",
       "workflows": [
@@ -31,7 +31,7 @@
       "specializes": null
     },
     "BeCreative": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/BeCreative/SKILL.md",
       "hash": "sha256:eed3807744af833ef6408d97d8ebc217ccc1569ef33a0d03ff8e49b3f0e57018",
       "workflows": [
@@ -53,7 +53,7 @@
       "specializes": null
     },
     "BrightData": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/BrightData/SKILL.md",
       "hash": "sha256:5d8b04891bcd7b52c3b12a724e7a94906365f4dedc6cd2dced863717e26975a2",
       "workflows": [
@@ -65,7 +65,7 @@
       "specializes": null
     },
     "Browser": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Browser/SKILL.md",
       "hash": "sha256:c36398d42784514ae5aa63962cffaf94a0788998cb2ba81353859e1956957e79",
       "workflows": [
@@ -85,7 +85,7 @@
       "specializes": null
     },
     "Cloudflare": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Cloudflare/SKILL.md",
       "hash": "sha256:8113bb7aaeabc4fb61ce20a9e43989108beacb848784f1709810ef93561ad1c2",
       "workflows": [
@@ -99,7 +99,7 @@
       "specializes": null
     },
     "ContentAnalysis": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/ContentAnalysis/SKILL.md",
       "hash": "sha256:e8d570cbefe1d5dbe688adc5cc06fb5917b97b74a80bc048d8938277ad828c8e",
       "workflows": [],
@@ -107,7 +107,7 @@
       "specializes": null
     },
     "Council": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Council/SKILL.md",
       "hash": "sha256:cc59b4b260ece7869e6941dacd013ff873fd7a77cfcec9f978fd7b3eda6716f3",
       "workflows": [
@@ -121,7 +121,7 @@
       "specializes": null
     },
     "CreateCLI": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/CreateCLI/SKILL.md",
       "hash": "sha256:3f9921566ec404514280495d5fb20303e205c583d395ff1cfff16df5ee487a0e",
       "workflows": [
@@ -137,7 +137,7 @@
       "specializes": null
     },
     "CreateSkill": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/CreateSkill/SKILL.md",
       "hash": "sha256:7ca2d35adf6dc7371a790443a2c16615d7cd15a4db616da1cf1df5ff9bdd9337",
       "workflows": [
@@ -155,7 +155,7 @@
       "specializes": null
     },
     "DecisionLog": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/DecisionLog/SKILL.md",
       "hash": "sha256:47d68bfcbecaee1b1d1947740bdac1695a99a594e73f2a8a3e11d2e6bd4feb17",
       "workflows": [
@@ -171,7 +171,7 @@
       "specializes": null
     },
     "Deliberate": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Deliberate/SKILL.md",
       "hash": "sha256:d329a45986359ae66b42a880412d9838a8d59f3cfe6023730979b27267ca5846",
       "workflows": [
@@ -189,7 +189,7 @@
       "specializes": null
     },
     "Development": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Development/SKILL.md",
       "hash": "sha256:4cfa6b64843237bcb5fa14de901d781315ef6615dcc0f1740bd593dac548b59f",
       "workflows": [
@@ -203,7 +203,7 @@
       "specializes": null
     },
     "Documents": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Documents/SKILL.md",
       "hash": "sha256:a22839399bbff839e55b7824ea2acbca8c4d9fbc397a98d75c2ce07668cbca8d",
       "workflows": [
@@ -217,7 +217,7 @@
       "specializes": null
     },
     "End": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/End/SKILL.md",
       "hash": "sha256:ed3d5e4b1e2399fa98641e24978245d07f41307d66cbc26b8b905626b50ea2e7",
       "workflows": [],
@@ -225,7 +225,7 @@
       "specializes": null
     },
     "Evals": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Evals/SKILL.md",
       "hash": "sha256:85dba99e3f544c95325f78eee56424447f6b3a74309ed40639aaf17fa0f678a4",
       "workflows": [
@@ -247,7 +247,7 @@
       "specializes": null
     },
     "Evolve": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Evolve/SKILL.md",
       "hash": "sha256:19d12e2b1a2c8c7811625ac09cc7e158c68d313406a4ca34e16b7bfe4cc20839",
       "workflows": [],
@@ -255,7 +255,7 @@
       "specializes": null
     },
     "ExtractWisdom": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/ExtractWisdom/SKILL.md",
       "hash": "sha256:016d30de823d23850c4b886e57f3cf1d926cdb495548348fc3bb11233a1d7d3f",
       "workflows": [
@@ -267,7 +267,7 @@
       "specializes": null
     },
     "Fabric": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Fabric/SKILL.md",
       "hash": "sha256:78e732c7ec67dd24a9c7efc41e23b162c66d388dbb4e003e94e257bf31f03fa6",
       "workflows": [
@@ -279,7 +279,7 @@
       "specializes": null
     },
     "FirstPrinciples": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/FirstPrinciples/SKILL.md",
       "hash": "sha256:7798ceb97802374dcdaf93293a5e3cd9e9285881ec061ba26085f8743e8782ec",
       "workflows": [
@@ -295,7 +295,7 @@
       "specializes": null
     },
     "Investigation": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Investigation/SKILL.md",
       "hash": "sha256:863799dc3ceb271b75632070412072b7f800a48205b4b2cce1e2129351a4b2d7",
       "workflows": [],
@@ -303,7 +303,7 @@
       "specializes": null
     },
     "IterativeDepth": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/IterativeDepth/SKILL.md",
       "hash": "sha256:1995e5a4f382a41596f266e449ff478fc573974c5e8822f6f7f7e250cf1e9c32",
       "workflows": [
@@ -315,7 +315,7 @@
       "specializes": null
     },
     "Media": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Media/SKILL.md",
       "hash": "sha256:fc2683ca5d49baacf281b83beffab131ca4d8cf703c6135cdc326d4a3e715101",
       "workflows": [],
@@ -323,7 +323,7 @@
       "specializes": null
     },
     "OneOnOne": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/OneOnOne/SKILL.md",
       "hash": "sha256:b7533646a8c406b00c08e146e7a8c80c0d9e9ebab5ffa2dda12417b5ab696765",
       "workflows": [
@@ -341,7 +341,7 @@
       "specializes": null
     },
     "OSINT": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/OSINT/SKILL.md",
       "hash": "sha256:834ae4657c2cde8d49f4c56824c140a85f346fddb7d8149ea8a2e3e6b5a55e4d",
       "workflows": [
@@ -359,7 +359,7 @@
       "specializes": null
     },
     "PAI": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/PAI/SKILL.md",
       "hash": "sha256:fa1da5adbd2716533e6ad83d154396ab7f091511bb49c9dc3ddaa4b4a8d37378",
       "workflows": [],
@@ -367,7 +367,7 @@
       "specializes": null
     },
     "PAIUpgrade": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/PAIUpgrade/SKILL.md",
       "hash": "sha256:bdc6b52554424d2969a31a053418bbcff3bc59cd73e0d33bc92bbec94480da99",
       "workflows": [
@@ -385,7 +385,7 @@
       "specializes": null
     },
     "Parser": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Parser/SKILL.md",
       "hash": "sha256:be672db91dc8c009e0213e671d0ebeeceb5eeb8dbfff0e4b465966a8e350a9f3",
       "workflows": [
@@ -415,7 +415,7 @@
       "specializes": null
     },
     "PrivateInvestigator": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/PrivateInvestigator/SKILL.md",
       "hash": "sha256:e2e0d79c459f71790c7c62b02a7eeab6bc43bab2c260bc96155508f0d26736bc",
       "workflows": [
@@ -435,7 +435,7 @@
       "specializes": null
     },
     "Prompting": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Prompting/SKILL.md",
       "hash": "sha256:bed062f9eac6bcbe85e2922df572124e01eae82cb3b043154cbaea71e9376630",
       "workflows": [],
@@ -443,7 +443,7 @@
       "specializes": null
     },
     "PromptInjection": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/PromptInjection/SKILL.md",
       "hash": "sha256:5e7c6661fd180050c74074ead0bc2cb37cbb2d7cadfd7b45da9b217e6365b21e",
       "workflows": [
@@ -463,7 +463,7 @@
       "specializes": null
     },
     "RedTeam": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/RedTeam/SKILL.md",
       "hash": "sha256:6d6d0fd9ba3bc8bd5eba3526d1245511aa0848fd5a4cc5013eedd124874d9033",
       "workflows": [
@@ -477,7 +477,7 @@
       "specializes": null
     },
     "Research": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Research/SKILL.md",
       "hash": "sha256:396dd0c438fd5b8c2e4f34aa72dc015142e4bb59c8740d74b0500f86ed51f8ab",
       "workflows": [
@@ -515,7 +515,7 @@
       "specializes": null
     },
     "Science": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Science/SKILL.md",
       "hash": "sha256:2b0ce48c3d28d91a089f3dfd25003ec26919604935ebeefca62fd46e88d93ffe",
       "workflows": [
@@ -543,7 +543,7 @@
       "specializes": null
     },
     "Scraping": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Scraping/SKILL.md",
       "hash": "sha256:338b3a31a165ff416e4417197a0ea64c0a6cbe8eda8b8dca1da410625a1041a3",
       "workflows": [],
@@ -551,7 +551,7 @@
       "specializes": null
     },
     "SECUpdates": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/SECUpdates/SKILL.md",
       "hash": "sha256:65de2c6d60c0148cc2f6305b588f670966ba4fe6acd06e06ce99663199ed842e",
       "workflows": [
@@ -563,7 +563,7 @@
       "specializes": null
     },
     "Security": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Security/SKILL.md",
       "hash": "sha256:4ef3ceb66d855dc1d25ab3b5967cfdaa42665b4c9c572cb3b855387aa28f034b",
       "workflows": [],
@@ -571,7 +571,7 @@
       "specializes": null
     },
     "Telos": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Telos/SKILL.md",
       "hash": "sha256:526a3eed1ba8e16c0f197a8f21acf25cbae6c3d9935ff7573bb5f347c331660e",
       "workflows": [
@@ -589,7 +589,7 @@
       "specializes": null
     },
     "Thinking": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Thinking/SKILL.md",
       "hash": "sha256:946337313c5b8730c55ead5d09b8e95beee511db99f83845d5235b22fc678696",
       "workflows": [],
@@ -597,7 +597,7 @@
       "specializes": null
     },
     "USMetrics": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/USMetrics/SKILL.md",
       "hash": "sha256:e2cf917e87e556644aebb1a01e84fd95d9f0c86afa6cee6f887890fd68242c39",
       "workflows": [
@@ -611,7 +611,7 @@
       "specializes": null
     },
     "Utilities": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/Utilities/SKILL.md",
       "hash": "sha256:830a72cf1b50bac45a73efe37fb9fc690193cec0cded2d0f50026e9b9134b2d8",
       "workflows": [
@@ -623,7 +623,7 @@
       "specializes": null
     },
     "WebAssessment": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/WebAssessment/SKILL.md",
       "hash": "sha256:05816e5ea309fd834ba0e6d574b3ca58e407b11922b4dd8006150649dea403cb",
       "workflows": [
@@ -639,7 +639,7 @@
       "specializes": null
     },
     "WeeklyStatus": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/WeeklyStatus/SKILL.md",
       "hash": "sha256:40847bad5f59e04ae43dac0dae8a9c01f22b5d497319aeb20284a3c611688313",
       "workflows": [
@@ -651,7 +651,7 @@
       "specializes": null
     },
     "WikiQuery": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/WikiQuery/SKILL.md",
       "hash": "sha256:9b0eee429daf0cde75d3c7242f8a6ae1820d26efb41058a44b20989da9624147",
       "workflows": [],
@@ -659,7 +659,7 @@
       "specializes": null
     },
     "WorldThreatModelHarness": {
-      "source": "pai-config",
+      "source": "kai",
       "path": "skills/WorldThreatModelHarness/SKILL.md",
       "hash": "sha256:38eb2cfa8ca238c73571538fa12b911036ecc0bc670ec4f195e28a29cd403ed6",
       "workflows": [

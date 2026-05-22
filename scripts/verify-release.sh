@@ -109,7 +109,7 @@ AUTHORS=$(git log --all --format='%an <%ae>' | sort -u)
 if [[ $AUTHOR_COUNT -eq 1 ]]; then
   pass "Single author in history: $AUTHORS"
 else
-  warn "Multiple authors in history ($AUTHOR_COUNT) — expected for public fork with early commits:"
+  fail "Multiple authors in history ($AUTHOR_COUNT):"
   echo "$AUTHORS" | while read -r line; do echo "    $line"; done
 fi
 
@@ -265,7 +265,7 @@ if [[ $QUICK -eq 0 ]]; then
   # Extract hook names from docs/code (FooBar.hook.ts pattern), check each exists
   # Uses \.hook\.ts to avoid false positives like SYM.hooks (property access)
   # Allowlist: example/template hook names used in documentation
-  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook\|PlanApprovalGuard\|SessionCloseGuard\|HookName\|SkillsLock"
+  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook\|HookName\|PlanApprovalGuard\|SessionCloseGuard"
 
   HOOK_REFS=$(grep -rhoE '[A-Z][A-Za-z]+\.hook\.ts' \
     --include='*.md' --include='*.ts' --include='*.sh' --include='*.jsonc' \
@@ -287,6 +287,7 @@ if [[ $QUICK -eq 0 ]]; then
         | grep -v 'hooks/lib/' \
         | grep -v 'PAI/Algorithm/v[0-9]' \
         | grep -v 'docs/architecture/' \
+        | grep -v 'docs/planning/' \
         | grep -v 'PAI/dev/' \
         | grep -v 'MEMORY-CHANGELOG' \
         | grep -v "hooks/${ref}.ts" || true)

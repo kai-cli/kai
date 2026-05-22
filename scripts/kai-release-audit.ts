@@ -125,7 +125,7 @@ const checks: AuditCheck[] = [
 
   // ── Brand ──
   {
-    name: "No stray 'pai-config' in user-facing content",
+    name: "No stray 'kai' in user-facing content",
     category: "brand",
     run: () => {
       const allowedBrand = [
@@ -133,12 +133,12 @@ const checks: AuditCheck[] = [
         "RELEASE-CHECKLIST.md", ".pre-commit", ".pre-push",
         "CONTEXT_ROUTING.md", "scripts/kai-upgrade.ts",
       ];
-      const hits = grep("pai-config")
+      const hits = grep("kai")
         .filter(f => !allowedBrand.some(a => f.includes(a)))
         .filter(f => !isAllowedPiiFile(f));
       return {
         pass: hits.length === 0,
-        message: hits.length === 0 ? "No stray pai-config references" : `${hits.length} file(s) with pai-config`,
+        message: hits.length === 0 ? "No stray kai references" : `${hits.length} file(s) with kai`,
         details: hits.slice(0, 5),
       };
     },

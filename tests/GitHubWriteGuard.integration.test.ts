@@ -39,10 +39,10 @@ async function runGuard(
     env: { ...process.env, PAI_DIR: REAL_PAI_DIR },
   });
 
-  const [out, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    proc.exited,
-  ]);
+  // Wait for process exit first, then read stdout to avoid a race where
+  // the stdout stream closes before text() drains it under parallel test load.
+  const exitCode = await proc.exited;
+  const out = await new Response(proc.stdout).text();
 
   try {
     return { ...JSON.parse(out.trim()), exitCode };
