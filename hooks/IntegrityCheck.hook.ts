@@ -11,6 +11,9 @@
 
 import { parseTranscript } from '../PAI/Tools/TranscriptParser';
 import { handleSystemIntegrity } from './handlers/SystemIntegrity';
+import { spawnSync } from 'child_process';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 interface HookInput {
   session_id: string;
@@ -37,11 +40,36 @@ async function readStdin(): Promise<HookInput | null> {
   return null;
 }
 
+/** Check skills-lock.json for drift — log warning, never block. */
+function checkSkillsLock(): void {
+  const paiDir = process.env.PAI_DIR ?? join(process.env.HOME ?? '', '.claude');
+  const lockScript = join(paiDir, 'scripts', 'skills-lock.ts');
+  const lockFile = join(paiDir, 'skills-lock.json');
+
+  if (!existsSync(lockScript) || !existsSync(lockFile)) return;
+
+  const result = spawnSync('bun', [lockScript, 'verify'], {
+    cwd: paiDir,
+    encoding: 'utf8',
+    timeout: 10000,
+  });
+
+  if (result.status !== 0) {
+    console.error('[IntegrityCheck] skills-lock drift detected — run: bun scripts/skills-lock.ts generate');
+    console.error('[IntegrityCheck] Run: bun scripts/skills-lock.ts diff for details');
+  } else {
+    console.error('[IntegrityCheck] skills-lock OK');
+  }
+}
+
 async function main() {
   const hookInput = await readStdin();
   if (!hookInput?.transcript_path) { process.exit(0); }
 
   const parsed = parseTranscript(hookInput.transcript_path);
+
+  // Check skills-lock drift (warning only, never blocks session)
+  checkSkillsLock();
 
   // Run system integrity check (doc cross-ref is handled by StopOrchestrator)
   await handleSystemIntegrity(parsed, hookInput);

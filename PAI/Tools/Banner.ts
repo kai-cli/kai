@@ -40,7 +40,7 @@ interface Stats {
 
 function getStats(): Stats {
   let name = "PAI";
-  let paiVersion = "5.8.0";
+  let paiVersion = "5.9.0";
   let algorithmVersion = "3.13.0";
   let skills = 0, workflows = 0, hooks = 0, learnings = 0, userFiles = 0;
   let connection = "API";

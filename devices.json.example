@@ -1,0 +1,23 @@
+{
+  "_comment": "Device registry for MCP router/USP tools. Copy to devices.json and fill in.",
+  "_schema": {
+    "model": "Hardware model identifier",
+    "platform": "Platform name and version",
+    "ip": "Device IP address",
+    "user": "SSH username (usually root)",
+    "password": "SSH/admin password",
+    "serial": "Device serial number (optional)",
+    "mac": "Device MAC address (optional)",
+    "notes": "Free-text notes"
+  },
+  "example-router": {
+    "model": "MX6200",
+    "platform": "Pinnacle 2.0",
+    "ip": "192.168.1.1",
+    "user": "root",
+    "password": "your-password-here",
+    "serial": "",
+    "mac": "",
+    "notes": "Lab unit"
+  }
+}

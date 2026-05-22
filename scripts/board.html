@@ -181,6 +181,35 @@
   .modal input:focus, .modal textarea:focus, .modal select:focus { border-color: #58a6ff; }
   .modal textarea { resize: vertical; min-height: 60px; }
   .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+  /* 6a: Command Palette */
+  #cmd-palette-overlay { display:none; position:fixed; inset:0; background:rgba(1,4,9,0.8); z-index:1000; align-items:flex-start; justify-content:center; padding-top:15vh; }
+  #cmd-palette-overlay.active { display:flex; }
+  #cmd-palette { background:#161b22; border:1px solid #30363d; border-radius:10px; width:520px; max-width:90vw; box-shadow:0 16px 48px rgba(0,0,0,0.6); overflow:hidden; }
+  #cmd-input { width:100%; background:#0d1117; border:none; border-bottom:1px solid #30363d; padding:14px 16px; color:#c9d1d9; font-size:14px; font-family:inherit; outline:none; }
+  #cmd-results { max-height:320px; overflow-y:auto; }
+  .cmd-item { padding:10px 16px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:12px; color:#8b949e; }
+  .cmd-item.selected, .cmd-item:hover { background:#1c2128; color:#c9d1d9; }
+  .cmd-item .cmd-icon { font-size:14px; width:20px; text-align:center; flex-shrink:0; }
+  .cmd-item .cmd-label { flex:1; color:#c9d1d9; }
+  .cmd-item .cmd-badge { font-size:10px; padding:2px 6px; border-radius:4px; background:#21262d; }
+  .cmd-empty { padding:20px; text-align:center; color:#484f58; font-size:12px; }
+
+  /* 6b: Card keyboard focus */
+  .work-card.kb-focused { outline:2px solid #58a6ff; outline-offset:2px; }
+
+  /* 6d: Focus Mode */
+  body.focus-mode .section-header { opacity:0.4; }
+  body.focus-mode .work-card:not(.focus-active) { opacity:0.15; filter:grayscale(1); pointer-events:none; }
+  body.focus-mode .work-card.focus-active { opacity:1; filter:none; pointer-events:auto; }
+  #focus-banner { display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1c6939; color:#4ade80; font-size:12px; padding:8px 16px; border-radius:20px; border:1px solid #2ea043; z-index:99; }
+  body.focus-mode #focus-banner { display:block; }
+
+  /* 6e: Smart Suggestions */
+  .suggested-strip { display:flex; gap:8px; padding:8px 16px; background:#0d1117; border-bottom:1px solid #21262d; flex-wrap:wrap; align-items:center; }
+  .suggested-label { font-size:10px; color:#484f58; text-transform:uppercase; letter-spacing:0.5px; margin-right:4px; }
+  .suggested-pill { padding:4px 10px; background:#1c2128; border:1px solid #388bfd44; border-radius:12px; font-size:11px; color:#58a6ff; cursor:pointer; transition:background 0.1s; white-space:nowrap; }
+  .suggested-pill:hover { background:#21262d; }
 </style>
 </head>
 <body>
@@ -193,6 +222,20 @@
     <button class="btn btn-primary" onclick="showNewTaskModal()">+ New Task</button>
   </div>
 </header>
+
+<!-- 6a: Command Palette -->
+<div id="cmd-palette-overlay">
+  <div id="cmd-palette">
+    <input id="cmd-input" placeholder="Search tasks, sessions, actions… (⌘K)" autocomplete="off" oninput="cmdSearch(this.value)" onkeydown="cmdKey(event)">
+    <div id="cmd-results"></div>
+  </div>
+</div>
+
+<!-- 6d: Focus Mode Banner -->
+<div id="focus-banner">Focus Mode — press F to exit</div>
+
+<!-- 6e: Smart Suggestions -->
+<div id="suggested-strip" class="suggested-strip" style="display:none"></div>
 
 <div class="dashboard" id="board"></div>
 
@@ -273,6 +316,8 @@ function renderBoard() {
   const active = allItems.filter(i => !['complete','observe'].includes(i.phase)).length;
   const sessActive = sessionItems.filter(s => s.isActive).length;
   stats.textContent = sessActive + ' sessions | ' + active + ' active | ' + allItems.length + ' total';
+
+  renderSuggestions();
 
   let leftHtml = '<div class="panel"><div class="panel-title">Active Work</div>';
   let rightHtml = '<div class="panel"><div class="panel-title">Reference</div>';
@@ -408,7 +453,7 @@ function renderWorkCard(item) {
   const expandedClass = isExpanded ? ' card-expanded' : '';
   const phases = ['observe','think','plan','build','execute','verify','learn','complete'];
 
-  let html = '<div class="card' + expandedClass + '" onclick="toggleExpand(\'' + esc(item.slug) + '\')">' +
+  let html = '<div class="work-card card' + expandedClass + '" data-slug="' + esc(item.slug) + '" onclick="toggleExpand(\'' + esc(item.slug) + '\')">' +
     '<div class="card-title">' + esc(item.task) + '</div>' +
     '<div class="card-meta">' +
       '<span class="badge badge-effort">' + item.effort + '</span>' +
@@ -609,15 +654,177 @@ document.getElementById('search').addEventListener('input', e => {
   renderBoard();
 });
 
+// --- 6a: Command Palette ---
+let cmdSelectedIdx = 0;
+let cmdItems = [];
+
+function openCmdPalette() {
+  document.getElementById('cmd-palette-overlay').classList.add('active');
+  const input = document.getElementById('cmd-input');
+  input.value = '';
+  cmdSearch('');
+  setTimeout(() => input.focus(), 10);
+}
+
+function closeCmdPalette() {
+  document.getElementById('cmd-palette-overlay').classList.remove('active');
+}
+
+function cmdSearch(query) {
+  const q = query.toLowerCase().trim();
+  cmdItems = [];
+
+  // Tasks
+  allItems.filter(t => !q || t.task?.toLowerCase().includes(q) || t.slug?.toLowerCase().includes(q)).slice(0, 6).forEach(t => {
+    cmdItems.push({ icon: '📋', label: t.task || t.slug, badge: t.phase || '', action: () => { toggleExpand(t.slug); closeCmdPalette(); } });
+  });
+
+  // Sessions
+  sessionItems.filter(s => !q || s.name?.toLowerCase().includes(q)).slice(0, 4).forEach(s => {
+    cmdItems.push({ icon: '💬', label: s.name || s.id, badge: 'session', action: () => closeCmdPalette() });
+  });
+
+  // Actions
+  const actions = [
+    { icon: '＋', label: 'New Task', badge: 'N', action: () => { closeCmdPalette(); showNewTaskModal(); } },
+    { icon: '🔄', label: 'Refresh Board', badge: 'R', action: () => { closeCmdPalette(); fetchAll(); } },
+    { icon: '🔭', label: 'Focus Mode', badge: 'F', action: () => { closeCmdPalette(); toggleFocusMode(); } },
+  ];
+  actions.filter(a => !q || a.label.toLowerCase().includes(q)).forEach(a => cmdItems.push(a));
+
+  cmdSelectedIdx = 0;
+  renderCmdResults();
+}
+
+function renderCmdResults() {
+  const el = document.getElementById('cmd-results');
+  if (cmdItems.length === 0) {
+    el.innerHTML = '<div class="cmd-empty">No results</div>';
+    return;
+  }
+  el.innerHTML = cmdItems.map((item, i) =>
+    `<div class="cmd-item${i === cmdSelectedIdx ? ' selected' : ''}" onclick="cmdActivate(${i})">
+      <span class="cmd-icon">${item.icon}</span>
+      <span class="cmd-label">${item.label}</span>
+      <span class="cmd-badge">${item.badge}</span>
+    </div>`
+  ).join('');
+}
+
+function cmdActivate(idx) {
+  if (cmdItems[idx]) cmdItems[idx].action();
+}
+
+function cmdKey(e) {
+  if (e.key === 'Escape') { closeCmdPalette(); return; }
+  if (e.key === 'ArrowDown') { e.preventDefault(); cmdSelectedIdx = Math.min(cmdSelectedIdx + 1, cmdItems.length - 1); renderCmdResults(); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); cmdSelectedIdx = Math.max(cmdSelectedIdx - 1, 0); renderCmdResults(); }
+  if (e.key === 'Enter') { e.preventDefault(); cmdActivate(cmdSelectedIdx); }
+}
+
+document.getElementById('cmd-palette-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('cmd-palette-overlay')) closeCmdPalette();
+});
+
+// --- 6b: Card keyboard navigation ---
+let kbFocusedSlug = null;
+
+function getVisibleCards() {
+  return Array.from(document.querySelectorAll('.work-card[data-slug]'));
+}
+
+function kbFocusCard(slug) {
+  document.querySelectorAll('.work-card.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+  kbFocusedSlug = slug;
+  if (!slug) return;
+  const el = document.querySelector(`.work-card[data-slug="${CSS.escape(slug)}"]`);
+  if (el) { el.classList.add('kb-focused'); el.scrollIntoView({ block: 'nearest' }); }
+}
+
+function kbMove(dir) {
+  const cards = getVisibleCards();
+  if (!cards.length) return;
+  const currentIdx = cards.findIndex(c => c.dataset.slug === kbFocusedSlug);
+  let nextIdx = currentIdx === -1 ? 0 : Math.max(0, Math.min(cards.length - 1, currentIdx + dir));
+  kbFocusCard(cards[nextIdx]?.dataset.slug);
+}
+
+// --- 6d: Focus Mode ---
+function toggleFocusMode(slug) {
+  const body = document.body;
+  const isActive = body.classList.contains('focus-mode');
+
+  document.querySelectorAll('.work-card').forEach(el => el.classList.remove('focus-active'));
+
+  if (isActive) {
+    body.classList.remove('focus-mode');
+  } else {
+    const targetSlug = slug || kbFocusedSlug || (allItems.find(t => t.phase === 'execute' || t.phase === 'build')?.slug);
+    if (targetSlug) {
+      const el = document.querySelector(`.work-card[data-slug="${CSS.escape(targetSlug)}"]`);
+      if (el) el.classList.add('focus-active');
+    }
+    body.classList.add('focus-mode');
+  }
+}
+
+// --- 6e: Smart Suggestions ---
+function computeSuggestions(items) {
+  const now = Date.now();
+  const scored = items.map(item => {
+    let score = 0;
+    // Phase scoring: execute/build is most urgent
+    const phaseWeight = { execute: 10, build: 8, plan: 5, think: 4, observe: 3, verify: 6, learn: 2 };
+    score += phaseWeight[item.phase] || 0;
+    // Recency: items updated in last 2h get a boost
+    const updatedMs = item.updated ? Date.parse(item.updated) : 0;
+    if (updatedMs && now - updatedMs < 2 * 3600 * 1000) score += 5;
+    // Progress: near-completion items get a boost
+    if (item.progress) {
+      const [done, total] = item.progress.split('/').map(Number);
+      if (total > 0 && done / total >= 0.7) score += 3;
+    }
+    return { ...item, _score: score };
+  });
+  return scored.sort((a, b) => b._score - a._score).slice(0, 3);
+}
+
+function renderSuggestions() {
+  const strip = document.getElementById('suggested-strip');
+  const active = allItems.filter(t => t.phase !== 'complete' && t.phase !== 'archive');
+  if (active.length < 2) { strip.style.display = 'none'; return; }
+  const suggestions = computeSuggestions(active);
+  if (!suggestions.length) { strip.style.display = 'none'; return; }
+  strip.style.display = 'flex';
+  strip.innerHTML = '<span class="suggested-label">Suggested</span>' +
+    suggestions.map(s => `<span class="suggested-pill" onclick="toggleExpand('${s.slug}')" title="${s.task || s.slug}">${(s.task || s.slug).slice(0, 32)}</span>`).join('');
+}
+
 // --- Keyboard ---
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+  // 6a: Command Palette
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCmdPalette(); return; }
+
   if (e.key === 'n' || e.key === 'N') { e.preventDefault(); showNewTaskModal(); }
   if (e.key === '/') { e.preventDefault(); document.getElementById('search').focus(); }
   if (e.key === 'r' || e.key === 'R') { e.preventDefault(); fetchAll(); }
+
+  // 6b: Card navigation
+  if (e.key === 'j') { e.preventDefault(); kbMove(1); }
+  if (e.key === 'k') { e.preventDefault(); kbMove(-1); }
+  if (e.key === 'Enter' && kbFocusedSlug) { e.preventDefault(); toggleExpand(kbFocusedSlug); }
+
+  // 6d: Focus Mode
+  if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFocusMode(); }
+
   if (e.key === 'Escape') {
+    closeCmdPalette();
+    if (document.body.classList.contains('focus-mode')) { toggleFocusMode(); return; }
     document.querySelectorAll('.modal-overlay.active').forEach(el => el.className = 'modal-overlay');
     document.getElementById('search').blur();
+    kbFocusCard(null);
   }
 });
 

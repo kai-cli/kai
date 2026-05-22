@@ -120,3 +120,47 @@ describe('applyTokenBudget', () => {
     expect(result.relationship).toBe('short');
   });
 });
+
+// ── Subprocess integration tests ─────────────────────────────────────────────
+
+import { beforeEach, afterEach } from 'bun:test';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
+import { createTempPaiDir, runHook, type TempPaiDir } from './lib/hook-test-helpers';
+
+const HOOK_PATH = new URL('../hooks/LoadContext.hook.ts', import.meta.url).pathname;
+
+describe('LoadContext subprocess', () => {
+  let tmp: TempPaiDir;
+
+  beforeEach(() => { tmp = createTempPaiDir('loadctx'); });
+  afterEach(() => { tmp.cleanup(); });
+
+  test('exits 0 with minimal PAI_DIR (no settings.json)', async () => {
+    const { exitCode } = await runHook(HOOK_PATH, tmp.path);
+    expect(exitCode).toBe(0);
+  });
+
+  test('skips for subagent sessions', async () => {
+    const { exitCode, stderr } = await runHook(HOOK_PATH, tmp.path, { env: { CLAUDE_AGENT_TYPE: 'worker' } });
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain('Subagent');
+  });
+
+  test('skips on compaction source', async () => {
+    const { exitCode, stderr } = await runHook(HOOK_PATH, tmp.path, { stdin: JSON.stringify({ source: 'compact' }) });
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain('compaction');
+  });
+
+  test('loads startup files listed in settings.json', async () => {
+    writeFileSync(join(tmp.path, 'settings.json'), JSON.stringify({
+      loadAtStartup: { files: ['test-inject.md'] },
+      dynamicContext: { relationshipContext: false, learningReadback: false, knowledgeInjection: false, activeWorkSummary: false },
+    }));
+    writeFileSync(join(tmp.path, 'test-inject.md'), 'HELLO_INJECT_TEST');
+    const { stdout, exitCode } = await runHook(HOOK_PATH, tmp.path);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('HELLO_INJECT_TEST');
+  });
+});

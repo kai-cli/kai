@@ -170,7 +170,54 @@ Task({
 - **ComposeAgent:** `skills/Agents/Tools/ComposeAgent.ts` — Dynamic composition tool
 - **Traits:** `skills/Agents/Data/Traits.yaml` — Trait definitions and voice mappings
 - **Agent Personalities:** Individual `agents/*.md` files — Named agent backstories and voice settings
+- **Harness system:** `agents/harnesses/` — Multi-provider dispatch (Claude, Codex, Gemini, Ollama)
 
 ---
 
-*Last updated: 2026-01-14*
+## Multi-Harness Architecture (v6.0)
+
+PAI can dispatch to multiple AI providers through a unified `Harness` interface. The harness system lives at `agents/harnesses/`.
+
+### Available Harnesses
+
+| Harness | Backend | When to Use |
+|---------|---------|-------------|
+| `claude-code` | Embedded (default) | Normal session Agent tool use |
+| `claude` | Anthropic API | Second Claude for sub-agent work |
+| `codex` | OpenAI GPT-4o | Code generation tasks |
+| `gemini` | Google Gemini | Multimodal, large context (1M tokens) |
+| `local` | Ollama (localhost) | Privacy-sensitive, no data leaves machine |
+
+### Routing
+
+Use `selectHarness(signals)` from `agents/harnesses/router.ts`:
+
+```typescript
+import { selectHarness } from '../agents/harnesses/router';
+
+// Automatic routing based on signals
+const config = selectHarness({ hasImages: true });         // → gemini
+const config = selectHarness({ privacyLevel: 'sensitive' }); // → local
+const config = selectHarness({});                           // → claude (default)
+
+// Explicit override (always wins)
+const config = selectHarness({ preferredHarness: 'codex' });
+```
+
+### Routing Priority
+
+1. `preferredHarness` (explicit override — always wins)
+2. `privacyLevel: 'sensitive'` → local harness
+3. `hasImages: true` → gemini harness
+4. `taskType: 'code-gen'` → codex harness
+5. Default → claude harness
+
+### Design Decisions
+
+- **No `costTier` in interface:** Pricing changes too often. Cost metadata lives in `agents/harnesses/config.json` and can be updated without code changes.
+- **`claude-code` is always available:** Running inside Claude Code means the embedded harness is always present. All existing Agent-based workflows continue to work unchanged.
+- **Graceful unavailability:** `isAvailable()` returns false cleanly when API keys are missing. Callers should check availability before dispatching.
+
+---
+
+*Last updated: 2026-05-22*

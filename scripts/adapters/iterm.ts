@@ -73,19 +73,28 @@ export class ITermAdapter implements TerminalAdapter {
 
   async launchSession(opts: { workDir: string; command: string; title?: string }): Promise<{ success: boolean; error?: string }> {
     try {
+      const escOsa = (s: string) => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      const shellCmd = `cd ${opts.workDir} && ${opts.command}`;
       const osaScript = `
         tell application "iTerm"
           tell current window
             create tab with default profile
             tell current session
-              write text "cd ${opts.workDir.replace(/"/g, '\\"')} && ${opts.command}"
+              write text "${escOsa(shellCmd)}"
             end tell
           end tell
         end tell
       `;
-      spawn({ cmd: ["osascript", "-e", osaScript], stdout: "ignore", stderr: "ignore" });
+      const proc = spawn({ cmd: ["osascript", "-e", osaScript], stdout: "pipe", stderr: "pipe" });
+      await proc.exited;
+      if (proc.exitCode !== 0) {
+        const err = await new Response(proc.stderr).text();
+        console.error(`[board] iTerm launch failed: ${err}`);
+        return { success: false, error: err };
+      }
       return { success: true };
     } catch (e: any) {
+      console.error(`[board] iTerm launch error: ${e}`);
       return { success: false, error: String(e) };
     }
   }

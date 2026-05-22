@@ -22,6 +22,7 @@ import { join } from 'path';
 import { readHookInput } from './lib/hook-io';
 import { paiPath } from './lib/paths';
 import { semanticFallback, isIndexAvailable } from './lib/semantic-fallback';
+import { checkRulesChanges } from './lib/rules-watcher';
 
 const DOMAINS_CONFIG_PATH = paiPath('config', 'domains.jsonc');
 
@@ -74,6 +75,20 @@ async function main() {
 
   // Skip bare ratings
   if (/^([1-9]|10)$/.test(prompt.trim())) process.exit(0);
+
+  // Feature D (v5.9): Hot-reload rules — detect CLAUDE.md/steering rule changes
+  const rulesChange = checkRulesChanges();
+  if (rulesChange.changed) {
+    const rulesContext = `<rules-updated>
+Rules files changed since last prompt:
+${rulesChange.summaries.map(s => `- ${s}`).join('\n')}
+
+Apply any updated instructions from these files to the current session.
+</rules-updated>`;
+    console.log(JSON.stringify({ additionalContext: rulesContext }));
+    console.error(`[LocalContextFirst] Rules changed: ${rulesChange.files.map(f => f.split('/').pop()).join(', ')}`);
+    process.exit(0);
+  }
 
   const patterns = loadDomainPatterns();
   const matched = patterns.length > 0 ? matchesDomainTopics(prompt, patterns) : [];

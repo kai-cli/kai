@@ -1,23 +1,30 @@
 #!/usr/bin/env bun
 /**
- * PAI Interactive Installer
+ * KAI Interactive Installer
  * Usage: bun run PAI-Install/main.ts --mode gui
  *
  * Steps:
- *   1. Ensure PAI lives at ~/.claude/ (symlink if cloned elsewhere)
- *   2. Choose knowledge archetype
- *   3. Collect identity (user name, timezone, DA name)
- *   4. Configure AWS Bedrock (optional)
- *   5. Create PAI/USER/ scaffold
- *   6. Detect tools & build TOOLS.md
- *   7. Run BuildSettings.ts → settings.json
- *   8. Run BuildCLAUDE.ts  → CLAUDE.md
+ *   1. Ensure KAI lives at ~/.claude/ (symlink if cloned elsewhere)
+ *   2. Claude Code & authentication
+ *   3. Choose knowledge archetype
+ *   4. Configure identity (user name, timezone, DA name)
+ *   5. About You (ABOUTME.md)
+ *   6. Configure AWS Bedrock (optional)
+ *   7. API Keys & Services
+ *   8. MCP Servers (optional)
+ *   9. Notifications (optional)
+ *  10. Scaffold, tools & dependencies
+ *  11. Build configuration (settings.json, CLAUDE.md)
+ *  12. Verify installation
  */
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync, lstatSync, symlinkSync, unlinkSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync, readFileSync, lstatSync, symlinkSync, unlinkSync, copyFileSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { execSync, spawnSync } from "child_process";
 import * as readline from "readline";
+import { API_KEYS, detectSetKeys, writeKeyToProfile, isBedrockConfigured, maskKey, getShellProfile } from "./lib/api-keys.ts";
+import { AVAILABLE_SERVERS, readLocalMcpServers, writeMcpServers, buildServerConfig } from "./lib/mcp-setup.ts";
+import { NOTIFICATION_CHANNELS, enableNotificationChannel } from "./lib/notifications-setup.ts";
 
 // ── Paths ──────────────────────────────────────────────────────────────────
 const HOME = process.env.HOME!;
@@ -170,34 +177,9 @@ Correct
 Configure your goals, projects, and life context here.
 See PAI documentation for TELOS file format.
 `,
-  "PAI/USER/TELOS/DIGEST.md": `# TELOS DIGEST — Life Operating System
-
-> Compact context loaded at every session start. Edit this with your goals and context.
-
-## Identity
-- Name: (your name)
-- Role: (your role)
-
-## Current Focus
-- (what you're working on right now)
-
-## Key Projects
-- (list active projects)
-
-## Preferences
-- (communication style, tools you prefer, etc.)
-`,
   "PAI/USER/PROJECTS/README.md": `# Projects
 
 Track your active projects here.
-`,
-  "PAI/USER/PROJECTS/PROJECTS.md": `# Active Projects
-
-> Loaded at session start. List your current projects so KAI has context.
-
-| Project | Path | Domain | Status |
-|---------|------|--------|--------|
-| (project name) | ~/Projects/... | (domain) | Active |
 `,
   "PAI/USER/AISTEERINGRULES.md.template": `# AI Steering Rules — Personal (Template)
 <!-- Copy or rename this file to AISTEERINGRULES.md and fill in your rules. -->
@@ -293,8 +275,7 @@ export function createMemoryDirs(paiDir: string) {
   const memDirs = [
     "MEMORY/STATE", "MEMORY/WORK", "MEMORY/DECISIONS", "MEMORY/SNAPSHOTS",
     "MEMORY/RESEARCH", "MEMORY/KNOWLEDGE", "MEMORY/LEARNING",
-    "MEMORY/LEARNING/REFLECTIONS", "MEMORY/LEARNING/INSTINCTS",
-    "MEMORY/RELATIONSHIP", "MEMORY/SECURITY",
+    "MEMORY/LEARNING/REFLECTIONS", "MEMORY/RELATIONSHIP", "MEMORY/SECURITY",
     "MEMORY/STAGING", "MEMORY/WISDOM",
   ];
   for (const d of memDirs) {
@@ -617,7 +598,7 @@ env | grep -E "KEY|TOKEN|SECRET" | sed 's/=.*/=✅/'
 }
 
 async function main() {
-  const TOTAL_STEPS = 9;
+  const TOTAL_STEPS = 12;
 
   // Detect upgrade vs fresh install
   const isUpgrade = existsSync(join(PAI_ROOT, "config", "preferences.local.jsonc"))
@@ -939,8 +920,191 @@ async function main() {
     }
   }
 
-  // ── Step 7: Scaffold, tools & dependencies ─────────────────────────────
-  step(7, TOTAL_STEPS, "Scaffold, tools & dependencies");
+  // ── Step 7: API Keys ────────────────────────────────────────────────────
+  step(7, TOTAL_STEPS, "API Keys & Services");
+
+  const setKeys = detectSetKeys();
+  const bedrockActive = isBedrockConfigured(paiDir);
+
+  if (isUpgrade && setKeys.size > 0) {
+    ok(`${setKeys.size} API key(s) detected in environment`);
+    for (const [key, source] of setKeys) {
+      const def = API_KEYS.find(d => d.key === key);
+      console.log(`    ${GREEN}✓${RESET} ${def?.name ?? key}  ${DIM}(${source})${RESET}`);
+    }
+  } else {
+    console.log(`\n  ${DIM}Configure API keys for Claude and research agents.${RESET}`);
+    console.log(`  ${DIM}Keys are stored in your shell profile — never in tracked files.${RESET}\n`);
+
+    for (const def of API_KEYS) {
+      if (def.key === "ANTHROPIC_API_KEY" && bedrockActive) {
+        ok(`${def.name}  ${DIM}(using Bedrock — not needed)${RESET}`);
+        continue;
+      }
+
+      if (process.env[def.key]) {
+        ok(`${def.name}  ${DIM}(already set: ${maskKey(process.env[def.key]!)})${RESET}`);
+        continue;
+      }
+
+      if (def.required) {
+        const hint = def.hint ? `  ${DIM}${def.hint}${RESET}` : "";
+        console.log(`${hint}`);
+        const value = await prompt(`${def.name} key`);
+        if (value) {
+          writeKeyToProfile(def.key, value);
+          ok(`${def.name} saved to ~/${getShellProfile().file}`);
+        } else {
+          warn(`${def.name} skipped — set later: export ${def.key}=...`);
+        }
+      } else {
+        const want = await confirm(`Configure ${def.name}?`, false);
+        if (want) {
+          if (def.hint) info(`${DIM}${def.hint}${RESET}`);
+          const value = await prompt(`${def.name} key`);
+          if (value) {
+            writeKeyToProfile(def.key, value);
+            ok(`${def.name} saved`);
+          }
+        }
+      }
+    }
+  }
+
+  // ── Step 8: MCP Servers ────────────────────────────────────────────────
+  step(8, TOTAL_STEPS, "MCP Servers (optional)");
+
+  const existingMcp = readLocalMcpServers(paiDir);
+  if (Object.keys(existingMcp).length > 0 && isUpgrade) {
+    ok(`${Object.keys(existingMcp).length} MCP server(s) already configured`);
+    for (const name of Object.keys(existingMcp)) {
+      console.log(`    ${GREEN}✓${RESET} ${name}`);
+    }
+  } else {
+    console.log(`\n  ${DIM}MCP servers give KAI access to external tools (browser, GitHub, cloud).${RESET}`);
+    console.log(`  ${DIM}You can add more later via config/preferences.local.jsonc.${RESET}\n`);
+
+    const selectedServers: Record<string, ReturnType<typeof buildServerConfig>> = {};
+
+    for (const server of AVAILABLE_SERVERS) {
+      if (existingMcp[server.name.toLowerCase()]) {
+        ok(`${server.name}  ${DIM}(already configured)${RESET}`);
+        continue;
+      }
+      const want = await confirm(`Enable ${server.name}? ${DIM}(${server.description})${RESET}`, false);
+      if (want) {
+        selectedServers[server.name.toLowerCase()] = buildServerConfig(server);
+        ok(`${server.name} enabled`);
+        if (server.postNote) {
+          info(`${DIM}${server.postNote}${RESET}`);
+        }
+      }
+    }
+
+    // Custom server option
+    const wantCustom = await confirm("Add a custom MCP server?", false);
+    if (wantCustom) {
+      const serverName = await prompt("Server name (e.g. my-db)");
+      if (serverName) {
+        console.log(`  ${DIM}  [r] Remote URL  [s] Stdio command${RESET}`);
+        const serverType = await prompt("Type", "r");
+        if (serverType.toLowerCase() === "r") {
+          const url = await prompt("MCP server URL");
+          if (url) {
+            selectedServers[serverName] = { url };
+            ok(`Custom server "${serverName}" added`);
+          }
+        } else {
+          const command = await prompt("Command (e.g. npx @some/mcp-server)");
+          if (command) {
+            const [cmd, ...args] = command.split(" ");
+            selectedServers[serverName] = { command: cmd, args };
+            ok(`Custom server "${serverName}" added`);
+          }
+        }
+      }
+    }
+
+    if (Object.keys(selectedServers).length > 0) {
+      writeMcpServers(paiDir, selectedServers);
+      ok(`${Object.keys(selectedServers).length} server(s) written to preferences.local.jsonc`);
+    } else {
+      ok("No MCP servers configured  " + `${DIM}(add later in preferences.local.jsonc)${RESET}`);
+    }
+  }
+
+  // ── Step 9: Notifications ──────────────────────────────────────────────
+  step(9, TOTAL_STEPS, "Notifications (optional)");
+
+  console.log(`\n  ${DIM}KAI can send push notifications for long tasks, errors, and security events.${RESET}\n`);
+  const wantsNotifications = await confirm("Configure notifications?", false);
+
+  if (wantsNotifications) {
+    for (const channel of NOTIFICATION_CHANNELS) {
+      const want = await confirm(`Set up ${channel.name}? ${DIM}(${channel.description})${RESET}`, false);
+      if (!want) continue;
+
+      let allSet = true;
+      for (const envKey of channel.envKeys) {
+        if (envKey.hint) info(`${DIM}${envKey.hint}${RESET}`);
+        const value = await prompt(envKey.prompt);
+        if (value) {
+          writeKeyToProfile(envKey.key, value);
+          ok(`${envKey.key} saved`);
+        } else {
+          allSet = false;
+        }
+      }
+
+      if (allSet) {
+        enableNotificationChannel(paiDir, channel.name, channel.defaultEvents);
+        ok(`${channel.name} enabled for: ${channel.defaultEvents.join(", ")}`);
+      }
+    }
+  } else {
+    ok("Notifications skipped  " + `${DIM}(configure later in config/notifications.jsonc)${RESET}`);
+  }
+
+  // ── Step 10: Scaffold, tools & dependencies ────────────────────────────
+  step(10, TOTAL_STEPS, "Scaffold, tools & dependencies");
+
+  // Ensure preferences.local.jsonc exists (Feature [4])
+  const localPrefsPath = join(paiDir, "config", "preferences.local.jsonc");
+  if (!existsSync(localPrefsPath)) {
+    const rebuildCmd = `bun ${paiDir}/hooks/handlers/BuildSettings.ts`;
+    const localPrefsContent = `// Machine-Specific Overrides
+// This file is gitignored — it stays on this machine only.
+// Values here merge ON TOP of config/preferences.jsonc at build time.
+//
+// Use this for:
+//   - Extra environment variables specific to this machine
+//   - MCP servers only available on this machine
+//   - API keys you don't want in your shell profile
+//   - Dev server port overrides
+//
+// After editing, rebuild settings:
+//   ${rebuildCmd}
+//
+// Examples:
+//   {
+//     "env": { "MY_CUSTOM_VAR": "value" },
+//     "mcpServers": { "my-server": { "url": "http://localhost:3000/mcp" } }
+//   }
+
+{}
+`;
+    writeFileSync(localPrefsPath, localPrefsContent, "utf-8");
+    ok("Created config/preferences.local.jsonc (machine-specific overrides)");
+  }
+
+  // Bootstrap .env from .env.example (Feature [5])
+  const envExample = join(paiDir, ".env.example");
+  const envFile = join(paiDir, ".env");
+  if (existsSync(envExample) && !existsSync(envFile)) {
+    copyFileSync(envExample, envFile);
+    ok("Created .env from .env.example");
+    info(`${DIM}Shell profile keys take precedence over .env values.${RESET}`);
+  }
 
   // USER scaffold
   const created = createUserScaffold(paiDir);
@@ -1003,8 +1167,8 @@ async function main() {
     ok(`Created TOOLS.md with ${detected.length} detected items${extraLines.length > 0 ? ` + ${extraLines.length} manual` : ""}`);
   }
 
-  // ── Step 8: Build configuration ────────────────────────────────────────
-  step(8, TOTAL_STEPS, "Build configuration");
+  // ── Step 11: Build configuration ───────────────────────────────────────
+  step(11, TOTAL_STEPS, "Build configuration");
 
   // Build settings.json
   const buildSettingsPath = join(paiDir, "hooks", "handlers", "BuildSettings.ts");
@@ -1033,8 +1197,8 @@ async function main() {
     warn("BuildCLAUDE.ts not found — skipping CLAUDE.md generation");
   }
 
-  // ── Step 9: Verify installation ─────────────────────────────────────────
-  step(9, TOTAL_STEPS, "Verify installation");
+  // ── Step 12: Verify installation ────────────────────────────────────────
+  step(12, TOTAL_STEPS, "Verify installation");
 
   const checks: { label: string; pass: boolean; detail?: string }[] = [];
 
@@ -1081,15 +1245,33 @@ async function main() {
   }
 
   // ── Done ───────────────────────────────────────────────────────────────
-  console.log(`\n${STEEL}─────────────────────────────────────────────────${RESET}`);
+  console.log(`\n${STEEL}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}`);
   if (allPass) {
-    console.log(`\n  ${GREEN}${BOLD}KAI installed successfully!${RESET}  ${DIM}(${checks.length}/${checks.length} checks pass)${RESET}\n`);
+    console.log(`\n  ${GREEN}${BOLD}Installation Complete${RESET}  ${DIM}(${checks.length}/${checks.length} checks pass)${RESET}\n`);
   } else {
     const passCount = checks.filter(c => c.pass).length;
-    console.log(`\n  ${YELLOW}${BOLD}KAI installed with warnings${RESET}  ${DIM}(${passCount}/${checks.length} checks pass)${RESET}\n`);
+    console.log(`\n  ${YELLOW}${BOLD}Installation Complete${RESET}  ${DIM}(${passCount}/${checks.length} checks pass — see warnings above)${RESET}\n`);
   }
-  console.log(`  ${DIM}Start a new Claude Code session to activate.${RESET}`);
-  console.log(`  ${DIM}Board: bun ~/.claude/scripts/board.ts${RESET}\n`);
+
+  console.log(`  ${BOLD}📋 Verify (run these now):${RESET}`);
+  console.log(`     1. claude --version        ${DIM}# Confirm Claude Code works${RESET}`);
+  console.log(`     2. claude                  ${DIM}# Start session, check banner${RESET}`);
+  console.log(`     3. Type: /help            ${DIM}# See available skills${RESET}`);
+  console.log();
+  console.log(`  ${BOLD}🔧 Optional — enhance later:${RESET}`);
+  console.log(`     • API keys:      ${DIM}Edit ~/.zshrc or ~/.claude/.env${RESET}`);
+  console.log(`     • MCP servers:   ${DIM}Edit ~/.claude/config/preferences.local.jsonc${RESET}`);
+  console.log(`     • Notifications: ${DIM}Edit ~/.claude/config/notifications.jsonc${RESET}`);
+  console.log(`     • About you:     ${DIM}Edit ~/.claude/PAI/USER/ABOUTME.md${RESET}`);
+  console.log();
+  console.log(`  ${BOLD}📖 Guides:${RESET}`);
+  console.log(`     • Memory:    ${DIM}~/.claude/docs/MEMORY.md${RESET}`);
+  console.log(`     • Config:    ${DIM}~/.claude/docs/CONFIGURATION.md${RESET}`);
+  console.log(`     • MCP:       ${DIM}~/.claude/docs/MCP-GUIDE.md${RESET}`);
+  console.log(`     • Plugins:   ${DIM}~/.claude/docs/PLUGINS.md${RESET}`);
+  console.log();
+  console.log(`  ${DIM}Board: bun ~/.claude/scripts/board.ts${RESET}`);
+  console.log(`  ${DIM}Re-run: bun ~/.claude/PAI-Install/main.ts${RESET}\n`);
 }
 
 if (import.meta.main) {

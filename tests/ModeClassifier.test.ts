@@ -80,6 +80,28 @@ describe('ModeClassifier', () => {
       () => expect(classify('fix')).toBe('NATIVE'));
     test('complexity keywords but no verb → NATIVE',
       () => expect(classify('first do this and then do that step by step')).toBe('NATIVE'));
+    test('what time is it → NATIVE',
+      () => expect(classify('what time is it')).toBe('NATIVE'));
+    test('list my files → NATIVE',
+      () => expect(classify('list my files')).toBe('NATIVE'));
+  });
+
+  // ── ALGORITHM (strong dev-intent verbs — Feature 8 calibration) ──
+  describe('ALGORITHM (strong dev-intent verbs)', () => {
+    test('fix the auth bug → ALGORITHM',
+      () => expect(classify('fix the auth bug')).toBe('ALGORITHM'));
+    test('debug this crash → ALGORITHM',
+      () => expect(classify('debug this crash')).toBe('ALGORITHM'));
+    test('refactor my service → ALGORITHM',
+      () => expect(classify('refactor my service')).toBe('ALGORITHM'));
+    test('investigate the memory leak → ALGORITHM',
+      () => expect(classify('investigate the memory leak')).toBe('ALGORITHM'));
+    test('migrate the database → ALGORITHM',
+      () => expect(classify('migrate the database')).toBe('ALGORITHM'));
+    test('troubleshoot why it fails → ALGORITHM',
+      () => expect(classify('troubleshoot why it fails')).toBe('ALGORITHM'));
+    test('clean up the tests → ALGORITHM',
+      () => expect(classify('clean up the tests')).toBe('ALGORITHM'));
   });
 
   // ── NATIVE (general questions and conversation) ──

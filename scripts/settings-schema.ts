@@ -1,0 +1,228 @@
+#!/usr/bin/env bun
+/**
+ * settings-schema.ts — Canonical PAI/KAI settings schema
+ *
+ * This is the source of truth for settings.json structure.
+ * Run: bun scripts/settings-schema.ts    → prints schema JSON
+ */
+
+export const SETTINGS_SCHEMA = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    env: {
+      type: 'object',
+      additionalProperties: { type: 'string' },
+      description: 'Environment variables injected into all hook/tool processes',
+    },
+    permissions: {
+      type: 'object',
+      properties: {
+        allow: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tool patterns to auto-approve (e.g., "Bash(git *)", "Read")',
+        },
+        deny: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tool patterns to always block',
+        },
+        ask: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tool patterns to always prompt for',
+        },
+        defaultMode: {
+          type: 'string',
+          enum: ['default', 'acceptEdits', 'auto', 'bypassPermissions', 'plan'],
+          description: 'Default permission mode',
+        },
+      },
+      additionalProperties: false,
+    },
+    hooks: {
+      type: 'object',
+      propertyNames: {
+        enum: [
+          'PreToolUse',
+          'PostToolUse',
+          'UserPromptSubmit',
+          'SessionStart',
+          'SessionEnd',
+          'Stop',
+          'SubagentStop',
+          'PreCompact',
+          'ConfigChange',
+          'WorktreeCreate',
+          'WorktreeRemove',
+          'TaskCompleted',
+          'TeammateIdle',
+        ],
+      },
+      additionalProperties: {
+        type: 'array',
+        items: { $ref: '#/$defs/hookEntry' },
+      },
+    },
+    mcpServers: {
+      type: 'object',
+      additionalProperties: { $ref: '#/$defs/mcpServer' },
+    },
+    pai: {
+      type: 'object',
+      properties: {
+        repoUrl: { type: 'string' },
+        version: { type: 'string' },
+        algorithmVersion: { type: 'string' },
+        productName: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+    max_tokens: { type: 'number' },
+    teammateMode: {
+      type: 'string',
+      enum: ['in-process', 'subprocess'],
+    },
+    plansDirectory: { type: 'string' },
+    loadAtStartup: {
+      type: 'object',
+      properties: {
+        files: { type: 'array', items: { type: 'string' } },
+      },
+      additionalProperties: false,
+    },
+    dynamicContext: {
+      type: 'object',
+      properties: {
+        relationshipContext: { type: 'boolean' },
+        learningReadback: { type: 'boolean' },
+        activeWorkSummary: { type: 'boolean' },
+      },
+      additionalProperties: false,
+    },
+    contextDisplay: {
+      type: 'object',
+      properties: {
+        compactionThreshold: { type: 'number' },
+      },
+      additionalProperties: false,
+    },
+    contextFiles: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    techStack: {
+      type: 'object',
+      properties: {
+        browser: { type: 'string' },
+        terminal: { type: 'string' },
+        packageManager: { type: 'string' },
+        pythonPackageManager: { type: 'string' },
+        language: { type: 'string' },
+        devServerPort: { type: 'number' },
+      },
+      additionalProperties: true,
+    },
+    preferences: {
+      type: 'object',
+      properties: {
+        temperatureUnit: { type: 'string', enum: ['fahrenheit', 'celsius'] },
+      },
+      additionalProperties: true,
+    },
+    daidentity: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        fullName: { type: 'string' },
+        displayName: { type: 'string' },
+        color: { type: 'string' },
+        startupCatchphrase: { type: 'string' },
+      },
+      additionalProperties: true,
+    },
+    principal: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        timezone: { type: 'string' },
+      },
+      additionalProperties: true,
+    },
+    statusLine: {
+      type: 'object',
+      properties: {
+        type: { type: 'string' },
+        command: { type: 'string' },
+      },
+      additionalProperties: true,
+    },
+    counts: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    memory: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    notifications: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    spinnerVerbs: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    spinnerTipsOverride: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    feedbackSurveyState: {
+      type: 'object',
+      additionalProperties: true,
+    },
+  },
+  $defs: {
+    hookEntry: {
+      type: 'object',
+      required: ['hooks'],
+      properties: {
+        matcher: {
+          type: 'string',
+          description: 'Tool name glob to match (PreToolUse/PostToolUse only)',
+        },
+        hooks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['type', 'command'],
+            properties: {
+              type: { enum: ['command'] },
+              command: { type: 'string' },
+              async: { type: 'boolean' },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+    mcpServer: {
+      type: 'object',
+      properties: {
+        command: { type: 'string' },
+        args: { type: 'array', items: { type: 'string' } },
+        env: { type: 'object', additionalProperties: { type: 'string' } },
+        url: { type: 'string' },
+        type: { enum: ['stdio', 'sse'] },
+      },
+      additionalProperties: false,
+    },
+  },
+} as const;
+
+if (import.meta.main) {
+  console.log(JSON.stringify(SETTINGS_SCHEMA, null, 2));
+}

@@ -1,0 +1,678 @@
+{
+  "version": 1,
+  "generated": "2026-05-22T21:43:39.195Z",
+  "skills": {
+    "Agents": {
+      "source": "pai-config",
+      "path": "skills/Agents/SKILL.md",
+      "hash": "sha256:b4c421f4fda5ad794e81eced8a10ce4bf8916ad31deb6dba428f1f5cd1202bfa",
+      "workflows": [
+        "CreateCustomAgent",
+        "ListTraits",
+        "SpawnParallelAgents"
+      ],
+      "workflowHashes": {
+        "CreateCustomAgent": "sha256:946bb2b48f5f624028f920681120a6ef40735dfaf33a7394f334d5c10e79e3a8",
+        "ListTraits": "sha256:cc7827107179ee3e8cc9ee3bb2d2dc94f3532b2598aae7cd9542f0b65554e52d",
+        "SpawnParallelAgents": "sha256:89ce8bbde34a1c78780ec54babfa9ab377e2871c387b229b04f7ec33d568d12c"
+      },
+      "specializes": null
+    },
+    "Apify": {
+      "source": "pai-config",
+      "path": "skills/Apify/SKILL.md",
+      "hash": "sha256:34eed16d606ed7ff2102fa85eb32faa43843a8ea90369769b7c916487bafbf3b",
+      "workflows": [
+        "Update"
+      ],
+      "workflowHashes": {
+        "Update": "sha256:f49788c53aacad08d060d23acf340fe1928074e7e9aa063ff12aed3d35272d53"
+      },
+      "specializes": null
+    },
+    "BeCreative": {
+      "source": "pai-config",
+      "path": "skills/BeCreative/SKILL.md",
+      "hash": "sha256:eed3807744af833ef6408d97d8ebc217ccc1569ef33a0d03ff8e49b3f0e57018",
+      "workflows": [
+        "DomainSpecific",
+        "IdeaGeneration",
+        "MaximumCreativity",
+        "StandardCreativity",
+        "TechnicalCreativityGemini3",
+        "TreeOfThoughts"
+      ],
+      "workflowHashes": {
+        "DomainSpecific": "sha256:0b4824fa5bd13cbb1b070f390fbc6b6623eba618b1bd742ac80588f663814319",
+        "IdeaGeneration": "sha256:172862a5e763db10f711d905248c6180db0aef7c567cced23a15d34d661836ad",
+        "MaximumCreativity": "sha256:5e1176d4217259a358ed159934cf04fa69d31ff6da9f36bcff3e1f9ea0c1b4fe",
+        "StandardCreativity": "sha256:7210c50d016c0c98ebe78cef6582dad6eb33f3c6f491a5d0b15285c5a440a568",
+        "TechnicalCreativityGemini3": "sha256:c343a4752e992d7344c1c6c4722e757082318f8b723d8317af4a4ca223e55da9",
+        "TreeOfThoughts": "sha256:eceee65f6d4e4054201859611b766d921ba1419c658209c0c766855e0c7122b7"
+      },
+      "specializes": null
+    },
+    "BrightData": {
+      "source": "pai-config",
+      "path": "skills/BrightData/SKILL.md",
+      "hash": "sha256:5d8b04891bcd7b52c3b12a724e7a94906365f4dedc6cd2dced863717e26975a2",
+      "workflows": [
+        "FourTierScrape"
+      ],
+      "workflowHashes": {
+        "FourTierScrape": "sha256:65e5f9e6e21dc41075716dcfa4131b3b5394285edf46741b7bfb761a69648706"
+      },
+      "specializes": null
+    },
+    "Browser": {
+      "source": "pai-config",
+      "path": "skills/Browser/SKILL.md",
+      "hash": "sha256:c36398d42784514ae5aa63962cffaf94a0788998cb2ba81353859e1956957e79",
+      "workflows": [
+        "Extract",
+        "Interact",
+        "Screenshot",
+        "Update",
+        "VerifyPage"
+      ],
+      "workflowHashes": {
+        "Extract": "sha256:a27f08e47658737d6c89a56ce8d9add34c62b0833ad4c82ca577874f2e1b7d76",
+        "Interact": "sha256:1c6b0485f31d60e4be34a021bc6cdac65d9cf7c7b0a4b5c3231fe06e9fca927c",
+        "Screenshot": "sha256:d9544fdea9a770bb040e6637b7a4559c9b5a7b6a9fe802387a9cb7d1fb9b31f2",
+        "Update": "sha256:8be18625e69c8b717aa896e02e23715f6e849ff081ef731a5f132699f546e1a3",
+        "VerifyPage": "sha256:ba4686fcdd689bd18537ca8aca53ee7dffac830d6e2f37cfbaa9baa6b94177e9"
+      },
+      "specializes": null
+    },
+    "Cloudflare": {
+      "source": "pai-config",
+      "path": "skills/Cloudflare/SKILL.md",
+      "hash": "sha256:8113bb7aaeabc4fb61ce20a9e43989108beacb848784f1709810ef93561ad1c2",
+      "workflows": [
+        "Create",
+        "Troubleshoot"
+      ],
+      "workflowHashes": {
+        "Create": "sha256:a1f0eb0b793fc8cb1b829d7457e87cde3d3056211d62d97296c0bfa1056f4a8e",
+        "Troubleshoot": "sha256:5378ca137d7d29ab8ebbca92a85b6fd7976c99049b23db0d3fe5485fddd2bf88"
+      },
+      "specializes": null
+    },
+    "ContentAnalysis": {
+      "source": "pai-config",
+      "path": "skills/ContentAnalysis/SKILL.md",
+      "hash": "sha256:e8d570cbefe1d5dbe688adc5cc06fb5917b97b74a80bc048d8938277ad828c8e",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "Council": {
+      "source": "pai-config",
+      "path": "skills/Council/SKILL.md",
+      "hash": "sha256:cc59b4b260ece7869e6941dacd013ff873fd7a77cfcec9f978fd7b3eda6716f3",
+      "workflows": [
+        "Debate",
+        "Quick"
+      ],
+      "workflowHashes": {
+        "Debate": "sha256:553670229e6c49bca5cc171a780d170225655fcdbd243f8e103c79185b2ff068",
+        "Quick": "sha256:383b1fa12366a762a089751dcfcae155c2f13de6a8ae78b75f2f9fd51323da37"
+      },
+      "specializes": null
+    },
+    "CreateCLI": {
+      "source": "pai-config",
+      "path": "skills/CreateCLI/SKILL.md",
+      "hash": "sha256:3f9921566ec404514280495d5fb20303e205c583d395ff1cfff16df5ee487a0e",
+      "workflows": [
+        "AddCommand",
+        "CreateCli",
+        "UpgradeTier"
+      ],
+      "workflowHashes": {
+        "AddCommand": "sha256:124bda48b97a3d4b0c8960c83669983007bbc0ace658cf59a43a17fcf8a7c523",
+        "CreateCli": "sha256:baadbd063f10137ab81ded78ae0c497083d2386c38fff62947f638948b1ee74e",
+        "UpgradeTier": "sha256:b3b278a0df1652ad758d5bf020d5d39f2b0c59cfb6bc730f68f473e8f3410622"
+      },
+      "specializes": null
+    },
+    "CreateSkill": {
+      "source": "pai-config",
+      "path": "skills/CreateSkill/SKILL.md",
+      "hash": "sha256:7ca2d35adf6dc7371a790443a2c16615d7cd15a4db616da1cf1df5ff9bdd9337",
+      "workflows": [
+        "CanonicalizeSkill",
+        "CreateSkill",
+        "UpdateSkill",
+        "ValidateSkill"
+      ],
+      "workflowHashes": {
+        "CanonicalizeSkill": "sha256:b3792a2266a46b1491162ce55f506754ab5d5b65185ff8cf1fc8f6bed40353ee",
+        "CreateSkill": "sha256:731fac8df4c5e1d5fb426b21cd06cd598583c80ed63d3effb22805c135c67c9c",
+        "UpdateSkill": "sha256:1de1bec917a3baa50d4f179d3455fe6ac3691eafb54d6e92bdaec4a28f55b8aa",
+        "ValidateSkill": "sha256:a66f8f1d124b4134640f04d4766d4de66acc2933438dbdfd458a641423a8303a"
+      },
+      "specializes": null
+    },
+    "DecisionLog": {
+      "source": "pai-config",
+      "path": "skills/DecisionLog/SKILL.md",
+      "hash": "sha256:47d68bfcbecaee1b1d1947740bdac1695a99a594e73f2a8a3e11d2e6bd4feb17",
+      "workflows": [
+        "LogDecision",
+        "ReviewDecisions",
+        "SearchDecisions"
+      ],
+      "workflowHashes": {
+        "LogDecision": "sha256:f76b329c15c3e7f40030f33c92831e1f6b3071846c9d6a09bbbe862ae1589216",
+        "ReviewDecisions": "sha256:94a86170c1dcaa230a6cf2a1588544b10f823348601920b1854dd6fa9b742ffb",
+        "SearchDecisions": "sha256:8f42d9f17417f14dd8b1f2849395be1a00c9d29c6d166bfd5aae538eacf57877"
+      },
+      "specializes": null
+    },
+    "Deliberate": {
+      "source": "pai-config",
+      "path": "skills/Deliberate/SKILL.md",
+      "hash": "sha256:d329a45986359ae66b42a880412d9838a8d59f3cfe6023730979b27267ca5846",
+      "workflows": [
+        "ClaudeOnly",
+        "Full",
+        "Quick",
+        "ResearchMode"
+      ],
+      "workflowHashes": {
+        "ClaudeOnly": "sha256:6f91d4964d617b74e985535f6fa4c517ffeb8aaa79fbbb073eaba7446225fde1",
+        "Full": "sha256:fd8b0c679078dfb8ef084dc949b981a8798ab45ad46329f9f7d0b17b8fca8b06",
+        "Quick": "sha256:9739069e70ede0a9ddfcc327c5d53983f3ff9d1bdd11f6949aef56328d169ac3",
+        "ResearchMode": "sha256:4394d3d14cf371683f6f9cdf7c1c1869d8f5e698a3b8f2f9500e366b853d4a0e"
+      },
+      "specializes": null
+    },
+    "Development": {
+      "source": "pai-config",
+      "path": "skills/Development/SKILL.md",
+      "hash": "sha256:4cfa6b64843237bcb5fa14de901d781315ef6615dcc0f1740bd593dac548b59f",
+      "workflows": [
+        "ImplementSpec",
+        "WriteSpec"
+      ],
+      "workflowHashes": {
+        "ImplementSpec": "sha256:ecddb8f66e63d2d78dd93ede5d701ee0f523cfbfc99f4e7d2206c7626ef54fbc",
+        "WriteSpec": "sha256:6a9be9512d03eb495d7849faedf9e391ca66e64d4c9522643b300018cd40361d"
+      },
+      "specializes": null
+    },
+    "Documents": {
+      "source": "pai-config",
+      "path": "skills/Documents/SKILL.md",
+      "hash": "sha256:a22839399bbff839e55b7824ea2acbca8c4d9fbc397a98d75c2ce07668cbca8d",
+      "workflows": [
+        "ConsultingReport",
+        "ProcessLargePdfGemini3"
+      ],
+      "workflowHashes": {
+        "ConsultingReport": "sha256:bc5c77b319ec502440a1daad20884e5ab641b2ae5bf79482dab17e2a83d1f670",
+        "ProcessLargePdfGemini3": "sha256:f72fd336bc430374fc50ba57c847a287648c5f683971120a5bd7efa60620134d"
+      },
+      "specializes": null
+    },
+    "End": {
+      "source": "pai-config",
+      "path": "skills/End/SKILL.md",
+      "hash": "sha256:ed3d5e4b1e2399fa98641e24978245d07f41307d66cbc26b8b905626b50ea2e7",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "Evals": {
+      "source": "pai-config",
+      "path": "skills/Evals/SKILL.md",
+      "hash": "sha256:85dba99e3f544c95325f78eee56424447f6b3a74309ed40639aaf17fa0f678a4",
+      "workflows": [
+        "CompareModels",
+        "ComparePrompts",
+        "CreateJudge",
+        "CreateUseCase",
+        "RunEval",
+        "ViewResults"
+      ],
+      "workflowHashes": {
+        "CompareModels": "sha256:7e862530bcba636d2c2b411ffc18de89cbf4c12d6a4e3ae62ed4c86794469bf5",
+        "ComparePrompts": "sha256:26e1d4e2c5024ea04a8feedf0804315ae9bd99ec97ee88d6d0fd769532ebbf85",
+        "CreateJudge": "sha256:9d48320d30a2b659b07f056f096c24d105790ca33783f4d187c8b214a78e4e64",
+        "CreateUseCase": "sha256:a959c7f2bb2a6aaba5aa887b51dc53ebe7f817ed9f5ae776e3db98162747396d",
+        "RunEval": "sha256:d4501da2711720db3b929691e1a85aca888faadab990e6413658da95502c78a7",
+        "ViewResults": "sha256:f2310e348aa726d076aca6a87fc7b19be1ac2f714bf0c16b5516c65fa5d645f2"
+      },
+      "specializes": null
+    },
+    "Evolve": {
+      "source": "pai-config",
+      "path": "skills/Evolve/SKILL.md",
+      "hash": "sha256:19d12e2b1a2c8c7811625ac09cc7e158c68d313406a4ca34e16b7bfe4cc20839",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "ExtractWisdom": {
+      "source": "pai-config",
+      "path": "skills/ExtractWisdom/SKILL.md",
+      "hash": "sha256:016d30de823d23850c4b886e57f3cf1d926cdb495548348fc3bb11233a1d7d3f",
+      "workflows": [
+        "Extract"
+      ],
+      "workflowHashes": {
+        "Extract": "sha256:6463ad134e91e1867f6393fb94f0ed61012de58d8569cc6f581c501802b76abb"
+      },
+      "specializes": null
+    },
+    "Fabric": {
+      "source": "pai-config",
+      "path": "skills/Fabric/SKILL.md",
+      "hash": "sha256:78e732c7ec67dd24a9c7efc41e23b162c66d388dbb4e003e94e257bf31f03fa6",
+      "workflows": [
+        "ExecutePattern"
+      ],
+      "workflowHashes": {
+        "ExecutePattern": "sha256:d989977acd2a84e422146621418a964d8c77ef1686d4e815b8c18d8443a4016f"
+      },
+      "specializes": null
+    },
+    "FirstPrinciples": {
+      "source": "pai-config",
+      "path": "skills/FirstPrinciples/SKILL.md",
+      "hash": "sha256:7798ceb97802374dcdaf93293a5e3cd9e9285881ec061ba26085f8743e8782ec",
+      "workflows": [
+        "Challenge",
+        "Deconstruct",
+        "Reconstruct"
+      ],
+      "workflowHashes": {
+        "Challenge": "sha256:377225910a5adc65b5cf180252192ea495a8a71c41a88a3e6247389e1925b533",
+        "Deconstruct": "sha256:e8d4803c9f22970accabf53c328aa104f55b3dcd5a7e781c42ea1c2c2731556e",
+        "Reconstruct": "sha256:a096dcd362246c4828358264656c051a37557ca9c4cc04b940c2f95c84d055f3"
+      },
+      "specializes": null
+    },
+    "Investigation": {
+      "source": "pai-config",
+      "path": "skills/Investigation/SKILL.md",
+      "hash": "sha256:863799dc3ceb271b75632070412072b7f800a48205b4b2cce1e2129351a4b2d7",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "IterativeDepth": {
+      "source": "pai-config",
+      "path": "skills/IterativeDepth/SKILL.md",
+      "hash": "sha256:1995e5a4f382a41596f266e449ff478fc573974c5e8822f6f7f7e250cf1e9c32",
+      "workflows": [
+        "Explore"
+      ],
+      "workflowHashes": {
+        "Explore": "sha256:4fa6d08957b691e462e6e947d6c7a1c84fbe1b621c68905829719b90523c8149"
+      },
+      "specializes": null
+    },
+    "Media": {
+      "source": "pai-config",
+      "path": "skills/Media/SKILL.md",
+      "hash": "sha256:fc2683ca5d49baacf281b83beffab131ca4d8cf703c6135cdc326d4a3e715101",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "OneOnOne": {
+      "source": "pai-config",
+      "path": "skills/OneOnOne/SKILL.md",
+      "hash": "sha256:b7533646a8c406b00c08e146e7a8c80c0d9e9ebab5ffa2dda12417b5ab696765",
+      "workflows": [
+        "CaptureNotes",
+        "PerfReview",
+        "PrepOneOnOne",
+        "ThemesSummary"
+      ],
+      "workflowHashes": {
+        "CaptureNotes": "sha256:f7b8d4eaafcfd9a74b68ec3579fac5b6951d401fa94189b7c81cda91767b42a8",
+        "PerfReview": "sha256:24581290e7caf8ea4e447523bd15065cd84e4c728aaabc95c4de6a597f46897b",
+        "PrepOneOnOne": "sha256:36fc0065e66421939242c4bf5f617ad4a885723e7231dd1f600b5477b817f5fd",
+        "ThemesSummary": "sha256:d6ad3231a74dc9cd45b3ba944c297069eeb1a360ed4110bf01cab9f9c79da87d"
+      },
+      "specializes": null
+    },
+    "OSINT": {
+      "source": "pai-config",
+      "path": "skills/OSINT/SKILL.md",
+      "hash": "sha256:834ae4657c2cde8d49f4c56824c140a85f346fddb7d8149ea8a2e3e6b5a55e4d",
+      "workflows": [
+        "CompanyDueDiligence",
+        "CompanyLookup",
+        "EntityLookup",
+        "PeopleLookup"
+      ],
+      "workflowHashes": {
+        "CompanyDueDiligence": "sha256:13426490ee245c089f167e01f1a16da6c621f4c7528a76441c3fbd763c2aa33e",
+        "CompanyLookup": "sha256:965edbf19b142376a76ddda7feed6c4185d8fab2e33d9b7d197c8df6adbefffe",
+        "EntityLookup": "sha256:5edc54f1a0e11f65d0222799664606e1981957d3e2e22cf35eae0bec235f0fd7",
+        "PeopleLookup": "sha256:592b30b98671efd0310d4d3622b5053499cff8140b9f2494d573a2fa32677d33"
+      },
+      "specializes": null
+    },
+    "PAI": {
+      "source": "pai-config",
+      "path": "skills/PAI/SKILL.md",
+      "hash": "sha256:fa1da5adbd2716533e6ad83d154396ab7f091511bb49c9dc3ddaa4b4a8d37378",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "PAIUpgrade": {
+      "source": "pai-config",
+      "path": "skills/PAIUpgrade/SKILL.md",
+      "hash": "sha256:bdc6b52554424d2969a31a053418bbcff3bc59cd73e0d33bc92bbec94480da99",
+      "workflows": [
+        "AlgorithmUpgrade",
+        "MineReflections",
+        "ResearchUpgrade",
+        "Upgrade"
+      ],
+      "workflowHashes": {
+        "AlgorithmUpgrade": "sha256:4e99dbc308e8d895e5c008e934f566226f9e421a0f5f2b2b33bf467cd09b1cd1",
+        "MineReflections": "sha256:717dedd34b9301427208a579570c9c1451b60f9cae563373f47b97de64cc78c0",
+        "ResearchUpgrade": "sha256:24035fe995e68c5714ea734836c393254866398bc9b5c7cb9d2bd5b1d839a4c1",
+        "Upgrade": "sha256:cc8efb98a3e0fee04f591ddac60c74b1600bf80a7072b5468d4e6de31dc9797b"
+      },
+      "specializes": null
+    },
+    "Parser": {
+      "source": "pai-config",
+      "path": "skills/Parser/SKILL.md",
+      "hash": "sha256:be672db91dc8c009e0213e671d0ebeeceb5eeb8dbfff0e4b465966a8e350a9f3",
+      "workflows": [
+        "BatchEntityExtractionGemini3",
+        "CollisionDetection",
+        "DetectContentType",
+        "ExtractArticle",
+        "ExtractBrowserExtension",
+        "ExtractNewsletter",
+        "ExtractPdf",
+        "ExtractTwitter",
+        "ExtractYoutube",
+        "ParseContent"
+      ],
+      "workflowHashes": {
+        "BatchEntityExtractionGemini3": "sha256:8c6f97fb261a45360d5ca31a47d294d7f1076abe12856c1acc241bd870a3690a",
+        "CollisionDetection": "sha256:1579e67fc91410b066f66301e70e5471e2bc76cdddffa2b73a95243925de080d",
+        "DetectContentType": "sha256:2362171800d7aa1509cddb74edf7b30b68d661b72715a5693dff4148a3d94d55",
+        "ExtractArticle": "sha256:510122d9991f8240294467e82b05de9d2fc3473a10b9701dc26ac06ce8dcf365",
+        "ExtractBrowserExtension": "sha256:16dbc8974db13961d0acc2d880f5edd1dda0314d479f8d2a35bae5dd6e7e663e",
+        "ExtractNewsletter": "sha256:606a769927f314ed195c34ebcb6e1a6c6b94fa3c0045fb5053d23289d89f2f0b",
+        "ExtractPdf": "sha256:2d30086622bbce19ca987c53ba41aeba82112ae3529dbe400a8490f63d2d4c57",
+        "ExtractTwitter": "sha256:0b1630bd56edf62a406f6d435863fb760f4e8587db7efd52f5e397116810518a",
+        "ExtractYoutube": "sha256:a5d9ca6eb9156b17bb7de93fa408721a1248c22d2471d3b18f419ddac97d4d19",
+        "ParseContent": "sha256:2b0174c234d17a5a985213c2f36058df5a7dda8a456b129ec0649113f0b1d93c"
+      },
+      "specializes": null
+    },
+    "PrivateInvestigator": {
+      "source": "pai-config",
+      "path": "skills/PrivateInvestigator/SKILL.md",
+      "hash": "sha256:e2e0d79c459f71790c7c62b02a7eeab6bc43bab2c260bc96155508f0d26736bc",
+      "workflows": [
+        "FindPerson",
+        "PublicRecordsSearch",
+        "ReverseLookup",
+        "SocialMediaSearch",
+        "VerifyIdentity"
+      ],
+      "workflowHashes": {
+        "FindPerson": "sha256:383946346b71e8cb99ecb84cf270e4db5e928bc9417b5b8fd6497b15a8e4163d",
+        "PublicRecordsSearch": "sha256:9cd728cba877eefc1372e20e4c1304674b2bce47f720205ad12d725f38fa949c",
+        "ReverseLookup": "sha256:05309d4ca67531d286f8dd99f5b07cb517644b2b1ba1bf3d8d2ee58a94b80fef",
+        "SocialMediaSearch": "sha256:0480094d97eba33316fc26bfb02a87d5e47465cdba1bf524242e2bd77917f368",
+        "VerifyIdentity": "sha256:e98853e7422e310bd327c76c08238ac953f279a0879b15347df06434b2ed1d4f"
+      },
+      "specializes": null
+    },
+    "Prompting": {
+      "source": "pai-config",
+      "path": "skills/Prompting/SKILL.md",
+      "hash": "sha256:bed062f9eac6bcbe85e2922df572124e01eae82cb3b043154cbaea71e9376630",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "PromptInjection": {
+      "source": "pai-config",
+      "path": "skills/PromptInjection/SKILL.md",
+      "hash": "sha256:5e7c6661fd180050c74074ead0bc2cb37cbb2d7cadfd7b45da9b217e6365b21e",
+      "workflows": [
+        "CompleteAssessment",
+        "DirectInjectionTesting",
+        "IndirectInjectionTesting",
+        "MultiStageAttacks",
+        "Reconnaissance"
+      ],
+      "workflowHashes": {
+        "CompleteAssessment": "sha256:1500b7dbcb9216493d70abe869e71efc2acc5178fc5ca9b3039eba290102a8cd",
+        "DirectInjectionTesting": "sha256:f57705428f72fb4be254739c81ee7f4ec76617a378439f4bf96ed7d6addd6a27",
+        "IndirectInjectionTesting": "sha256:29eebece806512afadf09a700f1c43e4735b979595482d79e0656373412a9e86",
+        "MultiStageAttacks": "sha256:2e08487ec494581643546914bf46af0a225c55225bd995a7c698de0a83566883",
+        "Reconnaissance": "sha256:ffbd83664b5cbbdbeaad3a1fa663a76a6a61ff0df6afef1ec1c626900a9f3b08"
+      },
+      "specializes": null
+    },
+    "RedTeam": {
+      "source": "pai-config",
+      "path": "skills/RedTeam/SKILL.md",
+      "hash": "sha256:6d6d0fd9ba3bc8bd5eba3526d1245511aa0848fd5a4cc5013eedd124874d9033",
+      "workflows": [
+        "AdversarialValidation",
+        "ParallelAnalysis"
+      ],
+      "workflowHashes": {
+        "AdversarialValidation": "sha256:3cfe8f17363c40aad7cc8ae810d063669d08148a4fe20839a23ed83faf858d7b",
+        "ParallelAnalysis": "sha256:a4cc96533a33e1fadb2f4314db2f73301389e7623ba11779cd0c988904c00ac0"
+      },
+      "specializes": null
+    },
+    "Research": {
+      "source": "pai-config",
+      "path": "skills/Research/SKILL.md",
+      "hash": "sha256:396dd0c438fd5b8c2e4f34aa72dc015142e4bb59c8740d74b0500f86ed51f8ab",
+      "workflows": [
+        "AnalyzeAiTrends",
+        "ClaudeResearch",
+        "DeepInvestigation",
+        "Enhance",
+        "ExtensiveResearch",
+        "ExtractAlpha",
+        "ExtractKnowledge",
+        "Fabric",
+        "InterviewResearch",
+        "QuickResearch",
+        "Retrieve",
+        "StandardResearch",
+        "WebScraping",
+        "YoutubeExtraction"
+      ],
+      "workflowHashes": {
+        "AnalyzeAiTrends": "sha256:2ba9b3725952ed72c51e90433bf7897e4ebe08c15c1be1b194b606538d308613",
+        "ClaudeResearch": "sha256:c7ab3e5cd40df69ceb97196cf2843cb936edc440dc2922f343f4d913e7148ef9",
+        "DeepInvestigation": "sha256:e7f4d6ae0710a11a95284bf4a8b515ec93e53bc80ff78aeb008552e882276530",
+        "Enhance": "sha256:826206f24d31bae2a2aacefa789dbd20ce66652fcd127814cec5534b5c6a2904",
+        "ExtensiveResearch": "sha256:8d8a2842ef09d698f2e4815471d6ca317820ff6e0a577eef5c0df70314632a3c",
+        "ExtractAlpha": "sha256:744ab8f1ffc9604af82b76d660478fa5aa0cbdefc6d1d8f9710c0185a663e8e2",
+        "ExtractKnowledge": "sha256:26098ee7d488ebe50b19e178150d1710bfb2faf56cdb7acb0642e1228bdfe01c",
+        "Fabric": "sha256:f23439ea83b9119545d3e93f333e7bd4451cce0907a5155c2792aeae458b31f0",
+        "InterviewResearch": "sha256:e7a4d56f75928d69578a21c9026f336343b39a612d603b17f08fdccbb5e4888d",
+        "QuickResearch": "sha256:2b102ff6234ad0c5b7cbd53e9b6daffe83bd2cf98fce8b5b5cbb0453750c3f61",
+        "Retrieve": "sha256:c3b17499c31a23beb6313b99887b6f34274db725d2f696a3db2d58eeee2c8bad",
+        "StandardResearch": "sha256:5ac93f872bd5910cc0c9e08dae18291fb5cd28a82dd483869d2f486ba0cc990e",
+        "WebScraping": "sha256:e49725a8c5bece3e22ca1e503590251cff4d1aa83645080dd98584381714df15",
+        "YoutubeExtraction": "sha256:13467ca7a1e5778888451d7a20946c591b21e61ab2b05895996160ebf7b5e8fd"
+      },
+      "specializes": null
+    },
+    "Science": {
+      "source": "pai-config",
+      "path": "skills/Science/SKILL.md",
+      "hash": "sha256:2b0ce48c3d28d91a089f3dfd25003ec26919604935ebeefca62fd46e88d93ffe",
+      "workflows": [
+        "AnalyzeResults",
+        "DefineGoal",
+        "DesignExperiment",
+        "FullCycle",
+        "GenerateHypotheses",
+        "Iterate",
+        "MeasureResults",
+        "QuickDiagnosis",
+        "StructuredInvestigation"
+      ],
+      "workflowHashes": {
+        "AnalyzeResults": "sha256:8451bbf1ef1a6cc265bcfd2518d08d63fb4cb7dd5a965b582231681d201e388a",
+        "DefineGoal": "sha256:cd2e0e44218e937220c6846c6fdd5e16a043a155a7f55a4b4dfc1dca73967f20",
+        "DesignExperiment": "sha256:62a5879555bc55261385690147fc45d6027f364ff0bd86c6aa8fa52db29047f4",
+        "FullCycle": "sha256:739552a2ac6f8bd625e2657f1ac154a0fd2b3bd20849eb0d6cc9b57b30730e91",
+        "GenerateHypotheses": "sha256:e77754fb5156746ffda9b0b87a90cad053041cebef9a1bfe18f66835fcc6b06b",
+        "Iterate": "sha256:793b621897d09be3e35a0cdc961bedf5db7f7a3138a66a3d8a93eeb4b428dbe2",
+        "MeasureResults": "sha256:6e552fb3b0e6181316ee1141d2356d3c7be9d54c392fe51ebadd4854559ab2cf",
+        "QuickDiagnosis": "sha256:f535c32ea31db87697d3f64b85991ab0a2aeb6d6fc8536e28f65510880cdb3ac",
+        "StructuredInvestigation": "sha256:6df365d9ff06bc57d9881e52ea93d41c63f70470a824b625a2365019ba218572"
+      },
+      "specializes": null
+    },
+    "Scraping": {
+      "source": "pai-config",
+      "path": "skills/Scraping/SKILL.md",
+      "hash": "sha256:338b3a31a165ff416e4417197a0ea64c0a6cbe8eda8b8dca1da410625a1041a3",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "SECUpdates": {
+      "source": "pai-config",
+      "path": "skills/SECUpdates/SKILL.md",
+      "hash": "sha256:65de2c6d60c0148cc2f6305b588f670966ba4fe6acd06e06ce99663199ed842e",
+      "workflows": [
+        "Update"
+      ],
+      "workflowHashes": {
+        "Update": "sha256:0186361fbf13f769ecd754de1ba9005d3a6d35886e15a705d6a6d503f8c7db80"
+      },
+      "specializes": null
+    },
+    "Security": {
+      "source": "pai-config",
+      "path": "skills/Security/SKILL.md",
+      "hash": "sha256:4ef3ceb66d855dc1d25ab3b5967cfdaa42665b4c9c572cb3b855387aa28f034b",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "Telos": {
+      "source": "pai-config",
+      "path": "skills/Telos/SKILL.md",
+      "hash": "sha256:526a3eed1ba8e16c0f197a8f21acf25cbae6c3d9935ff7573bb5f347c331660e",
+      "workflows": [
+        "CreateNarrativePoints",
+        "InterviewExtraction",
+        "Update",
+        "WriteReport"
+      ],
+      "workflowHashes": {
+        "CreateNarrativePoints": "sha256:f8cc21cc18e681c9833c8ff5e7dd7d3ad90fe359677e5f4885bc4a3254b728d1",
+        "InterviewExtraction": "sha256:a86088c0e3b3ff38ccb68e0ace2986c00daa89519e92eac921507cb9a98086e1",
+        "Update": "sha256:d44146e77859e5e3d19035b74d91a817df7dcb458af124760b2f0bbaf8dd7ed7",
+        "WriteReport": "sha256:37def997b63542c5aad57c0df862105a6c9ea81dcfb8a44af8f98f98d5e7e6ee"
+      },
+      "specializes": null
+    },
+    "Thinking": {
+      "source": "pai-config",
+      "path": "skills/Thinking/SKILL.md",
+      "hash": "sha256:946337313c5b8730c55ead5d09b8e95beee511db99f83845d5235b22fc678696",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "USMetrics": {
+      "source": "pai-config",
+      "path": "skills/USMetrics/SKILL.md",
+      "hash": "sha256:e2cf917e87e556644aebb1a01e84fd95d9f0c86afa6cee6f887890fd68242c39",
+      "workflows": [
+        "GetCurrentState",
+        "UpdateData"
+      ],
+      "workflowHashes": {
+        "GetCurrentState": "sha256:b2cb3d3fb15c9e3e59f575ffacbf88ad56c7a7f4d38c743077d324393e9a4476",
+        "UpdateData": "sha256:20a29a47324a4792a62d96bd73ecd10b37ac07e2288ead12e53d49a04bdec544"
+      },
+      "specializes": null
+    },
+    "Utilities": {
+      "source": "pai-config",
+      "path": "skills/Utilities/SKILL.md",
+      "hash": "sha256:830a72cf1b50bac45a73efe37fb9fc690193cec0cded2d0f50026e9b9134b2d8",
+      "workflows": [
+        "MCPSetup"
+      ],
+      "workflowHashes": {
+        "MCPSetup": "sha256:d3d35554fb77a3112ff65255fb4b946e95295310d5edd1108473f2a76986f7f8"
+      },
+      "specializes": null
+    },
+    "WebAssessment": {
+      "source": "pai-config",
+      "path": "skills/WebAssessment/SKILL.md",
+      "hash": "sha256:05816e5ea309fd834ba0e6d574b3ca58e407b11922b4dd8006150649dea403cb",
+      "workflows": [
+        "CreateThreatModel",
+        "UnderstandApplication",
+        "VulnerabilityAnalysisGemini3"
+      ],
+      "workflowHashes": {
+        "CreateThreatModel": "sha256:9629a13ddffbcd2d0702e1ca4326be075fa1c2c2c6bb6badb2241457085ea413",
+        "UnderstandApplication": "sha256:7cedea893191ec0911e25c55ac7503017500cc0af28da3deea37c07b29bcbbb2",
+        "VulnerabilityAnalysisGemini3": "sha256:0495032416ef3d701ba4e8ae871ee866a3a2f1718e18a06f086d3cad1aaf2211"
+      },
+      "specializes": null
+    },
+    "WeeklyStatus": {
+      "source": "pai-config",
+      "path": "skills/WeeklyStatus/SKILL.md",
+      "hash": "sha256:40847bad5f59e04ae43dac0dae8a9c01f22b5d497319aeb20284a3c611688313",
+      "workflows": [
+        "WeeklyStatus"
+      ],
+      "workflowHashes": {
+        "WeeklyStatus": "sha256:b6e1c489ba2ac90bc59b50254b5241b5d660840423a51865503449619fe2688f"
+      },
+      "specializes": null
+    },
+    "WikiQuery": {
+      "source": "pai-config",
+      "path": "skills/WikiQuery/SKILL.md",
+      "hash": "sha256:9b0eee429daf0cde75d3c7242f8a6ae1820d26efb41058a44b20989da9624147",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "WorldThreatModelHarness": {
+      "source": "pai-config",
+      "path": "skills/WorldThreatModelHarness/SKILL.md",
+      "hash": "sha256:38eb2cfa8ca238c73571538fa12b911036ecc0bc670ec4f195e28a29cd403ed6",
+      "workflows": [
+        "TestIdea",
+        "UpdateModels",
+        "ViewModels"
+      ],
+      "workflowHashes": {
+        "TestIdea": "sha256:dea96e528c7dd57b7c50ff3b49b0db33f0aef4702bcfa30ff7cc9198d3339320",
+        "UpdateModels": "sha256:b374e0bae3ab2ff298d4a5fe599e1cbe4830d4b3ac5fafd5d2f494625b882013",
+        "ViewModels": "sha256:5862733ccbae6194fd2938b2dd8776446ce01ddfda517baeab99f773a24183ac"
+      },
+      "specializes": null
+    }
+  }
+}

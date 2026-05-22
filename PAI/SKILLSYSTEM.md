@@ -84,4 +84,50 @@ Inside `SKILL.md`, after frontmatter:
 
 ---
 
+---
+
+## Skill Specialization (Project Skills)
+
+Project skills can **specialize** a system skill, inheriting all its workflows and selectively overriding or extending them.
+
+### Frontmatter fields
+
+```yaml
+---
+name: Research                       # Same name as parent — overrides it in-context
+specializes: Research                # Parent system skill name (must exist in skills-lock.json)
+overrides:                           # Parent workflows replaced by this skill's versions
+  - StandardResearch
+extends:                             # New workflows added (not in parent)
+  - FirmwareBuildSearch
+use_when: "Research in firmware/feed-bbf context."
+---
+```
+
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `specializes` | Yes (for project specializations) | Parent system skill to inherit from |
+| `overrides` | No | Workflows from the parent to replace; each must match a parent workflow name exactly |
+| `extends` | No | New workflow files added by this project skill; do NOT appear in parent |
+
+### Validation
+
+The lock generator validates specialization declarations at development time:
+
+```bash
+bun scripts/skills-lock.ts validate-specialization path/to/project/SKILL.md
+```
+
+**Errors caught:**
+- `missing_parent` — `specializes:` references a skill not in `skills-lock.json`
+- `invalid_override` — `overrides:` lists a workflow name that doesn't exist in the parent
+
+**Not validated at runtime** — Claude Code controls file loading; specialization is a convention and lint-time contract only.
+
+### Example
+
+See `skills-examples/Specialized/` for a complete working example.
+
+---
+
 *Full spec with examples, canonicalization guide, and advanced patterns: [PAI/dev/SKILLSYSTEM-Reference.md](dev/SKILLSYSTEM-Reference.md)*

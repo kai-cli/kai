@@ -1,10 +1,10 @@
 {
-  "version": "5.8.0",
+  "version": "5.9.0",
   "productName": "KAI",
   "algorithmVersion": "v3.13.0",
   "counts": {
-    "skills": 83,
-    "hooks": 47,
+    "skills": 84,
+    "hooks": 48,
     "agents": 20
   },
   "hookInventory": [
@@ -54,7 +54,8 @@
     "InsightExtractor.hook",
     "PlanApprovalGuard.hook",
     "MemoryRecall.hook",
-    "WriteTracker.hook"
+    "WriteTracker.hook",
+    "DeviceAuthReminder.hook"
   ],
   "skillInventory": [
     "Agents",
@@ -135,8 +136,12 @@
     "Utilities/Prompting",
     "WebAssessment",
     "WeeklyStatus",
+    "WikiQuery",
     "WorldThreatModelHarness",
-    "Evolve"
+    "End",
+    "Evolve",
+    "PAI/End",
+    "PAI/Search"
   ],
   "agentInventory": [
     "Algorithm",

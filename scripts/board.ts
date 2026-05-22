@@ -237,8 +237,15 @@ async function loadSessions(): Promise<SessionItem[]> {
 
       const isActive = activeSessions.has(sess.sessionUUID || "");
 
-      // Prefer sessionName over raw task text — but "New Session" is unhelpful, fall back to task
-      const displayName = (sess.sessionName && sess.sessionName !== 'New Session') ? sess.sessionName : task;
+      // Use the raw task prompt, cleaned up — sessionName auto-generation is often gibberish
+      const cleanedTask = task
+        .replace(/^(ok so|so |ok |hey |can you |please )/i, '')
+        .replace(/https?:\/\/\S+/g, '[link]')
+        .replace(/\s+/g, ' ')
+        .trim();
+      // Take first sentence or first 60 chars
+      const firstSentence = cleanedTask.split(/[.!?\n]/)[0] || cleanedTask;
+      const displayName = (firstSentence.length > 60 ? firstSentence.slice(0, 57) + '...' : firstSentence) || sess.sessionName || slug;
 
       sessions.push({
         slug,
@@ -578,17 +585,60 @@ for (const scanDir of SCAN_DIRS) {
   } catch {}
 }
 
-// --- HTML ---
-let cachedHtml: string | null = null;
+// --- HTML / Static Files ---
 const HTML_PATH = join(SCRIPTS_DIR, "board.html");
+const REACT_DIST = join(SCRIPTS_DIR, "..", "frontend", "dist");
 
 function getHtml(): string {
-  // Always re-read in dev; could cache in production
+  // Prefer React build if it exists
+  try {
+    return readFileSync(join(REACT_DIST, "index.html"), "utf-8");
+  } catch {}
+  // Fall back to legacy board.html
   try {
     return readFileSync(HTML_PATH, "utf-8");
   } catch {
-    return "<html><body><h1>board.html not found</h1><p>Expected at: " + HTML_PATH + "</p></body></html>";
+    return "<html><body><h1>No frontend found</h1><p>Run 'pnpm build' in Project-Board or ensure board.html exists.</p></body></html>";
   }
+}
+
+const MIME_TYPES: Record<string, string> = {
+  ".js": "application/javascript",
+  ".css": "text/css",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".json": "application/json",
+  ".woff2": "font/woff2",
+  ".woff": "font/woff",
+};
+
+function serveStatic(pathname: string): Response | null {
+  const filePath = join(REACT_DIST, pathname);
+  try {
+    const file = Bun.file(filePath);
+    const ext = pathname.slice(pathname.lastIndexOf("."));
+    const contentType = MIME_TYPES[ext] || "application/octet-stream";
+    return new Response(file, { headers: { "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable" } });
+  } catch {
+    return null;
+  }
+}
+
+// --- CORS Helper ---
+function corsHeaders(): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders() },
+  });
 }
 
 // --- Server ---
@@ -598,8 +648,19 @@ Bun.serve({
     const url = new URL(req.url);
     const method = req.method;
 
-    // --- Static ---
-    if (url.pathname === "/" || url.pathname === "/board") {
+    // CORS preflight
+    if (method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders() });
+    }
+
+    // --- Static assets from React build ---
+    if (url.pathname.startsWith("/assets/")) {
+      const staticRes = serveStatic(url.pathname);
+      if (staticRes) return staticRes;
+    }
+
+    // --- HTML (SPA fallback) ---
+    if (url.pathname === "/" || url.pathname === "/board" || (!url.pathname.startsWith("/api") && !url.pathname.includes("."))) {
       return new Response(getHtml(), { headers: { "Content-Type": "text/html" } });
     }
 
@@ -680,6 +741,32 @@ Bun.serve({
       return Response.json({ ok: true });
     }
 
+    // --- API: Update Sort Order ---
+    if (url.pathname.match(/^\/api\/task\/[^/]+\/order$/) && method === "PATCH") {
+      const slug = decodeURIComponent(url.pathname.split("/")[3]);
+      const body = await req.json() as { sort_order: number };
+      const ok = await workLoader.updateSortOrder(slug, body.sort_order);
+      return ok ? Response.json({ ok: true }) : Response.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // --- API: Update Metadata (priority, tags) ---
+    if (url.pathname.match(/^\/api\/task\/[^/]+\/metadata$/) && method === "PATCH") {
+      const slug = decodeURIComponent(url.pathname.split("/")[3]);
+      const body = await req.json() as { priority?: string; tags?: string[] };
+      const ok = await workLoader.updateMetadata(slug, body);
+      return ok ? Response.json({ ok: true }) : Response.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // --- API: Bulk Reorder ---
+    if (url.pathname === "/api/reorder" && method === "POST") {
+      const body = await req.json() as { updates: { slug: string; phase: string; sort_order: number }[] };
+      for (const update of body.updates) {
+        await workLoader.updatePhase(update.slug, update.phase);
+        await workLoader.updateSortOrder(update.slug, update.sort_order);
+      }
+      return Response.json({ ok: true });
+    }
+
     // --- API: Launch Claude Session ---
     if (url.pathname.match(/^\/api\/task\/[^/]+\/launch$/) && method === "POST") {
       const slug = decodeURIComponent(url.pathname.split("/")[3]);
@@ -688,12 +775,17 @@ Bun.serve({
       const content = await readFile(prdPath, "utf-8");
       const fm = parseFrontmatter(content);
       const task = fm?.task || slug;
-      // Generate the claude command to open in a new terminal
-      const cmd = `claude`;
+      const isAutonomous = fm?.mode === "autonomous";
+      const shellEsc = (s: string) => s.replace(/[\\"`$!]/g, "\\$&");
+      const initPrompt = `Read PRD.md and begin executing the task: ${task}`;
+      const nameFlag = `-n "${shellEsc(task.slice(0, 30))}"`;
+      const cmd = isAutonomous
+        ? `claude ${nameFlag} -p "${shellEsc(initPrompt)}" --max-budget-usd 5`
+        : `claude ${nameFlag} "${shellEsc(initPrompt)}"`;
+
       if (terminalAdapter) {
         await terminalAdapter.launchSession({ workDir: dirname(prdPath), command: cmd, title: task.slice(0, 30) });
       }
-      // Also update phase to execute
       await updatePhase(slug, "execute");
       return Response.json({ ok: true, cmd });
     }

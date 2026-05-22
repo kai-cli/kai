@@ -1,0 +1,41 @@
+{
+  "_comment": "Cost and routing configuration for multi-harness dispatch. Update costs here without code changes.",
+  "harnesses": {
+    "claude": {
+      "costBucket": "high",
+      "defaultModel": "us.anthropic.claude-sonnet-4-6",
+      "executionMode": "remote",
+      "notes": "Default harness for complex reasoning and general tasks"
+    },
+    "claude-code": {
+      "costBucket": "high",
+      "defaultModel": "us.anthropic.claude-sonnet-4-6",
+      "executionMode": "local",
+      "notes": "Embedded harness — wraps Claude Code Agent tool; always available"
+    },
+    "codex": {
+      "costBucket": "medium",
+      "defaultModel": "gpt-4o",
+      "executionMode": "remote",
+      "notes": "Code generation via OpenAI API; requires OPENAI_API_KEY"
+    },
+    "gemini": {
+      "costBucket": "low",
+      "defaultModel": "gemini-2.0-flash",
+      "executionMode": "remote",
+      "notes": "Multimodal + large context via Google AI; requires GOOGLE_AI_KEY"
+    },
+    "local": {
+      "costBucket": "free",
+      "defaultModel": "llama3.2",
+      "executionMode": "local",
+      "notes": "Privacy-sensitive tasks via Ollama (localhost:11434)"
+    }
+  },
+  "routing": {
+    "defaultHarness": "claude",
+    "imageHarness": "gemini",
+    "sensitivePrivacyHarness": "local",
+    "codeGenHarness": "codex"
+  }
+}

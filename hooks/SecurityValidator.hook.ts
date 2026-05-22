@@ -64,6 +64,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, appendFileSync, rea
 import { join } from 'path';
 import { homedir } from 'os';
 import { paiPath } from './lib/paths';
+import { classifyCommand } from './lib/risk-classifier';
 
 // ========================================
 // Security Event Logging
@@ -314,6 +315,12 @@ function matchesPathPattern(filePath: string, pattern: string): boolean {
 
 function validateBashCommand(command: string): { action: 'allow' | 'block' | 'confirm' | 'alert'; reason?: string } {
   const patterns = loadPatterns();
+
+  // Risk classifier fast-path: read-only commands are always safe
+  const risk = classifyCommand(command);
+  if (risk.is_read_only && !risk.is_destructive) {
+    return { action: 'allow' };
+  }
 
   // Check trusted patterns FIRST (fast-path allow, no logging)
   for (const p of (patterns.bash.trusted || [])) {

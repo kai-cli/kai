@@ -232,37 +232,51 @@ describe('writeInsight', () => {
 // ── State management ─────────────────────────────────────────────────────────
 
 describe('state management', () => {
-  test('loadState returns defaults when no state file exists', () => {
-    // Remove state file if it exists
-    const statePath = join(process.env.HOME || '', '.claude', 'MEMORY', 'STATE', '.insight-extractor-state.json');
-    rmSync(statePath, { force: true });
+  // STATE_FILE is baked at module load time — can't redirect without a subprocess.
+  // Run state tests in a subprocess with a temp PAI_DIR so they never touch real state.
+  const HOOK = new URL('../hooks/InsightExtractor.hook.ts', import.meta.url).pathname;
 
-    const state = loadState();
-    expect(state.lastRun).toBe('');
-    expect(state.lastSessionId).toBe('');
-    expect(state.insightsToday).toBe(0);
-    expect(state.todayDate).toBe('');
+  async function runStateScript(script: string, paiDir: string): Promise<string> {
+    const proc = Bun.spawn(['bun', '-e', script], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: { ...process.env, PAI_DIR: paiDir },
+    });
+    return (await new Response(proc.stdout).text()).trim();
+  }
+
+  test('loadState returns defaults when no state file exists', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'pai-state-test-'));
+    mkdirSync(join(tmpDir, 'MEMORY', 'STATE'), { recursive: true });
+    try {
+      const out = await runStateScript(
+        `import { loadState } from '${HOOK}'; const s = loadState(); console.log(JSON.stringify(s));`,
+        tmpDir
+      );
+      const state = JSON.parse(out);
+      expect(state.lastRun).toBe('');
+      expect(state.lastSessionId).toBe('');
+      expect(state.insightsToday).toBe(0);
+      expect(state.todayDate).toBe('');
+    } finally { rmSync(tmpDir, { recursive: true, force: true }); }
   });
 
-  test('saveState and loadState round-trip correctly', () => {
-    const testState: ExtractorState = {
-      lastRun: '2026-05-18T10:00:00.000Z',
-      lastSessionId: 'abc-123',
-      insightsToday: 3,
-      todayDate: '2026-05-18',
-    };
-
-    saveState(testState);
-    const loaded = loadState();
-
-    expect(loaded.lastRun).toBe(testState.lastRun);
-    expect(loaded.lastSessionId).toBe(testState.lastSessionId);
-    expect(loaded.insightsToday).toBe(3);
-    expect(loaded.todayDate).toBe('2026-05-18');
-
-    // Cleanup
-    const statePath = join(process.env.HOME || '', '.claude', 'MEMORY', 'STATE', '.insight-extractor-state.json');
-    rmSync(statePath, { force: true });
+  test('saveState and loadState round-trip', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'pai-state-test-'));
+    mkdirSync(join(tmpDir, 'MEMORY', 'STATE'), { recursive: true });
+    try {
+      const out = await runStateScript(
+        `import { loadState, saveState } from '${HOOK}';
+saveState({ lastRun: '2026-05-18T10:00:00.000Z', lastSessionId: 'abc-123', insightsToday: 3, todayDate: '2026-05-18' });
+const s = loadState(); console.log(JSON.stringify(s));`,
+        tmpDir
+      );
+      const state = JSON.parse(out);
+      expect(state.lastRun).toBe('2026-05-18T10:00:00.000Z');
+      expect(state.lastSessionId).toBe('abc-123');
+      expect(state.insightsToday).toBe(3);
+      expect(state.todayDate).toBe('2026-05-18');
+    } finally { rmSync(tmpDir, { recursive: true, force: true }); }
   });
 });
 

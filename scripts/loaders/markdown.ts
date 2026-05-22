@@ -62,6 +62,8 @@ export class MarkdownLoader implements WorkLoader {
             const updatedStr = fm.updated || fm.started || "";
             const updatedTime = updatedStr ? new Date(updatedStr).getTime() : 0;
             const isStale = passed === 0 && updatedTime > 0 && (Date.now() - updatedTime) > 14 * 86_400_000;
+            const tags = fm.tags ? fm.tags.split(",").map(t => t.trim()).filter(Boolean) : undefined;
+            const depends_on = fm.depends_on ? fm.depends_on.split(",").map(t => t.trim()).filter(Boolean) : undefined;
             items.push({
               slug,
               task: fm.task || dir,
@@ -76,6 +78,10 @@ export class MarkdownLoader implements WorkLoader {
               prdPath,
               source: basename(dirname(scanDir)),
               stale: isStale,
+              priority: fm.priority || undefined,
+              tags,
+              sort_order: fm.sort_order ? parseInt(fm.sort_order) : undefined,
+              depends_on,
             });
           } catch { /* skip */ }
         }
@@ -165,6 +171,45 @@ ${description}
     await writeFile(join(workDir, "PRD.md"), prdContent);
     this.onUpdate();
     return slug;
+  }
+
+  async updateSortOrder(slug: string, sort_order: number): Promise<boolean> {
+    const prdPath = await this.findPrd(slug);
+    if (!prdPath) return false;
+    let content = await readFile(prdPath, "utf-8");
+    if (/^sort_order: .+$/m.test(content)) {
+      content = content.replace(/^sort_order: .+$/m, `sort_order: ${sort_order}`);
+    } else {
+      // Insert after phase line
+      content = content.replace(/^(phase: .+)$/m, `$1\nsort_order: ${sort_order}`);
+    }
+    await writeFile(prdPath, content);
+    this.onUpdate();
+    return true;
+  }
+
+  async updateMetadata(slug: string, data: { priority?: string; tags?: string[] }): Promise<boolean> {
+    const prdPath = await this.findPrd(slug);
+    if (!prdPath) return false;
+    let content = await readFile(prdPath, "utf-8");
+    if (data.priority !== undefined) {
+      if (/^priority: .+$/m.test(content)) {
+        content = content.replace(/^priority: .+$/m, `priority: ${data.priority}`);
+      } else {
+        content = content.replace(/^(effort: .+)$/m, `$1\npriority: ${data.priority}`);
+      }
+    }
+    if (data.tags !== undefined) {
+      const tagsStr = data.tags.join(", ");
+      if (/^tags: .+$/m.test(content)) {
+        content = content.replace(/^tags: .+$/m, `tags: ${tagsStr}`);
+      } else {
+        content = content.replace(/^(effort: .+)$/m, `$1\ntags: ${tagsStr}`);
+      }
+    }
+    await writeFile(prdPath, content);
+    this.onUpdate();
+    return true;
   }
 
   archiveTask(_slug: string): void { /* managed externally via config */ }

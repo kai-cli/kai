@@ -33,14 +33,18 @@ bash ~/kai/install.sh
 ```
 
 The installer will:
-1. Install Bun (if missing)
-2. Symlink `~/.claude/` to your repo clone
-3. Ask for your name, assistant name, and timezone
-4. Optionally configure AWS Bedrock
-5. Create personal file templates in `PAI/USER/`
-6. Build `settings.json` from domain config files
+1. Symlink `~/.claude/` to your repo clone
+2. Verify Claude Code is installed
+3. Choose a knowledge archetype
+4. Configure your identity (name, assistant name, timezone)
+5. Optionally configure AWS Bedrock
+6. Set up API keys for research agents (optional)
+7. Configure MCP servers (optional)
+8. Set up notifications (optional)
+9. Create personal file templates in `PAI/USER/`
+10. Build `settings.json` and `CLAUDE.md`
 
-Total time: ~60 seconds.
+Total time: ~2-3 minutes (interactive).
 
 ## After Install
 
@@ -72,7 +76,7 @@ All configuration lives in `~/.claude/config/*.jsonc` (JSON with comments):
 | File | What it controls |
 |------|-----------------|
 | `identity.jsonc` | Your name, assistant name, timezone |
-| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->47<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
+| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->51<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
 | `permissions.jsonc` | Tool permissions (allow/deny/ask rules) |
 | `preferences.jsonc` | Environment variables, MCP servers, tech stack |
 | `notifications.jsonc` | Alert routing (disabled by default) |
@@ -87,7 +91,7 @@ bun ~/.claude/hooks/handlers/BuildSettings.ts
 
 ## What You Get
 
-### Skills (<!-- KAI:counts:skills:begin -->83<!-- KAI:counts:skills:end --> modules)
+### Skills (<!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> modules)
 KAI includes specialized skills invoked with slash commands or automatically:
 - **Research** — multi-agent parallel research with dedup
 - **Security** — recon, web assessment, prompt injection testing
@@ -108,7 +112,7 @@ For complex tasks, KAI uses a 7-phase execution framework:
 
 Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
-### Hooks (<!-- KAI:counts:hooks:begin -->47<!-- KAI:counts:hooks:end --> lifecycle events)
+### Hooks (<!-- KAI:counts:hooks:begin -->51<!-- KAI:counts:hooks:end --> lifecycle events)
 Automated behaviors that fire on specific events:
 - **SecretScanner** — warns if you're about to commit secrets
 - **GitHubWriteGuard** — requires confirmation before git push
@@ -163,6 +167,9 @@ bash ~/kai/install.sh
 
 ## Further Reading
 
+- [CONFIGURATION.md](CONFIGURATION.md) — Full config system guide (build pipeline, local overrides)
+- [MEMORY.md](MEMORY.md) — How the memory system works (directories, retention, curation)
+- [MCP-GUIDE.md](MCP-GUIDE.md) — Adding and managing MCP servers
+- [PLUGINS.md](PLUGINS.md) — Plugin system architecture and manual installation
 - [WHATS-DIFFERENT.md](WHATS-DIFFERENT.md) — How KAI differs from the original
-- [Architecture](architecture/README.md) — System architecture overview
-- [ROADMAP.md](planning/NEXT-STEPS.md) — Current work and roadmap
+- [ARCHITECTURAL-UNDERSTANDING.md](architecture/ARCHITECTURAL-UNDERSTANDING.md) — Full system architecture

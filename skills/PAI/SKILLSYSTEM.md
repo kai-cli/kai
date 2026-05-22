@@ -1019,3 +1019,42 @@ This system ensures:
 2. Specific functionality executes accurately (Workflow Routing in body)
 3. All skills have consistent, predictable structure
 4. **All naming follows TitleCase convention**
+
+---
+
+## Three-Tier Automation Architecture (v6.0)
+
+| Tier | Format | Complexity | Invocation |
+|------|--------|-----------|------------|
+| **Workflow Template** | Single YAML file in `workflows/` | Parameterized command, `{{variable}}` interpolation | `bun scripts/workflow-run.ts <name> [--key val]` |
+| **Skill** | SKILL.md + Workflows/ + optional Tools/ | Multi-step orchestration with AI reasoning | `/skill-name` prefix or USE WHEN routing |
+| **Agent** | Full agent personality `.md` | Autonomous multi-step work | `Task()` tool in session |
+
+### Workflow Templates
+
+Workflow templates are lighter than Skills — a single YAML file that wraps a parameterized shell command. Use them for:
+- Repetitive commands with swappable arguments (firmware builds, test runs)
+- Team-shareable automation snippets
+- Commands too simple to warrant a full Skill
+
+```yaml
+# workflows/example.yaml
+name: example
+description: "Short description of what this does"
+command: |
+  echo "Running with board={{board}} and branch={{branch}}"
+arguments:
+  - name: board
+    description: "Target board"
+    default: m62
+  - name: branch
+    description: "Git branch"
+    required: true
+tags: [example]
+```
+
+### Security Model
+
+- **Trusted paths:** `./workflows/` (repo-local), `$PAI_DIR/workflows/` (system), `~/.claude/workflows/` (user home)
+- **NOT auto-trusted:** Workflow files in arbitrary cloned-repo directories — user must explicitly copy to a trusted path
+- **Resolution order:** Project-level shadows system-level (same name → project wins)

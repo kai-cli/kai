@@ -43,6 +43,24 @@ else
   fail "Test suite has failures — run 'bun test' for details"
 fi
 
+# ── 1b. Skills Lock ───────────────────────────────────────────
+echo ""
+echo "── Skills Lock ──"
+if bun scripts/skills-lock.ts verify --strict; then
+  pass "skills-lock.json matches installed skills"
+else
+  fail "skills-lock.json is out of date — run: bun scripts/skills-lock.ts generate"
+fi
+
+# ── 1c. Settings Schema ───────────────────────────────────────
+echo ""
+echo "── Settings Schema ──"
+if bun scripts/settings-validate.ts; then
+  pass "settings.json passes schema validation"
+else
+  fail "settings.json has schema violations — run: bun scripts/settings-validate.ts"
+fi
+
 # ── 2. PII Scan ───────────────────────────────────────────────
 echo ""
 echo "── PII Scan (tracked files) ──"
@@ -91,7 +109,7 @@ AUTHORS=$(git log --all --format='%an <%ae>' | sort -u)
 if [[ $AUTHOR_COUNT -eq 1 ]]; then
   pass "Single author in history: $AUTHORS"
 else
-  warn "Multiple authors in history ($AUTHOR_COUNT):"
+  warn "Multiple authors in history ($AUTHOR_COUNT) — expected for public fork with early commits:"
   echo "$AUTHORS" | while read -r line; do echo "    $line"; done
 fi
 
@@ -213,7 +231,7 @@ if [[ $QUICK -eq 0 ]]; then
 
   OLD_BRAND_PATTERNS=('pai-config' 'PAI Board' 'PAI Installer' 'PAI Environment')
   for pattern in "${OLD_BRAND_PATTERNS[@]}"; do
-    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' | grep -v 'docs/planning/' || true)
+    MATCHES=$(grep -r -l "$pattern" --include='*.ts' --include='*.md' --include='*.json' --include='*.jsonc' --include='*.sh' --include='*.html' . 2>/dev/null | grep -v node_modules | grep -v .git | grep -v verify-release.sh | grep -v 'projects/' | grep -v 'file-history/' | grep -v 'docs/planning/' | grep -v '\.archive/' | grep -v 'skills-lock' | grep -v 'SkillsLock.test.ts' | grep -v 'kai-release-audit.ts' || true)
     if [[ -n "$MATCHES" ]]; then
       fail "Old brand '$pattern' found in: $(echo "$MATCHES" | tr '\n' ' ')"
     fi
@@ -247,7 +265,7 @@ if [[ $QUICK -eq 0 ]]; then
   # Extract hook names from docs/code (FooBar.hook.ts pattern), check each exists
   # Uses \.hook\.ts to avoid false positives like SYM.hooks (property access)
   # Allowlist: example/template hook names used in documentation
-  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook\|PlanApprovalGuard\|SessionCloseGuard"
+  HOOK_EXAMPLES="ExampleHook\|MyHook\|YourHook\|PlanApprovalGuard\|SessionCloseGuard\|HookName\|SkillsLock"
 
   HOOK_REFS=$(grep -rhoE '[A-Z][A-Za-z]+\.hook\.ts' \
     --include='*.md' --include='*.ts' --include='*.sh' --include='*.jsonc' \

@@ -2,6 +2,106 @@
 
 All notable changes to KAI will be documented in this file.
 
+## [5.9.2] — 2026-05-22
+
+Re-runnable setup & self-service configuration.
+
+### Added
+- `scripts/kai-setup.ts` — interactive configurator (identity, API keys, MCP, notifications, Bedrock, preferences)
+- `scripts/kai-doctor.ts` — installation health check with `--json` output
+- `scripts/kai-keys.ts` — API key manager (list, add, test, remove)
+- `scripts/kai-reset.ts` — rebuild config from source; `--hard` clears runtime state
+- `scripts/kai-upgrade.ts` — pull latest + rebuild; `--check` shows available updates
+- `scripts/kai-release-audit.ts` — automated PII/brand/integrity/hygiene checks
+- `hooks/ConfigValidation.hook.ts` — validates settings.json schema at session start
+- `hooks/EnvironmentStatus.hook.ts` — fast env status line in startup greeting
+- `hooks/lib/env-check.ts` — key detection and MCP status helpers
+- `skills/Utilities/Workflows/MCPSetup.md` — guided MCP onboarding skill
+- `tests/lib/hook-test-helpers.ts` — shared temp PAI_DIR factory for subprocess hook tests
+- Hook integration tests: ConfigValidation, LoadContext, StartupGreeting, EnvironmentStatus
+
+### Changed
+- 1024 tests passing
+
+---
+
+## [5.9.1] — 2026-05-22
+
+Onboarding & configuration accessibility.
+
+### Added
+- `PAI-Install/lib/api-keys.ts` — API key detection, dedup-aware shell profile writer
+- `PAI-Install/lib/mcp-setup.ts` — guided MCP server configuration
+- `PAI-Install/lib/notifications-setup.ts` — notification channel setup
+- `hooks/FirstSessionOnboarding.hook.ts` — one-time welcome orientation (flag-file pattern)
+- `docs/MEMORY.md`, `docs/CONFIGURATION.md`, `docs/MCP-GUIDE.md`, `docs/PLUGINS.md` — user guides
+- `devices.json.example` — device registry schema documentation
+- Installer expanded to 12 interactive steps (API Keys, MCP Servers, Notifications)
+- Fresh install creates `config/preferences.local.jsonc` and bootstraps `.env`
+- Post-install actionable checklist
+
+### Changed
+- 905 tests passing
+
+---
+
+## [5.9.0] — 2026-05-22
+
+Resilient infrastructure — hardening existing subsystems.
+
+### Added
+- `scripts/skills-lock.ts` — SHA-256 hash verification for skills (`generate`, `verify`, `diff`, `validate-specialization`)
+- `skills-lock.json` — skills hash manifest (44 skills)
+- `scripts/settings-schema.ts` — JSON Schema for settings.json (22 keys)
+- `scripts/settings-validate.ts` — lightweight structural validator (no external deps)
+- `settings-schema.json` — generated schema file
+- `hooks/lib/risk-classifier.ts` — deterministic command risk classification (read-only/risky/destructive/pager/git)
+- `hooks/lib/rules-watcher.ts` — mtime-based CLAUDE.md/AISTEERINGRULES.md change detection
+- `skills/Utilities/KAIUpgrade/Tools/UpdateConfig.ts` — settings schema accessor for upgrade skill
+- Board UX: Cmd+K command palette, j/k card navigation, F focus mode, smart suggestions
+- MCP Resilience: `jenkins_server_health` tool, `build_server_health` tool, `ReconnectPolicy` with exponential backoff + jitter
+- Skill Specialization: `specializes:`, `overrides:`, `extends:` frontmatter convention
+
+### Changed
+- ModeClassifier calibration: strong dev-intent verb gate (fix/debug/refactor/migrate → ALGORITHM with ≥2 tokens)
+- SecurityValidator: fast-path read-only bypass via risk classifier
+- LocalContextFirst: hot-reload rules detection injects `<rules-updated>` context
+- ConfigChange hook: schema validation on settings.json changes
+- 851 tests passing
+
+---
+
+## [5.8.0] — 2026-05-21
+
+Adapter architecture and release hardening.
+
+### Added
+- Adapter architecture for terminal integration
+- Session name locking (inference sets once, no drift)
+- Dead-link checker, marker-aware counts, manifest brand gate
+
+### Changed
+- Board session naming fix (no more "New Session")
+- preferences.jsonc brand transform in sync-to-kai
+- 755 tests passing
+
+---
+
+## [5.7.0] — 2026-05-21
+
+Instinct pipeline maturation.
+
+### Added
+- Marker-aware count regions across docs
+- verify-release enhancements
+- Session lifecycle tracking
+- Manifest version sync
+
+### Changed
+- 749 tests passing
+
+---
+
 ## [5.6.0] — 2026-05-20
 
 Progressive learning, adaptive memory, and research expansion.
@@ -28,7 +128,7 @@ Progressive learning, adaptive memory, and research expansion.
 - `hooks/SecurityValidator.hook.ts`, `hooks/SecretScanner.hook.ts` — security prefix rebranded to `[KAI SECURITY]`
 - `hooks/lib/change-detection.ts` — system label rebranded to `KAI System`
 - `PAI/Tools/RoutingAudit.ts` — MEM_PREFIX derived from HOME (portable, no hardcoded paths)
-- Manifest updated: 83 skills, 47 hooks, 20 agents
+- Manifest updated: <!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> skills, <!-- KAI:counts:hooks:begin -->51<!-- KAI:counts:hooks:end --> hooks, <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> agents
 - VERSION 5.2.0 → 5.6.0
 - README, QUICKSTART, WHATS-DIFFERENT, releases/README updated to KAI 5.6.0
 
@@ -210,7 +310,7 @@ Initial public release of KAI (Kaizen AI).
 
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
-- **83 skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
+- **<!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
 - **47 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation

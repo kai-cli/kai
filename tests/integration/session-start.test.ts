@@ -17,7 +17,7 @@ function mkPaiDir(): string {
   const dir = join(TMP, Math.random().toString(36).slice(2));
   mkdirSync(join(dir, 'MEMORY', 'STATE'), { recursive: true });
   mkdirSync(join(dir, 'MEMORY', 'LEARNING', 'INSTINCTS'), { recursive: true });
-  mkdirSync(join(dir, 'projects', '-Users-your.name-Projects-kai', 'memory'), { recursive: true });
+  mkdirSync(join(dir, 'projects', '-Users-user-Projects-kai', 'memory'), { recursive: true });
   return dir;
 }
 
@@ -28,7 +28,7 @@ afterEach(() => {
 describe('Feature A integration: index memory loading', () => {
   it('loads ≤50 lines from MEMORY.md', () => {
     const paiDir = mkPaiDir();
-    const memPath = join(paiDir, 'projects', '-Users-your.name-Projects-kai', 'memory', 'MEMORY.md');
+    const memPath = join(paiDir, 'projects', '-Users-user-Projects-kai', 'memory', 'MEMORY.md');
 
     // Write 60 lines
     const lines = Array.from({ length: 60 }, (_, i) => `- [Topic${i}](topic_${i}.md) — description ${i}`);

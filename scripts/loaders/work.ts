@@ -17,6 +17,10 @@ export interface WorkItem {
   prdPath: string;
   source: string;
   stale: boolean;
+  priority?: string;
+  tags?: string[];
+  sort_order?: number;
+  depends_on?: string[];
 }
 
 export interface WorkLoader {
@@ -27,4 +31,6 @@ export interface WorkLoader {
   findPrd(slug: string): Promise<string | null>;
   archiveTask(slug: string): void;
   unarchiveTask(slug: string): void;
+  updateSortOrder(slug: string, sort_order: number): Promise<boolean>;
+  updateMetadata(slug: string, data: { priority?: string; tags?: string[] }): Promise<boolean>;
 }

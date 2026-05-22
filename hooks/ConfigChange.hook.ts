@@ -22,6 +22,7 @@
 import { appendFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { validateSettingsFile } from '../scripts/settings-validate';
 
 interface ConfigChangeInput {
   session_id: string;
@@ -118,6 +119,19 @@ async function main() {
       reason: `PAI security guard: ${violation}. Restore the hook before proceeding.`,
     }));
     process.exit(0);
+  }
+
+  // Schema validation — warn on violations, never block
+  try {
+    const schemaResult = validateSettingsFile(configPath);
+    if (!schemaResult.valid) {
+      console.error(`[ConfigChange] Schema validation warnings (${schemaResult.errors.length} errors):`);
+      for (const err of schemaResult.errors) {
+        console.error(`  [ConfigChange] SCHEMA: ${err}`);
+      }
+    }
+  } catch {
+    // Schema validation errors never block the change
   }
 
   console.error(`[ConfigChange] Config change allowed: ${configPath}`);

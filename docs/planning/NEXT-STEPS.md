@@ -10,6 +10,9 @@
 
 | Release | Date | Highlights |
 |---------|------|-----------|
+| **v5.9.2** | 2026-05-22 | kai-setup, kai-doctor, kai-keys, kai-reset, kai-upgrade CLIs; ConfigValidation + EnvironmentStatus hooks; MCP Onboarding skill; Hook integration tests (30 new); Release Audit script — 924 tests |
+| **v5.9.1** | 2026-05-22 | Installer: API Key Wizard, MCP Server Setup, Notification Setup, .env bootstrap, local overrides creation; Post-install checklist; First-Session Onboarding hook; 4 docs (MEMORY, CONFIGURATION, MCP-GUIDE, PLUGINS); devices.json.example; .env.example completeness — 905 tests |
+| **v5.9.0** | 2026-05-22 | Skills Lock (hash-verified, CI-enforced), Skill Specialization, Settings Schema + validator, Command Risk Classifier, MCP Resilience (health tools, reconnect, mcp-doctor), Board UX (Cmd+K palette, j/k nav, Focus Mode, suggestions), Hot-Reload Rules, ModeClassifier calibration — 851 tests |
 | **v5.8.0** | 2026-05-21 | Adapter architecture, session lifecycle, name locking, release hardening (PR #4 cherry-picks), board session naming fix |
 | **v5.7.0** | 2026-05-21 | Instinct pipeline maturation, marker regions, verify-release enhancements |
 | **v5.6.0** | 2026-05-20 | Progressive disclosure memory, instinct learning, embedding fallback, MistralResearcher + DeepSeekResearcher, 724 tests |
@@ -87,17 +90,62 @@ preferences.jsonc brand transform in sync-to-kai). Board session naming fix (no 
 
 ---
 
-## Next: v5.9.0 — TBD
+## v5.9.0 — SHIPPED (2026-05-22)
 
-**Theme:** TBD.
+Skills Lock (hash-verified, CI-enforced), Skill Specialization, Settings Schema + validator,
+Command Risk Classifier, MCP Resilience (health tools, reconnect, mcp-doctor), Board UX
+(Cmd+K palette, j/k nav, Focus Mode, suggestions), Hot-Reload Rules, ModeClassifier calibration.
+851 tests.
 
-See `docs/planning/v5.7.0-PLAN.md` for full detail.
+---
 
-| # | Feature | Est. LOC |
-|---|---------|----------|
-| 1 | Semantic instinct dedup (embeddings) | ~60 |
-| 2 | Instinct file-revert detection (session write ledger) | ~120 |
-| 4 | /evolve embedding-based clustering | ~100 |
+## v5.9.1 — SHIPPED (2026-05-22)
+
+Installer expanded to 12 interactive steps (API Keys, MCP Servers, Notifications). Fresh install
+creates preferences.local.jsonc and .env. 4 guides (Memory, Configuration, MCP, Plugins).
+devices.json.example template. .env.example completeness. FirstSessionOnboarding hook.
+Post-install actionable checklist. 905 tests.
+
+---
+
+## v5.9.2 — SHIPPED (2026-05-22)
+
+Re-runnable setup & self-service configuration. 6 CLI tools (kai-setup, kai-doctor, kai-keys,
+kai-reset, kai-upgrade, kai-release-audit), 2 new hooks (ConfigValidation, EnvironmentStatus),
+MCP Onboarding skill, hook integration test suite (30 tests across 4 hooks), shared test helpers.
+924 tests.
+
+---
+
+---
+
+## Gate: Pre-v6.0 Stabilization ✅
+
+All gates green as of v5.9.2:
+- ✅ v5.9.2 Feature [9] hook integration tests all passing (30 tests, 4 hooks)
+- ✅ v5.9.2 Feature [10] release audit script functional (11 checks, --json, --category)
+- ✅ No open P0/P1 bugs in shipped v5.9.x features
+- ✅ Test count: 924 (target was 800+)
+
+One pre-existing failure: InsightExtractor `loadState returns defaults` (reads real state in test,
+not caused by v5.9.x work). Non-blocking for v6.0.
+
+---
+
+## Next: v6.0.0 — Paradigm Shift
+
+**Theme:** New interaction models + multi-agent orchestration + identity consolidation
+
+See `docs/planning/v6.0.0-PLAN.md` for full detail.
+
+| # | Feature | Est. LOC | Complexity |
+|---|---------|----------|-----------|
+| 1 | Input Classification | ~400 | High |
+| 2 | Multi-Harness Agents | ~600 | High |
+| 3 | Workflow Templates | ~250 | Medium |
+| 4 | Hot-Reload Rules | ~150 | Medium |
+| 5 | Spec-Driven Development | ~200 | Medium |
+| 6 | PAI→KAI Internal Rename | ~0 (massive rename) | High |
 
 ---
 

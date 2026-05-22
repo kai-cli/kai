@@ -1,21 +1,23 @@
 #!/usr/bin/env bun
 /**
- * ModeClassifier.hook.ts — Deterministic mode pre-classification
+ * ModeClassifier.hook.ts — Input classification + mode pre-classification
  *
  * TRIGGER: UserPromptSubmit (runs BEFORE RatingCapture)
  *
- * PURPOSE: Prevent LLM from defaulting to NATIVE mode ~91% of the time due to
- * template attractor bias in CLAUDE.md. Uses deterministic regex (<20ms, no API)
- * to classify prompts and inject a mode hint into additionalContext.
+ * STAGE 1: Input classification (v6.0)
+ *   Determines if input is a shell command, skill invocation, or AI query.
+ *   Shell commands (p_shell > 0.85) get an execution hint. Skill invocations
+ *   (starts with /) get a skill hint. Everything else proceeds to Stage 2.
+ *   The ! prefix bypasses all classification — handled by Claude Code natively.
  *
- * MODES:
- * - MINIMAL:    greetings, ratings, short acknowledgments
- * - ALGORITHM:  action verbs indicating substantial work
- * - NATIVE:     everything else (no injection — let CLAUDE.md classify)
+ * STAGE 2: Mode classification (existing)
+ *   For AI-classified input: MINIMAL/ALGORITHM/NATIVE using deterministic regex.
+ *   Injects mode hint into additionalContext.
  */
 
 import { readHookInput } from './lib/hook-io';
 import { classify } from './lib/classify';
+import { classifyInput } from './lib/input-classifier';
 
 async function main() {
   const input = await readHookInput();
@@ -23,6 +25,24 @@ async function main() {
 
   const prompt = ((input as any).prompt || '').trim();
 
+  // Stage 1: Input classification
+  const inputClass = classifyInput(prompt);
+
+  if (inputClass.classification === 'skill') {
+    // Already handled by Claude Code — no additionalContext injection needed
+    console.error(`[ModeClassifier] Skill invocation detected (p_skill=1.0)`);
+    process.exit(0);
+  }
+
+  if (inputClass.classification === 'shell') {
+    console.log(JSON.stringify({
+      additionalContext: `<input_classification>shell</input_classification>\nThis input looks like a shell command (p_shell=${inputClass.p_shell.toFixed(2)}). If you agree, execute it directly using the Bash tool without asking for clarification. If the command fails or produces unexpected output, offer to interpret the result.`
+    }));
+    console.error(`[ModeClassifier] Shell hint injected (p_shell=${inputClass.p_shell.toFixed(2)})`);
+    process.exit(0);
+  }
+
+  // Stage 2: AI-classified input — run existing mode classifier
   const mode = classify(prompt);
 
   // Only inject for MINIMAL and ALGORITHM — NATIVE is the default, no hint needed

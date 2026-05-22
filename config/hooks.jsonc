@@ -170,6 +170,8 @@
         "hooks": [
           // Verify environment integrity (symlink, config health)
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh HealthCheck.hook.ts" },
+          // Environment status — warns if critical keys missing
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh EnvironmentStatus.hook.ts" },
           // Initialize terminal state tracking
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
           // Inject relationship, learning, and work context
@@ -178,10 +180,14 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh CheckVersion.hook.ts" },
           // Display PAI startup banner
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh StartupGreeting.hook.ts" },
+          // One-time first-session orientation (fires once after install)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh FirstSessionOnboarding.hook.ts" },
           // Rebuild CLAUDE.md if algorithm version or DA name changed
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh handlers/BuildCLAUDE.ts" },
           // Rebuild settings.json from config/*.jsonc if any config file is newer
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh handlers/BuildSettings.ts" }
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh handlers/BuildSettings.ts" },
+          // Validate settings.json against schema (warns on invalid config)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ConfigValidation.hook.ts" }
         ]
       },
       {
