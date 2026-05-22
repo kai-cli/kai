@@ -177,24 +177,31 @@ describe('writeInsight', () => {
   });
   afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
 
-  test('creates markdown file with correct frontmatter', () => {
-    // We can't easily override INSIGHTS_DIR, so test the output format
-    // by verifying the function returns a filename
-    const insight: Insight = {
-      title: 'OpenWrt cache invalidation',
-      content: 'The build cache only invalidates on PKG_VERSION changes, not files/ or patches/ changes.',
-      category: 'debugging',
-      confidence: 'high',
-    };
-
-    // writeInsight uses INSIGHTS_DIR which points to real path
-    // Just verify it returns a filename pattern
-    const filename = writeInsight(insight, 'test-session-123');
-    if (filename) {
+  test('creates markdown file with correct frontmatter', async () => {
+    // INSIGHTS_DIR is a module-level constant baked at import time.
+    // Run in a subprocess with an explicit PAI_DIR so the path is deterministic
+    // regardless of what ApiKeys.test.ts does to process.env.HOME in parallel.
+    const paiDir = mkdtempSync(join(tmpdir(), 'pai-insight-write-test-'));
+    mkdirSync(join(paiDir, 'MEMORY', 'LEARNING', 'INSIGHTS'), { recursive: true });
+    const HOOK = new URL('../hooks/InsightExtractor.hook.ts', import.meta.url).pathname;
+    try {
+      const script = `
+import { writeInsight } from '${HOOK}';
+const filename = writeInsight({
+  title: 'OpenWrt cache invalidation',
+  content: 'The build cache only invalidates on PKG_VERSION changes, not files/ or patches/ changes.',
+  category: 'debugging',
+  confidence: 'high',
+}, 'test-session-123');
+console.log(filename ?? '');
+`;
+      const proc = Bun.spawn(['bun', '-e', script], {
+        stdout: 'pipe', stderr: 'pipe',
+        env: { ...process.env, PAI_DIR: paiDir },
+      });
+      const filename = (await new Response(proc.stdout).text()).trim();
       expect(filename).toMatch(/^\d{4}-\d{2}-\d{2}_openwrt-cache-invalidation\.md$/);
 
-      // Read back and verify frontmatter — use PAI_DIR to match what writeInsight uses
-      const paiDir = process.env.PAI_DIR || join(process.env.HOME || '', '.claude');
       const insightsDir = join(paiDir, 'MEMORY', 'LEARNING', 'INSIGHTS');
       const content = readFileSync(join(insightsDir, filename), 'utf-8');
       expect(content).toContain('title: "OpenWrt cache invalidation"');
@@ -203,9 +210,8 @@ describe('writeInsight', () => {
       expect(content).toContain('session_id: test-session-123');
       expect(content).toContain('status: candidate');
       expect(content).toContain('The build cache only invalidates');
-
-      // Cleanup
-      rmSync(join(insightsDir, filename), { force: true });
+    } finally {
+      rmSync(paiDir, { recursive: true, force: true });
     }
   });
 
