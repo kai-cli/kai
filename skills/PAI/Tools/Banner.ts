@@ -332,10 +332,10 @@ function createNavyBanner(stats: SystemStats, width: number): string {
   lines.push(`${framePad}${topBorder}`);
   lines.push("");
 
-  // Header: PAI (in logo colors) | Kaizen AI
+  // Header: PAI (in logo colors) | Personal AI Infrastructure
   const paiColored = `${C.navy}P${RESET}${C.medBlue}A${RESET}${C.lightBlue}I${RESET}`;
-  const headerText = `${paiColored} ${C.steel}|${RESET} ${C.slate}Kaizen AI${RESET}`;
-  const headerLen = 33; // "PAI | Kaizen AI"
+  const headerText = `${paiColored} ${C.steel}|${RESET} ${C.slate}Personal AI Infrastructure${RESET}`;
+  const headerLen = 33; // "PAI | Personal AI Infrastructure"
   const headerPad = " ".repeat(Math.floor((width - headerLen) / 2));
   lines.push(`${headerPad}${headerText}`);
   lines.push(""); // Blank line between header and tagline
@@ -682,7 +682,7 @@ function createNavyMediumBanner(stats: SystemStats, width: number): string {
 
   // Header (no border)
   const paiColored = `${C.navy}P${RESET}${C.medBlue}A${RESET}${C.lightBlue}I${RESET}`;
-  const headerText = `${paiColored} ${C.steel}|${RESET} ${C.slate}Kaizen AI${RESET}`;
+  const headerText = `${paiColored} ${C.steel}|${RESET} ${C.slate}Personal AI Infrastructure${RESET}`;
   const headerPad = " ".repeat(Math.max(0, Math.floor((width - 33) / 2)));
   lines.push(`${headerPad}${headerText}`);
   lines.push("");

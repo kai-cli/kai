@@ -4,7 +4,7 @@
  * add-bg - Add Background Color CLI
  *
  * Add a solid background color to transparent PNG images.
- * Part of the Images skill for KAI system.
+ * Part of the Images skill for PAI system.
  *
  * Usage:
  *   add-bg input.png "#EAE9DF" output.png

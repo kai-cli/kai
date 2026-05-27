@@ -372,7 +372,7 @@ fabric -y "https://youtu.be/VIDEO_ID"
 // 4. Returns high-alpha list
 ```
 
-## Integration with KAI
+## Integration with PAI
 
 When this skill activates, PAI should:
 

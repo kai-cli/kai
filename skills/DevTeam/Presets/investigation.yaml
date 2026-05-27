@@ -1,0 +1,21 @@
+name: Investigation
+description: Deep-dive debugging and root cause analysis
+retry_max: 0
+roles:
+  - id: lead
+    agent_type: Architect
+    model: opus
+    purpose: Coordinate investigation, synthesize findings, determine root cause
+    worktree: false
+  - id: researcher-1
+    agent_type: general-purpose
+    model: sonnet
+    purpose: Search codebase, trace execution paths, identify suspect code
+    worktree: false
+  - id: researcher-2
+    agent_type: general-purpose
+    model: sonnet
+    purpose: Check logs, reproduce issue, gather evidence
+    worktree: false
+review:
+  enabled: false

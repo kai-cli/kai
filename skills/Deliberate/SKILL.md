@@ -1,6 +1,6 @@
 ---
 name: Deliberate
-description: Multi-model deliberation and research. USE WHEN deliberate, multi-model, cross-model, real models debate, genuine AI diversity, different LLMs weigh in, research, web search, multi-source research, grounded research.
+description: Multi-model deliberation and research. USE WHEN deliberate, multi-model, cross-model, real models debate, genuine AI diversity, different LLMs weigh in, research, web search, multi-source research, grounded research, review document, review architecture, doc review.
 implements: Science
 science_cycle_time: meso
 ---

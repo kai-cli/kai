@@ -4,7 +4,7 @@
  * GetCounts.ts - Single Source of Truth for PAI System Counts
  *
  * PURPOSE:
- * Provides deterministic, consistent counts for KAI system metrics.
+ * Provides deterministic, consistent counts for PAI system metrics.
  * Both Banner.ts and statusline.ts MUST use this tool to ensure
  * the same numbers are displayed everywhere.
  *

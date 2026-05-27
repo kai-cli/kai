@@ -1,0 +1,26 @@
+name: Code Review
+description: Multi-perspective code review panel
+retry_max: 0
+roles:
+  - id: reviewer-security
+    agent_type: general-purpose
+    model: sonnet
+    purpose: Review for security vulnerabilities, injection risks, auth issues
+    worktree: false
+  - id: reviewer-correctness
+    agent_type: general-purpose
+    model: sonnet
+    purpose: Review for logic errors, edge cases, race conditions
+    worktree: false
+  - id: reviewer-design
+    agent_type: Architect
+    model: sonnet
+    purpose: Review for architectural concerns, maintainability, coupling
+    worktree: false
+review:
+  enabled: true
+  bedrock_models:
+    - deepseek
+    - mistral
+    - llama-researcher
+  fallback: claude-adversarial

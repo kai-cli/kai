@@ -10,7 +10,7 @@
 
 Arbol is the cloud execution layer for PAI. It runs on Cloudflare Workers and provides the infrastructure for deploying AI-powered automation as serverless functions at the edge.
 
-Where KAI's local system (the Algorithm, Skills, Memory) operates on the developer's machine, Arbol extends PAI into the cloud. It handles scheduled jobs, API integrations, LLM-powered transformations, and multi-step data pipelines --- all deployed as Cloudflare Workers with global distribution and near-zero cold starts.
+Where PAI's local system (the Algorithm, Skills, Memory) operates on the developer's machine, Arbol extends PAI into the cloud. It handles scheduled jobs, API integrations, LLM-powered transformations, and multi-step data pipelines --- all deployed as Cloudflare Workers with global distribution and near-zero cold starts.
 
 Arbol organizes all cloud work through three composable primitives: **Actions**, **Pipelines**, and **Flows**.
 

@@ -242,7 +242,7 @@ CONFIGURATION:
   Base URL: ${DEFAULTS.baseUrl}
 
 PHILOSOPHY:
-  ${CLI_NAME} follows KAI's CLI-First Architecture:
+  ${CLI_NAME} follows PAI's CLI-First Architecture:
   - Deterministic: Same input → Same output
   - Clean: Single responsibility
   - Composable: Pipes to jq, grep, etc.

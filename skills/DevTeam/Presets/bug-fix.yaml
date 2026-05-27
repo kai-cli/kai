@@ -1,0 +1,26 @@
+name: Bug Fix
+description: Coordinated team to diagnose, fix, and verify a bug
+retry_max: 2
+roles:
+  - id: pm
+    agent_type: Plan
+    model: sonnet
+    purpose: Scope the bug, reproduce conditions, define acceptance criteria
+    worktree: false
+  - id: dev
+    agent_type: Engineer
+    model: sonnet
+    purpose: Implement the fix in isolated worktree
+    worktree: true
+  - id: qa
+    agent_type: QATester
+    model: sonnet
+    purpose: Verify fix passes criteria, check for regressions
+    worktree: false
+review:
+  enabled: true
+  bedrock_models:
+    - deepseek
+    - mistral
+    - llama-researcher
+  fallback: claude-adversarial

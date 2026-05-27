@@ -602,7 +602,7 @@ The Configuration Flags pattern was added after analyzing indydevdan's "fork-rep
 
 **Key insight from analysis:**
 - Indydevdan's variables are powerful but belong at the **tool layer** (as CLI flags), not the skill layer
-- KAI's Skill → Workflow → Tool hierarchy is architecturally superior
+- PAI's Skill → Workflow → Tool hierarchy is architecturally superior
 - Variables become CLI flags, maintaining CLI-First determinism
 - Workflows map user intent to flags, exposing tool flexibility
 
@@ -620,4 +620,4 @@ The Configuration Flags pattern was added after analyzing indydevdan's "fork-rep
 
 ---
 
-**This pattern is now standard for all new KAI systems.**
+**This pattern is now standard for all new PAI systems.**

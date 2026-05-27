@@ -6,7 +6,7 @@
 
 ## 🚨 THREE AGENT SYSTEMS — CRITICAL DISTINCTION
 
-KAI has three agent systems that serve different purposes. Confusing them causes routing failures.
+PAI has three agent systems that serve different purposes. Confusing them causes routing failures.
 
 | System | What It Is | When to Use | Has Unique Voice? |
 |--------|-----------|-------------|-------------------|

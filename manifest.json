@@ -4,7 +4,7 @@
   "algorithmVersion": "v3.14.0",
   "counts": {
     "skills": 85,
-    "hooks": 51,
+    "hooks": 52,
     "agents": 20
   },
   "hookInventory": [
@@ -55,6 +55,7 @@
     "UpdateCounts.hook",
     "UpdateTabTitle.hook",
     "WebFetchGuard.hook",
+    "WeeklyMaintenance.hook",
     "WorkCompletionLearning.hook",
     "WorktreeRemove.hook",
     "WorktreeSetup.hook",

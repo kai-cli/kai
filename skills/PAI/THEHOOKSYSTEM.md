@@ -60,7 +60,7 @@ Claude Code supports the following hook events:
 ```
 
 **What They Do:**
-- `StartupGreeting.hook.ts` - Displays the KAI startup banner with version info, skill/hook/signal counts, and system status
+- `StartupGreeting.hook.ts` - Displays the PAI startup banner with version info, skill/hook/signal counts, and system status
 - `LoadContext.hook.ts` - Reads `skills/PAI/SKILL.md` and injects PAI context as `<system-reminder>` at session start
 - `CheckVersion.hook.ts` - Checks Claude Code version and notifies of updates
 
@@ -422,7 +422,7 @@ const USER_NAME = getPrincipalName(); // "{YourName}"
 
 **Why settings.json?**
 - Programmatic access via `JSON.parse()` - no regex parsing markdown
-- Central to the KAI install wizard
+- Central to the PAI install wizard
 - Single source of truth for all configuration
 - Tool-friendly: easy to read/write from any language
 

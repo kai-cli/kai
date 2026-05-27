@@ -1,0 +1,31 @@
+name: Feature
+description: Coordinated team to scope, build, and verify a new feature
+retry_max: 2
+roles:
+  - id: pm
+    agent_type: Plan
+    model: sonnet
+    purpose: Scope feature requirements, define acceptance criteria and edge cases
+    worktree: false
+  - id: dev-1
+    agent_type: Engineer
+    model: sonnet
+    purpose: Implement core feature logic
+    worktree: true
+  - id: dev-2
+    agent_type: Engineer
+    model: sonnet
+    purpose: Implement tests and integration points
+    worktree: true
+  - id: qa
+    agent_type: QATester
+    model: sonnet
+    purpose: Verify feature meets criteria, test edge cases
+    worktree: false
+review:
+  enabled: true
+  bedrock_models:
+    - deepseek
+    - mistral
+    - llama-researcher
+  fallback: claude-adversarial

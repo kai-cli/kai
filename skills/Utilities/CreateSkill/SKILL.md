@@ -196,7 +196,7 @@ Brief description.
 
 ❌ **Don't use for:**
 - Simple skills (< 50 lines)
-- Pure utility wrappers (use KAI/Tools.md instead)
+- Pure utility wrappers (use PAI/Tools.md instead)
 
 ### Benefits
 
