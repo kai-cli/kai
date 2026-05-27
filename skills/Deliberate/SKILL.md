@@ -39,6 +39,7 @@ Running the **WorkflowName** workflow in the **Deliberate** skill to ACTION...
 | Quick multi-model check (1 round, fast) | `Workflows/Quick.md` |
 | Claude-only deliberation (no external keys needed) | `Workflows/ClaudeOnly.md` |
 | Multi-source web-grounded research | `Workflows/ResearchMode.md` |
+| Architecture/design document review | `Workflows/DocReview.md` |
 | Simulated perspectives from one model | Council skill |
 
 ## Quick Reference
@@ -49,6 +50,7 @@ Running the **WorkflowName** workflow in the **Deliberate** skill to ACTION...
 | **QUICK** | Fast model spot-check | 1 | All available | Positions only |
 | **CLAUDE-ONLY** | No external keys needed | 2 | Claude (Opus) only | Single-model multi-perspective |
 | **RESEARCH** | Web-grounded multi-source research | 1 (scatter) | All available | Citations + synthesis |
+| **DOC-REVIEW** | Architecture/design doc review | 2-phase | All available | Criteria + panel reviews + synthesis |
 
 ## Context Files
 
@@ -79,6 +81,12 @@ bun ~/.claude/scripts/deliberate.ts --mode research "What are the latest Claude 
 
 # Research with specific models
 bun ~/.claude/scripts/deliberate.ts --mode research --models gemini,grok "Current state of X?"
+
+# Document review (architecture/design docs)
+bun ~/.claude/scripts/deliberate.ts --mode doc-review --doc ./docs/design.md --verbose
+
+# Document review with focus areas
+bun ~/.claude/scripts/deliberate.ts --mode doc-review --doc ./RFC-001.md --verbose "Focus on security"
 
 # Save report
 bun ~/.claude/scripts/deliberate.ts --output report.md "Question here"

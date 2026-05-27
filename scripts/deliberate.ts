@@ -32,7 +32,7 @@ import { inference, type InferenceLevel } from "../PAI/Tools/Inference.ts";
 
 // --- Types ---
 
-type ExecutionMode = "debate" | "research";
+type ExecutionMode = "debate" | "research" | "doc-review";
 
 interface ModelConfig {
   id: string;
@@ -735,6 +735,250 @@ async function research(
   };
 }
 
+// --- Doc Review Mode ---
+
+interface DocReviewResult {
+  documentPath: string;
+  extractedCriteria: string;
+  panelReviews: RoundResponse[];
+  synthesis: string;
+  models: string[];
+  totalDurationMs: number;
+  timestamp: string;
+}
+
+function buildCriteriaExtractionPrompt(docContent: string, focusAreas: string): string {
+  const focusLine = focusAreas
+    ? `\nFOCUS AREAS (prioritize these): ${focusAreas}\n`
+    : "";
+
+  return `ARCHITECTURE/DESIGN DOCUMENT REVIEW — Phase 1: Criteria Extraction
+${focusLine}
+DOCUMENT:
+${docContent}
+
+---
+
+Analyze this document and extract structured review criteria. Produce:
+
+1. **Architectural Decisions** — Key design choices made (list each with a one-line rationale)
+2. **Risks & Failure Modes** — What could go wrong? Scaling limits, single points of failure, race conditions, data loss scenarios
+3. **Missing Considerations** — What the document does NOT address that it should (security, observability, rollback, migration, backward compatibility)
+4. **Dependency Analysis** — External systems, libraries, or teams this depends on; coupling concerns
+5. **Assumptions** — Implicit assumptions the design makes that may not hold
+6. **Review Questions** — 5-8 specific questions that independent reviewers should evaluate this document against
+
+Be thorough but concise. Each section should have 3-8 bullet points. The review questions are critical — they guide the panel's evaluation.`;
+}
+
+function buildPanelReviewPrompt(docContent: string, criteria: string): string {
+  return `ARCHITECTURE/DESIGN DOCUMENT REVIEW — Panel Evaluation
+
+You are reviewing an architecture/design document. Below is the document itself, followed by criteria extracted by a prior analysis pass. Evaluate the document from your unique perspective.
+
+DOCUMENT:
+${docContent}
+
+---
+
+EXTRACTED CRITERIA & REVIEW QUESTIONS:
+${criteria}
+
+---
+
+Provide your review in 200-400 words. Structure as:
+
+1. **Overall Assessment** — Is this design sound? (strong / acceptable / concerning / weak)
+2. **Strengths** — What this design gets right
+3. **Critical Issues** — Problems that must be addressed before implementation (if any)
+4. **Suggestions** — Improvements that would strengthen the design
+5. **Answers to Review Questions** — Address at least 3 of the review questions above
+
+Be direct. If you disagree with the extracted criteria or think something was missed, say so.`;
+}
+
+function buildDocReviewSynthesisPrompt(
+  docPath: string,
+  criteria: string,
+  reviews: RoundResponse[],
+): string {
+  const reviewText = reviews
+    .filter((r) => !r.error)
+    .map((r) => `**${r.modelName} (${r.provider}):**\n${r.content}`)
+    .join("\n\n---\n\n");
+
+  return `DOCUMENT REVIEW SYNTHESIS
+
+DOCUMENT: ${docPath}
+
+EXTRACTED CRITERIA:
+${criteria}
+
+PANEL REVIEWS:
+${reviewText}
+
+---
+
+Synthesize the multi-model panel reviews into a final structured report:
+
+1. **Verdict** — Overall assessment with confidence (ready to implement / needs revision / needs major rework)
+2. **Consensus Findings** — Issues raised by 2+ reviewers (highest priority)
+3. **Critical Issues** — Must-fix before proceeding
+4. **Suggestions** — Nice-to-have improvements, ranked by impact
+5. **Dissenting Views** — Unique concerns raised by only one reviewer but worth considering
+6. **Strengths** — What the panel agreed the design does well
+7. **Recommended Next Steps** — Concrete actions
+
+Be direct and actionable. 300-500 words.`;
+}
+
+function formatDocReviewReport(result: DocReviewResult): string {
+  const lines: string[] = [];
+  lines.push(`# Document Review: ${result.documentPath}`);
+  lines.push("");
+  lines.push(`**Date:** ${result.timestamp}`);
+  lines.push(`**Models:** ${result.models.join(", ")}`);
+  lines.push(`**Duration:** ${(result.totalDurationMs / 1000).toFixed(1)}s`);
+  lines.push("");
+  lines.push("## Extracted Criteria");
+  lines.push("");
+  lines.push(result.extractedCriteria);
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push("## Panel Reviews");
+  lines.push("");
+
+  for (const resp of result.panelReviews) {
+    if (resp.error) {
+      lines.push(`### ${resp.modelName} — ERROR`);
+      lines.push(`> ${resp.error}`);
+    } else {
+      lines.push(`### ${resp.modelName} (${(resp.latencyMs / 1000).toFixed(1)}s)`);
+      lines.push(resp.content);
+    }
+    lines.push("");
+  }
+
+  lines.push("---");
+  lines.push("");
+  lines.push("## Synthesis");
+  lines.push("");
+  lines.push(result.synthesis);
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+async function docReview(
+  docPath: string,
+  focusAreas: string,
+  models: ModelConfig[],
+  verbose: boolean,
+): Promise<DocReviewResult> {
+  const startTime = Date.now();
+
+  if (!existsSync(docPath)) {
+    throw new Error(`Document not found: ${docPath}`);
+  }
+  const docContent = readFileSync(docPath, "utf-8");
+  if (!docContent.trim()) {
+    throw new Error(`Document is empty: ${docPath}`);
+  }
+
+  const availableModels = models.filter((m) => {
+    if (m.provider === "claude" || m.provider === "bedrock") return true;
+    const key = m.envKey ? process.env[m.envKey] : null;
+    if (!key) {
+      if (verbose) console.error(`  Skipping ${m.name}: missing ${m.envKey}`);
+      return false;
+    }
+    return true;
+  });
+
+  if (availableModels.length === 0) {
+    throw new Error("No models available.");
+  }
+
+  console.log(`\n=== Document Review ===`);
+  console.log(`Document: ${docPath} (${docContent.length} chars)`);
+  console.log(`Models: ${availableModels.map((m) => m.name).join(", ")}`);
+  if (focusAreas) console.log(`Focus: ${focusAreas}`);
+  console.log("");
+
+  // Phase 1: Claude extracts criteria
+  console.log(`[Phase 1] Extracting review criteria via Claude...`);
+  const extractionPrompt = buildCriteriaExtractionPrompt(docContent, focusAreas);
+  const extractionResult = await inference({
+    systemPrompt:
+      "You are a senior architecture reviewer. Extract structured review criteria from design documents with precision and thoroughness.",
+    userPrompt: extractionPrompt,
+    level: "smart",
+    timeout: 120_000,
+  });
+
+  if (!extractionResult.success) {
+    throw new Error(`Criteria extraction failed: ${extractionResult.error}`);
+  }
+  const criteria = extractionResult.output;
+  if (verbose) {
+    console.log(`  Criteria extracted: ${criteria.length} chars (${(extractionResult.latencyMs / 1000).toFixed(1)}s)`);
+  }
+
+  // Phase 2: Panel reviews in parallel
+  console.log(`[Phase 2] Panel review — ${availableModels.length} models in parallel...`);
+  const panelPrompt = buildPanelReviewPrompt(docContent, criteria);
+
+  const reviewPromises = availableModels.map(async (model) => {
+    const result = await invokeModel(model, panelPrompt);
+    const response: RoundResponse = {
+      modelId: model.id,
+      modelName: model.name,
+      provider: model.provider,
+      content: result.content,
+      latencyMs: result.latencyMs,
+      error: result.error,
+    };
+    if (verbose) {
+      const status = result.error ? `ERROR: ${result.error}` : `${result.content.length} chars`;
+      console.log(`  ${model.name}: ${(result.latencyMs / 1000).toFixed(1)}s — ${status}`);
+    }
+    return response;
+  });
+
+  const panelReviews = await Promise.all(reviewPromises);
+  const successCount = panelReviews.filter((r) => !r.error).length;
+  console.log(`  Done — ${successCount}/${availableModels.length} responded`);
+
+  // Phase 3: Synthesis
+  console.log(`\n[Phase 3] Synthesizing final report...`);
+  const synthesisPrompt = buildDocReviewSynthesisPrompt(docPath, criteria, panelReviews);
+  const synthesisResult = await inference({
+    systemPrompt:
+      "You are synthesizing a multi-model document review. Prioritize consensus findings and critical issues. Be actionable.",
+    userPrompt: synthesisPrompt,
+    level: "smart",
+    timeout: 120_000,
+  });
+
+  const synthesis = synthesisResult.success
+    ? synthesisResult.output
+    : `Synthesis failed: ${synthesisResult.error}`;
+
+  const totalDuration = Date.now() - startTime;
+  console.log(`\nComplete in ${(totalDuration / 1000).toFixed(1)}s total.`);
+
+  return {
+    documentPath: docPath,
+    extractedCriteria: criteria,
+    panelReviews,
+    synthesis,
+    models: availableModels.map((m) => m.name),
+    totalDurationMs: totalDuration,
+    timestamp: new Date().toISOString(),
+  };
+}
+
 // --- CLI ---
 
 async function main() {
@@ -746,6 +990,7 @@ async function main() {
       models: { type: "string", default: "" },
       output: { type: "string", default: "" },
       config: { type: "string", default: "" },
+      doc: { type: "string", default: "" },
       verbose: { type: "boolean", default: false },
       "list-models": { type: "boolean", default: false },
       help: { type: "boolean", default: false },
@@ -757,10 +1002,11 @@ async function main() {
     console.log(`Usage: bun deliberate.ts [options] "<question>"
 
 Options:
-  --mode <mode>       Execution mode: debate (default) or research
+  --mode <mode>       Execution mode: debate (default), research, or doc-review
   --rounds <n>        Number of deliberation rounds (default: 2, debate mode only)
   --models <list>     Comma-separated model IDs (default: all available)
                       IDs: claude, llama-researcher, llama-maverick, palmyra, deepseek, mistral
+  --doc <path>        Document to review (required for doc-review mode)
   --output <path>     Save markdown report to file
   --config <path>     Load custom panel config (JSON)
   --verbose           Show per-model timing and status
@@ -770,6 +1016,7 @@ Options:
 Modes:
   debate              Multi-round adversarial debate with position revision
   research            Scatter-gather-synthesize with web grounding (single round)
+  doc-review          Two-phase document review: Claude criteria → panel evaluation
 
 Environment variables:
   (All models now use AWS Bedrock — no personal API keys needed)
@@ -779,6 +1026,8 @@ Examples:
   bun deliberate.ts "Should we migrate from REST to GraphQL?"
   bun deliberate.ts --rounds 3 --models claude,deepseek,mistral "WebSockets vs SSE?"
   bun deliberate.ts --mode research "What are the latest Claude Code features?"
+  bun deliberate.ts --mode doc-review --doc ./docs/design.md --verbose
+  bun deliberate.ts --mode doc-review --doc ./RFC-001.md "Focus on security and scaling"
   bun deliberate.ts --output decision.md "Monorepo or polyrepo?"`);
     process.exit(0);
   }
@@ -815,21 +1064,29 @@ Examples:
     process.exit(0);
   }
 
-  const question = positionals.join(" ").trim();
-  if (!question) {
-    console.error('Provide a question: bun deliberate.ts "Your question here"');
+  const mode = (values.mode as ExecutionMode) || "debate";
+  if (mode !== "debate" && mode !== "research" && mode !== "doc-review") {
+    console.error(`Invalid mode: ${mode}. Use "debate", "research", or "doc-review".`);
     process.exit(1);
   }
 
-  const mode = (values.mode as ExecutionMode) || "debate";
-  if (mode !== "debate" && mode !== "research") {
-    console.error(`Invalid mode: ${mode}. Use "debate" or "research".`);
+  const question = positionals.join(" ").trim();
+
+  if (mode !== "doc-review" && !question) {
+    console.error('Provide a question: bun deliberate.ts "Your question here"');
     process.exit(1);
   }
 
   let report: string;
 
-  if (mode === "research") {
+  if (mode === "doc-review") {
+    if (!values.doc) {
+      console.error("doc-review mode requires --doc <path>");
+      process.exit(1);
+    }
+    const result = await docReview(values.doc, question, models, values.verbose!);
+    report = formatDocReviewReport(result);
+  } else if (mode === "research") {
     const researchResult = await research(question, models, values.verbose!);
     report = formatResearchReport(researchResult);
   } else {

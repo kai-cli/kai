@@ -93,7 +93,7 @@ Include screenshot paths from each UIReviewer's report for failed stories.
 - **Task parallelism, not TeamCreate.** UIReviewers are stateless parallel workers. Multiple `Task(subagent_type="UIReviewer")` calls in one message achieve true parallelism without swarm coordination overhead.
 - **Stories as YAML text in prompt.** Avoids the agent needing to read the story file — reduces agent tool calls and speeds execution.
 - **RESULT sentinel parsing.** Simple string parsing on the last line — no fragile JSON extraction from freeform agent output.
-- **8-agent limit.** Matches PAI's parallel agent guidance and avoids resource contention.
+- **8-agent limit.** Matches KAI's parallel agent guidance and avoids resource contention.
 
 ## Error Handling
 

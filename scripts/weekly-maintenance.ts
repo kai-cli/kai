@@ -1,0 +1,155 @@
+#!/usr/bin/env bun
+/**
+ * weekly-maintenance.ts — Non-interactive weekly maintenance runner
+ *
+ * Runs all weekly tasks, produces a summary report, and updates
+ * the maintenance state sentinel so the hook knows when it last ran.
+ *
+ * Usage:
+ *   bun scripts/weekly-maintenance.ts           # Run all tasks
+ *   bun scripts/weekly-maintenance.ts --dry-run # Show what would run
+ *
+ * Called by: WeeklyMaintenance.hook.ts nudge, or manually
+ */
+
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join } from 'path';
+
+const PAI_DIR = process.env.PAI_DIR ?? join(process.env.HOME!, '.claude');
+const STATE_FILE = join(PAI_DIR, 'MEMORY', 'STATE', '.weekly-maintenance.json');
+const DRY_RUN = process.argv.includes('--dry-run');
+
+interface TaskResult {
+  name: string;
+  status: 'pass' | 'warn' | 'fail' | 'skip';
+  message: string;
+  durationMs: number;
+}
+
+async function runTask(name: string, command: string[], cwd?: string): Promise<TaskResult> {
+  const start = Date.now();
+  try {
+    const proc = Bun.spawn(command, {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      cwd: cwd ?? PAI_DIR,
+    });
+    const [stdout, stderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    const exitCode = await proc.exited;
+    const duration = Date.now() - start;
+    const output = (stdout + stderr).trim();
+
+    if (exitCode === 0) {
+      const summary = output.split('\n').slice(-2).join(' ').substring(0, 120);
+      return { name, status: 'pass', message: summary || 'OK', durationMs: duration };
+    } else {
+      const summary = output.split('\n').slice(-3).join(' ').substring(0, 120);
+      return { name, status: 'warn', message: summary || `Exit code ${exitCode}`, durationMs: duration };
+    }
+  } catch (err: any) {
+    return { name, status: 'fail', message: err.message?.substring(0, 100) ?? 'Unknown error', durationMs: Date.now() - start };
+  }
+}
+
+async function checkGitHub(repo: string): Promise<TaskResult> {
+  const start = Date.now();
+  try {
+    const proc = Bun.spawn(['gh', 'issue', 'list', '-R', repo, '--json', 'number,title', '-L', '5'], {
+      stdout: 'pipe', stderr: 'pipe',
+    });
+    const stdout = await new Response(proc.stdout).text();
+    await proc.exited;
+    const issues = JSON.parse(stdout || '[]');
+    const prProc = Bun.spawn(['gh', 'pr', 'list', '-R', repo, '--json', 'number,title', '-L', '5'], {
+      stdout: 'pipe', stderr: 'pipe',
+    });
+    const prStdout = await new Response(prProc.stdout).text();
+    await prProc.exited;
+    const prs = JSON.parse(prStdout || '[]');
+
+    const msg = `${issues.length} open issues, ${prs.length} open PRs`;
+    return { name: `GitHub (${repo})`, status: issues.length + prs.length > 0 ? 'warn' : 'pass', message: msg, durationMs: Date.now() - start };
+  } catch (err: any) {
+    return { name: `GitHub (${repo})`, status: 'fail', message: err.message?.substring(0, 80) ?? 'gh error', durationMs: Date.now() - start };
+  }
+}
+
+async function main() {
+  console.log('═══ Weekly Maintenance ═══════════════════════');
+  console.log(`  Date: ${new Date().toISOString().split('T')[0]}`);
+  console.log(`  Mode: ${DRY_RUN ? 'DRY RUN' : 'EXECUTE'}`);
+  console.log('');
+
+  const tasks: { name: string; cmd: string[]; cwd?: string }[] = [
+    { name: 'tools-sync', cmd: ['bun', 'scripts/tools-sync.ts'] },
+    { name: 'LearningPatternSynthesis', cmd: ['bun', 'PAI/Tools/LearningPatternSynthesis.ts'] },
+    { name: 'Tests (critical)', cmd: ['bun', 'test', 'tests/SecurityValidator.test.ts', 'tests/PostCompactRecovery.test.ts', 'tests/GitHubWriteGuard.test.ts', 'tests/RiskClassifier.test.ts'] },
+  ];
+
+  if (DRY_RUN) {
+    console.log('Would run:');
+    for (const t of tasks) console.log(`  - ${t.name}: ${t.cmd.join(' ')}`);
+    console.log('  - GitHub issues/PRs check (kai-cli/kai)');
+    console.log('  - Repo sync status comparison');
+    process.exit(0);
+  }
+
+  const results: TaskResult[] = [];
+
+  // Run scripted tasks
+  for (const t of tasks) {
+    process.stdout.write(`  Running ${t.name}...`);
+    const result = await runTask(t.name, t.cmd, t.cwd);
+    results.push(result);
+    const icon = result.status === 'pass' ? '✅' : result.status === 'warn' ? '⚠️' : '❌';
+    console.log(` ${icon} (${result.durationMs}ms)`);
+  }
+
+  // GitHub check
+  process.stdout.write('  Checking GitHub...');
+  const ghResult = await checkGitHub('kai-cli/kai');
+  results.push(ghResult);
+  const ghIcon = ghResult.status === 'pass' ? '✅' : '⚠️';
+  console.log(` ${ghIcon} ${ghResult.message}`);
+
+  // Sync status
+  process.stdout.write('  Checking sync status...');
+  const syncResult = await runTask('Sync status', ['git', '-C', join(process.env.HOME!, 'Projects/kai'), 'log', '--oneline', '-1']);
+  results.push(syncResult);
+  console.log(` ✅`);
+
+  // Summary
+  console.log('');
+  console.log('── Summary ──');
+  const passed = results.filter(r => r.status === 'pass').length;
+  const warned = results.filter(r => r.status === 'warn').length;
+  const failed = results.filter(r => r.status === 'fail').length;
+  console.log(`  ${passed} passed, ${warned} warnings, ${failed} failed`);
+
+  for (const r of results) {
+    if (r.status !== 'pass') {
+      const icon = r.status === 'warn' ? '⚠️' : '❌';
+      console.log(`  ${icon} ${r.name}: ${r.message}`);
+    }
+  }
+
+  // Update state sentinel
+  const state = {
+    lastRun: Date.now(),
+    lastRunDate: new Date().toISOString().split('T')[0],
+    results: results.map(r => ({ name: r.name, status: r.status })),
+  };
+  mkdirSync(join(PAI_DIR, 'MEMORY', 'STATE'), { recursive: true });
+  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  console.log('');
+  console.log(`  ✅ State updated: ${STATE_FILE}`);
+  console.log('     Next reminder in 7 days.');
+}
+
+main().catch(err => {
+  console.error(`[WeeklyMaintenance] Fatal:`, err);
+  process.exit(1);
+});
