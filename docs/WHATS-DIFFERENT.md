@@ -10,7 +10,7 @@ KAI diverges with production hardening, multi-model debate/research, self-learni
 
 | | Daniel's Original (v4.0.3) | This Fork (KAI) |
 |---|---|---|
-| **Skills** | 63 (12 categories) | <!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> (streamlined, no dead skills) |
+| **Skills** | 63 (12 categories) | <!-- KAI:counts:skills:begin -->84<!-- KAI:counts:skills:end --> (streamlined, no dead skills) |
 | **Hooks** | 21 | <!-- KAI:counts:hooks:begin -->51<!-- KAI:counts:hooks:end --> (all through stderr wrapper) |
 | **Agents** | ~6 generic | <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> specialized (named personas) |
 | **Algorithm** | v3.5.0 | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> |

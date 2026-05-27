@@ -51,7 +51,7 @@
 
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { getISOTimestamp, getPSTDate } from './lib/time';
+import { getISOTimestamp, getLocalDate } from './lib/time';
 import { getLearningCategory } from './lib/learning-utils';
 import { paiPath } from './lib/paths';
 
@@ -186,7 +186,7 @@ function writeLearning(workMeta: WorkMeta, idealContent: string): void {
   const category = getLearningCategory(workMeta.title);
   const monthDir = getMonthDir(category);
 
-  const dateStr = getPSTDate();
+  const dateStr = getLocalDate();
   const timeStr = new Date().toISOString().split('T')[1].slice(0, 5).replace(':', '');
   const titleSlug = workMeta.title
     .toLowerCase()

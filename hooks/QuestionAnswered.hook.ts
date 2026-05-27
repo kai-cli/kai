@@ -76,4 +76,4 @@ async function main() {
   process.exit(0);
 }
 
-main();
+main().catch((err) => { console.error(`[QuestionAnswered] Error:`, err); process.exit(0); });

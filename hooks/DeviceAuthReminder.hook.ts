@@ -110,4 +110,4 @@ Device access detected. Auth reference:
   process.exit(0);
 }
 
-main();
+main().catch((err) => { console.error(`[DeviceAuthReminder] Error:`, err); process.exit(0); });

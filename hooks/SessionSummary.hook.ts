@@ -207,4 +207,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[SessionSummary] Error:`, err); process.exit(0); });

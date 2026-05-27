@@ -86,4 +86,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[TeammateIdle] Error:`, err); process.exit(0); });

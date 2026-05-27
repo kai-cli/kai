@@ -33,7 +33,7 @@ import { join } from 'path';
 import { inference } from '../PAI/Tools/Inference';
 import { getIdentity, getPrincipal, getPrincipalName } from './lib/identity';
 import { getLearningCategory } from './lib/learning-utils';
-import { getISOTimestamp, getPSTComponents } from './lib/time';
+import { getISOTimestamp, getLocalComponents } from './lib/time';
 import { captureFailure } from '../PAI/Tools/FailureCapture';
 import { getPaiDir, paiPath } from './lib/paths';
 import { writeDraft } from './lib/staging';
@@ -284,7 +284,7 @@ function captureLowRatingLearning(
   if (rating >= 5) return;  // 5 = neutral (no sentiment), only capture actual negatives (<=4)
   if (!detailedContext?.trim()) return;  // Skip if no meaningful context to learn from
 
-  const { year, month, day, hours, minutes, seconds } = getPSTComponents();
+  const { year, month, day, hours, minutes, seconds } = getLocalComponents();
   const yearMonth = `${year}-${month}`;
   const category = getLearningCategory(detailedContext, summaryOrComment);
   const learningsDir = paiPath('MEMORY', 'LEARNING', category, yearMonth);
@@ -609,4 +609,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[RatingCapture] Error:`, err); process.exit(0); });

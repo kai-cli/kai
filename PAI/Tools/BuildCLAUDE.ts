@@ -27,8 +27,8 @@ const LATEST_PATH = paiPath("PAI/Algorithm", "LATEST");
 
 function getAlgorithmVersion(): string {
   if (!existsSync(LATEST_PATH)) {
-    console.error("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.13.0");
-    return "v3.13.0";
+    console.error("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.14.0");
+    return "v3.14.0";
   }
   return readFileSync(LATEST_PATH, "utf-8").trim();
 }

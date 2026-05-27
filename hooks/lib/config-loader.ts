@@ -20,6 +20,7 @@ interface DomainsConfig {
   definitions?: Record<string, DomainDefinition>;
   projectMapping?: Array<{ pattern: string; domains: string[] }>;
   excludedProjects?: string[];
+  personalProjects?: string[];
   maxDomainsPerSession?: number;
 }
 
@@ -90,4 +91,9 @@ export function loadRelatedDomains(): Record<string, string[]> {
     result[domain] = def.relatedDomains ?? [];
   }
   return result;
+}
+
+export function loadPersonalProjects(): string[] {
+  const config = loadConfig();
+  return config.personalProjects ?? [];
 }

@@ -106,4 +106,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[WebFetchGuard] Error:`, err); process.exit(0); });

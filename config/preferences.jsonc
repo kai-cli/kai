@@ -1,4 +1,4 @@
-// KAI Preferences Configuration
+// PAI Preferences Configuration
 // Environment variables, system preferences, tech stack, and runtime settings.
 // Identity → identity.jsonc | Hooks → hooks.jsonc | Permissions → permissions.jsonc
 // Notifications → notifications.jsonc | Everything else → here.
@@ -76,19 +76,21 @@
   },
 
   // Tech stack — used in code generation and tool recommendations
-  // Customize these to match your environment
   "techStack": {
-    "browser": "default",
-    "terminal": "default",
+    "browser": "Dia",
+    "terminal": "Kitty",
     "packageManager": "bun",
-    "pythonPackageManager": "pip",
+    "pythonPackageManager": "uv",
     "language": "TypeScript",
     "devServerPort": 5173
   },
 
   // MCP (Model Context Protocol) server connections
-  // Add your MCP servers here (e.g., cloudflare, github, custom)
-  "mcpServers": {},
+  "mcpServers": {
+    "cloudflare": {
+      "url": "https://mcp.cloudflare.com/mcp"
+    }
+  },
 
   // Enable all project-level MCP servers from .mcp.json files
   "enableAllProjectMcpServers": true,

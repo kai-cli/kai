@@ -104,14 +104,26 @@ export function trimOldEntries(logPath: string): void {
   } catch { /* non-fatal */ }
 }
 
+const TRIM_SENTINEL = paiPath('MEMORY', 'SECURITY', '.last-trim');
+
+function shouldTrimToday(): boolean {
+  try {
+    if (!existsSync(TRIM_SENTINEL)) return true;
+    const lastTrim = readFileSync(TRIM_SENTINEL, 'utf-8').trim();
+    return lastTrim !== new Date().toISOString().substring(0, 10);
+  } catch { return true; }
+}
+
 function logSecurityEvent(event: SecurityEvent): void {
-  // Only log incidents — blocks and alerts. Confirms/allows are expected behavior.
   if (event.event_type === 'confirm' || event.event_type === 'allow') return;
 
   try {
     const dir = paiPath('MEMORY', 'SECURITY');
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    trimOldEntries(SECURITY_LOG);
+    if (shouldTrimToday()) {
+      trimOldEntries(SECURITY_LOG);
+      writeFileSync(TRIM_SENTINEL, new Date().toISOString().substring(0, 10));
+    }
     appendFileSync(SECURITY_LOG, JSON.stringify(event) + '\n');
   } catch {
     // Logging failure should not block operations

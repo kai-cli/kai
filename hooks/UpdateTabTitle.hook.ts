@@ -215,4 +215,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[UpdateTabTitle] Error:`, err); process.exit(0); });

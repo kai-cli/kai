@@ -95,4 +95,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[SecretOutputDetector] Error:`, err); process.exit(0); });

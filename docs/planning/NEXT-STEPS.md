@@ -133,20 +133,13 @@ not caused by v5.9.x work). Non-blocking for v6.0.
 
 ---
 
-## Next: v6.0.0 — Paradigm Shift
+## Next: v6.1–v6.3 (Hardening) then v6.4+ (Architecture)
 
-**Theme:** New interaction models + multi-agent orchestration + identity consolidation
+**v6.1–v6.3:** Test coverage, documentation, scaling automation.
+See `docs/planning/ROADMAP.md` for details.
 
-See `docs/planning/v6.0.0-PLAN.md` for full detail.
-
-| # | Feature | Est. LOC | Complexity |
-|---|---------|----------|-----------|
-| 1 | Input Classification | ~400 | High |
-| 2 | Multi-Harness Agents | ~600 | High |
-| 3 | Workflow Templates | ~250 | Medium |
-| 4 | Hot-Reload Rules | ~150 | Medium |
-| 5 | Spec-Driven Development | ~200 | Medium |
-| 6 | PAI→KAI Internal Rename | ~0 (massive rename) | High |
+**v6.4+:** Write coordination, security hardening, architecture evolution.
+See `docs/planning/v6.4-review-remediations.md` — multi-model validated plan.
 
 ---
 
@@ -154,7 +147,7 @@ See `docs/planning/v6.0.0-PLAN.md` for full detail.
 
 ### Quality & Reliability
 - [ ] SessionCloseGuard.hook.ts — natural-language exit detection. Fires on UserPromptSubmit (async), matches explicit exit phrases ("ok we're done", "wrapping up", etc.) and optionally implicit short acknowledgments (≤8 words, ≥10 turns). Injects session-close context so Claude produces a closing summary. Builds on `/end` skill experience. Design in v5.3.0-PLAN.md A2 section (preserved). ~70 LOC + 10 tests. *Deferred from v5.7 — `/end` covers the explicit case; auto-detection adds false-positive risk.*
-- [ ] GPT web search via Responses API — `invokeOpenAIResponses()` function for `deliberate.ts`. Chat Completions (`/v1/chat/completions`) doesn't support `web_search_preview`; needs `/v1/responses` endpoint with different request shape (`input` string, `output[]` response). ~40 LOC. Adds a third grounded source alongside Gemini and Grok. *Deferred from v5.7 — diminishing returns (Gemini + Grok already grounded).*
+- [ ] GPT web search via Responses API — *Partially obsolete: deliberate.ts now uses Bedrock models (no personal API keys). If web-grounded search still needed, evaluate Bedrock-hosted models with tool-use or keep Gemini/Grok for research mode only.*
 - [ ] Auto-reindex external Knowledge/ paths — Detect stale embedding index at session start, trigger incremental reindex in background. Currently manual (`bun scripts/EmbeddingIndex.ts --incremental`). *Deferred from v5.7 — solve when stale index causes visible problems.*
 - [ ] PostToolUse code quality gate — lint/syntax detection after edits
 - [ ] Agent context seeding — auto-inject prior ResearchIndex findings into spawned agents

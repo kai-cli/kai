@@ -93,7 +93,7 @@ function getISODate(): string {
 /**
  * Get PST date components
  */
-function getPSTComponents(): { year: string; month: string; day: string } {
+function getLocalComponents(): { year: string; month: string; day: string } {
   const now = new Date();
   const pst = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
   return {
@@ -137,7 +137,7 @@ function parseRelationshipNotes(content: string, date: string): RelationshipNote
  */
 function loadRecentNotes(daysBack: number = 7): RelationshipNote[] {
   const allNotes: RelationshipNote[] = [];
-  const { year, month } = getPSTComponents();
+  const { year, month } = getLocalComponents();
 
   // Check current and previous month
   const months = [`${year}-${month}`];

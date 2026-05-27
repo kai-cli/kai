@@ -91,7 +91,7 @@ bun ~/.claude/hooks/handlers/BuildSettings.ts
 
 ## What You Get
 
-### Skills (<!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> modules)
+### Skills (<!-- KAI:counts:skills:begin -->84<!-- KAI:counts:skills:end --> modules)
 KAI includes specialized skills invoked with slash commands or automatically:
 - **Research** — multi-agent parallel research with dedup
 - **Security** — recon, web assessment, prompt injection testing

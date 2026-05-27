@@ -107,4 +107,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[CheckVersion] Error:`, err); process.exit(0); });

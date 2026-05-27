@@ -239,7 +239,7 @@ Generate the 8-word description:`;
 /**
  * Get PST timestamp components
  */
-function getPSTComponents(): {
+function getLocalComponents(): {
   year: string;
   month: string;
   day: string;
@@ -284,7 +284,7 @@ export async function captureFailure(input: FailureCaptureInput): Promise<string
   const description = await generateDescription(sentimentSummary, conversations, toolCalls);
 
   // Create directory structure
-  const { year, month, day, hours, minutes, seconds } = getPSTComponents();
+  const { year, month, day, hours, minutes, seconds } = getLocalComponents();
   const timestamp = `${year}-${month}-${day}-${hours}${minutes}${seconds}`;
   const dirName = `${timestamp}_${description}`;
   const yearMonth = `${year}-${month}`;

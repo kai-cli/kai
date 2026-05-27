@@ -15,9 +15,20 @@
  *   Injects mode hint into additionalContext.
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { readHookInput } from './lib/hook-io';
 import { classify } from './lib/classify';
 import { classifyInput } from './lib/input-classifier';
+
+function getAlgorithmVersion(): string {
+  try {
+    const paiDir = process.env.PAI_DIR || join(process.env.HOME || '', '.claude');
+    return readFileSync(join(paiDir, 'PAI', 'Algorithm', 'LATEST'), 'utf-8').trim();
+  } catch {
+    return 'v3.14.0';
+  }
+}
 
 async function main() {
   const input = await readHookInput();
@@ -48,7 +59,7 @@ async function main() {
   // Only inject for MINIMAL and ALGORITHM — NATIVE is the default, no hint needed
   if (mode === 'ALGORITHM') {
     console.log(JSON.stringify({
-      additionalContext: `<mode_hint>ALGORITHM</mode_hint>\nThis request is ALGORITHM mode. Your MANDATORY FIRST ACTION is to Read PAI/Algorithm/v3.13.0.md. Do NOT use NATIVE format. Do NOT skip the Algorithm.`
+      additionalContext: `<mode_hint>ALGORITHM</mode_hint>\nThis request is ALGORITHM mode. Your MANDATORY FIRST ACTION is to Read PAI/Algorithm/${getAlgorithmVersion()}.md. Do NOT use NATIVE format. Do NOT skip the Algorithm.`
     }));
     console.error(`[ModeClassifier] Injected mode hint: ALGORITHM`);
   } else if (mode === 'MINIMAL') {

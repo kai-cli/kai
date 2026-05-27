@@ -317,4 +317,4 @@ async function main() {
   process.exit(0);
 }
 
-main();
+main().catch((err) => { console.error(`[TerminalState] Error:`, err); process.exit(0); });

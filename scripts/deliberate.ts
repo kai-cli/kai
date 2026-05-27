@@ -12,20 +12,17 @@
  *   Final: Synthesis with convergence analysis, confidence, dissenting views
  *
  * Claude calls use PAI Inference (subscription auth, no API key needed).
- * External models use direct API calls (keys from env vars).
+ * All other models route through AWS Bedrock (no personal API keys required).
  *
  * Usage:
  *   bun deliberate.ts "Should we use WebSockets or SSE for real-time updates?"
- *   bun deliberate.ts --rounds 3 --models claude,gemini,grok "Question here"
+ *   bun deliberate.ts --rounds 3 --models claude,llama-researcher,deepseek "Question here"
  *   bun deliberate.ts --rounds 2 --output report.md "Question here"
  *   bun deliberate.ts --config custom-panel.json "Question here"
  *   bun deliberate.ts --mode research "What are the latest Claude Code hook capabilities?"
- *   bun deliberate.ts --mode research --models gemini,grok "Current state of WebLLM?"
  *
- * Environment variables for external models:
- *   GEMINI_API_KEY    — Google Gemini
- *   GROK_API_KEY      — xAI Grok
- *   OPENAI_API_KEY    — OpenAI GPT
+ * Models (all Bedrock): llama-researcher, llama-maverick, palmyra, deepseek, mistral
+ * Claude: via PAI Inference (subscription)
  */
 
 import { parseArgs } from "util";
@@ -40,7 +37,7 @@ type ExecutionMode = "debate" | "research";
 interface ModelConfig {
   id: string;
   name: string;
-  provider: "claude" | "gemini" | "openai-compatible";
+  provider: "claude" | "gemini" | "openai-compatible" | "bedrock";
   model: string;
   persona: string;
   systemPrompt: string;
@@ -89,55 +86,44 @@ const DEFAULT_MODELS: ModelConfig[] = [
     systemPrompt: `You are a deliberation panelist. Your perspective emphasizes systems thinking, long-term architecture, and structural clarity. You are direct, precise, and focused on trade-offs. When you disagree with another panelist, say so clearly and explain why. When you agree, build on their point rather than restating it.`,
   },
   {
-    id: "gemini",
-    name: "Gemini (Flash)",
-    provider: "gemini",
-    model: "gemini-2.5-flash",
+    id: "llama-researcher",
+    name: "Llama 3.3 70B",
+    provider: "bedrock",
+    model: "us.meta.llama3-3-70b-instruct-v1:0",
     persona: "Researcher",
     systemPrompt: `You are a deliberation panelist. Your perspective emphasizes evidence, data, real-world precedent, and empirical analysis. You cite specific examples and counter-examples. When you disagree with another panelist, ground your objection in evidence. When you agree, add supporting data they missed.`,
-    envKey: "GEMINI_API_KEY",
-    supportsGrounding: true,
   },
   {
-    id: "grok",
-    name: "Grok",
-    provider: "openai-compatible",
-    model: "grok-3",
-    persona: "Contrarian",
-    systemPrompt: `You are a deliberation panelist. Your perspective is contrarian and unfiltered. You challenge assumptions, point out what others are avoiding, and stress-test popular positions. You value truth over consensus. When you disagree, be blunt. When you agree, explain what surprised you about agreeing.`,
-    envKey: "GROK_API_KEY",
-    baseUrl: "https://api.x.ai/v1",
-    supportsGrounding: true,
-  },
-  {
-    id: "gpt",
-    name: "GPT-4o",
-    provider: "openai-compatible",
-    model: "gpt-4o",
+    id: "llama-maverick",
+    name: "Llama 4 Maverick",
+    provider: "bedrock",
+    model: "us.meta.llama4-maverick-17b-instruct-v1:0",
     persona: "Pragmatist",
     systemPrompt: `You are a deliberation panelist. Your perspective emphasizes practical implementation, user impact, and shipping. You focus on what actually works in production. When you disagree, explain the real-world cost. When you agree, propose concrete next steps.`,
-    envKey: "OPENAI_API_KEY",
-    baseUrl: "https://api.openai.com/v1",
+  },
+  {
+    id: "palmyra",
+    name: "Palmyra X5",
+    provider: "bedrock",
+    model: "us.writer.palmyra-x5-v1:0",
+    persona: "Contrarian",
+    systemPrompt: `You are a deliberation panelist. Your perspective is contrarian and unfiltered. You challenge assumptions, point out what others are avoiding, and stress-test popular positions. You value truth over consensus. When you disagree, be blunt. When you agree, explain what surprised you about agreeing.`,
   },
   {
     id: "deepseek",
-    name: "DeepSeek (Reasoner)",
-    provider: "openai-compatible",
-    model: "deepseek-reasoner",
+    name: "DeepSeek (R1)",
+    provider: "bedrock",
+    model: "us.deepseek.r1-v1:0",
     persona: "Reasoner",
     systemPrompt: `You are a deliberation panelist. Your perspective emphasizes rigorous step-by-step reasoning and exposing your chain of thought. You break complex questions into sub-problems, examine each systematically, and show your work. When you disagree, walk through the logical flaw. When you agree, extend the reasoning chain further.`,
-    envKey: "DEEPSEEK_API_KEY",
-    baseUrl: "https://api.deepseek.com",
   },
   {
     id: "mistral",
     name: "Mistral Large",
-    provider: "openai-compatible",
-    model: "mistral-large-latest",
+    provider: "bedrock",
+    model: "mistral.mistral-large-3-675b-instruct",
     persona: "Strategist",
     systemPrompt: `You are a deliberation panelist. Your perspective emphasizes strategic analysis, nuanced trade-offs, and multi-dimensional evaluation. You consider cultural, technical, and business dimensions that others may overlook. When you disagree, reframe the problem to show what's being missed. When you agree, add the dimension no one mentioned.`,
-    envKey: "MISTRAL_API_KEY",
-    baseUrl: "https://api.mistral.ai/v1",
   },
 ];
 
@@ -277,6 +263,49 @@ async function invokeOpenAICompatible(
   }
 }
 
+async function invokeBedrock(
+  config: ModelConfig,
+  userPrompt: string,
+): Promise<{ content: string; latencyMs: number; error?: string }> {
+  const region = process.env.AWS_REGION ?? "us-west-2";
+  const start = Date.now();
+  try {
+    const requestBody = JSON.stringify({
+      messages: [
+        { role: "user", content: userPrompt },
+      ],
+      system: [{ text: config.systemPrompt }],
+      inferenceConfig: { maxTokens: 4096, temperature: 0.7 },
+    });
+
+    const proc = Bun.spawn(
+      ["aws", "bedrock-runtime", "converse",
+        "--region", region,
+        "--model-id", config.model,
+        "--messages", JSON.stringify([{ role: "user", content: [{ text: userPrompt }] }]),
+        "--system", JSON.stringify([{ text: config.systemPrompt }]),
+        "--inference-config", JSON.stringify({ maxTokens: 4096, temperature: 0.7 }),
+        "--output", "json",
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+    const exitCode = await proc.exited;
+
+    if (exitCode !== 0) {
+      return { content: "", latencyMs: Date.now() - start, error: `Bedrock CLI error: ${stderr.slice(0, 300)}` };
+    }
+
+    const data = JSON.parse(stdout);
+    const content = data.output?.message?.content?.[0]?.text ?? "";
+    return { content, latencyMs: Date.now() - start };
+  } catch (e: any) {
+    return { content: "", latencyMs: Date.now() - start, error: e.message };
+  }
+}
+
 async function invokeModel(
   config: ModelConfig,
   userPrompt: string,
@@ -290,6 +319,8 @@ async function invokeModel(
       return invokeGemini(config, userPrompt, { grounding: useGrounding });
     case "openai-compatible":
       return invokeOpenAICompatible(config, userPrompt, { grounding: useGrounding });
+    case "bedrock":
+      return invokeBedrock(config, userPrompt);
     default:
       return { content: "", latencyMs: 0, error: `Unknown provider: ${config.provider}` };
   }
@@ -422,7 +453,7 @@ async function deliberate(
 
   // Filter to models with available credentials
   const availableModels = models.filter((m) => {
-    if (m.provider === "claude") return true;
+    if (m.provider === "claude" || m.provider === "bedrock") return true;
     const key = m.envKey ? process.env[m.envKey] : null;
     if (!key) {
       if (verbose) console.error(`  Skipping ${m.name}: missing ${m.envKey}`);
@@ -624,7 +655,7 @@ async function research(
   const startTime = Date.now();
 
   const availableModels = models.filter((m) => {
-    if (m.provider === "claude") return true;
+    if (m.provider === "claude" || m.provider === "bedrock") return true;
     const key = m.envKey ? process.env[m.envKey] : null;
     if (!key) {
       if (verbose) console.error(`  Skipping ${m.name}: missing ${m.envKey}`);
@@ -729,7 +760,7 @@ Options:
   --mode <mode>       Execution mode: debate (default) or research
   --rounds <n>        Number of deliberation rounds (default: 2, debate mode only)
   --models <list>     Comma-separated model IDs (default: all available)
-                      IDs: claude, gemini, grok, gpt, deepseek, mistral
+                      IDs: claude, llama-researcher, llama-maverick, palmyra, deepseek, mistral
   --output <path>     Save markdown report to file
   --config <path>     Load custom panel config (JSON)
   --verbose           Show per-model timing and status
@@ -741,18 +772,13 @@ Modes:
   research            Scatter-gather-synthesize with web grounding (single round)
 
 Environment variables:
-  GEMINI_API_KEY      Google Gemini API key
-  GROK_API_KEY        xAI Grok API key
-  OPENAI_API_KEY      OpenAI API key
-  DEEPSEEK_API_KEY    DeepSeek API key
-  MISTRAL_API_KEY     Mistral AI API key
-  (Claude uses PAI Inference — no API key needed)
+  (All models now use AWS Bedrock — no personal API keys needed)
+  (Claude uses PAI Inference via CLI — subscription auth)
 
 Examples:
   bun deliberate.ts "Should we migrate from REST to GraphQL?"
-  bun deliberate.ts --rounds 3 --models claude,gemini "WebSockets vs SSE?"
+  bun deliberate.ts --rounds 3 --models claude,deepseek,mistral "WebSockets vs SSE?"
   bun deliberate.ts --mode research "What are the latest Claude Code features?"
-  bun deliberate.ts --mode research --models gemini,grok "Current state of WebLLM?"
   bun deliberate.ts --output decision.md "Monorepo or polyrepo?"`);
     process.exit(0);
   }
@@ -782,7 +808,7 @@ Examples:
     console.log("Available models:\n");
     for (const m of models) {
       const hasKey =
-        m.provider === "claude" ? true : m.envKey ? !!process.env[m.envKey] : false;
+        m.provider === "claude" || m.provider === "bedrock" ? true : m.envKey ? !!process.env[m.envKey] : false;
       const status = hasKey ? "✓ ready" : `✗ missing ${m.envKey}`;
       console.log(`  ${m.id.padEnd(10)} ${m.name.padEnd(20)} ${m.persona.padEnd(14)} ${status}`);
     }

@@ -36,7 +36,7 @@ The CapabilityRecommender hook uses AI inference to classify depth. Its classifi
 
 **Default:** FULL. MINIMAL is rare — only pure social interaction with zero task content. Short prompts can demand FULL depth. The word "just" does not reduce depth.
 
-# The Algorithm (v3.13.0 | based on danielmiessler/Personal_AI_Infrastructure)
+# The Algorithm (v3.14.0 | based on danielmiessler/Personal_AI_Infrastructure)
 
 ## ⚡ ZERO-DELAY OUTPUT (HIGHEST PRIORITY — READ THIS FIRST)
 
@@ -47,7 +47,7 @@ The CapabilityRecommender hook uses AI inference to classify depth. Its classifi
 🚨 ALL INPUTS MUST BE PROCESSED AND RESPONDED TO USING THE FORMAT BELOW : No Exceptions 🚨
 
 ```
-♻︎ Entering the KAI ALGORITHM… (v3.13.0) ═══════════════════════════════════════════════════════
+♻︎ Entering the KAI ALGORITHM… (v3.14.0) ═══════════════════════════════════════════════════════
 
 🗒️ TASK: [8 word description]
 

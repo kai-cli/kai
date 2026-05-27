@@ -31,7 +31,7 @@
 import { writeFileSync, existsSync, mkdirSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { getPaiDir } from './lib/paths';
-import { getPSTComponents } from './lib/time';
+import { getLocalComponents } from './lib/time';
 import { getDAName, getPrincipalName } from './lib/identity';
 import { parseTranscript } from '../PAI/Tools/TranscriptParser';
 
@@ -190,7 +190,7 @@ function formatNotes(notes: RelationshipNote[]): string {
   if (notes.length === 0) return '';
 
   const lines: string[] = [];
-  const { hours, minutes } = getPSTComponents();
+  const { hours, minutes } = getLocalComponents();
 
   lines.push(`\n## ${hours}:${minutes} PST\n`);
 
@@ -207,7 +207,7 @@ function formatNotes(notes: RelationshipNote[]): string {
  * Ensure relationship memory directory exists
  */
 function ensureRelationshipDir(paiDir: string): string {
-  const { year, month, day } = getPSTComponents();
+  const { year, month, day } = getLocalComponents();
   const monthDir = join(paiDir, 'MEMORY', 'RELATIONSHIP', `${year}-${month}`);
 
   if (!existsSync(monthDir)) {
@@ -223,7 +223,7 @@ function ensureRelationshipDir(paiDir: string): string {
 function initDailyFile(filepath: string): void {
   if (existsSync(filepath)) return;
 
-  const { year, month, day } = getPSTComponents();
+  const { year, month, day } = getLocalComponents();
   const header = `# Relationship Notes: ${year}-${month}-${day}
 
 *Auto-captured from sessions. Manual additions welcome.*
@@ -281,4 +281,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[RelationshipMemory] Error:`, err); process.exit(0); });

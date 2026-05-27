@@ -88,7 +88,7 @@ function clearSessionWork(sessionId?: string): void {
       return;
     }
 
-    // Write HANDOFF.md if PRD has unchecked criteria (session handoff protocol v3.13.0)
+    // Write HANDOFF.md if PRD has unchecked criteria
     if (currentWork.session_dir) {
       const workPath = join(WORK_DIR, currentWork.session_dir);
       const prdPath = join(workPath, 'PRD.md');

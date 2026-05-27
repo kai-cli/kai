@@ -54,4 +54,4 @@ function main() {
   process.exit(0);
 }
 
-main();
+main().catch((err) => { console.error(`[HealthCheck] Error:`, err); process.exit(0); });

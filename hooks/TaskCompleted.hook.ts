@@ -92,4 +92,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[TaskCompleted] Error:`, err); process.exit(0); });

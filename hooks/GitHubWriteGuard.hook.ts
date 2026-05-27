@@ -243,4 +243,4 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => { console.error(`[GitHubWriteGuard] Error:`, err); process.exit(0); });

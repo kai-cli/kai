@@ -49,6 +49,7 @@ import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
 import { loadLearningDigest, loadWisdomFrames, loadFailurePatterns, loadSignalTrends } from './lib/learning-readback';
+import { loadPersonalProjects } from './lib/config-loader';
 import { loadKnowledgeContext } from './lib/knowledge-readback';
 import { alreadyRanForSession, markRanForSession } from './lib/once-per-session';
 
@@ -115,10 +116,8 @@ const CONDITIONAL_FILES: Record<string, 'personal-only'> = {
  */
 function isPersonalProject(): boolean {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const personalPatterns = [
-    'kai', 'kai', 'Research-Agent', 'GranolaMCP', 'Knowledge',
-    'CLI-Hidden-Commands', '/.claude/',
-  ];
+  const personalPatterns = loadPersonalProjects();
+  if (personalPatterns.length === 0) return !projectDir.includes('/Projects/');
   return personalPatterns.some(p => projectDir.includes(p)) ||
     !projectDir.includes('/Projects/');
 }

@@ -18,7 +18,7 @@ function getTimezone(): string {
 /**
  * Get full timestamp string: "YYYY-MM-DD HH:MM:SS TZ"
  */
-export function getPSTTimestamp(): string {
+export function getLocalTimestamp(): string {
   const timezone = getTimezone();
   const date = new Date();
   const localDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
@@ -39,7 +39,7 @@ export function getPSTTimestamp(): string {
 /**
  * Get date only: "YYYY-MM-DD"
  */
-export function getPSTDate(): string {
+export function getLocalDate(): string {
   const timezone = getTimezone();
   const date = new Date();
   const localDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
@@ -55,7 +55,7 @@ export function getPSTDate(): string {
  * Get year-month for directory structure: "YYYY-MM"
  */
 export function getYearMonth(): string {
-  return getPSTDate().substring(0, 7);
+  return getLocalDate().substring(0, 7);
 }
 
 /**
@@ -105,7 +105,7 @@ export function getFilenameTimestamp(): string {
 /**
  * Get timestamp components for custom formatting
  */
-export function getPSTComponents(): {
+export function getLocalComponents(): {
   year: number;
   month: string;
   day: string;

@@ -9,9 +9,10 @@
 //   // ... make inference call ...
 //   recordInferenceCall('KnowledgeSync', 'firmware');
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { paiPath } from './paths';
+import { atomicWriteJSON } from './atomic';
 
 const getStateDir  = () => paiPath('MEMORY', 'STATE');
 const getBudgetFile = () => join(getStateDir(), '.inference-budget.json');
@@ -52,7 +53,7 @@ function loadBudget(): BudgetState {
 
 function saveBudget(state: BudgetState): void {
   mkdirSync(getStateDir(), { recursive: true });
-  writeFileSync(getBudgetFile(), JSON.stringify(state, null, 2));
+  atomicWriteJSON(getBudgetFile(), state);
 }
 
 /**
