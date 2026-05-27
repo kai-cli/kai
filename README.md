@@ -26,7 +26,7 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 | Directory | Contents |
 |-----------|----------|
 | `PAI/` | Core system: Algorithm <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end -->, context routing, system docs |
-| `skills/` | <!-- KAI:counts:skills:begin -->84<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
+| `skills/` | <!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
 | `hooks/` | <!-- KAI:counts:hooks:begin -->52<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, formatters, analytics, cleanup) |
 | `agents/` | <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
 | `config/` | 7 domain config files that generate settings.json |

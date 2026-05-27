@@ -3,7 +3,7 @@
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 85,
+    "skills": 86,
     "hooks": 52,
     "agents": 20
   },
@@ -75,6 +75,7 @@
     "CreateSkill",
     "DecisionLog",
     "Deliberate",
+    "DevTeam",
     "Development",
     "Documents",
     "Documents/Docx",

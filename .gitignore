@@ -133,3 +133,4 @@ skills/PAI/USER/
 # Runtime skill state (never commit session-specific state)
 skills/**/State/
 skills-examples/**/State/
+teams/investigation-*

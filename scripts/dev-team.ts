@@ -23,10 +23,11 @@
  */
 
 import { parseArgs } from "util";
-import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, unlinkSync } from "fs";
 import { join, resolve } from "path";
 import { parse as parseYaml } from "yaml";
-import { homedir } from "os";
+import { homedir, tmpdir } from "os";
+import { randomUUID } from "crypto";
 
 // --- Types ---
 
@@ -83,6 +84,21 @@ const PAI_DIR = join(homedir(), ".claude");
 const SCRIPTS_DIR = join(PAI_DIR, "scripts");
 const TEAMS_DIR = join(PAI_DIR, "teams");
 const PRESETS_DIR = join(PAI_DIR, "skills", "DevTeam", "Presets");
+
+function claudePath(): string {
+  const knownDirs = [
+    join(homedir(), ".local", "bin"),
+    "/usr/local/bin",
+    "/opt/homebrew/bin",
+  ];
+  for (const dir of knownDirs) {
+    if (existsSync(join(dir, "claude"))) return dir;
+  }
+  return "";
+}
+
+const CLAUDE_DIR = claudePath();
+const SPAWN_ENV = { ...process.env, PATH: `${CLAUDE_DIR}:${process.env.PATH}` };
 
 // --- Run Log ---
 
@@ -295,27 +311,25 @@ async function executePhase(
     console.log(`  [${phase}] Spawning ${agentType} (${model})...`);
   }
 
-  const args = [
-    "claude", "-p", prompt,
-    "--model", model,
-    "--output-format", "text",
-  ];
+  const promptFile = join(tmpdir(), `devteam-${randomUUID()}.txt`);
+  writeFileSync(promptFile, prompt);
 
-  if (useWorktree) {
-    args.push("--worktree");
-  }
+  const worktreeFlag = useWorktree ? " --worktree" : "";
+  const cmd = `claude -p "$(cat '${promptFile}')" --model ${model} --output-format text${worktreeFlag}`;
 
-  const proc = Bun.spawn(args, {
+  const proc = Bun.spawn(["/bin/bash", "-c", cmd], {
     stdout: "pipe",
     stderr: "pipe",
     cwd: config.cwd,
-    env: { ...process.env, CLAUDE_CODE_MAX_TURNS: "50" },
+    env: { ...SPAWN_ENV, CLAUDE_CODE_MAX_TURNS: "50" },
   });
 
   const stdout = await new Response(proc.stdout).text();
   const stderr = await new Response(proc.stderr).text();
   const exitCode = await proc.exited;
   const duration = Date.now() - startTime;
+
+  try { unlinkSync(promptFile); } catch {}
 
   if (exitCode !== 0) {
     log(config.teamName, phase, "error", { agent: agentType, duration_ms: duration, reason: stderr.slice(0, 500) });
@@ -358,12 +372,15 @@ async function executeAdversarialReview(config: TeamConfig, diffContent: string)
 
   const results = await Promise.all(
     roles.map(async (role) => {
-      const proc = Bun.spawn(
-        ["claude", "-p", prompts[role], "--model", "sonnet", "--output-format", "text"],
-        { stdout: "pipe", stderr: "pipe", cwd: config.cwd },
-      );
+      const pf = join(tmpdir(), `devteam-review-${randomUUID()}.txt`);
+      writeFileSync(pf, prompts[role]);
+      const cmd = `claude -p "$(cat '${pf}')" --model sonnet --output-format text`;
+      const proc = Bun.spawn(["/bin/bash", "-c", cmd], {
+        stdout: "pipe", stderr: "pipe", cwd: config.cwd, env: SPAWN_ENV,
+      });
       const stdout = await new Response(proc.stdout).text();
       await proc.exited;
+      try { unlinkSync(pf); } catch {}
       return { role, content: stdout };
     }),
   );

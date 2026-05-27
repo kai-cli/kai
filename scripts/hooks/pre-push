@@ -33,7 +33,26 @@ if echo "$TEST_OUTPUT" | grep -q "[1-9][0-9]* fail"; then
   echo "✅ Retry passed."
 fi
 
-# ── 2. BuildDocs freshness ───────────────────────────────────
+# ── 2. Manifest count alignment ──────────────────────────────
+if [[ -f "$REPO_ROOT/manifest.json" ]]; then
+  echo ""
+  echo "Checking manifest counts..."
+  M_SKILLS=$(grep -oE '"skills":\s*[0-9]+' "$REPO_ROOT/manifest.json" | grep -oE '[0-9]+')
+  M_HOOKS=$(grep -oE '"hooks":\s*[0-9]+' "$REPO_ROOT/manifest.json" | grep -oE '[0-9]+')
+  F_SKILLS=$(find "$REPO_ROOT/skills" -name SKILL.md | wc -l | tr -d ' ')
+  F_HOOKS=$(find "$REPO_ROOT/hooks" -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' ')
+  if [[ "$M_SKILLS" != "$F_SKILLS" ]] || [[ "$M_HOOKS" != "$F_HOOKS" ]]; then
+    echo ""
+    echo "❌ Pre-push blocked: manifest counts stale."
+    echo "   Manifest: $M_SKILLS skills, $M_HOOKS hooks"
+    echo "   Filesystem: $F_SKILLS skills, $F_HOOKS hooks"
+    echo "   Run: bun PAI/Tools/BuildManifest.ts && bun PAI/Tools/BuildDocs.ts"
+    exit 1
+  fi
+  echo "✅ Manifest counts match filesystem"
+fi
+
+# ── 3. BuildDocs freshness ───────────────────────────────────
 if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
   echo ""
   echo "Checking marker freshness..."
@@ -46,7 +65,7 @@ if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
   fi
 fi
 
-# ── 3. Quick release verification (kai only — pai-config has PII by design) ──
+# ── 4. Quick release verification (kai only — pai-config has PII by design) ──
 REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
 if [[ "$REMOTE_URL" == *"kai-cli/kai"* ]]; then
   echo ""

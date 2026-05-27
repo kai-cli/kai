@@ -447,7 +447,7 @@ function createNeofetchBanner(): string {
     const colors = [GRADIENT.blue1, GRADIENT.purple1, GRADIENT.cyan1];
     return `${BOLD}${colors[i % colors.length]}${c}${RESET}`;
   }).join("");
-  statsLines.push(`${gradientName} ${UI.muted}@${RESET} ${UI.subtext}Personal AI Infrastructure${RESET}`);
+  statsLines.push(`${gradientName} ${UI.muted}@${RESET} ${UI.subtext}Kaizen AI${RESET}`);
   statsLines.push(`${UI.dim}${"─".repeat(40)}${RESET}`);
   statsLines.push("");
 
@@ -489,9 +489,9 @@ function createNeofetchBanner(): string {
   // Top border with rounded corners
   lines.push(`  ${UI.dim}${BOX.tl}${"─".repeat(bottomWidth - 2)}${BOX.tr}${RESET}`);
 
-  // Gradient header: PAI | Personal AI Infrastructure
+  // Gradient header: PAI | Kaizen AI
   const paiGradient = `${BOLD}${GRADIENT.blue1}P${RESET}${BOLD}${GRADIENT.purple1}A${RESET}${BOLD}${GRADIENT.cyan1}I${RESET}`;
-  const headerContent = `${paiGradient} ${UI.dim}│${RESET} ${UI.text}Personal AI Infrastructure${RESET}`;
+  const headerContent = `${paiGradient} ${UI.dim}│${RESET} ${UI.text}Kaizen AI${RESET}`;
   lines.push(`  ${UI.dim}│${RESET}${center(headerContent, bottomWidth - 2)}${UI.dim}│${RESET}`);
 
   // Quote
@@ -554,7 +554,7 @@ function createCompactBanner(): string {
   }).join("");
 
   lines.push("");
-  lines.push(`  ${UI.dim}╭──${RESET} ${paiGradient} ${UI.dim}│${RESET} ${UI.subtext}Personal AI Infrastructure${RESET} ${UI.dim}──────╮${RESET}`);
+  lines.push(`  ${UI.dim}╭──${RESET} ${paiGradient} ${UI.dim}│${RESET} ${UI.subtext}Kaizen AI${RESET} ${UI.dim}──────╮${RESET}`);
   lines.push(`  ${UI.dim}│${RESET}                                                 ${UI.dim}│${RESET}`);
   lines.push(`  ${UI.dim}│${RESET}   ${kaiGradient}  ${GRADIENT.cyan1}⚡${RESET}${UI.text}${stats.skills}${RESET} ${GRADIENT.purple1}⚙${RESET}${UI.text}${stats.hooks}${RESET} ${UI.success}💡${RESET}${UI.text}${stats.learnings}${RESET} ${GRADIENT.magenta}🎯${RESET}${UI.text}${stats.model}${RESET}   ${UI.dim}│${RESET}`);
   lines.push(`  ${UI.dim}│${RESET}                                                 ${UI.dim}│${RESET}`);

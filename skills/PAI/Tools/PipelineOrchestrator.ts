@@ -198,7 +198,7 @@ async function runPipeline(pipelineName: string, input: Record<string, unknown>,
 
 // Demo mode - run multiple pipelines in parallel
 async function runDemo() {
-  console.log("Starting demo with PAI pipelines...\n");
+  console.log("Starting demo with KAI pipelines...\n");
 
   const jobs = [
     {
@@ -274,7 +274,7 @@ Production AI isn't about the smartest model. It's about the most reliable pipel
       pipeline: "blog-qa",
       input: {
         title: "Testing the Pipeline System",
-        body: `This post demonstrates the PAI pipeline QA system.
+        body: `This post demonstrates the KAI pipeline QA system.
 
 The blog-qa pipeline runs two steps: first format the content as markdown, then validate it for publication readiness.
 
