@@ -1,2 +1,0 @@
-# Bounty Programs Workflow
-

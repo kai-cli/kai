@@ -24,35 +24,47 @@ export interface HookInput {
  * Returns null if stdin is empty, malformed, or missing required fields.
  */
 export async function readHookInput(): Promise<HookInput | null> {
+  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+
   try {
     const decoder = new TextDecoder();
-    const reader = Bun.stdin.stream().getReader();
+    reader = Bun.stdin.stream().getReader();
     let input = '';
 
-    const timeoutPromise = new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 500);
+    const timeoutPromise = new Promise<'timeout'>((resolve) => {
+      setTimeout(() => resolve('timeout'), 500);
     });
 
     const readPromise = (async () => {
       while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await reader!.read();
         if (done) break;
         input += decoder.decode(value, { stream: true });
       }
+      return 'complete';
     })();
 
-    await Promise.race([readPromise, timeoutPromise]);
+    const result = await Promise.race([readPromise, timeoutPromise]);
+
+    // If timeout won, cancel the reader so process can exit cleanly
+    if (result === 'timeout') {
+      try {
+        await reader.cancel();
+      } catch {
+        // cancel() may throw if stream is already closed — ignore
+      }
+    }
 
     if (!input.trim()) return null;
 
     const parsed = JSON.parse(input);
-    const result = validatePayload(parsed);
+    const validation = validatePayload(parsed);
 
-    for (const w of result.warnings) {
+    for (const w of validation.warnings) {
       console.error(`[hook-io] Payload warning: ${w}`);
     }
-    if (!result.valid) {
-      console.error(`[hook-io] Invalid payload — missing required fields: ${result.missing.join(', ')}`);
+    if (!validation.valid) {
+      console.error(`[hook-io] Invalid payload — missing required fields: ${validation.missing.join(', ')}`);
       return null;
     }
 
@@ -67,6 +79,15 @@ export async function readHookInput(): Promise<HookInput | null> {
     return obj as HookInput;
   } catch (error) {
     console.error('[hook-io] Error reading stdin:', error);
+  } finally {
+    // Ensure reader is released even if an error occurs
+    if (reader) {
+      try {
+        await reader.cancel();
+      } catch {
+        // Ignore cancel errors — reader may already be closed
+      }
+    }
   }
   return null;
 }

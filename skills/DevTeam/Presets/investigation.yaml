@@ -3,7 +3,7 @@ description: Deep-dive debugging and root cause analysis
 retry_max: 0
 roles:
   - id: lead
-    agent_type: Architect
+    agent_type: general-purpose
     model: opus
     purpose: Coordinate investigation, synthesize findings, determine root cause
     worktree: false

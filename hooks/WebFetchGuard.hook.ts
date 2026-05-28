@@ -21,7 +21,7 @@ const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 const SECURITY_LOG = join(PAI_DIR, 'MEMORY', 'SECURITY', 'security-events.jsonl');
 
 // Internal network ranges — should never be fetched
-const BLOCKED_PATTERNS = [
+export const BLOCKED_PATTERNS = [
   /^https?:\/\/(?:10\.\d+\.\d+\.\d+)/,           // 10.x.x.x
   /^https?:\/\/(?:192\.168\.\d+\.\d+)/,           // 192.168.x.x
   /^https?:\/\/(?:172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)/, // 172.16-31.x.x
@@ -32,7 +32,7 @@ const BLOCKED_PATTERNS = [
 ];
 
 // Suspicious but ask-before-fetching patterns
-const SUSPICIOUS_PATTERNS = [
+export const SUSPICIOUS_PATTERNS = [
   { pattern: /ngrok\.io/, reason: 'ngrok tunnel — unusual for automated fetch' },
   { pattern: /pastebin\.com|paste\.ee|hastebin/, reason: 'paste service — potential data exfil target' },
   { pattern: /\.(onion)$/, reason: 'Tor hidden service' },
@@ -50,6 +50,28 @@ function logEvent(level: string, url: string, reason: string, tool: string): voi
     };
     appendFileSync(SECURITY_LOG, JSON.stringify(entry) + '\n');
   } catch { /* non-fatal */ }
+}
+
+export function validateUrl(url: string): { action: 'allow' | 'block' | 'ask'; reason?: string } {
+  if (!url) {
+    return { action: 'allow' };
+  }
+
+  // Check blocked patterns (internal networks)
+  for (const pattern of BLOCKED_PATTERNS) {
+    if (pattern.test(url)) {
+      return { action: 'block', reason: 'internal network range' };
+    }
+  }
+
+  // Check suspicious patterns (ask)
+  for (const { pattern, reason } of SUSPICIOUS_PATTERNS) {
+    if (pattern.test(url)) {
+      return { action: 'ask', reason };
+    }
+  }
+
+  return { action: 'allow' };
 }
 
 async function main() {
@@ -106,4 +128,7 @@ async function main() {
   }
 }
 
-main().catch((err) => { console.error(`[WebFetchGuard] Error:`, err); process.exit(0); });
+// Only run main if executed directly (not imported)
+if (import.meta.main) {
+  main().catch((err) => { console.error(`[WebFetchGuard] Error:`, err); process.exit(0); });
+}

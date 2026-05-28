@@ -62,6 +62,22 @@ Phase 5: Report
 - Decreasing scope: retry 2 focuses only on QA's specific failures
 - After 2 failures: escalate to user with full context (what was tried, what failed)
 - Budget continues to decrement during retries
+- QA Priority Signal determines urgency: Critical Blocker forces retry, Minor Concern can be deferred
+
+### Three-Tier Recovery
+
+Every phase execution goes through `executePhaseWithRecovery()`:
+
+1. **Auto-Retry** — Timeouts and transient errors (rate limits, overloaded) trigger automatic retry with a 2s backoff. No user involvement.
+2. **Explicit Recovery** — Non-transient failures augment the prompt with failure context ("Previous attempt failed because X. Adjust your approach.") and retry with the enriched prompt.
+3. **Escalate** — After exhausting recovery attempts, surfaces the failure to the user with full context. Never silently swallows failures.
+
+### Liveness & Timeout
+
+Each phase has a configurable timeout (default: 300s, override via `--timeout`):
+- Agent process is SIGTERM'd on timeout, SIGKILL'd after 3s grace
+- Timeout failures enter recovery pipeline as auto-retry tier
+- Prevents indefinitely stuck agents from blocking the pipeline
 
 ### Failure & Cleanup
 
@@ -72,6 +88,22 @@ On ANY failure (budget exhaustion, stuck agent, unrecoverable error):
 4. Team dissolves
 
 No partial states left behind. No orphaned worktrees.
+
+### Model Mixing
+
+Roles define default models in preset YAML, but can be overridden:
+- CLI: `--model-override "scope:opus,implement:opus"` upgrades specific phases
+- Interactive: orchestrator applies overrides before spawning agents
+- Use cases: Opus for complex scoping, Sonnet for implementation grunt work, Haiku for simple QA checks
+
+### Atomic File Scope (Parallel Devs)
+
+When multiple dev agents run in parallel, `assignFileScopes()` divides PM-identified files between them:
+- Extracts file paths from PM findings via regex
+- Round-robin assigns to dev agents
+- Each dev prompt includes a `## File Scope Assignment` section listing their owned files
+- Instruction: "Do NOT modify files outside your assignment to avoid conflicts"
+- Prevents merge conflicts without heavyweight locking infrastructure
 
 ### Run Log (Observability)
 
@@ -152,13 +184,13 @@ async function detectReviewCapability(): Promise<"bedrock" | "claude-adversarial
 
 ---
 
-## v2 Roadmap (deferred)
+## v2 Roadmap (remaining)
 
 - Concurrency isolation for parallel `/devteam` runs
 - Real-time cost streaming to user during execution
 - `/devteam status` command for mid-run monitoring
 - Preset schema versioning
-- Dev file-pattern allowlists (beyond worktree isolation)
 - Per-phase budget accounting (currently: single total budget, fail-and-cleanup on exhaustion)
 - Adversarial-vs-panel eval suite proving coverage parity
 - Dynamic role addition mid-task (e.g., security specialist if QA finds vulnerability)
+- Adaptive retry limits based on QA priority signal (Critical → always retry, Minor → skip)

@@ -13,7 +13,7 @@ roles:
     purpose: Review for logic errors, edge cases, race conditions
     worktree: false
   - id: reviewer-design
-    agent_type: Architect
+    agent_type: general-purpose
     model: sonnet
     purpose: Review for architectural concerns, maintainability, coupling
     worktree: false

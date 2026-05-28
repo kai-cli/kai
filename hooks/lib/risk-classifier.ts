@@ -69,6 +69,7 @@ const RISKY_CMDS = new Set([
   'chmod', 'chown', 'chgrp',
   'mv', 'cp',
   'truncate', 'shred',
+  'dd',
 ]);
 
 const PAGER_CMDS = new Set(['less', 'more', 'man', 'info']);
@@ -86,6 +87,61 @@ function redirectsToRealFile(cmd: string): boolean {
   return true;
 }
 
+// ── Pipe-to-shell detection ───────────────────────────────────
+
+// Returns true if command pipes to a shell interpreter
+// Catches bypasses like: echo "rm -rf /" | bash
+function isPipedToShell(cmd: string): boolean {
+  // Check if command ends with | bash, | sh, | eval, | exec
+  // Allow whitespace and flags after the pipe
+  const pipePattern = /\|\s*(bash|sh|eval|exec|zsh|ksh|csh|tcsh)(\s|$)/;
+  return pipePattern.test(cmd);
+}
+
+// ── Embedded shell command detection ──────────────────────────
+
+// Returns true if command uses bash/sh -c to execute embedded commands
+// Catches bypasses like: bash -c "rm -rf /"
+function hasEmbeddedShellCommand(cmd: string): boolean {
+  const toks = tokens(cmd);
+  const baseCmd = toks[0]?.split('/').pop() ?? '';
+
+  // bash -c, sh -c, etc.
+  if (['bash', 'sh', 'zsh', 'ksh', 'csh', 'tcsh'].includes(baseCmd)) {
+    return toks.includes('-c');
+  }
+
+  return false;
+}
+
+// ── Compound command detection ────────────────────────────────
+
+// Returns true if command contains destructive patterns in compound commands
+// Catches: ls; rm -rf /tmp  or  echo "safe" && rm -rf /
+function hasDestructiveInCompound(cmd: string): boolean {
+  // Split on ; or && or ||
+  const parts = cmd.split(/[;&|]{1,2}/);
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    // Check if this part contains rm -rf or other destructive patterns
+    if (/rm\s+-(rf|fr|r\s+-f|-f\s+-r)/.test(trimmed)) {
+      return true;
+    }
+    if (/git\s+push\s+(--force|-f)/.test(trimmed)) {
+      return true;
+    }
+    if (/git\s+reset\s+--hard/.test(trimmed)) {
+      return true;
+    }
+    if (/git\s+clean\s+-[fxd]+/.test(trimmed)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // ── Main classifier ───────────────────────────────────────────
 
 export function classifyCommand(command: string): CommandRisk {
@@ -98,6 +154,21 @@ export function classifyCommand(command: string): CommandRisk {
   let is_destructive = false;
   let uses_pager = false;
   let modifies_git = false;
+
+  // Early detection flags - these block later read_only classification
+  const hasPipeToShell = isPipedToShell(cmd);
+  const hasEmbeddedShell = hasEmbeddedShellCommand(cmd);
+  const hasDestructiveCompound = hasDestructiveInCompound(cmd);
+
+  // Apply early detection results
+  if (hasPipeToShell || hasEmbeddedShell) {
+    is_risky = true;
+  }
+
+  if (hasDestructiveCompound) {
+    is_destructive = true;
+    is_risky = true;
+  }
 
   // Git commands
   if (baseCmd === 'git') {
@@ -155,6 +226,7 @@ export function classifyCommand(command: string): CommandRisk {
   }
 
   // curl/wget — GET is read-only; POST/PUT/DELETE is risky
+  // BUT: piped to shell is never read-only
   else if (baseCmd === 'curl' || baseCmd === 'wget') {
     const method = (() => {
       const xIdx = toks.indexOf('-X');
@@ -164,14 +236,18 @@ export function classifyCommand(command: string): CommandRisk {
       return 'GET';
     })();
     if (method === 'GET' || method === 'HEAD') {
-      is_read_only = true;
+      // Only read-only if NOT piped to shell
+      if (!hasPipeToShell) {
+        is_read_only = true;
+      }
     } else {
       is_risky = true;
     }
   }
 
   // Other read-only commands
-  else if (READ_ONLY_CMDS.has(baseCmd) && !is_risky && !is_destructive) {
+  // BUT: piped to shell or embedded shell commands are never read-only
+  else if (READ_ONLY_CMDS.has(baseCmd) && !is_risky && !is_destructive && !hasPipeToShell && !hasEmbeddedShell) {
     is_read_only = true;
   }
 

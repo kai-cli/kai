@@ -177,37 +177,47 @@ interface PatternsConfig {
 // 1. PAI/USER/PAISECURITYSYSTEM/patterns.json (user's custom rules)
 // 2. skills/PAI/PAISECURITYSYSTEM/patterns.example.json (default template)
 // Legacy YAML fallback for backwards compatibility
-const USER_PATTERNS_PATH = paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.json');
-const USER_PATTERNS_YAML = paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.yaml');
-const SYSTEM_PATTERNS_PATH = paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.json');
-const SYSTEM_PATTERNS_YAML = paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.yaml');
+// NOTE: computed lazily via paiPath() to respect PAI_DIR changes (e.g. in tests)
+function getUserPatternsPath() { return paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.json'); }
+function getUserPatternsYaml() { return paiPath('PAI', 'USER', 'PAISECURITYSYSTEM', 'patterns.yaml'); }
+function getSystemPatternsPath() { return paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.json'); }
+function getSystemPatternsYaml() { return paiPath('skills', 'PAI', 'PAISECURITYSYSTEM', 'patterns.example.yaml'); }
 
 let patternsCache: PatternsConfig | null = null;
 let patternsSource: 'user' | 'system' | 'none' = 'none';
 
+export function resetPatternsCache(): void {
+  patternsCache = null;
+  patternsSource = 'none';
+}
+
 function getPatternsPath(): string | null {
   // Try USER JSON first (fast path)
-  if (existsSync(USER_PATTERNS_PATH)) {
+  const userJson = getUserPatternsPath();
+  if (existsSync(userJson)) {
     patternsSource = 'user';
-    return USER_PATTERNS_PATH;
+    return userJson;
   }
 
   // Fall back to SYSTEM JSON
-  if (existsSync(SYSTEM_PATTERNS_PATH)) {
+  const systemJson = getSystemPatternsPath();
+  if (existsSync(systemJson)) {
     patternsSource = 'system';
-    return SYSTEM_PATTERNS_PATH;
+    return systemJson;
   }
 
   // Legacy: fall back to YAML if JSON doesn't exist yet
-  if (existsSync(USER_PATTERNS_YAML)) {
+  const userYaml = getUserPatternsYaml();
+  if (existsSync(userYaml)) {
     patternsSource = 'user';
-    return USER_PATTERNS_YAML;
+    return userYaml;
   }
 
   // System YAML fallback (patterns.example.yaml is tracked in git)
-  if (existsSync(SYSTEM_PATTERNS_YAML)) {
+  const systemYaml = getSystemPatternsYaml();
+  if (existsSync(systemYaml)) {
     patternsSource = 'system';
-    return SYSTEM_PATTERNS_YAML;
+    return systemYaml;
   }
 
   // No patterns found
@@ -215,7 +225,7 @@ function getPatternsPath(): string | null {
   return null;
 }
 
-function loadPatterns(): PatternsConfig {
+export function loadPatterns(): PatternsConfig {
   if (patternsCache) return patternsCache;
 
   const patternsPath = getPatternsPath();
@@ -263,7 +273,7 @@ function loadPatterns(): PatternsConfig {
  * Prevents bypass like: LANG=C rm -rf / or FOO="bar" dangerous-cmd
  * Also strips leading whitespace.
  */
-function stripEnvVarPrefix(command: string): string {
+export function stripEnvVarPrefix(command: string): string {
   return command.replace(
     /^\s*(?:[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+)*/,
     ''
@@ -274,7 +284,7 @@ function stripEnvVarPrefix(command: string): string {
 // Pattern Matching
 // ========================================
 
-function matchesPattern(command: string, pattern: string): boolean {
+export function matchesPattern(command: string, pattern: string): boolean {
   // Convert pattern to regex
   // Patterns can use .* for wildcards
   try {
@@ -294,7 +304,7 @@ function expandPath(path: string): string {
   return path;
 }
 
-function matchesPathPattern(filePath: string, pattern: string): boolean {
+export function matchesPathPattern(filePath: string, pattern: string): boolean {
   const expandedPattern = expandPath(pattern);
   const expandedPath = expandPath(filePath);
 
@@ -325,7 +335,7 @@ function matchesPathPattern(filePath: string, pattern: string): boolean {
 // Bash Command Validation
 // ========================================
 
-function validateBashCommand(command: string): { action: 'allow' | 'block' | 'confirm' | 'alert'; reason?: string } {
+export function validateBashCommand(command: string): { action: 'allow' | 'block' | 'confirm' | 'alert'; reason?: string } {
   const patterns = loadPatterns();
 
   // Risk classifier fast-path: read-only commands are always safe
@@ -371,7 +381,7 @@ function validateBashCommand(command: string): { action: 'allow' | 'block' | 'co
 
 type PathAction = 'read' | 'write' | 'delete';
 
-function validatePath(filePath: string, action: PathAction): { action: 'allow' | 'block' | 'confirm'; reason?: string } {
+export function validatePath(filePath: string, action: PathAction): { action: 'allow' | 'block' | 'confirm'; reason?: string } {
   const patterns = loadPatterns();
 
   // Check zeroAccess (complete denial)
@@ -682,7 +692,10 @@ async function main(): Promise<void> {
   }
 }
 
-// Run main, fail open on any error
-main().catch(() => {
-  console.log(JSON.stringify({ continue: true }));
-});
+// Only run main if executed directly (not imported)
+if (import.meta.main) {
+  // Run main, fail open on any error
+  main().catch(() => {
+    console.log(JSON.stringify({ continue: true }));
+  });
+}

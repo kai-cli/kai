@@ -4,7 +4,7 @@
 **Token Savings:** 90-98% vs traditional MCP approach
 **Execution Time:** ~10 seconds typical
 
-## Integration with PAI Skills
+## Integration with KAI Skills
 
 ### Social Skill Integration
 

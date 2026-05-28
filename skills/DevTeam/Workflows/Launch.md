@@ -29,5 +29,10 @@ Based on this, I recommend the **Bug Fix** preset:
 - QA (sonnet): Verify fix, regression check
 - Review: Bedrock panel (if available) or Claude adversarial
 
+Goal Ancestry (inferred — validate or adjust):
+- Intent: Fix Safari login regression introduced in last deploy
+- Priority: critical (production-facing, user-blocking)
+- Why: Users cannot log in on Safari, affecting ~30% of traffic
+
 Does this team composition look right, or would you like to adjust?
 ```

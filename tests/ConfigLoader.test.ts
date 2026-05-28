@@ -11,19 +11,21 @@ import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
 import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { clearConfigCache } from '../hooks/lib/config-loader';
 
 // Each test suite uses an isolated temp dir as PAI_DIR
 let testDir: string;
 
 beforeEach(() => {
+  clearConfigCache();
   testDir = join(tmpdir(), `config-loader-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(join(testDir, 'config'), { recursive: true });
   process.env.PAI_DIR = testDir;
 });
 
 afterEach(() => {
+  clearConfigCache();
   delete process.env.PAI_DIR;
-  // Dynamic import cache is shared; clear env only (file cleanup is best-effort)
   try { rmSync(testDir, { recursive: true, force: true }); } catch { /* ignore */ }
 });
 
@@ -31,11 +33,7 @@ function writeDomainsConfig(content: string): void {
   writeFileSync(join(testDir, 'config', 'domains.jsonc'), content, 'utf-8');
 }
 
-// Re-import config-loader with fresh PAI_DIR each test by using dynamic import
-// Bun caches modules, so we call the functions directly after setting PAI_DIR
 async function loader() {
-  // Force re-evaluation by clearing the module from cache isn't needed —
-  // config-loader reads the file on every call (no module-level cache)
   return await import('../hooks/lib/config-loader.ts');
 }
 

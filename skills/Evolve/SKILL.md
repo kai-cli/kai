@@ -1,3 +1,8 @@
+---
+name: Evolve
+description: Instinct Evolution Dashboard. USE WHEN /evolve, instinct dashboard, review instincts, promote instinct, prune instincts, instinct stats, evolve instincts.
+---
+
 # /evolve — Instinct Evolution Dashboard
 
 **Purpose:** Review, promote, and prune behavioral instincts captured during sessions.

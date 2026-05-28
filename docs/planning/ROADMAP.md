@@ -4,7 +4,7 @@
 
 ---
 
-## v6.1 — Hardening Sprint
+## v6.1 — Hardening Sprint (shipped)
 
 **Theme:** Test coverage, security validation, dead code cleanup
 
@@ -25,7 +25,7 @@
 
 ---
 
-## v6.2 — Polish & Documentation
+## v6.2 — Polish & Documentation (shipped)
 
 **Theme:** Discoverability, API documentation, config validation
 
@@ -47,7 +47,7 @@
 
 ---
 
-## v6.3 — Scaling & Automation
+## v6.3 — Scaling & Automation (shipped)
 
 **Theme:** Runtime health, automated maintenance, growth readiness
 
@@ -73,7 +73,7 @@
 
 ---
 
-## v6.4+ — Architecture Hardening & Evolution
+## v6.4+ — Architecture Hardening & Evolution (v6.4.0 shipped)
 
 Detailed plan with implementation specs, validation criteria, and multi-model deliberation decisions:
 **See `docs/planning/v6.4-review-remediations.md`**
@@ -81,23 +81,31 @@ Detailed plan with implementation specs, validation criteria, and multi-model de
 | Release | Theme | Key Items |
 |---------|-------|-----------|
 | **v6.4.0** | Write Coordination + Security | SessionEnd crash detection (UUID sentinels), risk-classifier fuzzing, E2E scaffold |
-| **v6.4.1** | Full E2E + Security Audit | 10+ E2E scenarios, fail-open/closed audit, secret scanning, CLI injection audit |
-| **v6.5.0** | SessionEnd Composite + Learning | 9→1 composite hook, heuristic gate, learning data lifecycle (event-source + view) |
+| **v6.4.1** | Full E2E + Security Audit | 10+ E2E scenarios, fail-open/closed audit, secret scanning, CLI injection audit, **tool credential declaration** |
+| **v6.5.0** | SessionEnd Composite + Learning | 9→1 composite hook, heuristic gate, learning data lifecycle (event-source + view), **composite memory scoring** |
 | **v6.5.1** | Algorithm Decomp + Sync CI | algorithm.ts 1515→150 lines, sync dry-run CI gates, PII grep |
-| **v7.0** | Monitor + SQLite (conditional) | Algorithm → meta-cognitive linter, SQLite WAL only if corruption proven |
+| **v6.6.0** | DevTeam Intelligence + Orchestration | Cost tracking, dynamic roles, adaptive retry, **event checkpointing (resume), conditional phases, DAG execution planner** |
+| **v7.0** | Monitor + SQLite (conditional) | Algorithm → meta-cognitive linter, **planning observer (adaptive replanning)**, SQLite WAL only if corruption proven |
+
+**CrewAI pattern adoption plan:** `docs/planning/crewai-adoption-plan.md`
 
 ---
 
-## Current State (v6.0 — shipped)
+## Current State (v6.4 — shipped)
 
-- 995 tests, 58 files, 0 failures
-- 53 hooks (PAI), 49 hooks (KAI) — all registered, 63 commands in settings.json
-- 45 skills, 21 agents, Algorithm v3.14.0
+- 1398 tests, 74 files, 0 failures
+- 52 hooks (PAI), 49 hooks (KAI) — all registered, 63 commands in settings.json
+- 86 skills, 21 agents, Algorithm v3.14.0
 - Full hook parity between PAI and KAI
-- Security hooks active (SecretOutputDetector, WebFetchGuard, SecurityValidator)
+- Security hooks active + hardened (risk-classifier fuzzing, E2E scaffold)
+- SessionEnd write coordination (UUID sentinel tracking)
 - Learning system active (KnowledgeSync, InstinctCapture, InsightExtractor)
-- Sync pipeline verified (rsync + PII scrub + brand transforms)
+- Sync pipeline verified + automated drift detection (sync-drift.ts)
+- STATE TTL cleanup automation (state-cleanup.ts)
+- Hook performance monitoring (hook-perf.ts)
+- Config migration tooling (config-migrate.ts)
 - Deliberate skill migrated to AWS Bedrock (zero personal API keys for external models)
+- Agent routing matrix, Board API docs, Algorithm migration guide
 
 ---
 
@@ -105,6 +113,7 @@ Detailed plan with implementation specs, validation criteria, and multi-model de
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-05-27 | Adopt 7 CrewAI patterns across 4 releases | Checkpoint/resume, composite scoring, conditional execution, DAG planner, credential validation, stall content analysis, planning observer |
 | 2026-05-27 | Keep two repos, harden sync CI | Migration cost is weeks; filter leak is irreversible; gates-must-fail favors reviewable diffs |
 | 2026-05-27 | Event-source + materialized view for learning | Content-hash dedup + frequency + recency into token-capped view; no LLM pruning |
 | 2026-05-27 | Algorithm → meta-cognitive monitor (v7.0) | Reclaim ~18% context window; post-generation linter with testable policy checks |

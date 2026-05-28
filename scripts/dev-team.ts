@@ -76,6 +76,24 @@ interface TeamConfig {
   noReview: boolean;
   verbose: boolean;
   reviewMode: "bedrock" | "claude-adversarial" | "disabled";
+  goalAncestry: {
+    userIntent: string;
+    priority: "critical" | "standard" | "exploratory";
+    whyThisMatters: string;
+  };
+  phaseTimeoutMs: number;
+  modelOverrides: Record<string, string>;
+}
+
+type RecoveryTier = "auto-retry" | "explicit-recovery" | "escalate";
+
+interface RecoveryAction {
+  tier: RecoveryTier;
+  phase: string;
+  agent: string;
+  cause: string;
+  attempt: number;
+  context?: string;
 }
 
 // --- Paths ---
@@ -165,8 +183,17 @@ function generateTeamName(preset: string, issue: string): string {
 
 // --- Agent Prompt Builders ---
 
+function buildGoalAncestrySection(config: TeamConfig): string {
+  return `## Goal Ancestry
+**User Intent:** ${config.goalAncestry.userIntent}
+**Priority:** ${config.goalAncestry.priority}
+**Why This Matters:** ${config.goalAncestry.whyThisMatters}`;
+}
+
 function buildPMPrompt(config: TeamConfig): string {
   return `## Role: Project Manager / Scoping Agent
+
+${buildGoalAncestrySection(config)}
 
 ## Context
 You are the PM agent on a DevTeam. Your job is to scope the following issue and produce clear acceptance criteria that Dev and QA agents will work against.
@@ -214,13 +241,21 @@ function buildDevPrompt(config: TeamConfig, pmFindings: string, attempt: number,
 
   return `## Role: Developer Agent
 
+${buildGoalAncestrySection(config)}
+
 ## Context
 You are the Dev agent on a DevTeam. Implement the fix/feature based on the PM's scoping.
 ${retryContext}
 ## Issue
 ${config.issue}
 
-## PM's Scoping
+## Handoff from PM
+The PM produced a structured report. Key sections to reference:
+- **### Acceptance Criteria** — your primary checklist (implement ALL of these)
+- **### Scope Boundary** — hard constraints (do NOT violate these)
+- **### Notes for Dev** — implementation hints
+
+## PM's Full Report
 ${pmFindings}
 
 ## Working Directory
@@ -241,6 +276,8 @@ ${config.cwd}
 
 function buildQAPrompt(config: TeamConfig, pmFindings: string, devReport: string): string {
   return `## Role: QA / Verification Agent
+
+${buildGoalAncestrySection(config)}
 
 ## Context
 You are the QA agent on a DevTeam. Verify that the Dev's implementation satisfies the PM's acceptance criteria.
@@ -281,6 +318,14 @@ ${config.cwd}
 ### Verdict
 **PASS** or **FAIL**
 
+### Priority Signal
+For each FAIL criterion, classify:
+- **Critical Blocker** — Core functionality broken, must fix before merge
+- **Standard Issue** — Incorrect behavior but not catastrophic
+- **Minor Concern** — Style/optimization, acceptable to defer
+
+Overall priority: **[Critical Blocker | Standard Issue | Minor Concern]**
+
 If FAIL, explain exactly what's wrong so Dev can fix it on retry.`;
 }
 
@@ -296,6 +341,13 @@ function buildAdversarialReviewPrompts(diff: string): { security: string; correc
 
 // --- Phase Execution ---
 
+class PhaseTimeoutError extends Error {
+  constructor(phase: string, timeoutMs: number) {
+    super(`${phase} agent timed out after ${(timeoutMs / 1000).toFixed(0)}s`);
+    this.name = "PhaseTimeoutError";
+  }
+}
+
 async function executePhase(
   config: TeamConfig,
   phase: string,
@@ -305,17 +357,18 @@ async function executePhase(
   useWorktree: boolean,
 ): Promise<string> {
   const startTime = Date.now();
-  log(config.teamName, phase, "start", { agent: agentType });
+  const effectiveModel = config.modelOverrides[phase] || model;
+  log(config.teamName, phase, "start", { agent: agentType, model: effectiveModel } as any);
 
   if (config.verbose) {
-    console.log(`  [${phase}] Spawning ${agentType} (${model})...`);
+    console.log(`  [${phase}] Spawning ${agentType} (${effectiveModel})...`);
   }
 
   const promptFile = join(tmpdir(), `devteam-${randomUUID()}.txt`);
   writeFileSync(promptFile, prompt);
 
   const worktreeFlag = useWorktree ? " --worktree" : "";
-  const cmd = `claude -p "$(cat '${promptFile}')" --model ${model} --output-format text${worktreeFlag}`;
+  const cmd = `claude -p "$(cat '${promptFile}')" --model ${effectiveModel} --output-format text${worktreeFlag}`;
 
   const proc = Bun.spawn(["/bin/bash", "-c", cmd], {
     stdout: "pipe",
@@ -324,27 +377,110 @@ async function executePhase(
     env: { ...SPAWN_ENV, CLAUDE_CODE_MAX_TURNS: "50" },
   });
 
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const exitCode = await proc.exited;
-  const duration = Date.now() - startTime;
+  // Race execution against timeout
+  const timeoutMs = config.phaseTimeoutMs;
+  const result = await Promise.race([
+    (async () => {
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+      const exitCode = await proc.exited;
+      return { stdout, stderr, exitCode, timedOut: false };
+    })(),
+    (async () => {
+      await new Promise((r) => setTimeout(r, timeoutMs));
+      proc.kill("SIGTERM");
+      await new Promise((r) => setTimeout(r, 3000));
+      try { proc.kill("SIGKILL"); } catch {}
+      return { stdout: "", stderr: "", exitCode: -1, timedOut: true };
+    })(),
+  ]);
 
+  const duration = Date.now() - startTime;
   try { unlinkSync(promptFile); } catch {}
 
-  if (exitCode !== 0) {
-    log(config.teamName, phase, "error", { agent: agentType, duration_ms: duration, reason: stderr.slice(0, 500) });
+  if (result.timedOut) {
+    log(config.teamName, phase, "timeout", { agent: agentType, duration_ms: duration });
     if (config.verbose) {
-      console.error(`  [${phase}] ERROR (${(duration / 1000).toFixed(1)}s): ${stderr.slice(0, 200)}`);
+      console.error(`  [${phase}] TIMEOUT after ${(duration / 1000).toFixed(1)}s`);
     }
-    throw new Error(`${phase} agent failed: ${stderr.slice(0, 500)}`);
+    throw new PhaseTimeoutError(phase, timeoutMs);
+  }
+
+  if (result.exitCode !== 0) {
+    log(config.teamName, phase, "error", { agent: agentType, duration_ms: duration, reason: result.stderr.slice(0, 500) });
+    if (config.verbose) {
+      console.error(`  [${phase}] ERROR (${(duration / 1000).toFixed(1)}s): ${result.stderr.slice(0, 200)}`);
+    }
+    throw new Error(`${phase} agent failed: ${result.stderr.slice(0, 500)}`);
   }
 
   log(config.teamName, phase, "complete", { agent: agentType, duration_ms: duration });
   if (config.verbose) {
-    console.log(`  [${phase}] Complete (${(duration / 1000).toFixed(1)}s, ${stdout.length} chars)`);
+    console.log(`  [${phase}] Complete (${(duration / 1000).toFixed(1)}s, ${result.stdout.length} chars)`);
   }
 
-  return stdout;
+  return result.stdout;
+}
+
+// --- Recovery ---
+
+function classifyRecovery(error: Error, phase: string, agent: string, attempt: number, maxAttempts: number): RecoveryAction {
+  const isTimeout = error instanceof PhaseTimeoutError;
+  const isTransient = error.message.includes("rate limit") || error.message.includes("overloaded");
+
+  if ((isTimeout || isTransient) && attempt < maxAttempts) {
+    return { tier: "auto-retry", phase, agent, cause: error.message, attempt };
+  }
+
+  if (attempt < maxAttempts) {
+    return {
+      tier: "explicit-recovery",
+      phase,
+      agent,
+      cause: error.message,
+      attempt,
+      context: `Agent failed on attempt ${attempt}. Error: ${error.message.slice(0, 200)}. Will retry with additional context about the failure.`,
+    };
+  }
+
+  return { tier: "escalate", phase, agent, cause: error.message, attempt };
+}
+
+async function executePhaseWithRecovery(
+  config: TeamConfig,
+  phase: string,
+  agentType: string,
+  model: string,
+  prompt: string,
+  useWorktree: boolean,
+  maxRecoveryAttempts = 2,
+): Promise<string> {
+  for (let attempt = 1; attempt <= maxRecoveryAttempts; attempt++) {
+    try {
+      return await executePhase(config, phase, agentType, model, prompt, useWorktree);
+    } catch (error: any) {
+      const recovery = classifyRecovery(error, phase, agentType, attempt, maxRecoveryAttempts);
+      log(config.teamName, phase, "recovery", { tier: recovery.tier, attempt, reason: recovery.cause } as any);
+
+      if (recovery.tier === "escalate") {
+        console.log(`\n⚠️  [${phase}] Escalating to user after ${attempt} recovery attempts.`);
+        console.log(`    Cause: ${recovery.cause.slice(0, 200)}`);
+        throw error;
+      }
+
+      if (recovery.tier === "auto-retry") {
+        console.log(`  [${phase}] Auto-retrying (attempt ${attempt + 1}/${maxRecoveryAttempts})...`);
+        await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
+
+      // explicit-recovery: augment prompt with failure context
+      console.log(`  [${phase}] Explicit recovery — retrying with failure context...`);
+      prompt = `${prompt}\n\n## Recovery Context\nPrevious attempt failed: ${recovery.cause.slice(0, 300)}\nAdjust your approach to avoid this failure mode.\n`;
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+  throw new Error(`${phase} failed after ${maxRecoveryAttempts} recovery attempts`);
 }
 
 // --- Review Phase ---
@@ -392,6 +528,29 @@ async function executeAdversarialReview(config: TeamConfig, diffContent: string)
   return `# Adversarial Review (Claude Multi-Perspective)\n\n${report}`;
 }
 
+// --- File Scope Assignment (Atomic Checkout) ---
+
+function assignFileScopes(pmFindings: string, devRoles: RoleConfig[]): string[] {
+  // Extract file paths or areas mentioned in PM findings
+  const filePatterns = pmFindings.match(/(?:^|\s)([\w/.-]+\.\w{1,5})(?:\s|$|,|:)/gm) || [];
+  const areas = [...new Set(filePatterns.map((f) => f.trim()))];
+
+  if (areas.length < 2 || devRoles.length < 2) {
+    // Not enough to split — each dev gets the full scope
+    return devRoles.map(() => "");
+  }
+
+  // Simple round-robin assignment
+  const assignments: string[][] = devRoles.map(() => []);
+  areas.forEach((area, i) => {
+    assignments[i % devRoles.length].push(area);
+  });
+
+  return assignments.map((files) =>
+    files.length > 0 ? files.map((f) => `- ${f}`).join("\n") : "",
+  );
+}
+
 // --- Main Orchestration ---
 
 async function orchestrate(config: TeamConfig): Promise<string> {
@@ -406,11 +565,22 @@ async function orchestrate(config: TeamConfig): Promise<string> {
 
   log(config.teamName, "orchestrate", "start", { preset: config.preset.name } as any);
 
+  // Initialize defaults if not provided
+  if (!config.goalAncestry) {
+    config.goalAncestry = {
+      userIntent: config.issue.slice(0, 150),
+      priority: "standard",
+      whyThisMatters: "User-reported issue affecting system functionality",
+    };
+  }
+  if (!config.phaseTimeoutMs) config.phaseTimeoutMs = 300_000;
+  if (!config.modelOverrides) config.modelOverrides = {};
+
   // --- Phase 1: PM Scoping ---
   console.log("[Phase 1] PM Scoping...");
   const pmRole = config.preset.roles.find((r) => r.id === "pm" || r.id === "lead");
   const pmPrompt = buildPMPrompt(config);
-  const pmFindings = await executePhase(
+  const pmFindings = await executePhaseWithRecovery(
     config,
     "scope",
     pmRole?.agent_type || "Plan",
@@ -439,13 +609,17 @@ async function orchestrate(config: TeamConfig): Promise<string> {
     if (devRoles.length === 1) {
       const dev = devRoles[0];
       const devPrompt = buildDevPrompt(config, pmFindings, attempt, attempt > 1 ? qaReport : undefined);
-      devReport = await executePhase(config, "implement", dev.agent_type, dev.model, devPrompt, dev.worktree);
+      devReport = await executePhaseWithRecovery(config, "implement", dev.agent_type, dev.model, devPrompt, dev.worktree);
     } else {
-      // Parallel dev agents
+      // Parallel dev agents with file-scope assignment
+      const fileAssignment = assignFileScopes(pmFindings, devRoles);
       const devResults = await Promise.all(
-        devRoles.map((dev) => {
-          const devPrompt = buildDevPrompt(config, pmFindings, attempt, attempt > 1 ? qaReport : undefined);
-          return executePhase(config, "implement", dev.agent_type, dev.model, devPrompt, dev.worktree);
+        devRoles.map((dev, idx) => {
+          const scopeHint = fileAssignment[idx]
+            ? `\n## File Scope Assignment\nYou own these areas (other devs handle the rest):\n${fileAssignment[idx]}\nDo NOT modify files outside your assignment to avoid conflicts.\n`
+            : "";
+          const devPrompt = buildDevPrompt(config, pmFindings, attempt, attempt > 1 ? qaReport : undefined) + scopeHint;
+          return executePhaseWithRecovery(config, "implement", dev.agent_type, dev.model, devPrompt, dev.worktree);
         }),
       );
       devReport = devResults.join("\n\n---\n\n");
@@ -461,16 +635,24 @@ async function orchestrate(config: TeamConfig): Promise<string> {
     }
 
     const qaPrompt = buildQAPrompt(config, pmFindings, devReport);
-    qaReport = await executePhase(config, "verify", qaRole.agent_type, qaRole.model, qaPrompt, false);
+    qaReport = await executePhaseWithRecovery(config, "verify", qaRole.agent_type, qaRole.model, qaPrompt, false);
 
     // Parse verdict from QA output
     if (qaReport.toLowerCase().includes("**pass**") || qaReport.toLowerCase().includes("verdict: pass")) {
       qaVerdict = "PASS";
     } else {
       qaVerdict = "FAIL";
+
+      // Extract priority signal
+      let prioritySignal = "Standard Issue";
+      if (qaReport.includes("Critical Blocker")) prioritySignal = "Critical Blocker";
+      else if (qaReport.includes("Minor Concern")) prioritySignal = "Minor Concern";
+
       if (attempt > maxRetries) {
         console.log(`\n⚠️  QA failed after ${maxRetries + 1} attempts. Escalating to user.`);
-        log(config.teamName, "verify", "escalate", { attempt, reason: "max retries exceeded" });
+        log(config.teamName, "verify", "escalate", { attempt, priority: prioritySignal, reason: "max retries exceeded" });
+      } else {
+        log(config.teamName, "verify", "fail", { attempt, priority: prioritySignal });
       }
     }
   }
@@ -585,6 +767,10 @@ async function main() {
       issue: { type: "string", default: "" },
       github: { type: "string", default: "" },
       cwd: { type: "string", default: process.cwd() },
+      priority: { type: "string", default: "" },
+      why: { type: "string", default: "" },
+      timeout: { type: "string", default: "" },
+      "model-override": { type: "string", default: "" },
       "no-review": { type: "boolean", default: false },
       verbose: { type: "boolean", default: false },
       "list-presets": { type: "boolean", default: false },
@@ -602,6 +788,10 @@ Options:
   --issue <text>      Issue description
   --github <ref>      GitHub issue reference (owner/repo#123)
   --cwd <path>        Working directory for agents (default: current)
+  --priority <level>  Goal priority: critical, standard, exploratory (default: standard)
+  --why <text>        Why this matters (consequence of not doing it)
+  --timeout <sec>     Per-phase timeout in seconds (default: 300)
+  --model-override <spec>  Override model for phases (e.g., "scope:opus,implement:opus")
   --no-review         Skip the review phase
   --verbose           Show per-phase timing and agent output
   --list-presets      Show available presets and exit
@@ -666,6 +856,15 @@ Examples:
   // Generate team name
   const teamName = generateTeamName(values.preset!, issue);
 
+  // Parse model overrides: "scope:opus,implement:opus" → { scope: "opus", implement: "opus" }
+  const modelOverrides: Record<string, string> = {};
+  if (values["model-override"]) {
+    for (const pair of values["model-override"].split(",")) {
+      const [phase, model] = pair.split(":");
+      if (phase && model) modelOverrides[phase.trim()] = model.trim();
+    }
+  }
+
   const config: TeamConfig = {
     preset,
     teamName,
@@ -674,6 +873,13 @@ Examples:
     noReview: values["no-review"]!,
     verbose: values.verbose!,
     reviewMode,
+    goalAncestry: {
+      userIntent: issue.slice(0, 150),
+      priority: (["critical", "standard", "exploratory"].includes(values.priority!) ? values.priority : "standard") as "critical" | "standard" | "exploratory",
+      whyThisMatters: values.why || "User-reported issue affecting system functionality",
+    },
+    phaseTimeoutMs: values.timeout ? parseInt(values.timeout, 10) * 1000 : 300_000,
+    modelOverrides,
   };
 
   // Dry run
@@ -683,6 +889,12 @@ Examples:
     console.log(`Team: ${teamName}`);
     console.log(`Issue: ${issue.slice(0, 100)}`);
     console.log(`CWD: ${config.cwd}`);
+    console.log(`Priority: ${config.goalAncestry.priority}`);
+    console.log(`Why: ${config.goalAncestry.whyThisMatters}`);
+    console.log(`Timeout: ${config.phaseTimeoutMs / 1000}s`);
+    if (Object.keys(config.modelOverrides).length > 0) {
+      console.log(`Model overrides: ${Object.entries(config.modelOverrides).map(([p, m]) => `${p}→${m}`).join(", ")}`);
+    }
     console.log(`Review: ${reviewMode}`);
     console.log(`Retry max: ${preset.retry_max}`);
     console.log(`\nRoles:`);

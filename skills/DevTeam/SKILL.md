@@ -31,6 +31,19 @@ When `investigate-then-fix` is detected:
 2. Present findings briefly to user (no pause/confirmation)
 3. Immediately launch bug-fix team with investigation findings injected into the PM prompt as pre-existing context (PM skips re-investigation, goes straight to criteria)
 
+### Step 1b: Classify Goal Ancestry
+
+Before proposing the team, infer goal ancestry from the user's input:
+
+- **userIntent**: Restate the user's request in one clear sentence (their words, not yours)
+- **priority**: Infer from signal words:
+  - `critical` — "production", "blocking", "urgent", "down", "security", "CVE", "PSIRT"
+  - `exploratory` — "cleanup", "experiment", "explore", "nice to have", "when you get a chance"
+  - `standard` — everything else
+- **whyThisMatters**: One sentence on the consequence of NOT doing this (infer from context)
+
+These values are presented for user validation in Step 2 and injected into all agent prompts via `goalAncestry`.
+
 ### Step 2: Propose Team
 
 Run a dry-run to show the team composition:
@@ -39,9 +52,19 @@ Run a dry-run to show the team composition:
 bun ~/.claude/scripts/dev-team.ts --preset <detected-preset> --issue "$ARGUMENTS" --dry-run
 ```
 
-Present the output to the user and ask via AskUserQuestion:
-- "Does this team composition look right?"
-- Options: "Yes, launch it", "Change preset", "Adjust options"
+Present the output to the user and ask via AskUserQuestion. Include your inferred goal ancestry for validation:
+
+```
+Team: Bug Fix — PM (sonnet) → Dev (sonnet) → QA (sonnet)
+Priority: standard
+Why: [your inferred whyThisMatters]
+
+Does this look right?
+```
+
+- Options: "Yes, launch it", "Change priority" (with description showing critical/standard/exploratory), "Change preset", "Adjust options"
+
+If the user changes priority, update the `goalAncestry.priority` and `goalAncestry.whyThisMatters` accordingly before launching.
 
 ### Step 3: Launch
 
@@ -49,25 +72,88 @@ After confirmation, orchestrate the team **using Agent tool calls directly** (no
 
 **IMPORTANT: Always use `subagent_type: "general-purpose"` for all agents.** Other types (Architect, Plan, Engineer) trigger worktree hooks that interfere. Control behavior via the prompt content instead.
 
+---
+
+#### Pre-Launch: Target Directory Resolution
+
+**Before spawning any agents, resolve the correct working directory for the target code:**
+
+1. Read `~/.claude/PAI/USER/PROJECTS/REGISTRY.md` to look up the target repo by name, package, or GitHub URL
+2. Use the registry's `path`, `default_branch`, `ci`, and `resources` fields for all downstream decisions
+3. If the current working directory (`$CWD`) is NOT the target repo, **warn the user**:
+   - "The target code is in `<path>`. I'm currently in `<cwd>`. Dev agents need the target directory to work effectively."
+   - Ask: "Switch to target project?" / "Continue from here (investigation only)" / "Output patch for manual apply"
+4. For investigation/review presets: working from a different directory is acceptable (read-only)
+5. For bug-fix/feature presets: the Dev agent MUST have the correct cwd. Include explicit path in the agent prompt: `"Working directory: <resolved-path>. All file edits, git operations, and tests must happen here."`
+6. Use the registry's `default_branch` for PR targets — **do not assume `main`**
+
+**Never silently work on code in a different repo from the current directory for fix/feature presets.**
+
+---
+
+#### Pre-Launch: Resource Injection
+
+**Two sources of context for agents:**
+
+1. **Registry** (`~/.claude/PAI/USER/PROJECTS/REGISTRY.md`): Provides path, branch, CI status, and `resources` field (wiki paths, MCP server names). Always inject relevant registry entry into agent prompts.
+2. **Context/ directory** (project-specific deep context): Check `Context/` for supplemental files matching the target project. These provide architecture details, daemon internals, and domain knowledge beyond what the registry covers.
+
+Both should be injected into agent prompts. Registry = operational facts. Context/ = domain knowledge.
+
+---
+
+#### Pre-Launch: GitHub Write Awareness
+
+**Agents cannot self-approve GitHub write operations** (push, PR create, issue comment). The orchestrator (you) must:
+1. Collect the agent's proposed git operations at the end of their work
+2. Present them to the user for approval
+3. Execute the push/PR/comment yourself after user confirmation
+
+Include this instruction in every Dev agent prompt: `"Do NOT push or create PRs. Commit locally and report what you've done. The orchestrator will handle GitHub operations after your work is verified."`
+
+---
+
+#### Preset Execution
+
 **For investigation preset:**
-1. Spawn Lead agent (general-purpose, sonnet or opus) with full issue context and investigation questions
+1. Spawn Lead agent (general-purpose, sonnet or opus) with full issue context, investigation questions, AND available resources
 2. When lead returns, synthesize findings into a structured report
 
 **For bug-fix preset:**
 1. Spawn PM agent (general-purpose, sonnet) — role defined in prompt, scopes and defines criteria
-2. After PM returns, spawn Dev agent (general-purpose, sonnet) with PM's criteria + worktree instructions in prompt
+2. After PM returns, spawn Dev agent (general-purpose, sonnet) with PM's criteria + target directory + resource context
 3. After Dev returns, spawn QA agent (general-purpose, sonnet) to verify
 4. If QA fails and retries < 2, loop Dev with QA feedback
-5. Optionally run review via `bun ~/.claude/scripts/deliberate.ts --mode doc-review`
+5. Run review via `bun ~/.claude/scripts/deliberate.ts --mode doc-review`
+6. **Orchestrator handles push/PR** — collect Dev's commit, present to user, execute after approval
 
 **For feature preset:**
 Same as bug-fix but with parallel Dev agents.
 
 **For investigate-then-fix compound flow:**
 1. Spawn Investigation Lead agent (general-purpose, sonnet) with full analysis prompt
-2. When lead returns with findings, **immediately** spawn bug-fix PM with findings pre-loaded:
-   - PM prompt includes: "Investigation already completed. Findings: {findings}. Your job is ONLY to define acceptance criteria based on these findings — do NOT re-investigate."
-3. Continue standard bug-fix flow (Dev → QA → Review)
+2. When lead returns with findings, run Bedrock review on findings if substantive
+3. **Immediately** spawn bug-fix PM with findings + review output pre-loaded:
+   - PM prompt includes: "Investigation already completed. Findings: {findings}. Review panel feedback: {review}. Your job is ONLY to define acceptance criteria based on these findings — do NOT re-investigate."
+4. Continue standard bug-fix flow (Dev → QA → Review → Push)
+
+---
+
+#### QA Without CI
+
+**If the target repo has no CI pipeline** (no test workflows, no build gates), the QA agent must verify using available means:
+- `grep` audits (confirm all instances of a pattern are handled)
+- Static analysis (type consistency, missing includes, buffer sizes)
+- Logic review against acceptance criteria
+- Check compilation prerequisites (correct includes, no undefined symbols)
+- If MCP tools are available (e.g., `router_exec`), use them for live verification
+- Report clearly: "No CI available. Verified via: [list of checks performed]"
+
+Include this in QA agent prompt when no CI detected: `"This repo has no automated CI. Verify the fix using grep audits, static analysis, and any available MCP tools. Do NOT claim 'tests pass' if no tests exist."`
+
+---
+
+#### Agent Orchestration Rules
 
 Use `run_in_background: false` for sequential agents (PM before Dev, Dev before QA).
 Use `run_in_background: true` only when you have independent parallel work to do while waiting.
@@ -135,6 +221,12 @@ bun ~/.claude/scripts/dev-team.ts --preset investigation --issue "Memory leak in
 
 # With GitHub issue
 bun ~/.claude/scripts/dev-team.ts --preset bug-fix --github "owner/repo#123"
+
+# Critical priority with custom timeout
+bun ~/.claude/scripts/dev-team.ts --preset bug-fix --issue "Prod down" --priority critical --why "Blocking all deploys" --timeout 600
+
+# Model mixing: Opus for scoping, Sonnet for implementation
+bun ~/.claude/scripts/dev-team.ts --preset bug-fix --issue "Complex auth bug" --model-override "scope:opus"
 
 # Skip review phase
 bun ~/.claude/scripts/dev-team.ts --preset bug-fix --no-review --issue "Typo in error message"

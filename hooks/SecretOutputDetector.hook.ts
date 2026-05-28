@@ -21,7 +21,7 @@ const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 const SECURITY_LOG = join(PAI_DIR, 'MEMORY', 'SECURITY', 'security-events.jsonl');
 
 // Same patterns as SecretScanner — scan tool OUTPUT for leakage
-const SECRET_PATTERNS: { name: string; pattern: RegExp }[] = [
+export const SECRET_PATTERNS: { name: string; pattern: RegExp }[] = [
   { name: 'API key (generic)', pattern: /(?:api[_-]?key|apikey)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{20,}['"]?/i },
   { name: 'AWS Access Key', pattern: /AKIA[0-9A-Z]{16}/ },
   { name: 'AWS Secret Key', pattern: /(?:aws[_-]?secret|secret[_-]?access[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?/i },
@@ -45,6 +45,20 @@ function logDetection(toolName: string, patternName: string): void {
       note: 'Potential secret in tool output — content not logged',
     }) + '\n');
   } catch { /* non-fatal */ }
+}
+
+export function scanForSecrets(output: string): { detected: string[] } {
+  const detected: string[] = [];
+  // Only scan first 8KB — secrets typically appear early in output
+  const scanTarget = output.slice(0, 8192);
+
+  for (const { name, pattern } of SECRET_PATTERNS) {
+    if (pattern.test(scanTarget)) {
+      detected.push(name);
+    }
+  }
+
+  return { detected };
 }
 
 async function main() {
@@ -95,4 +109,7 @@ async function main() {
   }
 }
 
-main().catch((err) => { console.error(`[SecretOutputDetector] Error:`, err); process.exit(0); });
+// Only run main if executed directly (not imported)
+if (import.meta.main) {
+  main().catch((err) => { console.error(`[SecretOutputDetector] Error:`, err); process.exit(0); });
+}

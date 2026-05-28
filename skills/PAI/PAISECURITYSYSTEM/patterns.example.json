@@ -1,0 +1,107 @@
+{
+  "version": "5.5.0",
+  "philosophy": {
+    "mode": "defensive",
+    "principle": "Personal data stays personal. System config requires confirmation. Destructive commands require intent."
+  },
+  "bash": {
+    "trusted": [
+      {
+        "pattern": "^(git (status|log|diff|branch|show|rev-parse|remote -v)|bun test|bun run |ls |cat |head |tail |wc |grep |rg |find )",
+        "reason": "Read-only git, test, and inspection commands"
+      },
+      {
+        "pattern": "^(echo|printf|date|pwd|which|type|file |stat )",
+        "reason": "Pure information commands"
+      }
+    ],
+    "blocked": [
+      {
+        "pattern": "rm\\s+(-rf?\\s+)?(/|~/?$|~/.claude/?$)",
+        "reason": "Recursive delete of home or PAI root"
+      },
+      {
+        "pattern": "rm\\s+-rf?\\s+~/.claude/(hooks|config|PAI|MEMORY)/?$",
+        "reason": "Bulk delete of critical PAI directories"
+      },
+      {
+        "pattern": ">(\\s+)?~/.claude/settings\\.json",
+        "reason": "Redirect overwrite of settings.json (use BuildSettings.ts)"
+      },
+      {
+        "pattern": "chmod\\s+777",
+        "reason": "World-writable permissions"
+      },
+      {
+        "pattern": "curl.*\\|\\s*(bash|sh|zsh)",
+        "reason": "Pipe from internet to shell"
+      },
+      {
+        "pattern": "git\\s+push\\s+.*--force.*\\s+(main|master)",
+        "reason": "Force push to main/master"
+      },
+      {
+        "pattern": "mkfs\\.",
+        "reason": "Filesystem format command — destructive disk operation"
+      },
+      {
+        "pattern": "dd\\s+.*of=/dev/",
+        "reason": "Raw disk write — destructive"
+      }
+    ],
+    "confirm": [
+      {
+        "pattern": "git\\s+push",
+        "reason": "Pushing to remote requires confirmation"
+      },
+      {
+        "pattern": "git\\s+reset\\s+--hard",
+        "reason": "Hard reset discards uncommitted work"
+      },
+      {
+        "pattern": "rm\\s+-r",
+        "reason": "Recursive delete requires confirmation"
+      },
+      {
+        "pattern": "npm\\s+publish|bun\\s+publish",
+        "reason": "Publishing packages requires confirmation"
+      }
+    ],
+    "alert": [
+      {
+        "pattern": "curl.*-d|curl.*--data|wget",
+        "reason": "Outbound data transfer (logged for awareness)"
+      }
+    ]
+  },
+  "paths": {
+    "zeroAccess": [
+      "~/.ssh/",
+      "~/.aws/credentials",
+      "~/.netrc",
+      "~/.gnupg/",
+      "~/.claude/settings.local.json"
+    ],
+    "readOnly": [
+      "~/.claude/PAI/USER/TELOS/",
+      "~/.claude/MEMORY/RELATIONSHIP/",
+      "~/.claude/MEMORY/LEARNING/SIGNALS/"
+    ],
+    "confirmWrite": [
+      "~/.claude/settings.json",
+      "~/.claude/config/identity.jsonc",
+      "~/.claude/config/hooks.jsonc",
+      "~/.claude/config/permissions.jsonc",
+      "~/.claude/PAI/USER/PAISECURITYSYSTEM/patterns.json",
+      "~/.claude/scripts/sync-to-kai.sh"
+    ],
+    "noDelete": [
+      "~/.claude/MEMORY/KNOWLEDGE/",
+      "~/.claude/MEMORY/WISDOM/",
+      "~/.claude/PAI/Algorithm/",
+      "~/.claude/hooks/lib/",
+      "~/.claude/config/"
+    ]
+  },
+  "projects": {}
+}

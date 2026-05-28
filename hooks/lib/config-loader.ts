@@ -3,6 +3,9 @@
  *
  * Reads config/domains.jsonc and exposes typed accessors.
  * All functions return empty/default values if the file is missing or malformed.
+ *
+ * CACHING: In-memory cache with 5s TTL. When hooks consolidate into a single process,
+ * multiple config reads shouldn't each hit disk. Cache is invalidated after TTL.
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -24,18 +27,50 @@ interface DomainsConfig {
   maxDomainsPerSession?: number;
 }
 
+interface CacheEntry {
+  config: DomainsConfig;
+  timestamp: number;
+}
+
+const CACHE_TTL_MS = 5000; // 5 seconds
+let configCache: CacheEntry | null = null;
+
 function loadConfig(): DomainsConfig {
+  const now = Date.now();
+
+  // Return cached config if still valid
+  if (configCache && (now - configCache.timestamp) < CACHE_TTL_MS) {
+    return configCache.config;
+  }
+
+  // Load from disk
   const configPath = join(getPaiDir(), 'config', 'domains.jsonc');
-  if (!existsSync(configPath)) return {};
+  if (!existsSync(configPath)) {
+    const emptyConfig = {};
+    configCache = { config: emptyConfig, timestamp: now };
+    return emptyConfig;
+  }
+
   try {
     const raw = readFileSync(configPath, 'utf-8')
       .replace(/\/\*[\s\S]*?\*\//g, '')     // strip /* */ block comments
       .replace(/(?<!:)\/\/[^\n]*/g, '')     // strip // line comments (preserve http://)
       .replace(/,(\s*[}\]])/g, '$1');       // strip trailing commas
-    return JSON.parse(raw) as DomainsConfig;
+    const config = JSON.parse(raw) as DomainsConfig;
+    configCache = { config, timestamp: now };
+    return config;
   } catch {
-    return {};
+    const emptyConfig = {};
+    configCache = { config: emptyConfig, timestamp: now };
+    return emptyConfig;
   }
+}
+
+/**
+ * Clear the config cache (useful for tests).
+ */
+export function clearConfigCache(): void {
+  configCache = null;
 }
 
 export function loadDomainKeywords(): Record<string, string[]> {

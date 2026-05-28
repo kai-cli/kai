@@ -8,6 +8,7 @@ import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { clearConfigCache } from '../hooks/lib/config-loader';
 import {
   extractFacts,
   identifyAffectedDomains,
@@ -77,7 +78,7 @@ describe('identifyAffectedDomains', () => {
     testDir = join(tmpdir(), `ks-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(join(testDir, 'config'), { recursive: true });
     process.env.PAI_DIR = testDir;
-    // Write a minimal domains.jsonc so config-loader returns known domains
+    clearConfigCache();
     writeFileSync(join(testDir, 'config', 'domains.jsonc'), JSON.stringify({
       definitions: {
         backend: { description: 'Backend', keywords: ['api', 'server', 'database', 'endpoint', 'auth'] },
@@ -89,6 +90,7 @@ describe('identifyAffectedDomains', () => {
 
   afterEach(() => {
     delete process.env.PAI_DIR;
+    clearConfigCache();
     try { rmSync(testDir, { recursive: true, force: true }); } catch {}
   });
 
