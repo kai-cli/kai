@@ -2,6 +2,50 @@
 
 All notable changes to KAI will be documented in this file.
 
+## [7.0.0] — 2026-05-28
+
+Full integration wiring and meta-cognitive capabilities.
+
+### Added
+- Meta-cognitive monitor (12 policy checks) integrated into Algorithm loop
+- PlanningObserver (divergence tracking, replan detection) in loop engine
+- CostTracker, StallDetector, adaptive retry, CheckpointManager in DevTeam orchestrator
+- Conditions evaluator for phase gating in team workflows
+- Tiered capabilities guide (`docs/CAPABILITIES-GUIDE.md`)
+- PII pattern externalization (patterns now loaded from excluded file)
+
+### Changed
+- Version bump across all version-bearing files
+- Knowledge refresh (ai-infrastructure, api-and-services, devops, firmware)
+- Hook count: 53 (added SessionEndComposite)
+
+### Fixed
+- PII patterns no longer hardcoded in sync-ci-gate.ts (security fix)
+- SyncCIGate test uses skipIf for missing sync-to-kai.sh
+
+---
+
+## [6.4.0] — 2026-05-27
+
+Production hardening and CI reliability.
+
+### Added
+- `scripts/lib/cost-tracker.ts` — token/dollar budget tracking with configurable limits
+- `scripts/lib/stall-detector.ts` — progress stall detection via sliding-window analysis
+- `scripts/lib/adaptive-retry.ts` — severity-aware retry with backoff strategies
+- `scripts/lib/checkpoint.ts` — phase checkpoint save/restore for team orchestration
+- `scripts/lib/conditions.ts` — condition evaluator for workflow phase gating
+- `PAI/Tools/algorithm/monitor.ts` — 12-policy meta-cognitive monitor
+- `PAI/Tools/algorithm/observer.ts` — planning observer with divergence detection
+- SecurityValidator hook and tests
+- Pre-push hook with marker freshness validation
+
+### Changed
+- 1663 tests passing (pai-config), 1412 tests passing (kai)
+- Manifest validation in CI gate
+
+---
+
 ## [5.9.2] — 2026-05-22
 
 Re-runnable setup & self-service configuration.

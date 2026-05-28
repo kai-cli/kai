@@ -1,4 +1,4 @@
-# KAI 6.0.0 — Personal AI Infrastructure
+# KAI 7.0.0 — Personal AI Infrastructure
 
 > Built on the foundation of Daniel Miessler's [PAI system](https://github.com/danielmiessler/Personal_AI_Infrastructure). The Algorithm, TELOS framework, skill hierarchy, and hook lifecycle originated there. KAI extends it with production hardening, multi-model inference, self-learning memory, and individual deployment.
 
