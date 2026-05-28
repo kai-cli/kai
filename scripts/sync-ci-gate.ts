@@ -64,35 +64,27 @@ function getKaiDir(): string {
   return process.env.KAI_DIR || join(process.env.HOME!, 'Projects', 'kai');
 }
 
-// PII patterns from verify-release.sh — these must NOT appear in public files
-const PII_PATTERNS = [
-  '\\bYourName\\b',
-  '\\bYourLastName\\b',
-  '\\busername\\b',
-  '\\bYourCompany\\b',
-  '\\bYourOrg\\b',
-  'du\\.ae',
-  'yourlab',
-  '10\\.94\\.107',
-  '10\\.18\\.3\\.',
-  '@yourcompany\\.com',
-  '000000000000',
-  '\\bYour_Name\\b',
-  'LK62DU5Q',
-  '67A10M24',
-  'deven630',
-  'ExampleISP',
-  'ExampleDevice00120',
-  '\\bACSPlatform\\b',
-  'lswf\\.net',
-  'api',
-  'ExampleWRT',
-  'user1',
-  '4\\.53\\.23\\.',
-  '12\\.16\\.139\\.',
-  '35\\.161\\.158',
-  '35\\.79\\.243',
-];
+// PII patterns loaded from external file (excluded from kai sync to avoid leaking identifiers)
+function loadPIIPatterns(paiDir: string): string[] {
+  const patternsPath = join(paiDir, 'scripts', 'pii-patterns.json');
+  if (existsSync(patternsPath)) {
+    try {
+      return JSON.parse(readFileSync(patternsPath, 'utf-8'));
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+// Lazy-loaded to avoid resolving PAI_DIR at module init (test compat)
+let _piiPatterns: string[] | null = null;
+function getPIIPatterns(paiDir: string): string[] {
+  if (_piiPatterns === null) {
+    _piiPatterns = loadPIIPatterns(paiDir);
+  }
+  return _piiPatterns;
+}
 
 // Parse EXCLUDE_PATHS from sync-to-kai.sh
 function parseExcludePaths(paiDir: string = getPaiDir()): string[] {
@@ -208,7 +200,7 @@ function scanForPII(filePath: string, paiDir: string = getPaiDir()): string[] {
     const content = readFileSync(fullPath, 'utf-8');
     const found: string[] = [];
 
-    for (const pattern of PII_PATTERNS) {
+    for (const pattern of getPIIPatterns(paiDir)) {
       const regex = new RegExp(pattern, 'gi');
       if (regex.test(content)) {
         found.push(pattern);
