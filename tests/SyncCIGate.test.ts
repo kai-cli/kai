@@ -18,15 +18,18 @@ import { execSync } from 'child_process';
 // This prevents interference from parallel tests (e.g., ApiKeys.test.ts) that modify HOME
 const PAI_DIR = (() => {
   if (process.env.PAI_DIR) return process.env.PAI_DIR;
-  // If running from pai-config root, use cwd
+  // If running from kai root, use cwd
   const cwd = process.cwd();
-  if (cwd.endsWith('pai-config')) return cwd;
+  if (cwd.endsWith('kai')) return cwd;
   // Otherwise use standard path (this will be correct before tests modify HOME)
-  return join(process.env.HOME!, 'Projects', 'pai-config');
+  return join(process.env.HOME!, 'Projects', 'kai');
 })();
 const TEST_DIR = join(PAI_DIR, 'tests', '.sync-gate-test-tmp');
 
-describe('SyncCIGate', () => {
+// sync-to-kai.sh is kai only (excluded from kai sync)
+const hasSyncScript = existsSync(join(PAI_DIR, 'scripts', 'sync-to-kai.sh'));
+
+describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
   test('parses EXCLUDE_PATHS from sync-to-kai.sh', () => {
     const excludePaths = parseExcludePaths(PAI_DIR);
     expect(excludePaths.length).toBeGreaterThan(0);
@@ -199,7 +202,7 @@ describe('SyncCIGate', () => {
   test('manifest counts align with filesystem', () => {
     const manifestPath = join(PAI_DIR, 'manifest.json');
     if (!existsSync(manifestPath)) {
-      // Manifest doesn't exist in pai-config (kai-only), skip test
+      // Manifest doesn't exist in kai (kai-only), skip test
       expect(true).toBe(true);
       return;
     }

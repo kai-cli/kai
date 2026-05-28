@@ -2,7 +2,7 @@
 /**
  * sync-ci-gate.ts — Sync readiness gate for CI
  *
- * PURPOSE: Validate that pai-config is ready to sync to kai before pushing.
+ * PURPOSE: Validate that kai is ready to sync to kai before pushing.
  * Catches drift, uncategorized files, and PII patterns that would leak into public.
  *
  * USAGE:
@@ -43,14 +43,14 @@ const WARN_PII = process.argv.includes('--warn-pii');
 function getPaiDir(): string {
   if (process.env.PAI_DIR) return process.env.PAI_DIR;
 
-  // Try cwd if it looks like pai-config root (has sync-to-kai.sh)
+  // Try cwd if it looks like kai root (has sync-to-kai.sh)
   const cwd = process.cwd();
   if (existsSync(join(cwd, 'scripts', 'sync-to-kai.sh'))) {
     return cwd;
   }
 
   // Fallback to standard location
-  const standardPath = join(process.env.HOME!, 'Projects', 'pai-config');
+  const standardPath = join(process.env.HOME!, 'Projects', 'kai');
   if (existsSync(join(standardPath, 'scripts', 'sync-to-kai.sh'))) {
     return standardPath;
   }
@@ -176,7 +176,7 @@ function classifyFile(
   excludePaths: string[],
   kaiOnlyFiles: string[]
 ): 'private' | 'kai-only' | 'public' {
-  // Check if excluded from sync (pai-config only)
+  // Check if excluded from sync (kai only)
   for (const pattern of excludePaths) {
     if (matchesPattern(filePath, pattern)) {
       return 'private';
@@ -259,7 +259,7 @@ function main() {
     classified[category].push(file);
   }
 
-  info(`Private (pai-config only): ${classified.private.length}`);
+  info(`Private (kai only): ${classified.private.length}`);
   info(`KAI-only (protected): ${classified['kai-only'].length}`);
   info(`Public (will sync): ${classified.public.length}`);
 

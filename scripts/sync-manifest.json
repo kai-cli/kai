@@ -1,6 +1,6 @@
 {
   "$schema": "./sync-manifest-schema.json",
-  "description": "File categorization for pai-config → kai sync. This manifest defines which files are private (pai-config only), kai-only (protected), or public (synced).",
+  "description": "File categorization for kai → kai sync. This manifest defines which files are private (kai only), kai-only (protected), or public (synced).",
   "version": "1.0.0",
   "private": [
     "CLAUDE.md",
@@ -16,8 +16,8 @@
     "PAI/AISTEERINGRULES-EXAMPLES.md",
     "PAI/Tools/bump-version.ts",
     "Plans/",
-    "skills/Utilities/PAIUpgrade/",
-    "skills/PAIUpgrade/",
+    "skills/Utilities/KAIUpgrade/",
+    "skills/KAIUpgrade/",
     "policy-limits.json",
     "teams/",
     "scripts/sync-to-kai.sh",
