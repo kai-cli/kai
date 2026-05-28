@@ -18,7 +18,7 @@ jobs:
           bun-version: latest
 
       - run: bun install --frozen-lockfile
-      - run: bun test
+      - run: PAI_DIR=$PWD bun test
 
   smoke:
     name: Config-Layer Smoke Test
@@ -54,6 +54,25 @@ jobs:
 
       - name: Verify BuildSettings runs
         run: PAI_DIR=$PWD bun hooks/handlers/BuildSettings.ts
+
+      - name: Verify manifest counts
+        run: |
+          if test -f manifest.json; then
+            M_SKILLS=$(grep -oE '"skills":\s*[0-9]+' manifest.json | grep -oE '[0-9]+')
+            M_HOOKS=$(grep -oE '"hooks":\s*[0-9]+' manifest.json | grep -oE '[0-9]+')
+            M_AGENTS=$(grep -oE '"agents":\s*[0-9]+' manifest.json | grep -oE '[0-9]+')
+            F_SKILLS=$(find skills -name SKILL.md | wc -l | tr -d ' ')
+            F_HOOKS=$(find hooks -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' ')
+            F_AGENTS=$(find agents -maxdepth 1 -name '*.md' ! -name 'README.md' | wc -l | tr -d ' ')
+            echo "Manifest: $M_SKILLS skills, $M_HOOKS hooks, $M_AGENTS agents"
+            echo "Filesystem: $F_SKILLS skills, $F_HOOKS hooks, $F_AGENTS agents"
+            test "$M_SKILLS" = "$F_SKILLS" || { echo "FAIL: skills mismatch"; exit 1; }
+            test "$M_HOOKS" = "$F_HOOKS" || { echo "FAIL: hooks mismatch"; exit 1; }
+            test "$M_AGENTS" = "$F_AGENTS" || { echo "FAIL: agents mismatch"; exit 1; }
+            echo "PASS: manifest counts match"
+          else
+            echo "SKIP: no manifest.json"
+          fi
 
       - name: Verify skill inventory
         run: |
