@@ -4,15 +4,22 @@
  * Eliminates duplicated stdin-reading boilerplate across individual hooks.
  * Each hook calls readHookInput() to get the parsed JSON payload, and
  * parseTranscriptFromInput() if it needs the full transcript.
+ *
+ * Protocol versioning: Hooks expect hookProtocolVersion 1.0. Future versions
+ * may introduce new fields; hooks should log warnings but not fail on
+ * unexpected fields (forward compatibility).
  */
 
 import { parseTranscript, type ParsedTranscript } from '../../PAI/Tools/TranscriptParser';
 import { validatePayload } from './payload-schema';
 
+export const HOOK_PROTOCOL_VERSION = "1.0";
+
 export interface HookInput {
   session_id: string;
   transcript_path: string;
   hook_event_name: string;
+  hookProtocolVersion?: string;
   last_assistant_message?: string;
   prompt?: string;
   user_prompt?: string;
@@ -68,8 +75,24 @@ export async function readHookInput(): Promise<HookInput | null> {
       return null;
     }
 
-    // Normalize: ensure both prompt and user_prompt are available
+    // Check protocol version
     const obj = parsed as any;
+    if (obj.hookProtocolVersion && obj.hookProtocolVersion !== HOOK_PROTOCOL_VERSION) {
+      console.error(`[hook-io] Protocol version mismatch: expected ${HOOK_PROTOCOL_VERSION}, got ${obj.hookProtocolVersion}`);
+    }
+
+    // Detect unexpected fields (forward compatibility check)
+    const knownFields = new Set([
+      'session_id', 'transcript_path', 'hook_event_name', 'hookProtocolVersion',
+      'last_assistant_message', 'prompt', 'user_prompt', 'cwd', 'stop_hook_active',
+      'tool_name', 'tool_input', 'tool_response', 'config_path', 'change_type'
+    ]);
+    const unknownFields = Object.keys(obj).filter(k => !knownFields.has(k));
+    if (unknownFields.length > 0) {
+      console.error(`[hook-io] Unexpected fields in payload (forward compatibility): ${unknownFields.join(', ')}`);
+    }
+
+    // Normalize: ensure both prompt and user_prompt are available
     if (obj.prompt && !obj.user_prompt) {
       obj.user_prompt = obj.prompt;
     } else if (obj.user_prompt && !obj.prompt) {

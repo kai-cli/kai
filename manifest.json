@@ -1,10 +1,10 @@
 {
-  "version": "6.4.0",
+  "version": "7.0.0",
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
     "skills": 86,
-    "hooks": 52,
+    "hooks": 53,
     "agents": 20
   },
   "hookInventory": [
@@ -44,6 +44,7 @@
     "SecurityValidator.hook",
     "SessionAutoName.hook",
     "SessionCleanup.hook",
+    "SessionEndComposite.hook",
     "SessionSummary.hook",
     "SetQuestionTab.hook",
     "SkillGuard.hook",

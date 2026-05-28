@@ -80,44 +80,41 @@ interface CurrentWork {
 }
 
 /**
- * Mark work directory as completed and clear session state
+ * Mark work directory as completed and clear session state.
+ * CRITICAL: Throws on failure — work completion status must persist (fail-closed).
  */
 function clearSessionWork(sessionId?: string): void {
-  try {
-    const stateFile = findStateFile(sessionId);
-    if (!stateFile) {
-      console.error('[SessionSummary] No current work to complete');
-      return;
-    }
-
-    // Read current work state
-    const content = readFileSync(stateFile, 'utf-8');
-    const currentWork: CurrentWork = JSON.parse(content);
-
-    // Guard: don't process another session's state
-    if (sessionId && currentWork.session_id !== sessionId) {
-      console.error('[SessionSummary] State file belongs to different session, skipping');
-      return;
-    }
-
-    // Mark work directory as COMPLETED
-    if (currentWork.session_dir) {
-      const metaPath = join(WORK_DIR, currentWork.session_dir, 'META.yaml');
-      if (existsSync(metaPath)) {
-        let metaContent = readFileSync(metaPath, 'utf-8');
-        metaContent = metaContent.replace(/^status: "ACTIVE"$/m, 'status: "COMPLETED"');
-        metaContent = metaContent.replace(/^completed_at: null$/m, `completed_at: "${getISOTimestamp()}"`);
-        writeFileSync(metaPath, metaContent, 'utf-8');
-        console.error(`[SessionSummary] Marked work directory as COMPLETED: ${currentWork.session_dir}`);
-      }
-    }
-
-    // Delete state file
-    unlinkSync(stateFile);
-    console.error('[SessionSummary] Cleared session work state');
-  } catch (error) {
-    console.error(`[SessionSummary] Error clearing session work: ${error}`);
+  const stateFile = findStateFile(sessionId);
+  if (!stateFile) {
+    console.error('[SessionSummary] No current work to complete');
+    return;
   }
+
+  // Read current work state
+  const content = readFileSync(stateFile, 'utf-8');
+  const currentWork: CurrentWork = JSON.parse(content);
+
+  // Guard: don't process another session's state
+  if (sessionId && currentWork.session_id !== sessionId) {
+    console.error('[SessionSummary] State file belongs to different session, skipping');
+    return;
+  }
+
+  // Mark work directory as COMPLETED
+  if (currentWork.session_dir) {
+    const metaPath = join(WORK_DIR, currentWork.session_dir, 'META.yaml');
+    if (existsSync(metaPath)) {
+      let metaContent = readFileSync(metaPath, 'utf-8');
+      metaContent = metaContent.replace(/^status: "ACTIVE"$/m, 'status: "COMPLETED"');
+      metaContent = metaContent.replace(/^completed_at: null$/m, `completed_at: "${getISOTimestamp()}"`);
+      writeFileSync(metaPath, metaContent, 'utf-8'); // Throws on write failure
+      console.error(`[SessionSummary] Marked work directory as COMPLETED: ${currentWork.session_dir}`);
+    }
+  }
+
+  // Delete state file
+  unlinkSync(stateFile);
+  console.error('[SessionSummary] Cleared session work state');
 }
 
 /** Write lifecycle.endedAt, durationMs, exitStatus, and session_end event to work.json */
@@ -160,51 +157,55 @@ function closeSessionLifecycle(sessionId: string): void {
 }
 
 async function main() {
+  // Read input from stdin with timeout — SessionEnd hooks may receive
+  // empty or slow stdin. Proceed regardless since state is read from disk.
+  let sessionId: string | undefined;
   try {
-    // Read input from stdin with timeout — SessionEnd hooks may receive
-    // empty or slow stdin. Proceed regardless since state is read from disk.
-    let sessionId: string | undefined;
-    try {
-      const input = await Promise.race([
-        Bun.stdin.text(),
-        new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-      ]);
-      if (input && input.trim()) {
-        const parsed = JSON.parse(input);
-        sessionId = parsed.session_id;
-      }
-    } catch {
-      // Timeout or parse error — proceed without session_id
+    const input = await Promise.race([
+      Bun.stdin.text(),
+      new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ]);
+    if (input && input.trim()) {
+      const parsed = JSON.parse(input);
+      sessionId = parsed.session_id;
     }
+  } catch {
+    // Timeout or parse error — proceed without session_id
+  }
 
-    // Mark work as complete and clear state
-    // NOTE: Does NOT write to SESSIONS/ - WORK/ is the primary system
-    clearSessionWork(sessionId);
+  // Mark work as complete and clear state (throws on failure — fail-closed)
+  // NOTE: Does NOT write to SESSIONS/ - WORK/ is the primary system
+  clearSessionWork(sessionId);
 
-    // Close lifecycle tracking in work.json (v5.8)
-    if (sessionId) closeSessionLifecycle(sessionId);
+  // Close lifecycle tracking in work.json (v5.8)
+  if (sessionId) closeSessionLifecycle(sessionId);
 
-    // Reset Kitty tab to neutral styling — no lingering colored backgrounds
+  // Reset Kitty tab to neutral styling — no lingering colored backgrounds
+  // Tab reset is best-effort (UI enhancement only)
+  try {
+    setTabState({ title: '', state: 'idle', sessionId });
+    console.error('[SessionSummary] Tab reset to default styling');
+  } catch {
+    console.error('[SessionSummary] Tab reset failed (non-critical)');
+  }
+
+  // Clean up per-session kitty env file (prevents unbounded file accumulation)
+  // Cleanup is best-effort
+  if (sessionId) {
     try {
-      setTabState({ title: '', state: 'idle', sessionId });
-      console.error('[SessionSummary] Tab reset to default styling');
-    } catch {
-      console.error('[SessionSummary] Tab reset failed (non-critical)');
-    }
-
-    // Clean up per-session kitty env file (prevents unbounded file accumulation)
-    if (sessionId) {
       cleanupKittySession(sessionId);
       console.error(`[SessionSummary] Cleaned up kitty session: ${sessionId}`);
+    } catch {
+      console.error('[SessionSummary] Kitty cleanup failed (non-critical)');
     }
-
-    console.error('[SessionSummary] Session ended, work marked complete');
-    process.exit(0);
-  } catch (error) {
-    // Silent failure - don't disrupt workflow
-    console.error(`[SessionSummary] SessionEnd hook error: ${error}`);
-    process.exit(0);
   }
+
+  console.error('[SessionSummary] Session ended, work marked complete');
+  process.exit(0);
 }
 
-main().catch((err) => { console.error(`[SessionSummary] Error:`, err); process.exit(0); });
+// FAIL-CLOSED: Work completion status is critical data
+main().catch((err) => {
+  console.error(`[SessionSummary] FATAL: ${err}`);
+  process.exit(1); // Non-zero exit signals failure
+});

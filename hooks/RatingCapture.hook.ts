@@ -265,6 +265,10 @@ async function analyzeSentiment(prompt: string, context: string): Promise<Sentim
 
 // ── Shared: Write Rating ──
 
+/**
+ * Write rating to ratings.jsonl.
+ * CRITICAL: This throws on failure — explicit ratings must be fail-closed.
+ */
 function writeRating(entry: RatingEntry): void {
   if (!existsSync(SIGNALS_DIR)) mkdirSync(SIGNALS_DIR, { recursive: true });
   appendFileSync(RATINGS_FILE, JSON.stringify(entry) + '\n', 'utf-8');
@@ -417,6 +421,10 @@ function generateCorrectionDraft(
 // ── Main ──
 
 async function main() {
+  // Explicit ratings are fail-CLOSED (user gave explicit feedback — must persist)
+  // Implicit ratings are fail-OPEN (best-effort sentiment detection)
+  let isExplicitRating = false;
+
   try {
     console.error('[RatingCapture] Hook started');
     const input = await readStdinWithTimeout();
@@ -426,6 +434,7 @@ async function main() {
     // ── Path 1: Explicit Rating ──
     const explicitResult = parseExplicitRating(prompt);
     if (explicitResult) {
+      isExplicitRating = true; // Mark as explicit for catch handler
       console.error(`[RatingCapture] Explicit rating: ${explicitResult.rating}${explicitResult.comment ? ` - ${explicitResult.comment}` : ''}`);
 
       const cachedResponse = getLastResponse();
@@ -438,7 +447,7 @@ async function main() {
       if (explicitResult.comment) entry.comment = explicitResult.comment;
       if (cachedResponse) entry.response_preview = cachedResponse.slice(0, 500);
 
-      writeRating(entry);
+      writeRating(entry); // Throws on write failure
 
       // Draft generation (fire-and-forget, non-blocking)
       if (explicitResult.rating >= 8) {
@@ -604,9 +613,18 @@ async function main() {
 
     process.exit(0);
   } catch (err) {
-    console.error(`[RatingCapture] Error: ${err}`);
+    // FAIL-CLOSED for explicit ratings (user feedback must persist)
+    // FAIL-OPEN for implicit ratings (best-effort sentiment)
+    if (isExplicitRating) {
+      console.error(`[RatingCapture] FATAL: Failed to write explicit rating: ${err}`);
+      process.exit(1); // Non-zero exit signals failure
+    }
+    console.error(`[RatingCapture] Error (implicit path, non-fatal): ${err}`);
     process.exit(0);
   }
 }
 
-main().catch((err) => { console.error(`[RatingCapture] Error:`, err); process.exit(0); });
+main().catch((err) => {
+  console.error(`[RatingCapture] FATAL: Uncaught error: ${err}`);
+  process.exit(1); // Top-level errors also fail-closed
+});

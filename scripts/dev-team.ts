@@ -28,6 +28,12 @@ import { join, resolve } from "path";
 import { parse as parseYaml } from "yaml";
 import { homedir, tmpdir } from "os";
 import { randomUUID } from "crypto";
+import { loadCredentialSpecs, validateCredentials, formatValidationResult } from "../hooks/lib/credential-validator";
+import { CostTracker } from "./lib/cost-tracker";
+import { StallDetector } from "./lib/stall-detector";
+import { shouldRetry, parseSeverity, type RetryDecision } from "./lib/adaptive-retry";
+import { CheckpointManager } from "./lib/checkpoint";
+import { evaluateCondition, type PhaseContext } from "./lib/conditions";
 
 // --- Types ---
 
@@ -154,7 +160,37 @@ function listPresets(): string[] {
   }
 }
 
-// --- Bedrock Detection ---
+// --- Credential Validation ---
+
+/**
+ * Validate credentials and return review capability mode.
+ * Replaces the old one-off detectReviewCapability() with generalized validation.
+ */
+function validateDevTeamCredentials(): { reviewMode: "bedrock" | "claude-adversarial"; warnings: string[] } {
+  const credentialsPath = join(PAI_DIR, "skills", "DevTeam", "credentials.yaml");
+
+  // If no credentials file, fall back to legacy detection
+  if (!existsSync(credentialsPath)) {
+    console.error("[DevTeam] No credentials.yaml found, using legacy detection");
+    return { reviewMode: "claude-adversarial", warnings: [] };
+  }
+
+  try {
+    const specs = loadCredentialSpecs(credentialsPath);
+    const result = validateCredentials(specs);
+
+    // Determine review mode based on AWS_PROFILE presence
+    const awsProfile = process.env.AWS_PROFILE;
+    const reviewMode: "bedrock" | "claude-adversarial" = awsProfile ? "bedrock" : "claude-adversarial";
+
+    return { reviewMode, warnings: result.warnings };
+  } catch (error) {
+    console.error(`[DevTeam] Credential validation error: ${error}`);
+    return { reviewMode: "claude-adversarial", warnings: [`Credential validation failed: ${error}`] };
+  }
+}
+
+// --- Bedrock Detection (legacy, kept for backward compatibility) ---
 
 async function detectReviewCapability(): Promise<"bedrock" | "claude-adversarial"> {
   try {
@@ -576,8 +612,22 @@ async function orchestrate(config: TeamConfig): Promise<string> {
   if (!config.phaseTimeoutMs) config.phaseTimeoutMs = 300_000;
   if (!config.modelOverrides) config.modelOverrides = {};
 
+  // --- v6.6.0 Intelligence: Initialize cost tracker and checkpoint manager ---
+  const costTracker = new CostTracker();
+  const teamDir = join(TEAMS_DIR, config.teamName);
+  if (!existsSync(teamDir)) mkdirSync(teamDir, { recursive: true });
+  const checkpoint = new CheckpointManager(teamDir);
+
+  // Resume from checkpoint if previous run was interrupted
+  if (checkpoint.canResume()) {
+    const lastCompleted = checkpoint.getLastCompleted();
+    console.log(`  Resuming from checkpoint: last completed phase = ${lastCompleted}`);
+    log(config.teamName, "orchestrate", "resume", { lastCompleted } as any);
+  }
+
   // --- Phase 1: PM Scoping ---
   console.log("[Phase 1] PM Scoping...");
+  checkpoint.save("scope", "started");
   const pmRole = config.preset.roles.find((r) => r.id === "pm" || r.id === "lead");
   const pmPrompt = buildPMPrompt(config);
   const pmFindings = await executePhaseWithRecovery(
@@ -588,21 +638,35 @@ async function orchestrate(config: TeamConfig): Promise<string> {
     pmPrompt,
     false,
   );
+  checkpoint.save("scope", "completed", pmFindings.slice(0, 2000));
+  costTracker.recordFromOutput("scope", pmRole?.model || "sonnet", pmFindings);
 
   // --- Phase 2: Dev Implementation (with retry support) ---
   console.log("\n[Phase 2] Dev Implementation...");
+  checkpoint.save("implement", "started");
   const devRoles = config.preset.roles.filter((r) => r.id.startsWith("dev"));
   let devReport = "";
   let qaVerdict = "FAIL";
   let qaReport = "";
   let attempt = 0;
   const maxRetries = config.preset.retry_max;
+  let lastRetryDecision: RetryDecision | null = null;
 
   while (qaVerdict !== "PASS" && attempt <= maxRetries) {
     attempt++;
     if (attempt > 1) {
       console.log(`\n[Retry ${attempt}/${maxRetries + 1}] Dev addressing QA failures...`);
       log(config.teamName, "verify", "retry", { agent: "dev", attempt });
+    }
+
+    // Check cost budget before each attempt
+    if (costTracker.isOverHardLimit()) {
+      console.log(`\n⚠️  Cost hard limit reached ($${costTracker.getTotalCost().toFixed(2)}). Stopping.`);
+      log(config.teamName, "implement", "budget-exceeded", { cost: costTracker.getTotalCost() } as any);
+      break;
+    }
+    if (costTracker.isOverSoftLimit() && attempt > 1) {
+      console.log(`  ⚠️  Cost soft limit reached ($${costTracker.getTotalCost().toFixed(2)}). Continuing current attempt.`);
     }
 
     // Run dev agent(s)
@@ -624,9 +688,12 @@ async function orchestrate(config: TeamConfig): Promise<string> {
       );
       devReport = devResults.join("\n\n---\n\n");
     }
+    costTracker.recordFromOutput("implement", devRoles[0]?.model || "sonnet", devReport);
+    checkpoint.save("implement", "completed", devReport.slice(0, 2000));
 
     // --- Phase 3: QA Verification ---
     console.log("\n[Phase 3] QA Verification...");
+    checkpoint.save("verify", "started");
     const qaRole = config.preset.roles.find((r) => r.id === "qa");
     if (!qaRole) {
       qaVerdict = "PASS";
@@ -636,31 +703,54 @@ async function orchestrate(config: TeamConfig): Promise<string> {
 
     const qaPrompt = buildQAPrompt(config, pmFindings, devReport);
     qaReport = await executePhaseWithRecovery(config, "verify", qaRole.agent_type, qaRole.model, qaPrompt, false);
+    costTracker.recordFromOutput("verify", qaRole.model, qaReport);
 
     // Parse verdict from QA output
     if (qaReport.toLowerCase().includes("**pass**") || qaReport.toLowerCase().includes("verdict: pass")) {
       qaVerdict = "PASS";
+      checkpoint.save("verify", "completed", "PASS");
     } else {
       qaVerdict = "FAIL";
+      checkpoint.save("verify", "failed", qaReport.slice(0, 1000));
 
-      // Extract priority signal
-      let prioritySignal = "Standard Issue";
-      if (qaReport.includes("Critical Blocker")) prioritySignal = "Critical Blocker";
-      else if (qaReport.includes("Minor Concern")) prioritySignal = "Minor Concern";
+      // Adaptive retry: use severity-based decision instead of simple counter
+      lastRetryDecision = shouldRetry(qaReport, {
+        strict: config.goalAncestry.priority === "critical",
+        maxRetries,
+        currentAttempt: attempt - 1,
+      });
 
-      if (attempt > maxRetries) {
-        console.log(`\n⚠️  QA failed after ${maxRetries + 1} attempts. Escalating to user.`);
-        log(config.teamName, "verify", "escalate", { attempt, priority: prioritySignal, reason: "max retries exceeded" });
-      } else {
-        log(config.teamName, "verify", "fail", { attempt, priority: prioritySignal });
+      log(config.teamName, "verify", "fail", {
+        attempt,
+        priority: lastRetryDecision.severity,
+        reason: lastRetryDecision.reason,
+      } as any);
+
+      if (lastRetryDecision.deferred) {
+        console.log(`  Minor concern deferred to report (not retrying).`);
+        break;
+      }
+
+      if (!lastRetryDecision.shouldRetry) {
+        console.log(`\n⚠️  ${lastRetryDecision.reason}. Escalating to user.`);
+        log(config.teamName, "verify", "escalate", { attempt, reason: lastRetryDecision.reason });
+        break;
       }
     }
   }
 
-  // --- Phase 4: Review (optional) ---
+  // --- Phase 4: Review (optional, with condition evaluation) ---
   let reviewReport = "";
-  if (config.reviewMode !== "disabled" && qaVerdict === "PASS") {
+  const phaseContext: PhaseContext = {
+    output: { scope: pmFindings, implement: devReport, verify: qaReport },
+    metrics: { totalCostUsd: costTracker.getTotalCost() },
+  };
+  const shouldRunReview = config.reviewMode !== "disabled" && qaVerdict === "PASS"
+    && evaluateCondition("metrics.totalCostUsd > 0.50", phaseContext);
+
+  if (shouldRunReview) {
     console.log(`\n[Phase 4] Review (${config.reviewMode})...`);
+    checkpoint.save("review", "started");
     log(config.teamName, "review", "start", { mode: config.reviewMode });
 
     // Get the diff for review
@@ -692,12 +782,26 @@ async function orchestrate(config: TeamConfig): Promise<string> {
 
   const report = formatFinalReport(config, pmFindings, devReport, qaVerdict, qaReport, reviewReport, totalMs, attempt);
 
-  // Save report
+  // Save report and cost summary
   const reportPath = join(TEAMS_DIR, config.teamName, "report.md");
   writeFileSync(reportPath, report);
+
+  // Cost tracking summary
+  const costSummary = costTracker.formatTable();
+  if (costSummary) {
+    console.log(`\n  Cost breakdown:`);
+    console.log(costSummary);
+    appendFileSync(reportPath, `\n\n## Cost Summary\n\n\`\`\`\n${costSummary}\n\`\`\`\nTotal: $${costTracker.getTotalCost().toFixed(4)}\n`);
+  }
+
+  // Checkpoint cleanup on success
+  if (qaVerdict === "PASS") {
+    checkpoint.cleanup();
+  }
+
   console.log(`\nReport saved: ${reportPath}`);
   console.log(`Run log: ${join(TEAMS_DIR, config.teamName, "run.jsonl")}`);
-  console.log(`\nComplete in ${(totalMs / 1000).toFixed(1)}s`);
+  console.log(`\nComplete in ${(totalMs / 1000).toFixed(1)}s | Cost: $${costTracker.getTotalCost().toFixed(4)}`);
 
   return report;
 }
@@ -845,12 +949,23 @@ Examples:
   // Load preset
   const preset = loadPreset(values.preset!);
 
-  // Detect review mode
+  // Validate credentials and detect review mode
   let reviewMode: "bedrock" | "claude-adversarial" | "disabled";
+  let credentialWarnings: string[] = [];
+
   if (values["no-review"] || !preset.review.enabled) {
     reviewMode = "disabled";
   } else {
-    reviewMode = await detectReviewCapability();
+    const validation = validateDevTeamCredentials();
+    reviewMode = validation.reviewMode;
+    credentialWarnings = validation.warnings;
+
+    if (credentialWarnings.length > 0 && values.verbose) {
+      console.log("\n⚠️  Credential Warnings:");
+      for (const warning of credentialWarnings) {
+        console.log(`  • ${warning}`);
+      }
+    }
   }
 
   // Generate team name

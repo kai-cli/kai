@@ -73,39 +73,40 @@
 
 ---
 
-## v6.4+ — Architecture Hardening & Evolution (v6.4.0 shipped)
+## v6.4+ — Architecture Hardening & Evolution (ALL SHIPPED through v7.0)
 
 Detailed plan with implementation specs, validation criteria, and multi-model deliberation decisions:
 **See `docs/planning/v6.4-review-remediations.md`**
 
-| Release | Theme | Key Items |
-|---------|-------|-----------|
-| **v6.4.0** | Write Coordination + Security | SessionEnd crash detection (UUID sentinels), risk-classifier fuzzing, E2E scaffold |
-| **v6.4.1** | Full E2E + Security Audit | 10+ E2E scenarios, fail-open/closed audit, secret scanning, CLI injection audit, **tool credential declaration** |
-| **v6.5.0** | SessionEnd Composite + Learning | 9→1 composite hook, heuristic gate, learning data lifecycle (event-source + view), **composite memory scoring** |
-| **v6.5.1** | Algorithm Decomp + Sync CI | algorithm.ts 1515→150 lines, sync dry-run CI gates, PII grep |
-| **v6.6.0** | DevTeam Intelligence + Orchestration | Cost tracking, dynamic roles, adaptive retry, **event checkpointing (resume), conditional phases, DAG execution planner** |
-| **v7.0** | Monitor + SQLite (conditional) | Algorithm → meta-cognitive linter, **planning observer (adaptive replanning)**, SQLite WAL only if corruption proven |
+| Release | Theme | Key Items | Status |
+|---------|-------|-----------|--------|
+| **v6.4.0** | Write Coordination + Security | SessionEnd crash detection (UUID sentinels), risk-classifier fuzzing, E2E scaffold | SHIPPED |
+| **v6.4.1** | Full E2E + Security Audit | 28 E2E scenarios, fail-open/closed audit, credential validator, hook-io versioning | SHIPPED |
+| **v6.5.0** | SessionEnd Composite + Learning | 9→1 composite hook, heuristic gate, learning data lifecycle, composite memory scoring | SHIPPED |
+| **v6.5.1** | Algorithm Decomp + Sync CI | algorithm.ts 1515→40 lines (9 modules), sync-ci-gate, --warn-pii, manifest verification | SHIPPED |
+| **v6.6.0** | DevTeam Intelligence + Orchestration | Cost tracking, stall detection, adaptive retry, checkpointing, conditional phases, DAG planner | SHIPPED |
+| **v7.0** | Monitor + Observer | Meta-cognitive linter (12 policies), planning observer (divergence tracking), integration wiring | SHIPPED |
 
 **CrewAI pattern adoption plan:** `docs/planning/crewai-adoption-plan.md`
 
 ---
 
-## Current State (v6.4 — shipped)
+## Current State (v7.0 — shipped)
 
-- 1398 tests, 74 files, 0 failures
-- 52 hooks (PAI), 49 hooks (KAI) — all registered, 63 commands in settings.json
-- 86 skills, 21 agents, Algorithm v3.14.0
+- 1663 tests, 91 files, 0 failures
+- 53 hooks (PAI), 20 agents, 86 skills, Algorithm v3.14.0
 - Full hook parity between PAI and KAI
-- Security hooks active + hardened (risk-classifier fuzzing, E2E scaffold)
+- Security hooks active + hardened (risk-classifier fuzzing, 28 E2E scenarios)
 - SessionEnd write coordination (UUID sentinel tracking)
-- Learning system active (KnowledgeSync, InstinctCapture, InsightExtractor)
-- Sync pipeline verified + automated drift detection (sync-drift.ts)
-- STATE TTL cleanup automation (state-cleanup.ts)
-- Hook performance monitoring (hook-perf.ts)
-- Config migration tooling (config-migrate.ts)
+- SessionEndComposite: 9 hooks consolidated with heuristic gate
+- Algorithm decomposed: 9 focused modules + thin orchestrator
+- Meta-cognitive monitor: 12 policy checks from user feedback
+- Planning observer: divergence tracking with adaptive replanning
+- DevTeam intelligence: cost/stall/retry/checkpoint/conditions wired in
+- Learning system active (KnowledgeSync, InstinctCapture, InsightExtractor, memory-scorer)
+- Sync pipeline verified + CI gate (sync-ci-gate.ts with --warn-pii)
+- Capabilities guide: tiered reference (docs/CAPABILITIES-GUIDE.md)
 - Deliberate skill migrated to AWS Bedrock (zero personal API keys for external models)
-- Agent routing matrix, Board API docs, Algorithm migration guide
 
 ---
 
