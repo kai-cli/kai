@@ -45,6 +45,8 @@ __pycache__/
 # System state caches (regenerated automatically)
 *.cache
 *.log
+stats-cache.json
+.last-update-result.json
 
 # Accidental npm/bun debris
 /package-lock.json

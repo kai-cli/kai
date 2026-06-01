@@ -237,7 +237,7 @@ Goals appear in `claude agents` TUI and help user track parallel work.
 
 ```typescript
 // Phase 0: Orchestrator setup
-const target = resolveTargetRepo("~/Projects/pai-config");
+const target = resolveTargetRepo("~/Projects/my-project");
 const ciExists = fs.existsSync(`${target}/.github/workflows/`);
 
 // Phase 1: PM scoping (foreground, interactive)

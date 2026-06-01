@@ -59,7 +59,7 @@ function extractKeywords(text: string): string[] {
 }
 
 function projectSlug(dirName: string): string {
-  // -Users-your.name-Projects-feed-bbf → feed-bbf
+  // -Users-your.name-Projects-my-project → my-project
   const parts = dirName.split('-Projects-');
   if (parts.length > 1) return parts[1];
   // Fallback: last meaningful segment
