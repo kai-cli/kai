@@ -26,6 +26,7 @@ export const BLOCKED_PATTERNS = [
   /^https?:\/\/(?:192\.168\.\d+\.\d+)/,           // 192.168.x.x
   /^https?:\/\/(?:172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)/, // 172.16-31.x.x
   /^https?:\/\/(?:127\.\d+\.\d+\.\d+)/,           // 127.x.x.x (loopback)
+  /^https?:\/\/(?:169\.254\.\d+\.\d+)/,           // 169.254.x.x (link-local / cloud metadata)
   /^https?:\/\/localhost/,                          // localhost
   /^https?:\/\/0\.0\.0\.0/,                        // 0.0.0.0
   /^file:\/\//,                                     // file:// protocol

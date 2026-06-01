@@ -1,5 +1,5 @@
 ---
-name: End Session
+name: End
 description: Graceful session close with structured summary of work done, memory captured, and pending items.
 triggers:
   - /end

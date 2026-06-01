@@ -2,6 +2,10 @@
 
 Initial team proposal and confirmation flow. Used on first invocation or when user asks how DevTeam works.
 
+**Execution Modes:**
+- Foreground (default): Runs team in current session via Agent tool calls — best for quick work, user stays involved
+- Background: Dispatches Dev/QA as background sessions — best for long-running work, frees user
+
 ## Execution
 
 1. Determine the appropriate preset from the user's request:
@@ -15,8 +19,14 @@ Initial team proposal and confirmation flow. Used on first invocation or when us
    - Ask if team composition is correct or needs adjustment
    - Options: confirm preset, add/remove roles, change models
 
-3. After confirmation, hand off to the appropriate workflow:
-   - `BugFix.md`, `Feature.md`, or `Investigation.md`
+3. After team composition confirmation, ask execution mode via AskUserQuestion:
+   - **Foreground** (default): Runs in current session via Agent tool calls — best for quick work, user stays involved
+   - **Background**: Dispatches Dev/QA as background sessions — best for long-running work (>10min), frees user
+   - Present both options, recommend based on task complexity estimate
+
+4. Route based on mode:
+   - **Foreground** → existing workflows: `BugFix.md`, `Feature.md`, or `Investigation.md`
+   - **Background** → `BackgroundFeature.md` (handles features/bugs that will take >10min)
 
 ## Example Prompt
 

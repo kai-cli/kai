@@ -1,13 +1,13 @@
+---
+name: PAI
+description: Kaizen AI core. The authoritative reference for how PAI works. USE WHEN KAI system, how PAI works, PAI documentation, PAI reference, system architecture, core functionality.
+---
 <!--
   🔨 GENERATED FILE - Do not edit directly
   Edit:   ~/.claude/skills/PAI/Components/
   Build:  bun ~/.claude/skills/PAI/Tools/RebuildPAI.ts
   Built:  9 March 2026 14:31:21
 -->
----
-name: PAI
-description: Kaizen AI core. The authoritative reference for how PAI works. USE WHEN KAI system, how PAI works, PAI documentation, PAI reference, system architecture, core functionality.
----
 
 # Intro to PAI
 

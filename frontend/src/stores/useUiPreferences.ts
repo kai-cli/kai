@@ -13,6 +13,7 @@ export interface FilterState {
 
 interface SidebarSections {
   sessions: boolean
+  agentView: boolean
   github: boolean
   library: boolean
 }
@@ -60,7 +61,7 @@ export const useUiPreferences = create<UiPreferencesState>()(
       sortDirection: 'asc',
       filters: defaultFilters,
       sidebarCollapsed: false,
-      sidebarSections: { sessions: false, github: false, library: false },
+      sidebarSections: { sessions: false, agentView: false, github: false, library: false },
       focusedSlug: null,
       selectedSlugs: new Set(),
 

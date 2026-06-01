@@ -5,6 +5,19 @@
  * import the same function — no logic drift between hook and test suite.
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
+
+function getAlgorithmVersion(): string {
+  try {
+    return readFileSync(join(PAI_DIR, 'PAI', 'Algorithm', 'LATEST'), 'utf-8').trim();
+  } catch {
+    return 'v3.14.0';
+  }
+}
+
 export interface RecoveryBlockOpts {
   daName: string;
   principalName: string;
@@ -13,6 +26,7 @@ export interface RecoveryBlockOpts {
 }
 
 export function buildRecoveryBlock(opts: RecoveryBlockOpts): string {
+  const ver = getAlgorithmVersion();
   const algorithmStateStr = opts.algorithmState
     ? `\n**Current Algorithm state:** Phase: ${opts.algorithmState.phase.toUpperCase()} | Effort: ${opts.algorithmState.effort} | PRD: ${opts.algorithmState.prd_path}`
     : '';
@@ -21,18 +35,18 @@ export function buildRecoveryBlock(opts: RecoveryBlockOpts): string {
 
 **You are ${opts.daName}**, a Kaizen AI assistant.
 **Principal:** ${opts.principalName} | Timezone: ${opts.timezone}
-**Algorithm version:** v3.14.0${algorithmStateStr}
+**Algorithm version:** ${ver}${algorithmStateStr}
 
 **Response format (MANDATORY — restore after compaction):**
 Every response MUST use exactly one mode:
-- **ALGORITHM** — for multi-step, complex work (load PAI/Algorithm/v3.14.0.md and follow it)
+- **ALGORITHM** — for multi-step, complex work (load PAI/Algorithm/${ver}.md and follow it)
 - **NATIVE** — for simple single-step tasks
 - **MINIMAL** — for greetings, ratings, acknowledgments
 
 No freeform output. The format IS the context.
 
 **Critical behavioral rules restored after compaction:**
-1. ALGORITHM mode requires Read tool to load PAI/Algorithm/v3.14.0.md — then follow that file exactly
+1. ALGORITHM mode requires Read tool to load PAI/Algorithm/${ver}.md — then follow that file exactly
 2. PRD is YOUR responsibility — edit it directly with Write/Edit tools at every phase transition
 3. Capability selection creates a binding commitment — every selected capability MUST be invoked via Skill or Task tool
 4. No phantom capabilities — selection without a tool call is a CRITICAL FAILURE
@@ -43,5 +57,5 @@ No freeform output. The format IS the context.
 - Resume from the recorded phase — do NOT restart from OBSERVE
 - The PRD on disk is the source of truth for criteria status
 - Check for \`MEMORY/WORK/{slug}/HANDOFF.md\` — if it exists, read it first for structured continuation state
-- Use "Context Recovery" section in v3.14.0.md for full recovery procedure`;
+- Use "Context Recovery" section in ${ver}.md for full recovery procedure`;
 }

@@ -27,6 +27,94 @@ This document defines the foundational architecture that applies to ALL PAI impl
 
 ---
 
+## Two-Layer Orchestration Model
+
+PAI operates in two distinct architectural layers that compose to provide both interactive sessions and background orchestration:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  OUTER: Agent View (claude agents)                      │
+│  ─ Multi-session orchestration                          │
+│  ─ Worktree isolation per session                       │
+│  ─ Supervisor lifecycle management                      │
+│  ─ Background execution + persistence                   │
+├─────────────────────────────────────────────────────────┤
+│  INNER: PAI Session                                     │
+│  ─ Algorithm (OBSERVE → THINK → ACT → VERIFY)          │
+│  ─ Skills (specialized behaviors)                       │
+│  ─ Delegation (intra-session parallelism)               │
+│  ─ Memory (cross-session knowledge)                     │
+│  ─ DevTeam (role composition)                           │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Outer Layer: Agent View
+
+**Agent View** is the multi-session orchestration layer built on Claude Code's native `agents` system. It provides:
+
+- **Background Execution:** Dispatch long-running agents that persist beyond a single interactive session
+- **Worktree Isolation:** Each dispatched agent runs in its own git worktree (`.claude/worktrees/<agent-id>/`) to avoid conflicts when multiple agents work on the same repository
+- **Supervisor Lifecycle:** Agents can be monitored, queried, or terminated via the Agent View UI/CLI
+- **State Persistence:** Agent state is tracked in `~/.claude/daemon/roster.json` and `~/.claude/jobs/<id>/state.json`
+
+**Key Characteristics:**
+- Operates at the **project/repository level** (multiple sessions across time)
+- Enables **parallel background work** without blocking the main session
+- Provides **isolation** so agents don't interfere with each other or the main working tree
+- Supports **long-running operations** (hours/days) that survive terminal closure
+
+### Inner Layer: PAI Session
+
+**PAI Session** is what runs inside each agent dispatch or interactive session. It is the core intelligence layer:
+
+- **The Algorithm:** OBSERVE → THINK → ACT → VERIFY loop for task execution
+- **Skills:** Domain-specific behaviors that self-activate based on user requests
+- **Delegation:** In-session parallelism via Task tool for fan-out work
+- **Memory:** Cross-session knowledge base (automatic capture, curation, retrieval)
+- **DevTeam:** Role-based compositions (PM, Dev, QA) for coordinated multi-agent work
+
+**Key Characteristics:**
+- Operates within a **single session** (one conversation thread)
+- Uses **Task tool** for in-session parallelism (subagents that report back synchronously)
+- Maintains **memory** that persists across all sessions (not just within one session)
+- Executes the **Algorithm** for systematic problem-solving
+
+### How They Compose
+
+**Agent View dispatches PAI sessions.**
+
+When you dispatch a background agent via Agent View:
+1. Agent View creates a new worktree (`.claude/worktrees/<agent-id>/`)
+2. Agent View spawns a new Claude Code session in that worktree
+3. That session runs PAI (Algorithm, Skills, Memory, Delegation)
+4. Agent View monitors the session state and surfaces progress
+5. When complete, Agent View reports back and can clean up the worktree
+
+**Examples:**
+
+- **Interactive foreground:** You run `/devteam fix bug` → PAI session executes in your current working tree
+- **Background dispatch:** Agent View launches a DevTeam supervisor → New worktree created → PAI session runs there independently
+- **Hybrid:** Main session delegates Task tool work (in-session parallelism) while Agent View monitors background agents (cross-session parallelism)
+
+### State Files
+
+| File | Purpose |
+|------|---------|
+| `~/.claude/daemon/roster.json` | Global registry of dispatched agents |
+| `~/.claude/jobs/<id>/state.json` | Per-agent state (status, output, errors) |
+| `~/.claude/worktrees/<id>/` | Isolated git worktree for agent execution |
+| `MEMORY/STATE/algorithm-phase` | Current Algorithm phase (inner layer) |
+| `MEMORY/STATE/session-*.sentinel` | Session idempotency markers |
+
+### Design Philosophy
+
+- **Outer layer** = **orchestration** (where/when work happens, lifecycle management)
+- **Inner layer** = **intelligence** (how work gets done, quality, learning)
+- Each layer has distinct responsibilities; neither duplicates the other
+- Agent View enables **scale** (many parallel sessions); PAI Session ensures **quality** (systematic execution)
+
+---
+
 ## Core Philosophy
 
 **PAI is scaffolding for AI, not a replacement for human intelligence.**

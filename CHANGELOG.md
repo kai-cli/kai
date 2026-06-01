@@ -41,7 +41,7 @@ Production hardening and CI reliability.
 - Pre-push hook with marker freshness validation
 
 ### Changed
-- 1663 tests passing (pai-config), 1412 tests passing (kai)
+- 1663 tests passing (kai), 1412 tests passing (kai)
 - Manifest validation in CI gate
 
 ---
@@ -172,7 +172,7 @@ Progressive learning, adaptive memory, and research expansion.
 - `hooks/SecurityValidator.hook.ts`, `hooks/SecretScanner.hook.ts` — security prefix rebranded to `[KAI SECURITY]`
 - `hooks/lib/change-detection.ts` — system label rebranded to `KAI System`
 - `PAI/Tools/RoutingAudit.ts` — MEM_PREFIX derived from HOME (portable, no hardcoded paths)
-- Manifest updated: <!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> skills, <!-- KAI:counts:hooks:begin -->53<!-- KAI:counts:hooks:end --> hooks, <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> agents
+- Manifest updated: <!-- KAI:counts:skills:begin -->86<!-- KAI:counts:skills:end --> skills, <!-- KAI:counts:hooks:begin -->53<!-- KAI:counts:hooks:end --> hooks, <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> agents
 - VERSION 5.2.0 → 5.6.0
 - README, QUICKSTART, WHATS-DIFFERENT, releases/README updated to KAI 5.6.0
 
@@ -354,7 +354,7 @@ Initial public release of KAI (Kaizen AI).
 
 ### Features
 - **Algorithm v3.13.0** — Parallelization gate, phantom capability prune, version centralization
-- **<!-- KAI:counts:skills:begin -->85<!-- KAI:counts:skills:end --> skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
+- **<!-- KAI:counts:skills:begin -->86<!-- KAI:counts:skills:end --> skills** — Research, Security, Analysis, Writing, Engineering Manager workflows, and more
 - **47 hooks** — Lifecycle automation including SecretScanner, GitHubWriteGuard, RatingCapture, BuildSettings
 - **18 named agents** — Architect, Engineer, researchers, Pentester, and domain specialists
 - **Memory system** — Cross-project knowledge distillation, staging, curation

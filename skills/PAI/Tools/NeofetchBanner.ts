@@ -412,7 +412,7 @@ function getStats(): SystemStats {
     workItems: countWorkItems(),
     learnings: countLearnings(),
     userFiles: countUserFiles(),
-    model: "Opus 4.5",
+    model: "Opus 4.6",
   };
 }
 
@@ -654,7 +654,7 @@ function createNeofetchBanner(): string {
   lines.push("");
 
   // GitHub URL with targeting reticle
-  const githubUrl = `${f}${RETICLE.topLeft}${RESET} ${tl}github.com/danielmiessler/PAI${RESET} ${f}${RETICLE.topRight}${RESET}`;
+  const githubUrl = `${f}${RETICLE.topLeft}${RESET} ${tl}github.com/kai-cli/kai${RESET} ${f}${RETICLE.topRight}${RESET}`;
   lines.push(center(githubUrl, width));
 
   // ─────────────────────────────────────────────────────────────────

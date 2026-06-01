@@ -3,7 +3,7 @@
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 86,
+    "skills": 88,
     "hooks": 53,
     "agents": 20
   },
@@ -65,6 +65,7 @@
   "skillInventory": [
     "Agents",
     "Apify",
+    "AuditMemory",
     "BeCreative",
     "BrightData",
     "Browser",
@@ -93,6 +94,7 @@
     "Investigation/OSINT",
     "Investigation/PrivateInvestigator",
     "IterativeDepth",
+    "YourCompanyDev",
     "Media",
     "Media/Art",
     "Media/Remotion",

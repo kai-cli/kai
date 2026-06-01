@@ -2,7 +2,7 @@
 name: ProductStrategist
 description: Product strategy advisor for Engineering Manager. Helps with roadmap prioritization, feature trade-offs, competitive positioning, and product thinking for {PRINCIPAL.ORG} product group NPI programs.
 model: sonnet
-isolation: none
+isolation: worktree
 color: green
 persona:
   name: "Nina Vasquez"

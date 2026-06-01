@@ -1046,7 +1046,7 @@ command: |
 arguments:
   - name: board
     description: "Target board"
-    default: m62
+    default: board-a
   - name: branch
     description: "Git branch"
     required: true

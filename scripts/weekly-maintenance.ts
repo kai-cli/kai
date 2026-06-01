@@ -86,6 +86,7 @@ async function main() {
   const tasks: { name: string; cmd: string[]; cwd?: string }[] = [
     { name: 'tools-sync', cmd: ['bun', 'scripts/tools-sync.ts'] },
     { name: 'LearningPatternSynthesis', cmd: ['bun', 'PAI/Tools/LearningPatternSynthesis.ts'] },
+    { name: 'memory-audit', cmd: ['bun', 'scripts/audit-memory.ts'] },
     { name: 'Tests (critical)', cmd: ['bun', 'test', 'tests/SecurityValidator.test.ts', 'tests/PostCompactRecovery.test.ts', 'tests/GitHubWriteGuard.test.ts', 'tests/RiskClassifier.test.ts'] },
   ];
 

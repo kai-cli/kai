@@ -37,8 +37,8 @@ Match the user's question to wiki pages. Use these heuristics:
 | Building firmware | `build-system/overview.md` + specific phase pages |
 | Jenkins / CI | `jenkins/server.md`, `jenkins/build-dev-job.md` |
 | GitHub workflows | `github/actions-dispatch.md`, `github/release-workflow.md` |
-| A product (Pinnacle) | `products/{product}.md` |
-| A customer (CF, DU) | `customers/{customer}.md` |
+| A product | `products/{product}.md` |
+| A customer | `customers/{customer}.md` |
 | Release process | `processes/dev-to-release.md` |
 | Architecture patterns | `concepts/` folder pages |
 | "How does X connect to Y?" | `repos/overview.md` + both entity pages |

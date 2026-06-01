@@ -160,8 +160,147 @@ Timing: DEEP — comprehensive analysis.
 
 ---
 
+## Background Delegation (Agent View)
+
+**Claude Code's Agent View provides background session orchestration for long-running or independent work.**
+
+### Decision Matrix: Intra-Session vs Background
+
+| Factor | Intra-Session (Task tool) | Background (claude --bg) |
+|--------|--------------------------|--------------------------|
+| **Needs parent context** | ✅ Use Task tool | ❌ Context not shared |
+| **Fully self-contained** | ⚠️ Can use Task | ✅ Preferred (isolation) |
+| **Estimated duration** | < 10 minutes | > 10 minutes (avoids context limits) |
+| **Multiple independent streams** | ⚠️ Shared context window | ✅ Multiple --bg sessions (parallel) |
+| **Needs iterative user interaction** | ✅ User present in session | ❌ Background can't prompt user |
+| **Produces code changes in parallel** | ⚠️ Merge conflicts likely | ✅ Worktree isolation prevents conflicts |
+| **Requires specific tool access** | ✅ Inherits parent tools | ✅ Full tool access in background |
+| **User is blocked waiting** | ❌ Ties up foreground | ✅ Frees user for other work |
+
+**Rule of Thumb:**
+- **Short task, needs my context** → `Task()` tool (intra-session)
+- **Long task, self-contained** → `claude --bg` (background session)
+- **Multiple parallel tasks** → Multiple `claude --bg` sessions (worktree isolation)
+
+### Dispatch Patterns
+
+**From command line:**
+```bash
+# Simple background task
+claude --bg "fix the flaky test in auth.spec.ts"
+
+# Named agent for background work
+claude --agent Engineer --bg "implement the login form component"
+
+# Multiple parallel background sessions
+claude --agent QA --bg "review PR #123 for security issues"
+claude --agent Engineer --bg "add rate limiting to API endpoints"
+claude --agent DevOps --bg "optimize Docker build cache"
+```
+
+**From within a session:**
+```bash
+# Send current task to background (frees foreground)
+/bg
+
+# Or use Skill tool to dispatch from Algorithm
+Skill("Agents", "engineer --bg 'refactor auth middleware'")
+```
+
+**Background sessions automatically:**
+- Get isolated git worktrees (no merge conflicts)
+- Run in parallel (no context window sharing)
+- Auto-stop after ~1hr of inactivity
+- Survive parent session exit
+
+### Coordination Patterns
+
+**1. Via Commits + PR Comments (Recommended)**
+```bash
+# Background agent makes commits to feature branch
+# Parent session reviews via:
+git log feature/agent-work
+gh pr view 123 --comments
+```
+
+**2. Via Shared Task Files in Worktree**
+```bash
+# Parent writes task specification
+echo "Task: Implement feature X" > .agent-tasks/feature-x.md
+
+# Background agent reads, executes, updates status
+claude --bg "complete task in .agent-tasks/feature-x.md"
+
+# Parent polls for completion
+cat .agent-tasks/feature-x.md  # Check status section
+```
+
+**3. Via Peek/Attach for Status Checks**
+```bash
+# Check background agent status from TUI
+claude  # Open TUI, view agent sessions, peek output
+
+# Or attach to background session
+claude --attach <session-id>
+```
+
+**Anti-patterns:**
+- ❌ No shared in-memory state (sessions are isolated processes)
+- ❌ No callback/RPC from background to foreground (use file-based coordination)
+- ❌ Don't rely on background agents to report back synchronously (they may outlive parent)
+
+### Model Selection for Background Sessions
+
+Background sessions have different cost/capability tradeoffs than intra-session agents:
+
+| Background Task Type | Model | Why |
+|---------------------|-------|-----|
+| Long-running implementation (1+ hours) | `sonnet` | Good balance; Opus cost adds up over time |
+| Bulk data processing, file transformations | `haiku` | Simple repetitive work, large volume |
+| Complex refactoring or architecture changes | `opus` | Strategic decisions needed throughout |
+| Multiple parallel quick tasks | `haiku` | Launch 10+ sessions without cost explosion |
+
+**Examples:**
+```bash
+# Long implementation → Sonnet
+claude --model sonnet --bg "implement OAuth2 flow end-to-end"
+
+# Bulk processing → Haiku
+claude --model haiku --bg "convert all PNG screenshots to WebP"
+
+# Complex refactor → Opus
+claude --model opus --bg "refactor auth system to use new security framework"
+```
+
+### Supervisor & Lifecycle
+
+**Agent View supervisor manages background sessions:**
+- Monitors resource usage (CPU, memory)
+- Stops idle sessions after ~1hr (configurable)
+- Prevents runaway sessions from consuming credits
+- Logs all background agent activity
+
+**Manual lifecycle control:**
+```bash
+# List all sessions (foreground + background)
+claude --list
+
+# Stop a specific background session
+claude --stop <session-id>
+
+# Stop all idle background sessions
+claude --stop-idle
+```
+
+**Background agents should:**
+- Set clear completion criteria in their prompts
+- Exit cleanly when done (don't hang waiting for user input)
+- Commit work incrementally (survive unexpected stops)
+
+---
+
 **See Also:**
 - SKILL.md > Delegation (Quick Reference) - Condensed trigger table
 - Workflows/Delegation.md - Operational delegation procedures
-- Workflows/BackgroundDelegation.md - Background agent patterns
+- Agent View Documentation - Background session orchestration and worktree isolation
 - skills/Agents/SKILL.md - Custom agent creation system

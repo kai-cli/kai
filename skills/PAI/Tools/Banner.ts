@@ -116,7 +116,7 @@ function getStats(): SystemStats {
   let paiVersion = "3.0";
   let algorithmVersion = "0.2";
   let catchphrase = "{name} here, ready to go";
-  let repoUrl = "github.com/danielmiessler/PAI";
+  let repoUrl = "github.com/kai-cli/kai";
   try {
     const settings = JSON.parse(readFileSync(join(CLAUDE_DIR, "settings.json"), "utf-8"));
     name = settings.daidentity?.displayName || settings.daidentity?.name || "PAI";
@@ -190,7 +190,7 @@ function getStats(): SystemStats {
     learnings,
     userFiles,
     sessions,
-    model: "Opus 4.5",
+    model: "Opus 4.6",
     platform,
     arch,
     ccVersion,

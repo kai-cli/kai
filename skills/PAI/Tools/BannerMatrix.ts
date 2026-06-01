@@ -349,7 +349,7 @@ function getStats(): SystemStats {
     hooks: countHooks(),
     workItems: countWorkItems(),
     learnings: countLearnings(),
-    model: "Opus 4.5",
+    model: "Opus 4.6",
   };
 }
 
@@ -633,7 +633,7 @@ function createNormalBanner(stats: SystemStats): string {
   lines.push(`${dripCentered}${dripLine}`);
 
   // GitHub URL as terminal command
-  const urlLine = `${d}$ git clone ${RESET}${g}https://github.com/danielmiessler/PAI${RESET}`;
+  const urlLine = `${d}$ git clone ${RESET}${g}https://github.com/kai-cli/kai${RESET}`;
   const urlCentered = " ".repeat(Math.floor((width - 50) / 2));
   lines.push(rainOverlay(`${urlCentered}${urlLine}`.padEnd(width), 0.1));
 

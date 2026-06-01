@@ -143,5 +143,5 @@ async function main() {
 
 // Only run as standalone hook — not when imported by UpdateTabTitle/SessionAutoName
 if (import.meta.main) {
-  main();
+  main().catch(() => process.exit(1));
 }

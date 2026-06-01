@@ -121,6 +121,15 @@ interface WorkItem {
   stale: boolean;
 }
 
+interface AgentViewSession {
+  id: string;
+  state: string;
+  cwd: string;
+  agent?: string;
+  startedAt?: string;
+  label?: string;
+}
+
 // --- Process Manager ---
 interface RunningProcess {
   proc: Subprocess;
@@ -584,6 +593,15 @@ for (const scanDir of SCAN_DIRS) {
     if (existsSync(scanDir)) watch(scanDir, { recursive: true }, () => broadcastUpdate());
   } catch {}
 }
+// Watch Agent View roster for live session updates
+const ROSTER_PATH = join(HOME, ".claude", "daemon", "roster.json");
+try {
+  if (existsSync(ROSTER_PATH)) watch(ROSTER_PATH, () => broadcastUpdate());
+  else {
+    const daemonDir = join(HOME, ".claude", "daemon");
+    if (existsSync(daemonDir)) watch(daemonDir, () => broadcastUpdate());
+  }
+} catch {}
 
 // --- HTML / Static Files ---
 const HTML_PATH = join(SCRIPTS_DIR, "board.html");
@@ -692,6 +710,49 @@ Bun.serve({
     if (url.pathname === "/api/github" && method === "GET") {
       const items = await loadGitHubItems();
       return Response.json(items);
+    }
+
+    // --- API: Agent View Sessions ---
+    if (url.pathname === "/api/sessions" && method === "GET") {
+      const rosterPath = join(HOME, ".claude", "daemon", "roster.json");
+      const stateFilter = url.searchParams.get("state");
+      const cwdFilter = url.searchParams.get("cwd");
+
+      try {
+        if (!existsSync(rosterPath)) {
+          return Response.json([]);
+        }
+
+        const rosterContent = await readFile(rosterPath, "utf-8");
+        let sessions: AgentViewSession[] = JSON.parse(rosterContent);
+
+        // Apply filters
+        if (stateFilter) {
+          sessions = sessions.filter(s => s.state === stateFilter);
+        }
+        if (cwdFilter) {
+          sessions = sessions.filter(s => s.cwd === cwdFilter);
+        }
+
+        // Enrich with project names from library
+        const library = await getLibraryItems();
+        const enrichedSessions = sessions.map(session => {
+          const matchingProject = library.find(item => {
+            const itemPath = expandPath(item.path).replace(/\/$/, "");
+            const sessionCwd = session.cwd.replace(/\/$/, "");
+            return itemPath === sessionCwd;
+          });
+
+          return matchingProject
+            ? { ...session, projectName: matchingProject.name }
+            : session;
+        });
+
+        return Response.json(enrichedSessions);
+      } catch (err: any) {
+        console.warn("Failed to read roster.json:", err.message);
+        return Response.json([]);
+      }
     }
 
     // --- API: PRD Detail ---

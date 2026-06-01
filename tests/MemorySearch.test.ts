@@ -26,8 +26,8 @@ describe('MemorySearch', () => {
       expect(slugs).toContain('firmware');
     });
 
-    it.skipIf(!hasKnowledgeFiles)('finds results for known term "jnap"', () => {
-      const result = searchMemory('jnap');
+    it.skipIf(!hasKnowledgeFiles)('finds results for known term "api"', () => {
+      const result = searchMemory('api');
       expect(result.results.length).toBeGreaterThan(0);
     });
 

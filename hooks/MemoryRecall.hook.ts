@@ -48,7 +48,7 @@ function findProjectMemoryDir(): string | null {
   const projectsBase = join(process.env.HOME || '/tmp', '.claude', 'projects');
   if (!existsSync(projectsBase)) return null;
 
-  // Claude Code encodes paths: /Users/x/Projects/feed_bbf → -Users-x-Projects-feed-bbf
+  // Claude Code encodes paths: /Users/x/Projects/myrepo → -Users-x-Projects-myrepo
   // It replaces both / and _ with -
   const encoded = claudeProjectDir.replace(/[/_]/g, '-');
   const projectMemDir = join(projectsBase, encoded, 'memory');

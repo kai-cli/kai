@@ -7,7 +7,6 @@ description: >
   time horizon analysis, adversarial future test, stress test idea.
 implements: Science
 science_cycle_time: macro
-context: fork
 ---
 
 # World Threat Model Harness

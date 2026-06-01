@@ -23,9 +23,9 @@ interface WorkflowTemplate {
 const FIRMWARE_BUILD_TEMPLATE: WorkflowTemplate = {
   name: 'firmware-build',
   description: 'Build firmware for a specific target board',
-  command: 'cd ~/Projects/feed-bbf && make defconfig BOARD={{board}} && make -j$(nproc)',
+  command: 'cd ~/Projects/firmware && make defconfig BOARD={{board}} && make -j$(nproc)',
   arguments: [
-    { name: 'board', description: 'Target board', default: 'm62', options: ['m62', 'm80', 'm33'] },
+    { name: 'board', description: 'Target board', default: 'board-a', options: ['board-a', 'board-b', 'board-c'] },
   ],
   tags: ['firmware', 'build'],
 };
@@ -36,7 +36,7 @@ const JENKINS_TRIGGER_TEMPLATE: WorkflowTemplate = {
   command: 'bun ~/.claude/skills/Utilities/Tools/JenkinsTrigger.ts --branch {{branch}} --target {{target}}',
   arguments: [
     { name: 'branch', description: 'Git branch to build', required: true },
-    { name: 'target', description: 'Build target', default: 'm62-dev' },
+    { name: 'target', description: 'Build target', default: 'board-a-dev' },
   ],
   tags: ['jenkins', 'ci'],
 };
@@ -47,37 +47,37 @@ describe('WorkflowRun — substituteArgs', () => {
       const result = substituteArgs(
         'echo {{board}}',
         { ...FIRMWARE_BUILD_TEMPLATE, command: 'echo {{board}}' },
-        { board: 'm80' }
+        { board: 'board-b' }
       );
-      expect(result).toBe('echo m80');
+      expect(result).toBe('echo board-b');
     });
 
     test('substitutes multiple variables', () => {
       const result = substituteArgs(
         JENKINS_TRIGGER_TEMPLATE.command,
         JENKINS_TRIGGER_TEMPLATE,
-        { branch: 'feature/test', target: 'm80-dev' }
+        { branch: 'feature/test', target: 'board-b-dev' }
       );
       expect(result).toContain('--branch feature/test');
-      expect(result).toContain('--target m80-dev');
+      expect(result).toContain('--target board-b-dev');
     });
 
     test('uses default when argument not provided', () => {
       const result = substituteArgs(
         FIRMWARE_BUILD_TEMPLATE.command,
         FIRMWARE_BUILD_TEMPLATE,
-        {} // no board arg → should use default 'm62'
+        {} // no board arg → should use default 'board-a'
       );
-      expect(result).toContain('BOARD=m62');
+      expect(result).toContain('BOARD=board-a');
     });
 
     test('provided value overrides default', () => {
       const result = substituteArgs(
         FIRMWARE_BUILD_TEMPLATE.command,
         FIRMWARE_BUILD_TEMPLATE,
-        { board: 'm80' }
+        { board: 'board-b' }
       );
-      expect(result).toContain('BOARD=m80');
+      expect(result).toContain('BOARD=board-b');
     });
   });
 
@@ -98,10 +98,10 @@ describe('WorkflowRun — substituteArgs', () => {
         name: 'test',
         description: 'test',
         command: 'make -j$(nproc) BOARD={{board}}',
-        arguments: [{ name: 'board', default: 'm62' }],
+        arguments: [{ name: 'board', default: 'board-a' }],
       };
       const result = substituteArgs(template.command, template, {});
-      expect(result).toBe('make -j$(nproc) BOARD=m62');
+      expect(result).toBe('make -j$(nproc) BOARD=board-a');
     });
 
     test('${{ }} GitHub Actions syntax not confused with {{}}', () => {

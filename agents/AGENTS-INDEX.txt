@@ -1,0 +1,127 @@
+# Agent Routing Matrix
+
+Quick reference for selecting the right agent for your task.
+
+## Core Development Agents
+
+| Agent | Use When | Key Strengths |
+|-------|----------|---------------|
+| **Engineer** | Implementing features, fixing bugs, TDD work | Test-first development, Fortune 10 scale experience, micro-cycle iteration |
+| **Architect** | System design, architectural decisions, feature specs | PhD-level distributed systems, constitutional principles, strategic planning |
+| **Designer** | UX/UI design, design systems, user research | Design school training, pixel perfection, accessibility-first |
+| **QATester** | Validating functionality, browser-based testing, quality gates | Gate 4 enforcement, browser-automation exclusive, evidence-based validation |
+
+## Research Agents
+
+All research agents are called BY the Research skill workflows. Do not invoke directly.
+
+| Agent | Research Focus | Unique Capability |
+|-------|----------------|-------------------|
+| **ClaudeResearcher** | Academic research, strategic analysis | Claude WebSearch, multi-query decomposition, scholarly synthesis |
+| **PerplexityResearcher** | Investigative research, fact-checking | Perplexity API, triple-verification, citation-backed findings |
+| **GeminiResearcher** | Multi-perspective analysis, comprehensive coverage | Google Gemini, 3-10 query variations, scenario planning |
+| **GrokResearcher** | Social/political analysis, X (Twitter) sentiment | xAI Grok, contrarian fact-checking, real-time social data |
+| **CodexResearcher** | Technical deep-dives, code research | OpenAI Codex, multi-model consultation (O3/GPT-5-Codex/GPT-4), TypeScript-first |
+| **DeepSeekResearcher** | Cost-efficient technical research | DeepSeek API, technical depth, East Asian tech perspectives |
+| **MistralResearcher** | Systematic analysis, reasoning chains | Mistral Large, European/global perspectives, structured evidence |
+
+## Specialized Review Agents
+
+| Agent | Use When | Domain |
+|-------|----------|--------|
+| **ProductStrategist** | Roadmap prioritization, feature trade-offs | Product strategy for Engineering Manager role |
+| **TechnicalReviewer** | Architecture review, technical proposal evaluation | Finding risks, formulating review questions |
+| **StakeholderCommunicator** | Executive updates, cross-functional messaging | Leadership communications, risk framing |
+
+## Algorithm & Content Agents
+
+| Agent | Use When | Specialty |
+|-------|----------|-----------|
+| **Algorithm** | ISC creation, criteria evolution, verification | Formal methods, ISC expertise, phase guidance |
+| **Artist** | Visual content creation, image generation | Prompt engineering, model selection (Flux/Nano Banana/GPT-Image-1) |
+
+## Security & Automation Agents
+
+| Agent | Use When | Focus |
+|-------|----------|-------|
+| **Pentester** | Security testing, vulnerability assessment | Offensive security, ethical hacking, OWASP Top 10 |
+| **BrowserAgent** | Parallel browser automation, web scraping | Playwright CLI, isolated sessions, data extraction |
+| **UIReviewer** | User story validation, automated UI testing | Structured story execution, PASS/FAIL reporting |
+
+## Generalist Agent
+
+| Agent | Use When | Superpower |
+|-------|----------|------------|
+| **Intern** | Complex multi-faceted problems, high-agency tasks | 176 IQ, 5 PhDs, resourceful problem-solving, all tools available |
+
+## Selection Guidelines
+
+### Start with Intent
+
+**Building or fixing code?** → Engineer (with QATester for validation)
+
+**Designing architecture?** → Architect (use /plan mode for strategic decisions)
+
+**Need visual design?** → Designer (UI/UX expertise)
+
+**Research needed?** → Use the Research skill (it orchestrates research agents)
+
+**Security testing?** → Pentester (authorized testing only)
+
+**General problem-solving?** → Intern (high-agency generalist)
+
+### Agent Combinations
+
+**Full feature development:**
+1. Architect (design)
+2. Engineer (implement)
+3. Designer (review UX)
+4. QATester (validate)
+
+**PRD-driven work:**
+1. Architect (write spec)
+2. Algorithm (generate ISC)
+3. Engineer (execute)
+4. QATester (verify)
+
+**Product decisions:**
+1. ProductStrategist (recommend)
+2. TechnicalReviewer (evaluate)
+3. StakeholderCommunicator (communicate)
+
+## Agent Isolation
+
+| Isolation Mode | Agents | Behavior |
+|----------------|--------|----------|
+| **worktree** | Engineer, Architect | Isolated git worktree per session |
+| **none** | ProductStrategist, TechnicalReviewer, StakeholderCommunicator | Shared working directory |
+| **default** | All others | Standard isolation |
+
+## Important Notes
+
+- Research agents are NOT invoked directly — use `Skill("Research")` instead
+- Artist is called BY Media skill workflows — not directly
+- Pentester only for authorized defensive security tasks
+- BrowserAgent and UIReviewer designed for parallel execution
+- All agents follow PAI output format (structured with emoji sections)
+
+## Model Assignments
+
+- **Opus**: Algorithm, Architect, Artist, ClaudeResearcher, CodexResearcher, Designer, Engineer, GeminiResearcher, GrokResearcher, Intern, MistralResearcher, Pentester, PerplexityResearcher, QATester
+- **Sonnet**: BrowserAgent, ProductStrategist, StakeholderCommunicator, TechnicalReviewer, UIReviewer
+
+## Quick Reference by Task Type
+
+| Task Type | Primary Agent | Support Agents |
+|-----------|---------------|----------------|
+| Implement feature | Engineer | QATester |
+| Design system | Architect | Designer, Engineer |
+| Fix bug | Engineer | QATester |
+| Research topic | Research skill | (manages research agents) |
+| Review code | TechnicalReviewer | Engineer |
+| Test security | Pentester | — |
+| Create visuals | Artist (via Media skill) | — |
+| Product decision | ProductStrategist | TechnicalReviewer |
+| Complex investigation | Intern | (uses all available tools) |
+| Browser automation | BrowserAgent | — |
+| UI validation | UIReviewer | QATester |

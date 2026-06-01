@@ -5,6 +5,7 @@ import { KanbanFilterBar } from './features/kanban/KanbanFilterBar'
 import { ListView } from './features/list/ListView'
 import { BulkActionBar } from './features/BulkActionBar'
 import { SessionsList } from './components/sessions/SessionsList'
+import { AgentViewPanel } from './components/sessions/AgentViewPanel'
 import { GitHubPanel } from './components/github/GitHubPanel'
 import { LibraryPanel } from './components/library/LibraryPanel'
 import { CommandBar } from './components/command-bar/CommandBar'
@@ -55,7 +56,7 @@ export function App() {
         <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
           <div className="flex items-center gap-2">
             <Kanban size={20} weight="bold" className="text-primary" />
-            <h1 className="text-sm font-semibold">PAI Board</h1>
+            <h1 className="text-sm font-semibold">KAI Board</h1>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -79,6 +80,7 @@ export function App() {
           {/* Left sidebar */}
           {!sidebarCollapsed && (
             <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-r bg-muted/30">
+              <AgentViewPanel />
               <SessionsList />
               <GitHubPanel />
               <LibraryPanel />

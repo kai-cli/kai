@@ -1,12 +1,12 @@
+---
+name: PAI
+description: Personal AI Infrastructure core. The authoritative reference for how PAI works.
+---
 <!--
   🔨 GENERATED FILE - Do not edit directly
   Edit:   ~/.claude/skills/PAI/Components/
   Build:  bun ~/.claude/skills/PAI/Tools/RebuildPAI.ts
 -->
----
-name: PAI
-description: Personal AI Infrastructure core. The authoritative reference for how PAI works.
----
 
 # Intro to PAI
 
@@ -52,7 +52,7 @@ Core: transition from CURRENT STATE to IDEAL STATE using verifiable criteria (IS
 
 **Capability Consideration (MANDATORY):** During OBSERVE, evaluate ALL relevant capabilities (skills + platform) and select those that genuinely improve the outcome. Selecting zero is valid when direct tool use is optimal — but you must document why no capabilities were needed. Every selected capability MUST be invoked via real tool call (`Skill` tool for skills, `Task` tool for agents). Writing text that resembles a skill's output is NOT invocation. Selecting a capability and never calling it is dishonest and a **CRITICAL FAILURE** — but so is force-selecting capabilities that don't help. The goal is the best result, not the most tool calls.
 
-*Full capability selection guide with decision criteria: [CapabilitySelection.md](CapabilitySelection.md)*
+*Full capability selection guide with decision criteria: [CapabilitySelection.md](Algorithm/CapabilitySelection.md)*
 
 ### Time Budget per Phase
 
@@ -81,13 +81,13 @@ TIME CHECK at every phase — if elapsed >150% of budget, auto-compress.
 
 **What hooks do (read-only from PRD):** A PostToolUse hook (PRDSync.hook.ts) fires on Write/Edit of PRD.md and syncs frontmatter + criteria to `work.json` for the dashboard. **Hooks never write to PRD.md — they only read it.**
 
-**Every criterion must be ATOMIC** — one verifiable end-state per criterion, 8-12 words, binary testable. See [ISC-Methodology.md](ISC-Methodology.md).
+**Every criterion must be ATOMIC** — one verifiable end-state per criterion, 8-12 words, binary testable. See [ISC-Methodology.md](Algorithm/ISC-Methodology.md).
 
 **Anti-criteria** (ISC-A prefix): what must NOT happen.
 
 ### ISC Decomposition Methodology
 
-*Full decomposition guide: [ISC-Methodology.md](ISC-Methodology.md)*
+*Full decomposition guide: [ISC-Methodology.md](Algorithm/ISC-Methodology.md)*
 
 ### Execution of The Algorithm
 
@@ -228,7 +228,7 @@ OUTPUT:
 
 - CAPABILITY EVALUATION (CRITICAL, MANDATORY):
 
-Evaluate ALL relevant capabilities (PAI skills + platform capabilities) against the task requirements. Use the decision criteria in [CapabilitySelection.md](CapabilitySelection.md) to determine which capabilities genuinely improve the outcome. Select those that add value. Selecting zero is valid — but document why.
+Evaluate ALL relevant capabilities (PAI skills + platform capabilities) against the task requirements. Use the decision criteria in [CapabilitySelection.md](Algorithm/CapabilitySelection.md) to determine which capabilities genuinely improve the outcome. Select those that add value. Selecting zero is valid — but document why.
 
 OUTPUT:
 
@@ -239,7 +239,7 @@ OUTPUT:
 
 - If any CAPABILITIES were selected for use in the OBSERVE phase, execute them now and update the ISC criteria in the PRD with the results
 
-*Full examples: [Examples.md](Examples.md)*
+*Full examples: [Examples.md](Algorithm/Examples.md)*
 
 ━━━ 🧠 THINK ━━━ 2/7
 
@@ -525,8 +525,8 @@ Critical PAI documentation organized by domain. Load on-demand based on context.
 | **Memory System** | `SYSTEM/MEMORYSYSTEM.md` | WORK, STATE, LEARNING directories |
 | **Skill System** | `SYSTEM/SKILLSYSTEM.md` | How skills work, structure, triggers |
 | **Hook System** | `SYSTEM/THEHOOKSYSTEM.md` | Event hooks, patterns, implementation |
-| **Agent System** | `SYSTEM/PAIAGENTSYSTEM.md` | Agent types, spawning, delegation |
-| **Delegation** | `SYSTEM/THEDELEGATIONSYSTEM.md` | Background work, parallelization |
+| **Agent System** | `SYSTEM/PAIAGENTSYSTEM.md` | Agent types, Agent View, spawning, delegation |
+| **Delegation** | `SYSTEM/THEDELEGATIONSYSTEM.md` | Background sessions, parallelization, Agent View dispatch |
 | **Browser Automation** | `SYSTEM/BROWSERAUTOMATION.md` | Playwright, screenshots, testing |
 | **CLI Architecture** | `SYSTEM/CLIFIRSTARCHITECTURE.md` | Command-line first principles |
 | **Notification System** | `SYSTEM/THENOTIFICATIONSYSTEM.md` | Voice, visual notifications |

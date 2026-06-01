@@ -1,5 +1,5 @@
 ---
-name: Memory Search
+name: Search
 description: On-demand retrieval from KNOWLEDGE and CAPABILITIES memory files via ripgrep search with ranked results.
 triggers:
   - search memory

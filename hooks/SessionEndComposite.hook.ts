@@ -212,7 +212,7 @@ async function main() {
 }
 
 if (import.meta.main) {
-  main();
+  main().catch(() => process.exit(1));
 }
 
 // Export for testing

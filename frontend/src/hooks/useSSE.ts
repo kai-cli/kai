@@ -23,6 +23,7 @@ export function useSSE() {
           queryClient.invalidateQueries({ queryKey: ['work'] })
           queryClient.invalidateQueries({ queryKey: ['github'] })
           queryClient.invalidateQueries({ queryKey: ['library'] })
+          queryClient.invalidateQueries({ queryKey: ['agent-view-sessions'] })
         }
       }
 

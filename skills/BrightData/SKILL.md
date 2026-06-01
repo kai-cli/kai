@@ -1,7 +1,6 @@
 ---
 name: BrightData
 description: Progressive URL scraping. USE WHEN Bright Data, scrape URL, web scraping tiers. SkillSearch('brightdata') for docs.
-context: fork
 ---
 
 ## Customization

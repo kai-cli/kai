@@ -66,6 +66,16 @@ export interface GitHubItem {
   labels: string[]
 }
 
+export interface AgentViewSession {
+  id: string
+  state: 'working' | 'needs-input' | 'idle' | 'completed' | 'failed' | 'stopped'
+  cwd: string
+  agent?: string
+  startedAt?: string
+  label?: string
+  projectName?: string
+}
+
 export interface LibraryItem {
   name: string
   path: string

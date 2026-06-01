@@ -1,4 +1,4 @@
-import type { WorkResponse, LibraryItem, GitHubItem } from '@/types'
+import type { WorkResponse, LibraryItem, GitHubItem, AgentViewSession } from '@/types'
 
 const BASE = '/api'
 
@@ -17,6 +17,7 @@ export const api = {
   getWork: () => request<WorkResponse>('/work'),
   getLibrary: () => request<LibraryItem[]>('/library'),
   getGitHub: () => request<GitHubItem[]>('/github'),
+  getAgentViewSessions: () => request<AgentViewSession[]>('/sessions'),
 
   updatePhase: (slug: string, phase: string) =>
     request<{ ok: boolean }>(`/task/${encodeURIComponent(slug)}/phase`, {
