@@ -192,8 +192,8 @@ function scoreMatch(entry: MemoryEntry, promptKeywords: string[]): number {
 
 /**
  * Look up cross-project keyword index to find related memories in OTHER projects.
- * Returns pointer lines (not full content) for relevant cross-project memories.
- * Only returns projects different from the current one.
+ * For high-confidence matches (3+ keywords), injects actual memory content.
+ * For lower matches (2 keywords), returns pointer lines.
  */
 function lookupCrossProject(promptKeywords: string[], currentMemDir: string): string[] {
   const indexPath = join(process.env.HOME || '/tmp', '.claude', 'MEMORY', 'STATE', 'cross-project-index.json');
@@ -208,11 +208,9 @@ function lookupCrossProject(promptKeywords: string[], currentMemDir: string): st
 
   if (!indexData.index) return [];
 
-  // Determine current project slug to exclude it from results
   const currentSlug = basename(join(currentMemDir, '..'));
   const currentProjectName = currentSlug.split('-Projects-')[1] || currentSlug;
 
-  // Collect hits: project → keywords that matched
   const projectHits: Record<string, Set<string>> = {};
 
   for (const kw of promptKeywords) {
@@ -226,7 +224,6 @@ function lookupCrossProject(promptKeywords: string[], currentMemDir: string): st
     }
   }
 
-  // Only surface projects with 2+ keyword hits (reduces noise)
   const relevant = Object.entries(projectHits)
     .filter(([, hits]) => hits.size >= 2)
     .sort((a, b) => b[1].size - a[1].size)
@@ -234,10 +231,79 @@ function lookupCrossProject(promptKeywords: string[], currentMemDir: string): st
 
   if (relevant.length === 0) return [];
 
-  return relevant.map(([proj, hits]) => {
+  const results: string[] = [];
+  const projectsBase = join(process.env.HOME || '/tmp', '.claude', 'projects');
+
+  for (const [proj, hits] of relevant) {
     const kwList = [...hits].slice(0, 4).join(', ');
-    return `• **${proj}** project has related memories (keywords: ${kwList})`;
-  });
+
+    // High-confidence match: inject actual memory content
+    if (hits.size >= 3) {
+      const content = findAndReadBestMatch(proj, promptKeywords, projectsBase);
+      if (content) {
+        results.push(`• **${proj}** (${hits.size} keyword hits: ${kwList}):\n${content}`);
+        continue;
+      }
+    }
+
+    // Lower confidence: pointer only
+    results.push(`• **${proj}** project has related memories (keywords: ${kwList})`);
+  }
+
+  return results;
+}
+
+/**
+ * Find the best-matching memory file in a cross-project and return its body (capped).
+ */
+function findAndReadBestMatch(projectSlug: string, promptKeywords: string[], projectsBase: string): string | null {
+  // Find the project directory
+  let projMemDir: string | null = null;
+  try {
+    const dirs = readdirSync(projectsBase, { withFileTypes: true }).filter(d => d.isDirectory());
+    for (const dir of dirs) {
+      if (dir.name.endsWith(projectSlug) || dir.name.includes(`-Projects-${projectSlug}`)) {
+        const candidate = join(projectsBase, dir.name, 'memory');
+        if (existsSync(join(candidate, 'MEMORY.md'))) {
+          projMemDir = candidate;
+          break;
+        }
+      }
+    }
+  } catch { return null; }
+
+  if (!projMemDir) return null;
+
+  // Parse that project's MEMORY.md and find best match by keyword overlap
+  try {
+    const indexContent = readFileSync(join(projMemDir, 'MEMORY.md'), 'utf-8');
+    let bestFile: string | null = null;
+    let bestHits = 0;
+
+    for (const line of indexContent.split('\n')) {
+      const match = line.match(/^-\s+\[(.+?)\]\((.+?)\)\s*[-—–]\s*(.+)/);
+      if (!match) continue;
+      const text = `${match[1]} ${match[3]}`.toLowerCase();
+      const hits = promptKeywords.filter(kw => text.includes(kw)).length;
+      if (hits > bestHits) {
+        bestHits = hits;
+        bestFile = match[2];
+      }
+    }
+
+    if (!bestFile || bestHits < 2) return null;
+
+    const filePath = join(projMemDir, bestFile);
+    if (!existsSync(filePath)) return null;
+
+    const raw = readFileSync(filePath, 'utf-8');
+    // Strip frontmatter
+    const secondDash = raw.indexOf('---', 4);
+    const body = secondDash > 0 ? raw.substring(secondDash + 4).trim() : raw.trim();
+
+    // Cap at 1000 chars to control context budget
+    return body.length > 1000 ? body.substring(0, 1000) + '…' : body;
+  } catch { return null; }
 }
 
 /**

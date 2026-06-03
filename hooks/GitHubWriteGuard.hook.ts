@@ -111,8 +111,19 @@ function isGitHubWriteCommand(command: string): { write: boolean; description: s
   return { write: false, description: '' };
 }
 
+function normalizeForHash(command: string): string {
+  // Strip quoted content so body/message changes don't invalidate the approval.
+  // The guard protects WHICH operation runs (create vs merge, which repo/branch),
+  // not the cosmetic content (PR body, commit message).
+  return command
+    .replace(/<<-?\s*['"]?(\w+)['"]?\s*\n[\s\S]*?\n\1\b/g, '') // heredocs
+    .replace(/"[^"]*"/g, '""')   // double-quoted strings
+    .replace(/'[^']*'/g, "''")   // single-quoted strings
+    .trim();
+}
+
 function commandHash(command: string): string {
-  return createHash('sha256').update(command.trim()).digest('hex').slice(0, 12);
+  return createHash('sha256').update(normalizeForHash(command)).digest('hex').slice(0, 12);
 }
 
 function checkApprovalToken(command: string): boolean {

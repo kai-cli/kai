@@ -811,7 +811,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete (v7.0.0)');
+    console.error('✅ KAI session initialization complete (v7.1.0)');
     process.exit(0);
   } catch (error) {
     flushTty();

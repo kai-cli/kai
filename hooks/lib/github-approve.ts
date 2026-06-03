@@ -60,8 +60,16 @@ function validateResponse(response: string | undefined): string {
   return trimmed;
 }
 
+function normalizeForHash(command: string): string {
+  return command
+    .replace(/<<-?\s*['"]?(\w+)['"]?\s*\n[\s\S]*?\n\1\b/g, '')
+    .replace(/"[^"]*"/g, '""')
+    .replace(/'[^']*'/g, "''")
+    .trim();
+}
+
 function createToken(command: string, userResponse: string, ttl: number): string {
-  const hash = createHash('sha256').update(command.trim()).digest('hex').slice(0, 12);
+  const hash = createHash('sha256').update(normalizeForHash(command)).digest('hex').slice(0, 12);
   const tokenPath = join(APPROVALS_DIR, `${hash}.json`);
 
   writeFileSync(tokenPath, JSON.stringify({

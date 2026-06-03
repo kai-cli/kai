@@ -1,12 +1,12 @@
 ---
 name: Research
-description: "Firmware-context research — extends system Research with build system and Jenkins knowledge. USE WHEN research in firmware context, OpenWrt, build system questions, Jenkins CI."
+description: "Firmware-context research — extends system Research with build system and Jenkins knowledge. USE WHEN research in firmware/feed-bbf context, OpenWrt, build system questions, Jenkins CI."
 specializes: Research
 overrides:
   - StandardResearch
 extends:
   - FirmwareBuildSearch
-use_when: "Research in firmware context. Adds build system and Jenkins context. Overrides StandardResearch with firmware-specific agent configuration."
+use_when: "Research in firmware/feed-bbf context. Adds build system and Jenkins context. Overrides StandardResearch with firmware-specific agent configuration."
 ---
 
 # Research (Firmware Specialization)

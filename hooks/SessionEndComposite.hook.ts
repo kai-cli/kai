@@ -152,6 +152,14 @@ async function main() {
       );
     }
 
+    // Regenerate cross-project memory index (fast, no LLM, no stdin needed)
+    const indexScript = join(paiPath('PAI', 'Tools'), 'CrossProjectIndex.ts');
+    if (existsSync(indexScript)) {
+      const cp = spawn('bun', [indexScript], { stdio: 'ignore', detached: true });
+      cp.unref();
+      console.error('[SessionEndComposite] CrossProjectIndex regeneration spawned');
+    }
+
     // Build array of hooks to run
     const hooksToRun: string[] = [];
 

@@ -19,6 +19,8 @@ Personal overrides in `USER/AISTEERINGRULES.md`. Full examples in `AISTEERINGRUL
 
 **Read before modifying.** Understand existing code, imports, and patterns first.
 
+**When a hook blocks, read its source (CRITICAL).** If a PreToolUse hook blocks a command, read the `.hook.ts` source to understand the mechanism before retrying. Never retry a blocked command with variations — diagnose first, act correctly once.
+
 **One change when debugging.** Isolate, verify, proceed.
 
 **Check git remote before push.** Run `git remote -v` to verify correct repo.

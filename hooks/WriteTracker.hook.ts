@@ -105,6 +105,14 @@ async function main() {
     const filePath = input.tool_input?.file_path;
     if (!filePath) process.exit(0);
 
+    // Skip test/generated files — reverts of these produce false instincts
+    if (/\.(test|spec)\.[tj]sx?$/.test(filePath) ||
+        /\/tests?\//.test(filePath) ||
+        /tsbuildinfo$/.test(filePath) ||
+        /node_modules\//.test(filePath)) {
+      process.exit(0);
+    }
+
     const content = getWrittenContent(input.tool_input);
     if (!content) process.exit(0);
 

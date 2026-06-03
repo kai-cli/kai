@@ -30,7 +30,7 @@ Likely cause: Claude Code has an internal tool registration limit or silent fail
 MCP servers can be configured in THREE different places, each with different discovery rules:
 
 1. **`~/.claude/settings.json` → `mcpServers` key** — Global user-level. Currently EMPTY (no mcpServers key exists).
-2. **`.mcp.json` in project root** — Picked up when `enableAllProjectMcpServers: true`. The `my-project` project has NO `.mcp.json`. The `yourcompany-mcp` project has one but it's empty (`{}`).
+2. **`.mcp.json` in project root** — Picked up when `enableAllProjectMcpServers: true`. The `feed_bbf` project has NO `.mcp.json`. The `yourcompany-mcp` project has one but it's empty (`{}`).
 3. **External plugins** (`~/.claude-pre-symlink/plugins/marketplaces/...`) — How github and playwright actually load. Hidden directory structure.
 
 **The actual config that works** lives in `yourcompany-mcp/config/settings-snippet.json` — a reference file that must be manually installed somewhere. It's never been installed into `settings.json`. The servers somehow load anyway (likely from a prior `claude mcp add` invocation that stores config in a hidden DB).

@@ -100,7 +100,7 @@ overrides:                           # Parent workflows replaced by this skill's
   - StandardResearch
 extends:                             # New workflows added (not in parent)
   - FirmwareBuildSearch
-use_when: "Research in firmware context."
+use_when: "Research in firmware/feed-bbf context."
 ---
 ```
 
