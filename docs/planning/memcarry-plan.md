@@ -1,6 +1,6 @@
 # Memcarry — Plan & PAI Integration Strategy
 
-> **Home:** pai-config `docs/planning/` (PRIVATE — not synced to KAI, so this may reference real
+> **Home:** kai `docs/planning/` (PRIVATE — not synced to KAI, so this may reference real
 > workflow freely). Canonical forward plan. Mirrors `~/Projects/NewTool/ROADMAP.md` (dev copy).
 > **Status:** MVP live in PAI (committed + pushed). Signal-gathering period in progress.
 
@@ -8,7 +8,7 @@
 
 ## 0. The decision on the table: standalone vs. fully integrated into PAI
 
-We built Memcarry **standalone** (own repo, vendored into pai-config) for two good reasons:
+We built Memcarry **standalone** (own repo, vendored into kai) for two good reasons:
 portability ("beside any AI") and the safety rule (don't touch the 269-file store during the trial).
 But it is now **intrinsically PAI-linked**: it runs as PAI hooks, and every roadmap integration
 (reads `ratings.jsonl`, PRDs, the jina embedding index, SessionEndComposite) ties it tighter. The
