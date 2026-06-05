@@ -132,9 +132,12 @@ if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
   fi
 fi
 
-# ── 4. Quick release verification (kai only — pai-config has PII by design) ──
-REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
-if [[ "$REMOTE_URL" == *"kai-cli/kai"* ]]; then
+# ── 4. Quick release verification (only if the script is present) ──
+# verify-release.sh is pai-config-only (its PII patterns ARE PII) and is excluded from the KAI
+# sync by design — so on the KAI fork it is legitimately absent. Skip gracefully when missing
+# rather than hard-failing (the PII gate at check 0 is the KAI-side safety net). When present
+# (pai-config dev tree), run it as before.
+if [[ -f "$REPO_ROOT/scripts/verify-release.sh" ]]; then
   echo ""
   echo "Running quick verification..."
   if ! bash "$REPO_ROOT/scripts/verify-release.sh" --quick 2>&1; then
@@ -146,7 +149,7 @@ if [[ "$REMOTE_URL" == *"kai-cli/kai"* ]]; then
   fi
 else
   echo ""
-  echo "Skipping verify-release.sh (not kai repo)"
+  echo "Skipping verify-release.sh (not present — pai-config-only, excluded from this fork)"
 fi
 
 echo ""
