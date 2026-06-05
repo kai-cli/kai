@@ -13,7 +13,7 @@ KAI diverges with production hardening, multi-model debate/research, self-learni
 | **Skills** | 63 (12 categories) | <!-- KAI:counts:skills:begin -->87<!-- KAI:counts:skills:end --> (streamlined, no dead skills) |
 | **Hooks** | 21 | <!-- KAI:counts:hooks:begin -->56<!-- KAI:counts:hooks:end --> (all through stderr wrapper) |
 | **Agents** | ~6 generic | <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> specialized (named personas) |
-| **Algorithm** | v3.5.0 | <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end --> |
+| **Algorithm** | v3.5.0 | <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end --> |
 | **Context footprint** | ~19% at startup | Optimized with lazy loading |
 | **Installer** | Drop-in `.claude/` directory | Interactive setup wizard with symlink |
 | **Config management** | Single `settings.json` | 7 domain config files, auto-merged |
@@ -82,7 +82,7 @@ All <!-- KAI:counts:hooks:begin -->56<!-- KAI:counts:hooks:end --> hooks now go 
   - `PromptAnalysis` — batched inference for session naming + tab titles
   - `PreCompact` — preserves critical context before compaction
 
-### 5. Algorithm <!-- KAI:algorithm-version:begin -->v3.13.0<!-- KAI:algorithm-version:end -->
+### 5. Algorithm <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end -->
 
 Upgraded from v3.5.0 with:
 

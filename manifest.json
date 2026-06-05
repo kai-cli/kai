@@ -3,7 +3,7 @@
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 89,
+    "skills": 87,
     "hooks": 56,
     "agents": 20
   },
@@ -98,7 +98,6 @@
     "Investigation/OSINT",
     "Investigation/PrivateInvestigator",
     "IterativeDepth",
-    "YourCompanyDev",
     "Media",
     "Media/Art",
     "Media/Remotion",
@@ -107,7 +106,6 @@
     "PAI",
     "PAI/End",
     "PAI/Search",
-    "KAIUpgrade",
     "Parser",
     "PrivateInvestigator",
     "PromptInjection",
