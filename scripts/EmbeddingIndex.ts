@@ -17,7 +17,7 @@
  *   - All files in ~/Projects/Knowledge/ (if exists)
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { createHash } from 'crypto';
 
@@ -176,7 +176,19 @@ async function buildIndex(incremental: boolean): Promise<void> {
     }
   }
 
-  const chunksToWrite: EmbeddingChunk[] = [];
+  // STREAM chunks to disk incrementally (W1/C16 fix): the old code buffered every chunk
+  // (each with a full embedding vector) in `chunksToWrite`, then did
+  // `.map(JSON.stringify).join('\n')` — building a second giant string on top of the array,
+  // which OOM'd on ~170 files. We now append each chunk line as it's produced (one vector in
+  // memory at a time) and only keep a count.
+  let chunkCount = 0;
+  const writeChunk = (c: EmbeddingChunk) => {
+    appendFileSync(indexPath(), JSON.stringify(c) + '\n');
+    chunkCount++;
+  };
+
+  // Truncate/initialize the index file before streaming.
+  writeFileSync(indexPath(), '');
 
   for (const filePath of paths) {
     try {
@@ -187,9 +199,10 @@ async function buildIndex(incremental: boolean): Promise<void> {
 
       const existing = manifest.get(filePath);
       if (incremental && existing && existing.mtime === mtime && existing.hash === hash) {
-        // Keep existing chunks for this file
-        const fileChunks = existingChunks.filter(c => c.path === filePath);
-        chunksToWrite.push(...fileChunks);
+        // Keep existing chunks for this file (re-stream them, don't buffer all)
+        for (const c of existingChunks) {
+          if (c.path === filePath) writeChunk(c);
+        }
         newManifest.push({ path: filePath, mtime, hash });
         skipped++;
         continue;
@@ -199,9 +212,12 @@ async function buildIndex(incremental: boolean): Promise<void> {
       const textChunks = chunkText(content, filePath);
       for (const { text, section } of textChunks) {
         if (text.length < 50) continue;
-        const output = await (embedder as any)(text);
+        // pooling:'mean' + normalize:true → ONE 512-d unit vector per text.
+        // Without pooling, feature-extraction returns a [tokens×512] matrix (the W1/C16 bug
+        // that produced a 5GB index and made cosine comparisons meaningless).
+        const output = await (embedder as any)(text, { pooling: 'mean', normalize: true });
         const embedding = Array.from(output.data as Float32Array);
-        chunksToWrite.push({ path: filePath, text, embedding, section });
+        writeChunk({ path: filePath, text, embedding, section });
       }
 
       newManifest.push({ path: filePath, mtime, hash });
@@ -214,10 +230,9 @@ async function buildIndex(incremental: boolean): Promise<void> {
     }
   }
 
-  writeFileSync(indexPath(), chunksToWrite.map(c => JSON.stringify(c)).join('\n') + '\n');
   saveManifest(newManifest);
 
-  console.error(`[EmbeddingIndex] Done: ${chunksToWrite.length} chunks from ${processed} files (${skipped} unchanged)`);
+  console.error(`[EmbeddingIndex] Done: ${chunkCount} chunks from ${processed} files (${skipped} unchanged)`);
 }
 
 function showStats(): void {

@@ -48,7 +48,7 @@ function flushTty(): void {
 import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
-import { loadLearningDigest, loadWisdomFrames, loadFailurePatterns, loadSignalTrends } from './lib/learning-readback';
+import { loadLearningDigest, loadWisdomFrames, loadFailurePatterns, loadSignalTrends, loadSynthesisInsights } from './lib/learning-readback';
 import { loadPersonalProjects } from './lib/config-loader';
 import { loadKnowledgeContext } from './lib/knowledge-readback';
 import { alreadyRanForSession, markRanForSession } from './lib/once-per-session';
@@ -601,12 +601,14 @@ async function main() {
       const wisdomFrames = loadWisdomFrames(paiDir);
       const failurePatterns = loadFailurePatterns(paiDir);
       const signalTrends = loadSignalTrends(paiDir);
+      const synthesisInsights = loadSynthesisInsights(paiDir);
 
       const learningParts: string[] = [];
       if (signalTrends) learningParts.push(signalTrends);
       if (wisdomFrames) learningParts.push(wisdomFrames);
       if (learningDigest) learningParts.push(learningDigest);
       if (failurePatterns) learningParts.push(failurePatterns);
+      if (synthesisInsights) learningParts.push(synthesisInsights);
 
       learningContext = learningParts.length > 0
         ? '\n## Learning Context (auto-loaded)\n\n' + learningParts.join('\n\n')

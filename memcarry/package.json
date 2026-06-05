@@ -1,0 +1,24 @@
+{
+  "name": "cairnix-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "comment": "NAME PLACEHOLDER: scope @mem / binary `mem` are placeholders. Final name pending (3rd batch). Rename: grep -rl '@mem/' and the bin name.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "memcarry": "bun run packages/cli/src/index.ts",
+    "mcp": "bun run packages/mcp/src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "bun-types": "^1.3.14",
+    "typescript": "^6.0.3"
+  }
+}

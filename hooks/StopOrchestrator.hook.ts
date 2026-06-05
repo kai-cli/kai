@@ -20,8 +20,9 @@
  * - Non-blocking, typical execution: <100ms
  */
 
-import { parseTranscript, extractCompletionPlain, extractStructuredSections } from '../skills/PAI/Tools/TranscriptParser';
-import type { ParsedTranscript } from '../skills/PAI/Tools/TranscriptParser';
+import { extractCompletionPlain, extractStructuredSections } from './lib/transcript-parser';
+import type { ParsedTranscript } from './lib/transcript-parser';
+import { getCachedTranscript } from './lib/transcript-cache';
 import { handleTabState } from './handlers/TabState';
 import { handleRebuildSkill } from './handlers/RebuildSkill';
 import { handleAlgorithmEnrichment } from './handlers/AlgorithmEnrichment';
@@ -84,7 +85,7 @@ async function main() {
       raw: '',
       lastMessage: text,
       currentResponseText: text,
-      voiceCompletion: '', // Deprecated — kept for ParsedTranscript type compatibility
+      completionSummary: '', // Deprecated — kept for ParsedTranscript type compatibility
       plainCompletion: extractCompletionPlain(text),
       structured: extractStructuredSections(text),
       responseState: 'completed', // AskUserQuestion state handled by SetQuestionTab PreToolUse hook
@@ -94,7 +95,7 @@ async function main() {
     // Wait for transcript to be fully written to disk
     await new Promise(resolve => setTimeout(resolve, 150));
     // SINGLE READ, SINGLE PARSE
-    parsed = parseTranscript(hookInput.transcript_path);
+    parsed = getCachedTranscript(hookInput.transcript_path);
     console.error(`[StopOrchestrator] Slow path (transcript parse): ${parsed.plainCompletion.slice(0, 50)}...`);
   }
 

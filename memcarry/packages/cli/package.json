@@ -1,0 +1,9 @@
+{
+  "name": "@memcarry/cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": { "memcarry": "./src/index.ts" },
+  "scripts": { "test": "bun test" },
+  "dependencies": { "@memcarry/lib": "workspace:*" }
+}

@@ -33,7 +33,24 @@ import { paiPath } from './lib/paths';
 
 const TRIVIAL_MESSAGE_THRESHOLD = 6;
 const TRIVIAL_TOKEN_THRESHOLD = 2000;
-const HOOKS_DIR = paiPath('hooks');
+const RUN_HOOK_SH = paiPath('hooks', 'lib', 'run-hook.sh');
+
+/**
+ * W4: read the composite feature flag from config/settings.json (PAI flags file,
+ * same one W2/W3 use — NOT the generated root settings.json).
+ * sessionEnd.useComposite default true. When false, the trivial-session gate is
+ * disabled so ALL hooks run unconditionally (== pre-W4 behavior).
+ */
+function isCompositeGateEnabled(): boolean {
+  try {
+    const path = paiPath('config', 'settings.json');
+    if (!existsSync(path)) return true;
+    const cfg = JSON.parse(readFileSync(path, 'utf-8'));
+    return cfg?.sessionEnd?.useComposite !== false;
+  } catch {
+    return true;
+  }
+}
 
 interface SessionMetrics {
   messageCount: number;
@@ -86,6 +103,32 @@ function isTrivialSession(metrics: SessionMetrics): boolean {
          metrics.estimatedTokens < TRIVIAL_TOKEN_THRESHOLD;
 }
 
+/** Always-run SessionEnd hooks (fast, no LLM inference). MemCapture included (W4). */
+export const ALWAYS_RUN_HOOKS = [
+  'SessionCleanup',
+  'UpdateCounts',
+  'MemoryTimeline',
+  'MemCapture',
+  'IntegrityCheck',
+] as const;
+
+/** Inference hooks — skipped on trivial sessions (LLM cost). */
+export const INFERENCE_HOOKS = [
+  'InsightExtractor',
+  'KnowledgeSync',
+  'WorkCompletionLearning',
+  'SessionSummary',
+  'RelationshipMemory',
+] as const;
+
+/**
+ * Pure hook-set selection (no I/O) — exported for deterministic unit testing.
+ * trivial sessions run only the always-run set; substantial/feedback run all.
+ */
+export function selectSessionEndHooks(trivial: boolean): string[] {
+  return trivial ? [...ALWAYS_RUN_HOOKS] : [...ALWAYS_RUN_HOOKS, ...INFERENCE_HOOKS];
+}
+
 /**
  * Run a hook as a subprocess with sentinel tracking
  */
@@ -97,8 +140,9 @@ function runHook(
   return new Promise((resolve) => {
     markStarted(hookName, sessionId);
 
-    const hookPath = join(HOOKS_DIR, `${hookName}.hook.ts`);
-    const hookProcess = spawn('bun', [hookPath], {
+    // W4: spawn through run-hook.sh (by hook NAME) to preserve per-hook timeout
+    // enforcement (KnowledgeSync 180s, etc.) — bare `bun` lost that protection.
+    const hookProcess = spawn(RUN_HOOK_SH, [`${hookName}.hook.ts`], {
       stdio: ['pipe', 'inherit', 'inherit'],
       env: { ...process.env },
     });
@@ -138,9 +182,15 @@ async function main() {
     const { session_id, transcript_path } = input;
     console.error(`[SessionEndComposite] Starting for session ${session_id}`);
 
-    // Analyze transcript to determine if we should gate inference hooks
+    // Analyze transcript to determine if we should gate inference hooks.
+    // W4: the trivial-session gate is itself flag-gated. With the flag OFF, trivial
+    // is forced false → every hook runs unconditionally (matches pre-W4 behavior).
     const metrics = analyzeTranscript(transcript_path || '');
-    const trivial = isTrivialSession(metrics);
+    const gateEnabled = isCompositeGateEnabled();
+    const trivial = gateEnabled ? isTrivialSession(metrics) : false;
+    if (!gateEnabled) {
+      console.error('[SessionEndComposite] Trivial-gate disabled (sessionEnd.useComposite=false) — running all hooks');
+    }
 
     if (trivial) {
       console.error(
@@ -160,27 +210,11 @@ async function main() {
       console.error('[SessionEndComposite] CrossProjectIndex regeneration spawned');
     }
 
-    // Build array of hooks to run
-    const hooksToRun: string[] = [];
-
-    // Always run these (simple, fast hooks)
-    hooksToRun.push(
-      'SessionCleanup',
-      'UpdateCounts',
-      'MemoryTimeline',
-      'IntegrityCheck'
-    );
-
-    // Conditionally run inference hooks
-    if (!trivial) {
-      hooksToRun.push(
-        'InsightExtractor',
-        'KnowledgeSync',
-        'WorkCompletionLearning',
-        'SessionSummary',
-        'RelationshipMemory'
-      );
-    }
+    // Build array of hooks to run (pure selection — see selectSessionEndHooks).
+    // W4: MemCapture is in ALWAYS_RUN_HOOKS (Memcarry resume-state, F1-gated/mechanical) —
+    // it was missing from the composite but present in the live wiring; omitting it would
+    // silently stop Memcarry.
+    const hooksToRun = selectSessionEndHooks(trivial);
 
     console.error(`[SessionEndComposite] Running ${hooksToRun.length} hooks in parallel`);
 

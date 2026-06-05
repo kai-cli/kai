@@ -24,6 +24,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { reconcile } from './reconcile-wiring';
 
 const RED = '\x1b[0;31m';
 const GREEN = '\x1b[0;32m';
@@ -237,6 +238,18 @@ function main() {
   info('Scanning tracked files');
   const trackedFiles = getTrackedFiles(PAI_DIR);
   pass(`Found ${trackedFiles.length} tracked files`);
+
+  // Step 2.5: Hook wiring reconciliation (SF-10 drift guard) — runs BEFORE the PII scan so
+  // wiring drift is always caught locally even when sync-only PII warnings would fail-fast later.
+  console.log('\n── Hook wiring (SF-10) ──');
+  const recon = reconcile(PAI_DIR);
+  for (const w of recon.warnings) warn(w);
+  if (recon.errors.length > 0) {
+    for (const e of recon.errors) fail(e);
+    console.log('\n✗ Hook wiring drift detected — fix before sync\n');
+    process.exit(1);
+  }
+  pass('Hook wiring reconciled (hooks.jsonc ↔ composite ↔ files)');
 
   // Step 3: Classify all files
   console.log('\n── File Classification ──');

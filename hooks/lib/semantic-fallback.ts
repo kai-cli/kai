@@ -10,6 +10,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { cosineSimilarity } from './similarity';
 
 const MODEL_NAME = 'Xenova/jina-embeddings-v2-small-en';
 
@@ -48,16 +49,7 @@ function loadSettings(paiDir: string): Settings {
   try { return JSON.parse(readFileSync(path, 'utf-8')); } catch { return {}; }
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+// cosineSimilarity moved to lib/similarity.ts (W1 consolidation — imported above)
 
 async function getPipeline(): Promise<((text: string) => Promise<{ data: Float32Array }>) | null> {
   if (pipeline) return pipeline;
@@ -110,7 +102,7 @@ export async function semanticFallback(
   if (!pipe) return empty;
 
   try {
-    const output = await pipe(query);
+    const output = await pipe(query, { pooling: 'mean', normalize: true });
     const queryEmbedding = Array.from(output.data as Float32Array);
 
     const scored = chunks

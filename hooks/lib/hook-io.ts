@@ -10,7 +10,8 @@
  * unexpected fields (forward compatibility).
  */
 
-import { parseTranscript, type ParsedTranscript } from '../../PAI/Tools/TranscriptParser';
+import { type ParsedTranscript } from './transcript-parser';
+import { getCachedTranscript } from './transcript-cache';
 import { validatePayload } from './payload-schema';
 
 export const HOOK_PROTOCOL_VERSION = "1.0";
@@ -120,6 +121,8 @@ export async function readHookInput(): Promise<HookInput | null> {
  * fully written to disk before parsing.
  */
 export async function parseTranscriptFromInput(input: HookInput): Promise<ParsedTranscript> {
+  // Keep the 150ms wait so the transcript is fully written before we parse/cache.
   await new Promise(resolve => setTimeout(resolve, 150));
-  return parseTranscript(input.transcript_path);
+  // W3: route through the shared disk cache (one parse per session transcript).
+  return getCachedTranscript(input.transcript_path);
 }

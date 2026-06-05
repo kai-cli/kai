@@ -72,8 +72,8 @@ describe('ModeClassifier', () => {
       () => expect(classify('update my status')).toBe('NATIVE'));
     test('add a comma → NATIVE',
       () => expect(classify('add a comma here')).toBe('NATIVE'));
-    test('review the document → NATIVE',
-      () => expect(classify('review the document I sent yesterday')).toBe('NATIVE'));
+    test('review the document → INVESTIGATE (review is investigate verb)',
+      () => expect(classify('review the document I sent yesterday')).toBe('INVESTIGATE'));
     test('set a reminder → NATIVE',
       () => expect(classify('set a reminder for tomorrow')).toBe('NATIVE'));
     test('verb only, no object → NATIVE',
@@ -94,14 +94,24 @@ describe('ModeClassifier', () => {
       () => expect(classify('debug this crash')).toBe('ALGORITHM'));
     test('refactor my service → ALGORITHM',
       () => expect(classify('refactor my service')).toBe('ALGORITHM'));
-    test('investigate the memory leak → ALGORITHM',
-      () => expect(classify('investigate the memory leak')).toBe('ALGORITHM'));
     test('migrate the database → ALGORITHM',
       () => expect(classify('migrate the database')).toBe('ALGORITHM'));
-    test('troubleshoot why it fails → ALGORITHM',
-      () => expect(classify('troubleshoot why it fails')).toBe('ALGORITHM'));
     test('clean up the tests → ALGORITHM',
       () => expect(classify('clean up the tests')).toBe('ALGORITHM'));
+  });
+
+  // ── INVESTIGATE (strong investigate verbs — produce findings, not artifacts) ──
+  describe('INVESTIGATE (strong investigate verbs)', () => {
+    test('investigate the memory leak → INVESTIGATE',
+      () => expect(classify('investigate the memory leak')).toBe('INVESTIGATE'));
+    test('troubleshoot why it fails → INVESTIGATE',
+      () => expect(classify('troubleshoot why it fails')).toBe('INVESTIGATE'));
+    test('review the PR → INVESTIGATE',
+      () => expect(classify('review the PR')).toBe('INVESTIGATE'));
+    test('diagnose the crash → INVESTIGATE',
+      () => expect(classify('diagnose the crash')).toBe('INVESTIGATE'));
+    test('investigate + fix → ALGORITHM (build intent overrides)',
+      () => expect(classify('investigate and fix the memory leak')).toBe('ALGORITHM'));
   });
 
   // ── NATIVE (general questions and conversation) ──

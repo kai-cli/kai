@@ -109,22 +109,18 @@
       }
     ],
 
-    // SessionEnd — all async (post-session cleanup, no stdout needed)
+    // SessionEnd — W4: consolidated into ONE composite orchestrator (was 10 individual
+    // entries). SessionEndComposite spawns each sub-hook via run-hook.sh (timeouts preserved),
+    // applies a trivial-session gate (skips inference on tiny sessions; flag
+    // config/settings.json → sessionEnd.useComposite=false disables the gate = run all).
+    // Always-run: SessionCleanup, UpdateCounts, MemoryTimeline, MemCapture, IntegrityCheck.
+    // Inference-gated: InsightExtractor, KnowledgeSync, WorkCompletionLearning, SessionSummary,
+    // RelationshipMemory. Rollback: git revert this commit. The 10 individual .hook.ts files are
+    // retained (re-wireable). See MEMORY/WORK/20260605-140510_w4-sessionend-composite/PRD.md.
     "SessionEnd": [
       {
         "hooks": [
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WorkCompletionLearning.hook.ts", "async": true },
-          // v5.6: Append session summary to timeline.jsonl (layer 2 memory)
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemoryTimeline.hook.ts", "async": true },
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionCleanup.hook.ts", "async": true },
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionSummary.hook.ts", "async": true },
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RelationshipMemory.hook.ts", "async": true },
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateCounts.hook.ts", "async": true },
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh IntegrityCheck.hook.ts", "async": true },
-          // Extract factual learnings from session transcript (own budget, 4h cooldown)
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh InsightExtractor.hook.ts", "async": true },
-          // Knowledge distillation — runs LAST (needs other hooks to write first, uses inference budget)
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh KnowledgeSync.hook.ts", "async": true }
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SessionEndComposite.hook.ts", "async": true }
         ]
       }
     ],
@@ -138,6 +134,8 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecretScanner.hook.ts" },
           // Surface relevant project memories next to the user's prompt
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemoryRecall.hook.ts" },
+          // Memcarry: surface verify-at-load drift from this session's resume (read-once, annotate-only)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemDrift.hook.ts" },
           // Local context injection — outputs additionalContext
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LocalContextFirst.hook.ts" },
           // Classify effort tier and inject context modifications
@@ -176,6 +174,8 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
           // Inject relationship, learning, and work context
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LoadContext.hook.ts" },
+          // Memcarry: inject cached resume-state (warm cold-start) + kick detached verify-at-load
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemResume.hook.ts" },
           // Check PAI version against repo
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh CheckVersion.hook.ts" },
           // Display PAI startup banner
@@ -233,14 +233,11 @@
       }
     ],
 
-    // WorktreeCreate — runs when a git worktree is created
-    "WorktreeCreate": [
-      {
-        "hooks": [
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WorktreeSetup.hook.ts" }
-        ]
-      }
-    ],
+    // WorktreeCreate — REMOVED: this event REPLACES built-in worktree creation.
+    // A hook here must actually `git worktree add` and echo the path to stdout.
+    // Our logging-only hook was breaking ALL worktree isolation by replacing
+    // Claude Code's creation logic with a no-op. Let Claude handle it natively.
+    // Audit logging moved to WorktreeRemove (notification-only, safe).
 
     // WorktreeRemove — runs when a git worktree is removed
     "WorktreeRemove": [

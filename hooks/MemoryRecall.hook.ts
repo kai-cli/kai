@@ -19,9 +19,10 @@
  * COST: ~200-500 tokens when memories match; 0 tokens when no match
  */
 
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { readHookInput } from './lib/hook-io';
+import { rankEntries, type MemoryEntry as ScorerEntry } from './lib/memory-scorer';
 
 interface MemoryEntry {
   title: string;
@@ -29,6 +30,96 @@ interface MemoryEntry {
   description: string;
   keywords: string[];
   category?: string;
+}
+
+/**
+ * W2: composite-scorer config. Read from PAI config/settings.json (feature flags),
+ * NOT the harness root settings.json. `useScorer` defaults to true (the scorer is
+ * activated); set false for instant rollback to the original keyword top-5 path.
+ */
+interface MemoryRecallSettings {
+  useScorer: boolean;
+  tokenBudget: number;
+  maxCandidates: number;
+}
+
+function loadMemoryRecallSettings(): MemoryRecallSettings {
+  // tokenBudget is a downstream "reading budget" accounted on memory BODIES (each surfaced
+  // pointer may lead Claude to open that file). 6000t comfortably surfaces a normal small
+  // MEMORY.md's gated matches (ordered + pinned-first); eviction is a safety valve for large sets.
+  const defaults: MemoryRecallSettings = { useScorer: true, tokenBudget: 6000, maxCandidates: 12 };
+  try {
+    const path = join(process.env.HOME || '/tmp', '.claude', 'config', 'settings.json');
+    if (!existsSync(path)) return defaults;
+    const cfg = JSON.parse(readFileSync(path, 'utf-8'));
+    const mr = cfg.memoryRecall ?? {};
+    return {
+      useScorer: mr.useScorer !== false, // default ON
+      tokenBudget: typeof mr.tokenBudget === 'number' ? mr.tokenBudget : defaults.tokenBudget,
+      maxCandidates: typeof mr.maxCandidates === 'number' ? mr.maxCandidates : defaults.maxCandidates,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+/**
+ * W2: Build a scorer MemoryEntry from a gated index entry by reading its file.
+ * - created: frontmatter `created`/`captured` if parseable, else file mtime (robust universal fallback)
+ * - pinned: frontmatter `pinned: true`
+ * - tags: frontmatter `tags` array (best-effort)
+ * - content: file body (real token accounting for eviction)
+ * NEVER throws — on any read/parse failure falls back to a description-only entry so the hook
+ * can never block prompt submission (a UserPromptSubmit hook crash would block EVERY prompt).
+ */
+export function buildMemoryEntry(memDir: string, entry: MemoryEntry): ScorerEntry {
+  const fallback: ScorerEntry = {
+    path: entry.file,
+    content: entry.description,
+    created: new Date(0),
+    frequency: 1,
+    pinned: false,
+  };
+  try {
+    const filePath = join(memDir, entry.file);
+    if (!existsSync(filePath)) return fallback;
+
+    const raw = readFileSync(filePath, 'utf-8');
+    const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+    const fmText = fmMatch ? fmMatch[1] : '';
+    const body = fmMatch ? fmMatch[2].trim() : raw.trim();
+
+    const fm: Record<string, string> = {};
+    for (const line of fmText.split('\n')) {
+      const idx = line.indexOf(':');
+      if (idx === -1) continue;
+      fm[line.slice(0, idx).trim()] = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+    }
+
+    let created: Date;
+    const rawDate = fm.created || fm.captured;
+    const parsed = rawDate ? new Date(rawDate) : null;
+    if (parsed && !isNaN(parsed.getTime())) {
+      created = parsed;
+    } else {
+      created = statSync(filePath).mtime;
+    }
+
+    const tags = fm.tags
+      ? fm.tags.replace(/^\[|\]$/g, '').split(',').map(t => t.trim().replace(/^["']|["']$/g, '')).filter(Boolean)
+      : undefined;
+
+    return {
+      path: entry.file,
+      content: body || entry.description,
+      created,
+      frequency: 1,
+      pinned: fm.pinned === 'true',
+      tags,
+    };
+  } catch {
+    return fallback;
+  }
 }
 
 /**
@@ -356,13 +447,38 @@ async function main() {
     process.exit(0);
   }
 
-  // Score all entries with dynamic threshold
+  // Score all entries with dynamic threshold — KEYWORD GATE: decides which memories
+  // relate to THIS prompt. The composite scorer (below) handles ordering + eviction.
   const threshold = scoreThreshold(promptKeywords.length);
-  const scored = entries
+  const gated = entries
     .map(entry => ({ entry, score: scoreMatch(entry, promptKeywords) }))
     .filter(({ score }) => score >= threshold)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
+    .sort((a, b) => b.score - a.score);
+
+  // W2: composite-scorer ordering + token-budget eviction (flag-gated).
+  // Flag OFF reproduces the original keyword top-5 behavior exactly.
+  const mrSettings = loadMemoryRecallSettings();
+  let scored: { entry: MemoryEntry; score: number }[];
+
+  if (mrSettings.useScorer && gated.length > 0) {
+    // Cap candidate pool before file reads (bounds per-prompt I/O).
+    const pool = gated.slice(0, mrSettings.maxCandidates);
+    // Build scorer entries (reads files; never throws — falls back to description entry).
+    const byPath = new Map<string, { entry: MemoryEntry; score: number }>();
+    const scorerEntries: ScorerEntry[] = pool.map(g => {
+      const se = buildMemoryEntry(memDir, g.entry);
+      byPath.set(se.path, g);
+      return se;
+    });
+    // Composite recency×frequency×importance×relevance ordering + token-budget eviction.
+    const ranked = rankEntries(scorerEntries, promptKeywords, mrSettings.tokenBudget);
+    // Map ranked scorer entries back to index entries for rendering (keep keyword % match).
+    scored = ranked.map(se => byPath.get(se.path)).filter((x): x is { entry: MemoryEntry; score: number } => Boolean(x));
+    console.error(`[MemoryRecall] scorer ranked ${scored.length}/${gated.length} gated (budget=${mrSettings.tokenBudget}t)`);
+  } else {
+    // Original path (flag OFF or no candidates): keyword sort, hard top-5.
+    scored = gated.slice(0, 5);
+  }
 
   if (scored.length === 0) {
     console.error(`[MemoryRecall] No matches (threshold=${(threshold * 100).toFixed(0)}%) for: ${promptKeywords.slice(0, 5).join(', ')}`);

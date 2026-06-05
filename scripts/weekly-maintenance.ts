@@ -12,7 +12,7 @@
  * Called by: WeeklyMaintenance.hook.ts nudge, or manually
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const PAI_DIR = process.env.PAI_DIR ?? join(process.env.HOME!, '.claude');
@@ -84,9 +84,13 @@ async function main() {
   console.log('');
 
   const tasks: { name: string; cmd: string[]; cwd?: string }[] = [
+    { name: 'CrossProjectIndex', cmd: ['bun', 'PAI/Tools/CrossProjectIndex.ts'] },
+    { name: 'KnowledgeSync (full)', cmd: ['bun', 'hooks/KnowledgeSync.hook.ts'] },
     { name: 'tools-sync', cmd: ['bun', 'scripts/tools-sync.ts'] },
     { name: 'LearningPatternSynthesis', cmd: ['bun', 'PAI/Tools/LearningPatternSynthesis.ts'] },
+    { name: 'BehavioralTrends', cmd: ['bun', 'PAI/Tools/LearningPatternSynthesis.ts', '--trends'] },
     { name: 'memory-audit', cmd: ['bun', 'scripts/audit-memory.ts'] },
+    { name: 'wiring-reconcile', cmd: ['bun', 'scripts/reconcile-wiring.ts'] },
     { name: 'Tests (critical)', cmd: ['bun', 'test', 'tests/SecurityValidator.test.ts', 'tests/PostCompactRecovery.test.ts', 'tests/GitHubWriteGuard.test.ts', 'tests/RiskClassifier.test.ts'] },
   ];
 
@@ -95,6 +99,8 @@ async function main() {
     for (const t of tasks) console.log(`  - ${t.name}: ${t.cmd.join(' ')}`);
     console.log('  - GitHub issues/PRs check (kai-cli/kai)');
     console.log('  - Repo sync status comparison');
+    console.log('');
+    console.log('Cron: Sundays 9am via Claude Code CronCreate');
     process.exit(0);
   }
 
@@ -122,6 +128,16 @@ async function main() {
   results.push(syncResult);
   console.log(` ✅`);
 
+  // Check for pending curations
+  const stagingDir = join(PAI_DIR, 'MEMORY', 'STAGING');
+  let pendingDrafts = 0;
+  try {
+    if (existsSync(stagingDir)) {
+      const files = readdirSync(stagingDir).filter(f => f.endsWith('.md'));
+      pendingDrafts = files.length;
+    }
+  } catch {}
+
   // Summary
   console.log('');
   console.log('── Summary ──');
@@ -129,6 +145,12 @@ async function main() {
   const warned = results.filter(r => r.status === 'warn').length;
   const failed = results.filter(r => r.status === 'fail').length;
   console.log(`  ${passed} passed, ${warned} warnings, ${failed} failed`);
+
+  if (pendingDrafts > 0) {
+    console.log(`\n  ⚠️  ACTION NEEDED: ${pendingDrafts} draft(s) pending curation.`);
+    console.log(`     Run: pai curate --quick`);
+    console.log(`     Or in Claude: "run pai curate"`);
+  }
 
   for (const r of results) {
     if (r.status !== 'pass') {

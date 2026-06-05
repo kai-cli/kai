@@ -13,6 +13,9 @@
     // Skills, hooks, memory, and config all live here
     "PAI_DIR": "${HOME}/.claude",
 
+    // Memcarry store: git-tracked + synced under PAI MEMORY (atoms = source of truth)
+    "MEMCARRY_STORE": "${HOME}/.claude/MEMORY/memcarry/store",
+
     // Base directory for projects
     // Use ${PROJECTS_DIR}/PAI for PAI repo, ${PROJECTS_DIR}/fabric for fabric, etc.
     "PROJECTS_DIR": "${HOME}/Projects",

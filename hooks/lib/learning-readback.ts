@@ -189,6 +189,84 @@ export function loadFailurePatterns(paiDir: string): string | null {
 }
 
 /**
+ * Load the latest synthesis/trends report and extract actionable patterns.
+ * Prefers behavioral-trends (LLM-clustered) over regex-patterns when available.
+ */
+export function loadSynthesisInsights(paiDir: string): string | null {
+  const synthesisDir = join(paiDir, 'MEMORY', 'LEARNING', 'SYNTHESIS');
+  if (!existsSync(synthesisDir)) return null;
+
+  try {
+    const months = readdirSync(synthesisDir, { withFileTypes: true })
+      .filter(d => d.isDirectory() && /^\d{4}-\d{2}$/.test(d.name))
+      .map(d => d.name)
+      .sort()
+      .reverse();
+
+    if (months.length === 0) return null;
+
+    const latestMonth = join(synthesisDir, months[0]);
+    const files = readdirSync(latestMonth).filter(f => f.endsWith('.md')).sort().reverse();
+
+    if (files.length === 0) return null;
+
+    // Prefer behavioral-trends over weekly-patterns
+    const trendsFile = files.find(f => f.includes('behavioral-trends'));
+    const targetFile = trendsFile || files[0];
+    const content = readFileSync(join(latestMonth, targetFile), 'utf-8');
+
+    // Parse behavioral trends format
+    if (content.includes('Behavioral Trends')) {
+      const avgMatch = content.match(/\*\*Average Rating:\*\* ([\d.]+)\/10 this week .+was ([\d.]+)/);
+      const thisAvg = avgMatch ? avgMatch[1] : '?';
+      const lastAvg = avgMatch ? avgMatch[2] : '?';
+
+      // Extract trend lines (↑/↓/= **theme** — N vs N)
+      const trendLines: string[] = [];
+      const trendMatches = content.matchAll(/([↑↓=]) \*\*(.+?)\*\* — (\d+) this week vs (\d+) last/g);
+      for (const m of trendMatches) {
+        trendLines.push(`  ${m[1]} ${m[2]}: ${m[3]} this week vs ${m[4]} last`);
+      }
+
+      if (trendLines.length === 0) return null;
+
+      return `**Behavioral Trends** (${thisAvg}/10 this week, was ${lastAvg} last):\n${trendLines.join('\n')}`;
+    }
+
+    // Fallback: regex-based weekly-patterns format
+    const avgMatch = content.match(/\*\*Average Rating:\*\* ([\d.]+)/);
+    const avg = avgMatch ? avgMatch[1] : '?';
+
+    const topIssuesMatch = content.match(/## Top Issues\n\n([\s\S]*?)(?=\n##|$)/);
+    const topIssues = topIssuesMatch
+      ? topIssuesMatch[1].trim().split('\n').slice(0, 3).map(l => l.replace(/^\d+\.\s*/, '  ')).join('\n')
+      : null;
+
+    const examples: string[] = [];
+    const exampleMatches = content.matchAll(/- "(.+?)"/g);
+    for (const m of exampleMatches) {
+      if (examples.length >= 5) break;
+      if (m[1].length > 10) examples.push(m[1]);
+    }
+
+    if (!topIssues && examples.length === 0) return null;
+
+    const parts: string[] = [`**Weekly Pattern Synthesis** (avg ${avg}/10):`];
+    if (topIssues) parts.push(topIssues);
+    if (examples.length > 0) {
+      parts.push('  Recurring frustrations:');
+      for (const ex of examples.slice(0, 3)) {
+        parts.push(`    • "${ex}"`);
+      }
+    }
+
+    return parts.join('\n');
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Load performance signal trends from the pre-computed learning-cache.sh.
  * Extracts numeric averages and trend direction for a compact status line.
  */

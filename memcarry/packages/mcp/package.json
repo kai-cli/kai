@@ -1,0 +1,12 @@
+{
+  "name": "@memcarry/mcp",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "bun run src/index.ts" },
+  "dependencies": {
+    "@memcarry/lib": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  }
+}

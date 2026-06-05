@@ -19,10 +19,11 @@ import { readFileSync, existsSync } from 'fs';
 // Format markers that indicate a properly formatted response
 const FORMAT_MARKERS = [
   /═+\s*PAI\s*\|\s*NATIVE\s*MODE\s*═+/,        // NATIVE mode header
+  /═+\s*PAI\s*\|\s*INVESTIGATE\s*═+/,           // INVESTIGATE mode header
   /═+\s*PAI\s*\|\s*ALGORITHM\s*═+/,             // ALGORITHM mode header
   /═+\s*PAI\s*═+/,                               // MINIMAL mode header
   /PHASE\s+\d/i,                                  // Algorithm phase markers
-  /🗒️\s*TASK:/,                                   // NATIVE task line
+  /🗒️\s*TASK:/,                                   // NATIVE/INVESTIGATE task line
   /🗣️\s*[\w\s]+:/,                         // Summary line
 ];
 
@@ -76,7 +77,7 @@ async function main() {
 
   // Format violation detected — inject reminder
   console.log(JSON.stringify({
-    additionalContext: `<format_reminder>Your previous response did NOT use the mandatory PAI output format. Every response MUST use exactly one of: ALGORITHM, NATIVE, or MINIMAL mode. Start this response with the correct mode header. Review CLAUDE.md format rules.</format_reminder>`
+    additionalContext: `<format_reminder>Your previous response did NOT use the mandatory PAI output format. Every response MUST use exactly one of: ALGORITHM, INVESTIGATE, NATIVE, or MINIMAL mode. Start this response with the correct mode header. Review CLAUDE.md format rules.</format_reminder>`
   }));
   console.error('[FormatReminder] Format violation detected — reminder injected');
 

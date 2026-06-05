@@ -12,7 +12,7 @@
  * Target runtime: <50ms steady state (vs 150-250ms shell version).
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync, readdirSync } from 'fs';
 import { join, basename } from 'path';
 import { spawnSync } from 'child_process';
 
@@ -581,7 +581,67 @@ if (mode === 'nano') {
 }
 p(SEP);
 
-// Line 4: Active Algorithm task (if any)
+// Line 4: Pending actions (curations, stale memories)
+const ALERT_COLOR = '\x1b[38;2;251;191;36m';
+const ALERT_DIM   = '\x1b[38;2;180;140;30m';
+
+function getPendingActions(): string | null {
+  const parts: string[] = [];
+
+  // Check staging drafts
+  const stagingDir = join(PAI_DIR, 'MEMORY', 'STAGING');
+  try {
+    if (existsSync(stagingDir)) {
+      const drafts = readdirSync(stagingDir).filter(f => f.endsWith('.md')).length;
+      if (drafts > 0) parts.push(`${drafts} draft${drafts > 1 ? 's' : ''}→/curate`);
+    }
+  } catch {}
+
+  // Check stale PRDs (started work, no progress in 7+ days)
+  try {
+    if (existsSync(WORK_JSON)) {
+      const work = JSON.parse(readFileSync(WORK_JSON, 'utf-8'));
+      const sessions: Record<string, any> = work.sessions ?? {};
+      let stalePrds = 0;
+      const now = Date.now();
+      for (const s of Object.values(sessions) as any[]) {
+        if (!s.phase || s.phase === 'complete' || s.phase === 'native') continue;
+        if (s.updated) {
+          const age = now - new Date(s.updated).getTime();
+          if (age > 7 * 86_400_000) stalePrds++;
+        } else if (s.started) {
+          const age = now - new Date(s.started).getTime();
+          if (age > 7 * 86_400_000) stalePrds++;
+        } else {
+          stalePrds++; // No timestamp at all = definitely stale
+        }
+      }
+      if (stalePrds > 0) parts.push(`${stalePrds} stale PRD${stalePrds > 1 ? 's' : ''}`);
+    }
+  } catch {}
+
+  // Check maintenance overdue
+  const maintState = join(PAI_DIR, 'MEMORY', 'STATE', '.weekly-maintenance.json');
+  try {
+    if (existsSync(maintState)) {
+      const state = JSON.parse(readFileSync(maintState, 'utf-8'));
+      const daysSince = Math.floor((Date.now() - state.lastRun) / 86_400_000);
+      if (daysSince >= 7) parts.push(`maint ${daysSince}d overdue`);
+    } else {
+      parts.push('maint never run');
+    }
+  } catch {}
+
+  return parts.length > 0 ? parts.join(' │ ') : null;
+}
+
+const pendingActions = getPendingActions();
+if (pendingActions && mode !== 'nano') {
+  p(`${ALERT_COLOR}⚡${R} ${ALERT_DIM}ACTION:${R} ${ALERT_COLOR}${pendingActions}${R}`);
+  p(SEP);
+}
+
+// Line 5: Active Algorithm task (if any)
 if (activeTask) {
   const task = activeTask.task.length > 42
     ? activeTask.task.slice(0, 42) + '…'

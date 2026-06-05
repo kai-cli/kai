@@ -3,8 +3,8 @@
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 88,
-    "hooks": 53,
+    "skills": 89,
+    "hooks": 56,
     "agents": 20
   },
   "hookInventory": [
@@ -26,6 +26,9 @@
     "LastResponseCache.hook",
     "LoadContext.hook",
     "LocalContextFirst.hook",
+    "MemCapture.hook",
+    "MemDrift.hook",
+    "MemResume.hook",
     "MemoryAccessTracker.hook",
     "MemoryRecall.hook",
     "MemoryTimeline.hook",
@@ -75,6 +78,7 @@
     "Council",
     "CreateCLI",
     "CreateSkill",
+    "Curate",
     "DecisionLog",
     "Deliberate",
     "DevTeam",

@@ -1,0 +1,198 @@
+#!/usr/bin/env bun
+/**
+ * `mem` CLI — what HOOKS shell out to (hooks CANNOT call MCP tools; see
+ * constraint_claude_hooks_cannot_call_mcp). Imports @memcarry/lib directly so it works with the MCP
+ * server down. Commands:
+ *   health                         — store stats
+ *   resume <project> [--start DIR] — inject-cached resume payload (SessionStart) + kick async verify
+ *   drift <project> [--session S]  — consume + render drift (UserPromptSubmit), read-once
+ *   capture <project> --transcript F [--slug S] [--device H]  — draft+write resume-state (SessionEnd)
+ *   recall "<prompt>" [--project P]— top-K lesson HEADs (UserPromptSubmit)
+ *   duplicates                     — read-only duplicate-lesson report
+ *   write <atom.json>              — write a validated atom (scope is a write-time choice)
+ */
+import {
+  readAllAtoms, parseAtom, writeAtom, renderClaim,
+  resolveActiveProject, resumeStateId,
+  verifyAndWriteDrift, consumeDrift, renderDrift,
+  captureResumeState, recall, findDuplicates,
+  type Atom, type ResumeStateAtom,
+} from "@memcarry/lib";
+import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+
+const STORE = process.env.MEMCARRY_STORE ?? join(import.meta.dir, "..", "..", "..", "store");
+
+function flag(name: string): string | undefined {
+  const i = process.argv.indexOf(`--${name}`);
+  return i >= 0 ? process.argv[i + 1] : undefined;
+}
+const out = (o: unknown) => console.log(JSON.stringify(o, null, 2));
+
+function health() {
+  const atoms = readAllAtoms(STORE);
+  const byType: Record<string, number> = {};
+  for (const a of atoms) byType[a.type] = (byType[a.type] ?? 0) + 1;
+  out({ ok: true, store: STORE, atoms: atoms.length, byType });
+}
+
+function findResume(project: string): ResumeStateAtom | undefined {
+  return readAllAtoms(STORE).find(
+    (a): a is ResumeStateAtom => a.type === "resume-state" && a.scope === `project:${project}`
+  );
+}
+
+/**
+ * SessionStart: print the cached payload IMMEDIATELY, then DETACH verification into a separate
+ * background process and return. The hook never waits on probes — this is the real fix for the
+ * SessionStart-hang (build review riskiest-unknown #2). The detached `verify` worker writes the
+ * drift file; the next UserPromptSubmit (`drift`) consumes it.
+ */
+function resume(project: string) {
+  const atom = findResume(project);
+  if (!atom) {
+    out({ found: false, project });
+    return;
+  }
+  // Inject cached payload now — zero blocking probes.
+  out({
+    found: true,
+    project,
+    cursor: { next: atom.next, summary: atom.summary, also_touched: atom.also_touched },
+    beliefs: atom.beliefs, // already epistemic-tagged
+    blockers: atom.blockers,
+    verified_facts: atom.verified_facts.map((f) => ({ kind: f.kind, recorded: f.recorded })),
+    note: "verify-at-load running async (detached); drift surfaces on next prompt",
+  });
+
+  // Detach the verify worker: fully decoupled child, stdio ignored, unref'd so we exit immediately.
+  const childArgs = [
+    "run", import.meta.path, "verify", project,
+    "--start", flag("start") ?? process.cwd(),
+    "--session", flag("session") ?? "nosession",
+  ];
+  if (flag("slug")) childArgs.push("--slug", flag("slug")!);
+  if (flag("device")) childArgs.push("--device", flag("device")!);
+  if (flag("budget")) childArgs.push("--budget", flag("budget")!);
+  try {
+    const child = spawn("bun", childArgs, { detached: true, stdio: "ignore" });
+    child.unref();
+  } catch {
+    /* if we can't spawn, the cached payload already shipped — degrade silently */
+  }
+}
+
+/** Detached verify worker (spawned by `resume`). Runs probes under budget, writes the drift file. */
+async function verify(project: string) {
+  const proj = resolveActiveProject(flag("start"));
+  const atom = findResume(project);
+  if (!atom) return;
+  try {
+    await verifyAndWriteDrift(atom, {
+      currentBranch: proj.branch,
+      sessionId: flag("session") ?? null, // LIVE session — must match the drift-read key
+      ghSlug: flag("slug"),
+      host: flag("device"),
+      totalBudgetMs: Number(flag("budget") ?? 800),
+    });
+  } catch {
+    /* never throw from the detached worker */
+  }
+}
+
+function drift(project: string) {
+  const d = consumeDrift(project, flag("session") ?? null);
+  if (!d) {
+    out({ drift: null });
+    return;
+  }
+  const atom = findResume(project);
+  out({ drift: d, annotation: atom ? renderDrift(d, atom.next) : renderDrift(d, "") });
+}
+
+function doCapture(project: string) {
+  const transcript = flag("transcript");
+  if (!transcript) {
+    console.error("usage: mem capture <project> --transcript <file> [--slug owner/repo] [--device host]");
+    process.exit(2);
+  }
+  const proj = resolveActiveProject(flag("start"));
+  const res = captureResumeState(transcript, { ...proj, name: project }, {
+    nowIso: new Date().toISOString(),
+    ghSlug: flag("slug"),
+    deviceHost: flag("device"),
+  });
+  if (!res.substantive) {
+    out({ captured: false, reason: "session not substantive (F1 gate)" });
+    return;
+  }
+  const path = writeAtom(STORE, res.atom!);
+  out({ captured: true, id: res.atom!.id, path, next: res.atom!.next, also_touched: res.atom!.also_touched });
+}
+
+function doRecall(prompt: string) {
+  const hits = recall(readAllAtoms(STORE), prompt, flag("project") ?? null, Number(flag("k") ?? 5));
+  out({ hits });
+}
+
+function duplicates() {
+  out({ pairs: findDuplicates(readAllAtoms(STORE), Number(flag("threshold") ?? 0.6)) });
+}
+
+function write(file: string) {
+  const atom: Atom = parseAtom(JSON.parse(readFileSync(file, "utf8")));
+  const path = writeAtom(STORE, atom);
+  out({ written: true, id: atom.id, scope: atom.scope, path });
+}
+
+/**
+ * `/end` confirm surface (addresses smoke finding S2: 45% of real sessions have no PR/issue anchor,
+ * so the next/why MUST be confirmable, not mechanical-only). Prints the current draft resume-state's
+ * next/why for the /end skill to show the user. With --next "..." it COMMITS a user-edited next line
+ * and upgrades provenance auto-captured → human-confirmed (so it can later earn authority).
+ */
+function confirm(project: string) {
+  const atom = findResume(project);
+  if (!atom) { out({ found: false, project }); return; }
+  const newNext = flag("next");
+  if (newNext === undefined) {
+    // show the draft for the user to review/edit
+    out({
+      project, id: atom.id, provenance: atom.provenance,
+      draft_next: atom.next, draft_summary: atom.summary,
+      needs_confirm: atom.provenance === "auto-captured",
+      hint: 'edit with: memcarry confirm ' + project + ' --next "your real next step"',
+    });
+    return;
+  }
+  const updated: ResumeStateAtom = {
+    ...atom,
+    next: newNext,
+    provenance: "human-confirmed",
+    updated: new Date().toISOString(),
+  };
+  const path = writeAtom(STORE, updated);
+  out({ confirmed: true, id: updated.id, next: updated.next, provenance: updated.provenance, path });
+}
+
+const [cmd, arg] = process.argv.slice(2);
+const need = (label: string) => {
+  if (!arg) { console.error(`usage: mem ${label}`); process.exit(2); }
+  return arg;
+};
+
+switch (cmd) {
+  case "health": health(); break;
+  case "resume": resume(need("resume <project>")); break;
+  case "verify": await verify(need("verify <project>")); break;
+  case "drift": drift(need("drift <project>")); break;
+  case "capture": doCapture(need("capture <project> --transcript <file>")); break;
+  case "recall": doRecall(need('recall "<prompt>"')); break;
+  case "duplicates": duplicates(); break;
+  case "write": write(need("write <atom.json>")); break;
+  case "confirm": confirm(need('confirm <project> [--next "..."]')); break;
+  default:
+    console.error("commands: health | resume | verify | drift | capture | recall | duplicates | write | confirm");
+    process.exit(2);
+}

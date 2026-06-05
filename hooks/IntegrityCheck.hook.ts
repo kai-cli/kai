@@ -9,7 +9,7 @@
  * PERFORMANCE: ~50ms (single transcript parse, one handler call). Non-blocking.
  */
 
-import { parseTranscript } from '../PAI/Tools/TranscriptParser';
+import { getCachedTranscript } from './lib/transcript-cache';
 import { handleSystemIntegrity } from './handlers/SystemIntegrity';
 import { spawnSync } from 'child_process';
 import { existsSync } from 'fs';
@@ -66,7 +66,7 @@ async function main() {
   const hookInput = await readStdin();
   if (!hookInput?.transcript_path) { process.exit(0); }
 
-  const parsed = parseTranscript(hookInput.transcript_path);
+  const parsed = getCachedTranscript(hookInput.transcript_path);
 
   // Check skills-lock drift (warning only, never blocks session)
   checkSkillsLock();

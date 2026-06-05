@@ -11,6 +11,7 @@
 
 import type { Instinct } from './instinct-store';
 import { loadVectorCache, type VectorEntry } from './instinct-dedup';
+import { cosineSimilarity } from './similarity';
 
 const CLUSTER_THRESHOLD = 0.7;
 const MAX_CLUSTER_SIZE = 8;
@@ -22,16 +23,7 @@ export interface InstinctCluster {
   promotable: boolean;
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+// cosineSimilarity moved to lib/similarity.ts (W1 consolidation — imported above)
 
 function buildSimilarityMatrix(vectors: Map<string, number[]>, ids: string[]): Map<string, Map<string, number>> {
   const matrix = new Map<string, Map<string, number>>();

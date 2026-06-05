@@ -33,7 +33,7 @@ import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 import { getLocalComponents } from './lib/time';
 import { getDAName, getPrincipalName } from './lib/identity';
-import { parseTranscript } from '../PAI/Tools/TranscriptParser';
+import { getCachedTranscript } from './lib/transcript-cache';
 
 interface HookInput {
   session_id: string;
@@ -73,7 +73,7 @@ function readTranscriptEntries(path: string): TranscriptEntry[] {
   if (!path || !existsSync(path)) return [];
 
   try {
-    const parsed = parseTranscript(path);
+    const parsed = getCachedTranscript(path);
     // Combine user prompts and assistant completions into entry pairs
     const entries: TranscriptEntry[] = [];
     if (parsed.userPrompt) {

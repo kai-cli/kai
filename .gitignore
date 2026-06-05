@@ -134,3 +134,12 @@ skills/PAI/USER/
 skills/**/State/
 skills-examples/**/State/
 teams/investigation-*
+
+# Memcarry vendored core
+memcarry/node_modules/
+memcarry/**/node_modules/
+memcarry/index/
+memcarry/store/atoms/project/
+
+# Embeddings index — rebuildable cache (bun scripts/EmbeddingIndex.ts --setup)
+MEMORY/STATE/embeddings/

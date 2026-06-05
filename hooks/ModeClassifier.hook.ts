@@ -56,12 +56,17 @@ async function main() {
   // Stage 2: AI-classified input — run existing mode classifier
   const mode = classify(prompt);
 
-  // Only inject for MINIMAL and ALGORITHM — NATIVE is the default, no hint needed
+  // Inject hints for non-NATIVE modes
   if (mode === 'ALGORITHM') {
     console.log(JSON.stringify({
       additionalContext: `<mode_hint>ALGORITHM</mode_hint>\nThis request is ALGORITHM mode. Your MANDATORY FIRST ACTION is to Read PAI/Algorithm/${getAlgorithmVersion()}.md. Do NOT use NATIVE format. Do NOT skip the Algorithm.`
     }));
     console.error(`[ModeClassifier] Injected mode hint: ALGORITHM`);
+  } else if (mode === 'INVESTIGATE') {
+    console.log(JSON.stringify({
+      additionalContext: `<mode_hint>INVESTIGATE</mode_hint>\nThis request is INVESTIGATE mode. Use the INVESTIGATE format from CLAUDE.md. No PRD, no ISC, no Algorithm phases. Just do the work and report findings.`
+    }));
+    console.error(`[ModeClassifier] Injected mode hint: INVESTIGATE`);
   } else if (mode === 'MINIMAL') {
     console.log(JSON.stringify({
       additionalContext: `<mode_hint>MINIMAL</mode_hint>\nPre-classified as MINIMAL mode. Use the MINIMAL response format.`

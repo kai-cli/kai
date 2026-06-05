@@ -11,6 +11,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import type { Instinct } from './instinct-store';
+import { cosineSimilarity } from './similarity';
 
 const DEDUP_THRESHOLD = 0.85;
 const VECTORS_FILE = 'MEMORY/STATE/embeddings/instinct-vectors.jsonl';
@@ -52,22 +53,13 @@ export function invalidateVector(paiDir: string, instinctId: string): void {
   saveVectorCache(paiDir, entries);
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+// cosineSimilarity moved to lib/similarity.ts (W1 consolidation — imported above)
 
 async function embed(text: string): Promise<number[] | null> {
   try {
     const { pipeline } = await import('@huggingface/transformers');
     const pipe = await pipeline('feature-extraction', 'Xenova/jina-embeddings-v2-small-en', { revision: 'main' });
-    const output = await (pipe as any)(text);
+    const output = await (pipe as any)(text, { pooling: 'mean', normalize: true });
     return Array.from(output.data as Float32Array);
   } catch {
     if (!warnedOnce) {
