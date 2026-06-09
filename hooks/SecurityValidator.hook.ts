@@ -62,8 +62,7 @@
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync, appendFileSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
-import { homedir } from 'os';
-import { paiPath } from './lib/paths';
+import { paiPath, expandPath } from './lib/paths';
 import { classifyCommand } from './lib/risk-classifier';
 
 // ========================================
@@ -296,13 +295,6 @@ export function matchesPattern(command: string, pattern: string): boolean {
   }
 }
 
-function expandPath(path: string): string {
-  // Expand ~ to home directory
-  if (path.startsWith('~')) {
-    return path.replace('~', homedir());
-  }
-  return path;
-}
 
 export function matchesPathPattern(filePath: string, pattern: string): boolean {
   const expandedPattern = expandPath(pattern);

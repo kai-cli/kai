@@ -26,8 +26,8 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 | Directory | Contents |
 |-----------|----------|
 | `PAI/` | Core system: Algorithm <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end -->, context routing, system docs |
-| `skills/` | <!-- KAI:counts:skills:begin -->87<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
-| `hooks/` | <!-- KAI:counts:hooks:begin -->56<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, formatters, analytics, cleanup) |
+| `skills/` | <!-- KAI:counts:skills:begin -->67<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
+| `hooks/` | <!-- KAI:counts:hooks:begin -->54<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, formatters, analytics, cleanup) |
 | `agents/` | <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
 | `config/` | 7 domain config files that generate settings.json |
 | `scripts/` | KAI Board dashboard, deployment packager |
@@ -83,7 +83,7 @@ bun ~/.claude/scripts/deploy.ts
 
 - **[docs/QUICKSTART.md](docs/QUICKSTART.md)** — Getting started guide (start here)
 - **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** — Comparison with the original
-- **[docs/planning/NEXT-STEPS.md](docs/planning/NEXT-STEPS.md)** — Current work and roadmap
+- **[docs/planning/ROADMAP-7.x.md](docs/planning/ROADMAP-7.x.md)** — Current work and roadmap
 - **[docs/architecture/README.md](docs/architecture/README.md)** — System architecture overview
 - **[PAI/THEHOOKSYSTEM.md](PAI/THEHOOKSYSTEM.md)** — Hook system docs
 - **[PAI/SKILL.md](PAI/SKILL.md)** — Full system documentation

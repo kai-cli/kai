@@ -1,5 +1,30 @@
 # Company Investment Due Diligence Workflow
 
+## Source Reference (from SOURCES.JSON)
+
+Combined company + threat intel sources for investment vetting:
+
+| Investigation Area | Sources |
+|-------------------|---------|
+| **Business Registration** | OpenCorporates, SEC EDGAR, Companies House, SAM.gov |
+| **Financial Intel** | Crunchbase, PitchBook, D&B, AlphaSense |
+| **Employee Intel** | LinkedIn, ZoomInfo, Apollo, RocketReach, Hunter.io |
+| **Legal/Court** | PACER, CourtListener, UniCourt |
+| **Patent/IP** | USPTO, Google Patents, Espacenet, Lens.org |
+| **Tech Profiling** | BuiltWith, Wappalyzer, Netcraft |
+| **Competitive** | SimilarWeb, SEMrush |
+| **News/Media** | GDELT, MediaCloud, Google News |
+| **Sanctions** | OFAC, EU Sanctions, OpenSanctions |
+| **Corporate Ownership** | OpenOwnership, GLEIF LEI |
+| **Domain/DNS** | SecurityTrails, DomainTools, crt.sh, DNSDumpster, ViewDNS |
+| **IP/Infrastructure** | Shodan, Censys, AbuseIPDB, GreyNoise |
+| **Threat Intel** | VirusTotal, URLScan.io, Pulsedive |
+| **Dark Web/Leak** | HIBP, Intelligence X, DeHashed |
+| **Startup/VC** | Dealroom, Tracxn, Owler, Wellfound |
+| **Government Contracts** | USAspending, GovTribe |
+
+---
+
 ## Critical Design: DOMAIN-FIRST PROTOCOL
 
 **Domain discovery is MANDATORY STEP ONE and BLOCKS all subsequent phases.**
@@ -69,27 +94,69 @@ For each discovered domain:
 **Deploy researcher fleet in parallel with 10-minute timeout:**
 
 **Business Legitimacy (8 agents):**
-- Entity registration verification
-- Regulatory compliance checks
-- Leadership background research
-- Financial intelligence gathering
+- Entity registration verification — OpenCorporates, SEC EDGAR, Companies House, SAM.gov
+- Regulatory compliance checks — OFAC, EU Sanctions, OpenSanctions
+- Leadership background research — LinkedIn, ZoomInfo, Apollo, RocketReach
+- Financial intelligence gathering — Crunchbase, PitchBook, D&B, AlphaSense
+
+```typescript
+Task({ subagent_type: "PerplexityResearcher", prompt: "Search OpenCorporates, SEC EDGAR, Companies House, and SAM.gov for business registrations of [company]. Verify entity status, jurisdiction, officers, and filing history." })
+Task({ subagent_type: "GrokResearcher", prompt: "Check [company] against OFAC SDN list, EU Consolidated Sanctions, OpenSanctions, and debarment lists. Report any regulatory enforcement actions or compliance violations." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Research leadership of [company] via LinkedIn, ZoomInfo, Apollo, and RocketReach. Map career histories, board seats, credentials, and potential conflicts of interest." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Research financial health of [company] via Crunchbase (funding rounds), PitchBook (valuations), D&B (credit ratings), and AlphaSense (earnings/filings). Map revenue signals and financial trajectory." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Search PACER, CourtListener, and UniCourt for legal proceedings involving [company]. Check for lawsuits, regulatory actions, bankruptcy filings, and IP disputes." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Search USPTO, Google Patents, Espacenet, and Lens.org for IP portfolio of [company]. Assess patent breadth, citation count, and technology defensibility." })
+Task({ subagent_type: "GrokResearcher", prompt: "Map corporate ownership structure of [company] via OpenOwnership, GLEIF LEI. Identify beneficial owners, subsidiary relationships, and holding company chains." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Check [company] government contracting history via USAspending and GovTribe. Report contract values, agencies, and performance ratings." })
+```
 
 **Reputation & Market (8 agents):**
-- Media coverage analysis (earned vs. paid)
-- Customer testimonial assessment
-- Competitive landscape mapping
-- Market opportunity validation
+- Media coverage analysis (earned vs. paid) — GDELT, MediaCloud, Google News
+- Customer testimonial assessment — G2, Trustpilot, BBB
+- Competitive landscape mapping — SimilarWeb, SEMrush, Owler
+- Market opportunity validation — Dealroom, Tracxn, Wellfound
+
+```typescript
+Task({ subagent_type: "PerplexityResearcher", prompt: "Analyze media coverage of [company] via GDELT, MediaCloud, and Google News. Distinguish earned media from paid/promotional. Track sentiment trajectory and coverage volume." })
+Task({ subagent_type: "GeminiResearcher", prompt: "Assess customer sentiment for [company] via G2, Trustpilot, BBB, and app store reviews. Identify recurring complaints and satisfaction patterns." })
+Task({ subagent_type: "GeminiResearcher", prompt: "Map competitive landscape for [company] using SimilarWeb (traffic/engagement), SEMrush (search visibility), and Owler (competitor tracking). Identify market position and competitive threats." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Research market opportunity for [company] via Dealroom, Tracxn, and Wellfound. Assess TAM, funding trends in sector, and comparable exits/valuations." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Search for industry recognition and awards for [company]. Check conference appearances, analyst mentions, and thought leadership indicators." })
+Task({ subagent_type: "GeminiResearcher", prompt: "Analyze employee sentiment for [company] via Glassdoor, Blind, LinkedIn posts. Assess hiring velocity, attrition signals, and cultural health." })
+Task({ subagent_type: "GrokResearcher", prompt: "Research historical context for [company] — previous pivots, name changes, founder track records, and predecessor entities. Check Wayback Machine for website evolution." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Profile technology stack and infrastructure of [company] via BuiltWith, Wappalyzer, and Netcraft. Assess technical maturity, cloud adoption, and security posture." })
+```
 
 **Verification (8 agents):**
 - Claim verification (revenue, customers, partnerships)
 - Credential verification (education, certifications)
-- Cross-source confirmation
+- Cross-source confirmation across all findings
+
+```typescript
+Task({ subagent_type: "GrokResearcher", prompt: "Verify revenue claims for [company] by cross-referencing SEC filings, Crunchbase data, press releases, and employee count estimates from LinkedIn/ZoomInfo. Flag discrepancies." })
+Task({ subagent_type: "GrokResearcher", prompt: "Verify customer claims for [company] — search for case studies, logos used on website, and independent customer references. Check if named customers confirm the relationship." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Verify partnership claims for [company] — check partner directories, joint press releases, and integration marketplaces. Distinguish 'customer' from 'partner' from 'integration'." })
+Task({ subagent_type: "GrokResearcher", prompt: "Verify education and credential claims for [company] leadership — check university alumni directories, certification databases, and professional license registries." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Cross-reference all [company] claims against independent sources. Check for inconsistencies between website, LinkedIn, Crunchbase, and SEC filings." })
+Task({ subagent_type: "GeminiResearcher", prompt: "Search HIBP, Intelligence X, and DeHashed for [company] domain exposure. Check for data breaches, credential leaks, and dark web mentions." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Check [company] domains against VirusTotal, URLScan.io, and AbuseIPDB. Assess for malware hosting, phishing indicators, or abuse reports." })
+Task({ subagent_type: "GeminiResearcher", prompt: "Map all domains and subdomains of [company] via SecurityTrails, crt.sh, and DNSDumpster. Identify shadow IT, forgotten assets, and infrastructure scope." })
+```
 
 **Specialized (8 agents):**
-- Industry recognition research
-- Employee sentiment analysis
-- Historical context
-- IP and technology assessment
+- Industry deep-dive and IP assessment
+- Threat intelligence overlay
+
+```typescript
+Task({ subagent_type: "ClaudeResearcher", prompt: "Deep dive into [company]'s industry vertical — market size, growth rate, regulatory environment, and key trends that affect their business model." })
+Task({ subagent_type: "GeminiResearcher", prompt: "Assess technology infrastructure of [company] via Shodan (exposed services), Censys (certificates), and GreyNoise (scanner activity). Report security posture findings." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Research [company]'s open source contributions, GitHub presence, and developer community engagement. Assess technical talent signals." })
+Task({ subagent_type: "GrokResearcher", prompt: "Analyze [company] social media presence — Twitter/X, LinkedIn company page, YouTube. Assess follower quality, engagement rates, and content strategy." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Research [company]'s ESG profile — environmental commitments, social impact programs, governance structure. Check for greenwashing or DEI-washing indicators." })
+Task({ subagent_type: "GeminiResearcher", prompt: "Check [company] against Pulsedive, Cisco Talos, and AlienVault OTX for any threat intelligence associations. Report if company infrastructure appears in IOC feeds." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Research [company]'s hiring patterns via LinkedIn Jobs, Indeed, and Glassdoor. Map open roles to infer strategic direction, burn rate, and growth areas." })
+Task({ subagent_type: "GrokResearcher", prompt: "Final verification sweep for [company] — search for any red flags across all sources not yet covered. Check BBB complaints, FTC enforcement database, and state AG actions." })
+```
 
 ---
 
@@ -159,7 +226,7 @@ For each discovered domain:
 ## File Organization
 
 ```
-~/.claude/MEMORY/WORK/$(jq -r '.work_dir' ~/.claude/MEMORY/STATE/current-work.json)/scratch/YYYY-MM-DD-HHMMSS_due-diligence-[company]/
+~/.claude/MEMORY/WORK/$(jq -r '.work_dir' ~/.claude/MEMORY/STATE/current-work.json)/YYYY-MM-DD-HHMMSS_due-diligence-[company]/
   phase1-domains.md
   phase2-technical.md
   phase3-research.md
@@ -185,4 +252,4 @@ For each discovered domain:
 
 ---
 
-**Reference:** See `CompanyTools.md` for detailed tool specifications.
+**Reference:** See `SOURCES.JSON` for the full source catalog. Legacy tool details in `CompanyTools.md`.

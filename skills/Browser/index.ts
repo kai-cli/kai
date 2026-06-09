@@ -21,6 +21,7 @@ export interface LaunchOptions {
   headless?: boolean
   viewport?: { width: number; height: number }
   userAgent?: string
+  ignoreHTTPSErrors?: boolean
 }
 
 export interface NavigateOptions {
@@ -103,7 +104,8 @@ export class PlaywrightBrowser {
 
     this.context = await this.browser.newContext({
       viewport: options?.viewport || { width: 1280, height: 720 },
-      userAgent: options?.userAgent
+      userAgent: options?.userAgent,
+      ignoreHTTPSErrors: options?.ignoreHTTPSErrors ?? false
     })
 
     this.page = await this.context.newPage()

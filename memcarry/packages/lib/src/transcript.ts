@@ -18,7 +18,7 @@ export interface MechanicalCapture {
   gitGhBuild: string[]; // subset of bashCommands matching dev-cursor patterns
   filesTouched: string[]; // Edit/Write targets, de-duped, in order
   prRefs: string[]; // e.g. "81" from `gh pr ... 81`
-  issueRefs: string[]; // e.g. "358" from "#358" / "ExampleWRT#358"
+  issueRefs: string[]; // e.g. "358" from "#358" / "RepoName#358"
   realTurns: number; // count of genuine user+assistant message lines
 }
 

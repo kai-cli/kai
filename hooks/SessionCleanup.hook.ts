@@ -40,6 +40,7 @@ import { join } from 'path';
 import { getISOTimestamp } from './lib/time';
 import { setTabState, cleanupKittySession } from './lib/tab-setter';
 import { paiPath } from './lib/paths';
+import { cap as capRatings, count as countRatings, DEFAULT_RATINGS_CAP } from './lib/ratings-store';
 
 const MEMORY_DIR = paiPath('MEMORY');
 const STATE_DIR = paiPath('MEMORY', 'STATE');
@@ -379,16 +380,13 @@ function runRetentionCleanup(): void {
       }
     } catch {}
 
-    // 3. Cap ratings.jsonl to last 500 entries
-    const ratingsPath = join(MEMORY_DIR, 'LEARNING', 'SIGNALS', 'ratings.jsonl');
+    // 3. Cap ratings.jsonl to last 500 entries (W11: via shared ratings-store)
     try {
-      if (existsSync(ratingsPath)) {
-        const lines = readFileSync(ratingsPath, 'utf-8').trim().split('\n').filter(l => l);
-        if (lines.length > 500) {
-          writeFileSync(ratingsPath, lines.slice(-500).join('\n') + '\n', 'utf-8');
-          console.error(`[SessionCleanup] Capped ratings.jsonl: ${lines.length} → 500`);
-          cleaned++;
-        }
+      const before = countRatings();
+      if (before > DEFAULT_RATINGS_CAP) {
+        capRatings(DEFAULT_RATINGS_CAP);
+        console.error(`[SessionCleanup] Capped ratings.jsonl: ${before} → ${DEFAULT_RATINGS_CAP}`);
+        cleaned++;
       }
     } catch (e) { console.error(`[SessionCleanup] ratings cap failed: ${e}`); }
 

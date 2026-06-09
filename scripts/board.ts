@@ -89,6 +89,14 @@ const args = process.argv.slice(2);
 const portIdx = args.indexOf("--port");
 const PORT = portIdx >= 0 ? parseInt(args[portIdx + 1]) : config.port;
 
+// Security (cleanup-backlog "board has zero auth"): bind to LOOPBACK by default so the board — which can
+// spawn/kill processes from requests — is not reachable from the local network. `--host 0.0.0.0` opts back
+// into LAN exposure explicitly. A mutation token (PAI_BOARD_TOKEN, or auto-generated per run) gates the
+// process-control endpoints as defense-in-depth even on loopback.
+const hostIdx = args.indexOf("--host");
+const HOST = hostIdx >= 0 ? args[hostIdx + 1] : "127.0.0.1";
+const BOARD_TOKEN = process.env.PAI_BOARD_TOKEN || "";
+
 // Resolve scan dirs
 const SCAN_DIRS = config.scanDirs.map(expandPath);
 const WORK_ROOT = expandPath(config.workRoot || config.scanDirs[0] || "~/.claude/MEMORY/WORK");
@@ -662,6 +670,7 @@ function jsonResponse(data: unknown, status = 200): Response {
 // --- Server ---
 Bun.serve({
   port: PORT,
+  hostname: HOST, // loopback by default — board can spawn/kill processes; don't expose to the LAN
   async fetch(req) {
     const url = new URL(req.url);
     const method = req.method;
@@ -669,6 +678,18 @@ Bun.serve({
     // CORS preflight
     if (method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders() });
+    }
+
+    // Mutation token gate (defense-in-depth on top of loopback binding). Only enforced when
+    // PAI_BOARD_TOKEN is set — keeps the default local workflow frictionless. Mutating methods must
+    // present the token via `X-Board-Token` header or `?token=` query param. Read-only GETs are open.
+    if (BOARD_TOKEN && (method === "POST" || method === "PUT" || method === "DELETE")) {
+      const provided = req.headers.get("x-board-token") || url.searchParams.get("token") || "";
+      if (provided !== BOARD_TOKEN) {
+        return new Response(JSON.stringify({ error: "unauthorized: invalid or missing board token" }), {
+          status: 401, headers: { ...corsHeaders(), "Content-Type": "application/json" },
+        });
+      }
     }
 
     // --- Static assets from React build ---
@@ -963,7 +984,8 @@ Bun.serve({
   },
 });
 
-console.log(`KAI Board v2 running at http://localhost:${PORT}`);
+console.log(`KAI Board v2 running at http://${HOST}:${PORT}${HOST === "127.0.0.1" ? " (loopback only — use --host 0.0.0.0 for LAN)" : " ⚠️ LAN-exposed"}`);
+if (!BOARD_TOKEN) console.log(`  ⓘ No PAI_BOARD_TOKEN set — mutation endpoints are open (fine on loopback). Set it to gate spawn/kill.`);
 console.log(`Scanning ${SCAN_DIRS.length} directories:`);
 for (const dir of SCAN_DIRS) console.log(`  → ${dir}`);
 console.log(`Auto-discovery: ${config.autoDiscover ? PROJECTS_DIR : "disabled"}`);

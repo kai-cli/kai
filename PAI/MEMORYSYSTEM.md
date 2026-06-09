@@ -2,8 +2,9 @@
 
 **The unified system memory - what happened, what we learned, what we're working on.**
 
-**Version:** 8.0 (Progressive Learning & Adaptive Memory, 2026-05-20)
+**Theme:** Progressive Learning & Adaptive Memory (introduced 2026-05-20)
 **Location:** `~/.claude/MEMORY/`
+**Product version:** see `~/.claude/VERSION` (this doc describes a subsystem, not a release).
 
 ---
 

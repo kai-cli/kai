@@ -33,7 +33,7 @@ const FIRMWARE_BUILD_TEMPLATE: WorkflowTemplate = {
 const JENKINS_TRIGGER_TEMPLATE: WorkflowTemplate = {
   name: 'jenkins-trigger',
   description: 'Trigger a Jenkins build for a branch',
-  command: 'bun ~/.claude/skills/Utilities/Tools/JenkinsTrigger.ts --branch {{branch}} --target {{target}}',
+  command: 'bun ~/.claude/skills/ExampleDev/Tools/JenkinsTrigger.ts --branch {{branch}} --target {{target}}',
   arguments: [
     { name: 'branch', description: 'Git branch to build', required: true },
     { name: 'target', description: 'Build target', default: 'board-a-dev' },

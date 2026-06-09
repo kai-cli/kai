@@ -18,6 +18,7 @@
 //   Reads: transcript file
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
+import { readJSON, atomicWriteJSON } from './lib/atomic';
 import { join, basename } from 'path';
 import { paiPath } from './lib/paths';
 import { inference } from '../PAI/Tools/Inference';
@@ -61,17 +62,12 @@ export interface Insight {
 // ============================================================================
 
 export function loadState(): ExtractorState {
-  try {
-    if (existsSync(STATE_FILE)) {
-      return JSON.parse(readFileSync(STATE_FILE, 'utf-8'));
-    }
-  } catch {}
-  return { lastRun: '', lastSessionId: '', insightsToday: 0, todayDate: '' };
+  return readJSON<ExtractorState>(STATE_FILE, { lastRun: '', lastSessionId: '', insightsToday: 0, todayDate: '' });
 }
 
 export function saveState(state: ExtractorState): void {
   mkdirSync(paiPath('MEMORY', 'STATE'), { recursive: true });
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  atomicWriteJSON(STATE_FILE, state);
 }
 
 // ============================================================================

@@ -126,12 +126,14 @@ function buildManifest(): ManifestData {
   const agentsDir = paiPath("agents");
 
   // Intentional 3-level nesting (e.g. Documents/Pdf, Media/Art). walkSkills() is recursive.
-  // Matches: find skills/ -name 'SKILL.md' | wc -l
+  // Matches: find skills/ -name 'SKILL.md' -not -path '*/.archive/*' | wc -l
+  // (.archive/ holds retired skills — excluded from the count, like hooks/archive is for hooks)
   const skillInventory: string[] = [];
   if (existsSync(skillsDir)) {
     function walkSkills(dir: string, rel: string) {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
+        if (entry.name === ".archive") continue; // skip retired skills
         const fullPath = join(dir, entry.name);
         const relPath = rel ? `${rel}/${entry.name}` : entry.name;
         if (existsSync(join(fullPath, "SKILL.md"))) {

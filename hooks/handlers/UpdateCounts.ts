@@ -21,6 +21,8 @@ import { atomicWriteJSON } from '../lib/atomic';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { getPaiDir, getSettingsPath, paiPath } from '../lib/paths';
+import { count as countRatingsStore } from '../lib/ratings-store';
+import { countSkills as countSkillsShared } from '../lib/skill-count';
 
 
 interface Counts {
@@ -81,27 +83,11 @@ function countWorkflowFiles(dir: string): number {
 }
 
 /**
- * Count skills (directories with SKILL.md file)
+ * Count skills — delegates to the single source (hooks/lib/skill-count.ts).
+ * Recursive, excludes .archive, matches manifest. Fixes the statusline showing 46 vs manifest 70.
  */
 function countSkills(paiDir: string): number {
-  let count = 0;
-  const skillsDir = join(paiDir, 'skills');
-  try {
-    for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
-      // Handle both real directories and symlinks to directories
-      const isDir = entry.isDirectory() ||
-        (entry.isSymbolicLink() && statSync(join(skillsDir, entry.name)).isDirectory());
-      if (isDir) {
-        const skillFile = join(skillsDir, entry.name, 'SKILL.md');
-        if (existsSync(skillFile)) {
-          count++;
-        }
-      }
-    }
-  } catch {
-    // skills directory doesn't exist
-  }
-  return count;
+  return countSkillsShared(paiDir);
 }
 
 /**
@@ -123,18 +109,6 @@ function countHooks(paiDir: string): number {
 }
 
 /**
- * Count non-empty lines in a JSONL file (signals = rating entries)
- */
-function countRatingsLines(filePath: string): number {
-  try {
-    if (!existsSync(filePath) || !statSync(filePath).isFile()) return 0;
-    return readFileSync(filePath, 'utf-8').split('\n').filter(l => l.trim()).length;
-  } catch {
-    return 0;
-  }
-}
-
-/**
  * Count immediate subdirectories (depth 1)
  */
 function countSubdirs(dir: string): number {
@@ -149,7 +123,6 @@ function countSubdirs(dir: string): number {
  * Get all counts
  */
 function getCounts(paiDir: string): Counts {
-  const ratingsPath = join(paiDir, 'MEMORY/LEARNING/SIGNALS/ratings.jsonl');
   return {
     skills: countSkills(paiDir),
     workflows: countWorkflowFiles(join(paiDir, 'skills')),
@@ -160,7 +133,7 @@ function getCounts(paiDir: string): Counts {
     sessions: countFilesRecursive(join(paiDir, 'MEMORY'), '.jsonl'),
     research: countFilesRecursive(join(paiDir, 'MEMORY/RESEARCH'), '.md') +
               countFilesRecursive(join(paiDir, 'MEMORY/RESEARCH'), '.json'),
-    ratings: countRatingsLines(ratingsPath),
+    ratings: countRatingsStore(paiDir),
     updatedAt: new Date().toISOString(),
   };
 }

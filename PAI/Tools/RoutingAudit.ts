@@ -20,7 +20,7 @@
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { homedir } from 'os';
-import { getPaiDir, paiPath } from '../../hooks/lib/paths';
+import { getPaiDir, paiPath, encodeProjectDir } from '../../hooks/lib/paths';
 import { inference } from './Inference';
 
 const HOME = homedir();
@@ -28,9 +28,9 @@ const paiDir = getPaiDir();
 const ROUTING_FILE = join(paiDir, 'PAI', 'CONTEXT_ROUTING.md');
 const PROJECTS_DIR = join(HOME, 'Projects');
 const MEMORY_BASE = join(HOME, '.claude', 'projects');
-// Derive prefix from HOME to stay portable
-const _homeEncoded = HOME.replace(/[/_]/g, '-');
-const MEM_PREFIX = `${_homeEncoded}-Projects-`;
+// Derive prefix from HOME to stay portable. Use the canonical encoder so the dotted
+// username (and any spaces) map to '-' exactly as Claude Code names the store dir. [[encodeProjectDir]]
+const MEM_PREFIX = `${encodeProjectDir(PROJECTS_DIR)}-`;
 
 interface AuditResult {
   ok: string[];
@@ -218,7 +218,7 @@ async function runPropose(threshold: number, jsonOutput: boolean): Promise<void>
   const LOG_FILE = paiPath('MEMORY', 'STATE', 'read-log.jsonl');
 
   if (!existsSync(LOG_FILE)) {
-    console.log('No read-log.jsonl found — ReadTracker.hook.ts must run for a few sessions first.');
+    console.log('No read-log.jsonl found — ReadActivity.hook.ts must run for a few sessions first.');
     process.exit(0);
   }
 

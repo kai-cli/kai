@@ -47,7 +47,6 @@
         // Terminal state tracking + teal tab for interactive prompts
         "matcher": "AskUserQuestion",
         "hooks": [
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SetQuestionTab.hook.ts" }
         ]
       },
@@ -98,14 +97,10 @@
         "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SecretOutputDetector.hook.ts" }]
       },
       {
-        // Track PAI-internal file reads for routing candidate analysis (async — no stdout)
+        // W5a: ReadActivity merges ReadTracker (routing-candidate log) + MemoryAccessTracker (eviction
+        // scoring) into one PostToolUse:Read parse. Path-disjoint branches; async, no stdout.
         "matcher": "Read",
-        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ReadTracker.hook.ts", "async": true }]
-      },
-      {
-        // v5.6: Track memory detail-file reads for eviction scoring (async — updates memory-meta.jsonl)
-        "matcher": "Read",
-        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemoryAccessTracker.hook.ts", "async": true }]
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ReadActivity.hook.ts", "async": true }]
       }
     ],
 
@@ -150,13 +145,11 @@
           // --- ASYNC hooks (inference calls, analytics — no stdout needed) ---
           // v5.6: Detect correction patterns and capture behavioral instincts
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh InstinctCapture.hook.ts", "async": true },
-          // Batched inference for tab title + session name
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PromptAnalysis.hook.ts", "async": true },
+          // W5b: PromptAnalysis removed — it wrote a {tabTitle,sessionName} cache with ZERO readers
+          // (a never-wired consolidator). SessionAutoName owns sessionName, UpdateTabTitle owns tabTitle.
           // Capture 1-10 ratings from prompt patterns + implicit sentiment
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RatingCapture.hook.ts", "async": true },
-          // Track terminal state for proper output rendering
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts", "async": true },
-          // Update tab title with task description
+          // W10: TerminalState's UPS branch removed (duplicated UpdateTabTitle). UpdateTabTitle owns the title.
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateTabTitle.hook.ts", "async": true }
         ]
       }
@@ -205,8 +198,8 @@
         "hooks": [
           // Cache the last response for quick reference (fast, 23ms)
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LastResponseCache.hook.ts" },
-          // Update terminal state after response completes (188ms)
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TerminalState.hook.ts" },
+          // W10: TerminalState's Stop branch removed — completion tab is owned by handlers/TabState
+          // inside StopOrchestrator (ordered fan-out), which avoids the prior multi-writer race on Stop.
           // Orchestrate stop-phase handlers (15s inference — must be async)
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh StopOrchestrator.hook.ts", "async": true },
           // Track algorithm phase progress (236ms, no stdout needed)

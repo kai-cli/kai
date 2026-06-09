@@ -1,12 +1,12 @@
 ---
 name: OSINT
-description: Open source intelligence gathering. USE WHEN OSINT, due diligence, background check, research person, company intel, investigate. SkillSearch('osint') for docs.
+description: Structured OSINT investigations — people lookup, company intel, investment due diligence, entity/threat intel, domain recon, organization research using public sources with ethical authorization framework. USE WHEN OSINT, due diligence, background check, research person, company intel, investigate, company lookup, domain lookup, entity lookup, organization lookup, threat intel, discover OSINT sources.
 ---
 
 ## Customization
 
 **Before executing, check for user customizations at:**
-`~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/OSINT/`
+`~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/OSINT/`
 
 If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
 
@@ -27,10 +27,13 @@ Open Source Intelligence gathering for authorized investigations.
 
 | Investigation Type | Workflow | Context |
 |-------------------|----------|---------|
-| People lookup | `Workflows/PeopleLookup.md` | `PeopleTools.md` |
-| Company lookup | `Workflows/CompanyLookup.md` | `CompanyTools.md` |
-| Investment due diligence | `Workflows/CompanyDueDiligence.md` | `CompanyTools.md` |
-| Entity/threat intel | `Workflows/EntityLookup.md` | `EntityTools.md` |
+| People lookup | `Workflows/PeopleLookup.md` | `SOURCES.JSON` |
+| Company lookup | `Workflows/CompanyLookup.md` | `SOURCES.JSON` |
+| Investment due diligence | `Workflows/CompanyDueDiligence.md` | `SOURCES.JSON` |
+| Entity/threat intel | `Workflows/EntityLookup.md` | `SOURCES.JSON` |
+| Domain/subdomain investigation | `Workflows/DomainLookup.md` | `SOURCES.JSON` |
+| Organization/NGO/gov research | `Workflows/OrganizationLookup.md` | `SOURCES.JSON` |
+| Discover new OSINT sources | `Workflows/DiscoverOSINTSources.md` | `SOURCES.JSON` |
 
 ---
 
@@ -52,9 +55,21 @@ Open Source Intelligence gathering for authorized investigations.
 -> Route to `Workflows/CompanyDueDiligence.md`
 
 **Entity/Threat Intel:**
-- "investigate [domain]", "threat intelligence on [entity]", "is this domain malicious"
-- "research this threat actor", "check [domain]", "analyze [entity]"
+- "investigate [entity]", "threat intelligence on [entity]", "is this malicious"
+- "research this threat actor", "analyze [entity]", "check this IP"
 -> Route to `Workflows/EntityLookup.md`
+
+**Domain/Subdomain Investigation:**
+- "investigate domain", "check domain", "subdomain enumeration"
+- "domain recon on [domain]", "what subdomains does [domain] have"
+- "DNS investigation", "certificate transparency for [domain]"
+-> Route to `Workflows/DomainLookup.md`
+
+**Organization/NGO/Government:**
+- "research organization", "investigate NGO", "research agency"
+- "who is [organization]", "investigate [nonprofit]", "research [government agency]"
+- "what do we know about [association]", "background on [institution]"
+-> Route to `Workflows/OrganizationLookup.md`
 
 ---
 
@@ -74,11 +89,13 @@ Open Source Intelligence gathering for authorized investigations.
 
 | File | Purpose |
 |------|---------|
+| `SOURCES.JSON` | Master catalog of 279 OSINT sources across 8 categories |
+| `SOURCES.md` | Human-readable source reference with descriptions and access info |
 | `EthicalFramework.md` | Authorization, legal, ethical boundaries |
 | `Methodology.md` | Collection methods, verification, reporting |
-| `PeopleTools.md` | People search, social media, public records |
-| `CompanyTools.md` | Business databases, DNS, tech profiling |
-| `EntityTools.md` | Threat intel, scanning, malware analysis, attack targeting patterns |
+| `PeopleTools.md` | People search, social media, public records (legacy — use SOURCES.JSON) |
+| `CompanyTools.md` | Business databases, DNS, tech profiling (legacy — use SOURCES.JSON) |
+| `EntityTools.md` | Threat intel, scanning, malware analysis (legacy — use SOURCES.JSON) |
 
 ---
 
@@ -107,7 +124,7 @@ Open Source Intelligence gathering for authorized investigations.
 
 **Active investigations:**
 ```
-~/.claude/MEMORY/WORK/$(jq -r '.work_dir' ~/.claude/MEMORY/STATE/current-work.json)/scratch/YYYY-MM-DD-HHMMSS_osint-[target]/
+~/.claude/MEMORY/WORK/$(jq -r '.work_dir' ~/.claude/MEMORY/STATE/current-work.json)/YYYY-MM-DD-HHMMSS_osint-[target]/
 ```
 
 **Archived reports:**
@@ -127,5 +144,5 @@ See `EthicalFramework.md` for complete requirements.
 
 ---
 
-**Version:** 2.0 (Canonical Structure)
-**Last Updated:** December 2024
+**Version:** 3.0 (SOURCES.JSON Integration)
+**Last Updated:** February 2026

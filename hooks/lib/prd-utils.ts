@@ -291,12 +291,19 @@ export function upsertSession(sessionUUID: string, sessionName: string, task: st
         .slice(0, 40);
       const slug = `${datePrefix}_${taskSlug}`;
 
-      // Capture git commit at session start for context decay tracking (v5.9)
+      // Capture git commit at session start for context decay tracking (v5.9).
+      // Point git at the PROJECT dir, not $HOME ($HOME isn't a repo → this silently
+      // captured nothing for every session before 2026-06-08). execFileSync avoids
+      // shell-string concat. Stays undefined when there's no repo (non-git project).
       let commitAtStart: string | undefined;
       try {
-        const { execSync } = require('child_process');
-        commitAtStart = execSync('git -C ' + (process.env.HOME || '') + ' rev-parse HEAD 2>/dev/null', { timeout: 1000 }).toString().trim().slice(0, 40) || undefined;
-      } catch {}
+        const { execFileSync } = require('child_process');
+        const repoDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+        commitAtStart = execFileSync('git', ['-C', repoDir, 'rev-parse', 'HEAD'], {
+          timeout: 1000,
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).toString().trim().slice(0, 40) || undefined;
+      } catch { /* non-git project or git unavailable — leave undefined */ }
 
       registry.sessions[slug] = {
         task: task || sessionName || (mode === 'native' ? 'Native session' : 'Starting...'),

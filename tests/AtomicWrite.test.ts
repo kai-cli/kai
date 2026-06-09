@@ -8,7 +8,7 @@ import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { atomicWriteJSON, atomicWriteText } from '../hooks/lib/atomic';
+import { atomicWriteJSON, atomicWriteText, readJSON } from '../hooks/lib/atomic';
 
 const TEST_DIR = tmpdir();
 
@@ -65,6 +65,32 @@ describe('atomicWriteJSON', () => {
     const raw = readFileSync(path, 'utf-8');
     expect(raw).toContain('\n');
     unlinkSync(path);
+  });
+});
+
+describe('readJSON', () => {
+  test('round-trips with atomicWriteJSON', () => {
+    const path = tmpFile('rt');
+    atomicWriteJSON(path, { a: 1, b: 'x' });
+    expect(readJSON(path, { a: 0, b: '' })).toEqual({ a: 1, b: 'x' });
+    unlinkSync(path);
+  });
+
+  test('returns fallback when file is missing', () => {
+    const path = tmpFile('missing-never-created');
+    expect(readJSON(path, { fallback: true })).toEqual({ fallback: true });
+  });
+
+  test('returns fallback on unparseable JSON (does not throw)', () => {
+    const path = tmpFile('corrupt');
+    writeFileSync(path, '{ this is not json');
+    expect(readJSON(path, { ok: false })).toEqual({ ok: false });
+    unlinkSync(path);
+  });
+
+  test('supports null fallback (read-only state pattern)', () => {
+    const path = tmpFile('null-fallback-missing');
+    expect(readJSON<{ x: number } | null>(path, null)).toBeNull();
   });
 });
 

@@ -1,12 +1,12 @@
 ---
 name: Fabric
-description: Intelligent prompt pattern system with 240+ specialized patterns for content analysis, extraction, and transformation. USE WHEN user says 'use fabric', 'fabric pattern', 'run fabric', 'update fabric', 'update patterns', 'sync fabric', 'extract wisdom', 'summarize with fabric', 'create threat model', 'analyze with fabric', OR any request to apply Fabric patterns to content.
+description: 240+ specialized prompt patterns for content analysis, extraction, and transformation — run patterns, sync from repo, create threat models, summarize. USE WHEN fabric, fabric pattern, run fabric, update patterns, sync fabric, summarize with fabric, create threat model, analyze with fabric.
 ---
 
 ## Customization
 
 **Before executing, check for user customizations at:**
-`~/.claude/skills/PAI/USER/SKILLCUSTOMIZATIONS/Fabric/`
+`~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/Fabric/`
 
 If this directory exists, load and apply any PREFERENCES.md, configurations, or resources found there. These override default behavior. If the directory does not exist, proceed with skill defaults.
 
@@ -83,7 +83,7 @@ Only use `fabric` command for:
 
 ### Full Pattern Catalog
 
-See `PatternCatalog.md` for complete list of 240+ patterns organized by category.
+Browse the `Patterns/` directory for the complete list of 240+ patterns organized by category.
 
 ---
 
@@ -146,10 +146,8 @@ Each pattern's `system.md` contains the full prompt that defines:
 
 | Path | Purpose |
 |------|---------|
-| `~/.claude/skills/Fabric/Patterns/` | Local pattern storage (240+) |
-| `~/.claude/skills/Fabric/PatternCatalog.md` | Full pattern documentation |
-| `~/.claude/skills/Fabric/Workflows/` | Execution workflows |
-| `~/.claude/skills/Fabric/Tools/` | CLI utilities |
+| `Patterns/` | Local pattern storage (240+) |
+| `Workflows/` | Execution workflows |
 
 ---
 

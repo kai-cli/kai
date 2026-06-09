@@ -73,3 +73,24 @@ export function getSkillsDir(): string {
 export function getMemoryDir(): string {
   return paiPath('MEMORY');
 }
+
+/**
+ * Encode an absolute project path to its Claude Code transcript/memory store dir name.
+ *
+ * Claude Code names `~/.claude/projects/<dir>` by replacing EVERY non-alphanumeric character with `-`
+ * (so `/Users/your.name/Projects/Instant_Help` → `-Users-your.name-Projects-Instant-Help`).
+ *
+ * SINGLE SOURCE — fixes a system-wide bug where 6 call sites used `replace(/[/_]/g,'-')`, which missed the
+ * `.` in the username (and spaces), computed a nonexistent dir, and silently fell back to GLOBAL memory.
+ * That broke ALL per-project memory loading + MemoryRecall. Use this everywhere a project store dir is resolved.
+ */
+export function encodeProjectDir(absPath: string): string {
+  return absPath.replace(/[^a-zA-Z0-9]/g, '-');
+}
+
+/**
+ * Resolve a project's memory dir under the store: `<paiDir>/projects/<encoded>/memory`.
+ */
+export function projectMemoryDir(absProjectPath: string): string {
+  return paiPath('projects', encodeProjectDir(absProjectPath), 'memory');
+}

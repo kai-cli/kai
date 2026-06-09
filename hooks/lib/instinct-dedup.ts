@@ -12,11 +12,10 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import type { Instinct } from './instinct-store';
 import { cosineSimilarity } from './similarity';
+import { embed } from './embeddings';
 
 const DEDUP_THRESHOLD = 0.85;
 const VECTORS_FILE = 'MEMORY/STATE/embeddings/instinct-vectors.jsonl';
-
-let warnedOnce = false;
 
 interface VectorEntry {
   id: string;
@@ -53,22 +52,9 @@ export function invalidateVector(paiDir: string, instinctId: string): void {
   saveVectorCache(paiDir, entries);
 }
 
-// cosineSimilarity moved to lib/similarity.ts (W1 consolidation — imported above)
-
-async function embed(text: string): Promise<number[] | null> {
-  try {
-    const { pipeline } = await import('@huggingface/transformers');
-    const pipe = await pipeline('feature-extraction', 'Xenova/jina-embeddings-v2-small-en', { revision: 'main' });
-    const output = await (pipe as any)(text, { pooling: 'mean', normalize: true });
-    return Array.from(output.data as Float32Array);
-  } catch {
-    if (!warnedOnce) {
-      console.error('[instinct-dedup] Embedding model unavailable — skipping dedup');
-      warnedOnce = true;
-    }
-    return null;
-  }
-}
+// cosineSimilarity moved to lib/similarity.ts; embed() moved to lib/embeddings.ts
+// (W1 consolidation — both imported above). The shared embed() caches the model once per
+// process, so the loop below no longer reloads the 33M-param model on every instinct.
 
 /**
  * Check if candidateText is semantically similar to any existing instinct.

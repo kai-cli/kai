@@ -96,7 +96,9 @@ function parseExcludePaths(paiDir: string = getPaiDir()): string[] {
   }
 
   const content = readFileSync(syncScript, 'utf-8');
-  const match = content.match(/EXCLUDE_PATHS=\(([\s\S]*?)\)/);
+  // Match to the array-closing ')' at START of a line — a ')' inside a comment/value (e.g. a
+  // parenthetical in an inline # comment) must NOT prematurely terminate the capture.
+  const match = content.match(/EXCLUDE_PATHS=\(([\s\S]*?)\n\)/);
   if (!match) {
     fail('Could not parse EXCLUDE_PATHS from sync-to-kai.sh');
     process.exit(1);
@@ -119,7 +121,7 @@ function parseExcludePaths(paiDir: string = getPaiDir()): string[] {
 function parseKaiOnlyFiles(paiDir: string = getPaiDir()): string[] {
   const syncScript = join(paiDir, 'scripts', 'sync-to-kai.sh');
   const content = readFileSync(syncScript, 'utf-8');
-  const match = content.match(/KAI_ONLY_FILES=\(([\s\S]*?)\)/);
+  const match = content.match(/KAI_ONLY_FILES=\(([\s\S]*?)\n\)/);
   if (!match) {
     fail('Could not parse KAI_ONLY_FILES from sync-to-kai.sh');
     process.exit(1);
@@ -251,6 +253,48 @@ function main() {
   }
   pass('Hook wiring reconciled (hooks.jsonc ↔ composite ↔ files)');
 
+  // Step 2.6: PII single-source drift guard. The detection patterns (pii-patterns.json) and the scrub
+  // replacements (pii-replacements.json) must stay consistent, and the old hardcoded lists must NOT
+  // reappear in the scripts. This is the SF-10 fix applied to PII: one source, guarded against drift.
+  console.log('\n── PII single-source guard ──');
+  {
+    const piiErrors: string[] = [];
+    const detectPatterns = getPIIPatterns(PAI_DIR); // flat regex array from pii-patterns.json
+    // (a) every scrub 'find' must be covered by some detection pattern (so anything we scrub, we also detect)
+    const replPath = join(PAI_DIR, 'scripts', 'pii-replacements.json');
+    if (!existsSync(replPath)) {
+      piiErrors.push('scripts/pii-replacements.json missing (scrubber single-source)');
+    } else {
+      try {
+        const repl = JSON.parse(readFileSync(replPath, 'utf-8')) as { replacements: [string, string][] };
+        const detectJoined = detectPatterns.join('\n');
+        for (const [find] of repl.replacements) {
+          // a 'find' is covered if it appears literally in a pattern, or a pattern matches it
+          const covered = detectPatterns.some((p) => {
+            try { return new RegExp(p, 'i').test(find) || p.includes(find); } catch { return p.includes(find); }
+          });
+          if (!covered) piiErrors.push(`scrub term "${find}" has no detection pattern in pii-patterns.json`);
+        }
+        void detectJoined;
+      } catch (e) {
+        piiErrors.push(`pii-replacements.json parse error: ${e}`);
+      }
+    }
+    // (b) the old hardcoded lists must be gone (drift would silently re-fork the source of truth)
+    const syncSrc = readFileSync(join(PAI_DIR, 'scripts', 'sync-to-kai.sh'), 'utf-8');
+    // Match the POPULATED form (entries on following lines), not the empty `=()` init we now use.
+    if (/declare -A PII_REPLACEMENTS=\(\s*\n\s*\[/.test(syncSrc)) piiErrors.push('sync-to-kai.sh still has a hardcoded PII_REPLACEMENTS array — must load from pii-replacements.json');
+    const verifySrc = existsSync(join(PAI_DIR, 'scripts', 'verify-release.sh')) ? readFileSync(join(PAI_DIR, 'scripts', 'verify-release.sh'), 'utf-8') : '';
+    if (/PII_PATTERNS=\(\s*\n\s*'\\b/.test(verifySrc)) piiErrors.push('verify-release.sh still has a hardcoded PII_PATTERNS array — must load from pii-patterns.json');
+
+    if (piiErrors.length > 0) {
+      for (const e of piiErrors) fail(e);
+      console.log('\n✗ PII single-source drift detected — fix before sync\n');
+      process.exit(1);
+    }
+    pass(`PII single-source intact (${detectPatterns.length} patterns, scrub terms all covered)`);
+  }
+
   // Step 3: Classify all files
   console.log('\n── File Classification ──');
   const classified = {
@@ -303,7 +347,7 @@ function main() {
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
       const actualSkills = execSync(
-        "find skills -name SKILL.md | wc -l | tr -d ' '",
+        "find skills -name SKILL.md -not -path '*/.archive/*' | wc -l | tr -d ' '",
         { cwd: PAI_DIR, encoding: 'utf-8' }
       ).trim();
       const actualHooks = execSync(

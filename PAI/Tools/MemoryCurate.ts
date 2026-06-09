@@ -21,9 +21,10 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync, renameSync, appendFileSync, unlinkSync } from 'fs';
 import { join, dirname, basename } from 'path';
 import { createInterface } from 'readline';
-import { getPaiDir, paiPath } from '../../hooks/lib/paths';
+import { getPaiDir, paiPath, encodeProjectDir, projectMemoryDir } from '../../hooks/lib/paths';
 import { listDrafts, cleanupExpired, rejectDraft as stagingReject, writeDraft } from '../../hooks/lib/staging';
 import { listKnowledgeDomains } from '../../hooks/lib/knowledge-readback';
+import { loadSince as loadSinceRatings, loadAll as loadAllRatings } from '../../hooks/lib/ratings-store';
 import { loadRatings, analyzeRatings, synthesisToStagingContent } from './LearningPatternSynthesis';
 
 const paiDir = getPaiDir();
@@ -309,10 +310,13 @@ function approveDraft(index: number): { success: boolean; error?: string } {
   }
 
   if (!targetMemoryDir || !existsSync(targetMemoryDir)) {
-    // Fall back: create a new memory dir for the target project
-    const fallbackSlug = (draft.targetProject || 'kai').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    // Fall back: create a new memory dir for the target project.
+    // Encode the project's ABSOLUTE path the way Claude Code names its store dir
+    // (every non-alphanumeric → '-', preserving case) so readers can find it. [[encodeProjectDir]]
     const home = process.env.HOME || '';
-    targetMemoryDir = join(paiDir, 'projects', `-${home.replace(/\//g, '-').replace(/^-/, '')}-Projects-${fallbackSlug}`, 'memory');
+    const projectName = draft.targetProject || 'kai';
+    const absProjectPath = join(home, 'Projects', projectName);
+    targetMemoryDir = projectMemoryDir(absProjectPath);
     mkdirSync(targetMemoryDir, { recursive: true });
   }
 
@@ -533,17 +537,12 @@ async function interactiveInsights(dryRun: boolean): Promise<void> {
   let highRatingCount = 0;
 
   try {
-    const ratingsPath = join(paiDir, 'MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
-    if (existsSync(ratingsPath)) {
-      const cutoff = Date.now() - 7 * 86400000;
-      const lines = readFileSync(ratingsPath, 'utf-8').trim().split('\n').filter(l => l);
-      const recent = lines.map(l => { try { return JSON.parse(l); } catch { return null; } })
-        .filter(e => e && new Date(e.timestamp || 0).getTime() > cutoff);
-      recentCount = recent.length;
-      if (recentCount > 0) {
-        recentAvg = recent.reduce((s: number, e: {rating: number}) => s + (e.rating || 0), 0) / recentCount;
-        highRatingCount = recent.filter((e: {rating: number}) => e.rating >= 8).length;
-      }
+    // W11: shared ratings-store (loadSince handles parse + date window + malformed-line skip).
+    const recent = loadSinceRatings(7, paiDir).filter((e) => typeof e.rating === 'number');
+    recentCount = recent.length;
+    if (recentCount > 0) {
+      recentAvg = recent.reduce((s: number, e) => s + (e.rating || 0), 0) / recentCount;
+      highRatingCount = recent.filter((e) => (e.rating as number) >= 8).length;
     }
   } catch { /* skip */ }
 
@@ -611,12 +610,11 @@ function renderStats() {
 
   let totalRatings = 0, avgRating = 0, totalReflections = 0;
   try {
-    const rp = join(paiDir, 'MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
-    if (existsSync(rp)) {
-      const lines = readFileSync(rp, 'utf-8').trim().split('\n').filter(l => l);
-      totalRatings = lines.length;
-      const sum = lines.reduce((a, l) => { try { return a + (JSON.parse(l).rating || 0); } catch { return a; } }, 0);
-      avgRating = totalRatings > 0 ? sum / totalRatings : 0;
+    // W11: shared ratings-store
+    const all = loadAllRatings(paiDir).filter((e) => typeof e.rating === 'number');
+    totalRatings = all.length;
+    if (totalRatings > 0) {
+      avgRating = all.reduce((a, e) => a + ((e.rating as number) || 0), 0) / totalRatings;
     }
   } catch { /* skip */ }
   try {

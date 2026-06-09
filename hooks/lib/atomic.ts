@@ -9,7 +9,22 @@
  * a partial write.
  */
 
-import { writeFileSync, renameSync, unlinkSync, existsSync } from 'fs';
+import { writeFileSync, renameSync, unlinkSync, existsSync, readFileSync } from 'fs';
+
+/**
+ * Read + parse a JSON state file, returning `fallback` if it's missing or unparseable.
+ * SINGLE SOURCE for the read-or-default pattern that was inlined across hooks
+ * (KnowledgeSync/InsightExtractor/WeeklyMaintenance each had their own copy).
+ * Pair with atomicWriteJSON for crash-safe round-trips.
+ */
+export function readJSON<T>(path: string, fallback: T): T {
+  try {
+    if (!existsSync(path)) return fallback;
+    return JSON.parse(readFileSync(path, 'utf-8')) as T;
+  } catch {
+    return fallback;
+  }
+}
 
 /**
  * Write JSON to a file atomically via tmp-then-rename.

@@ -5,6 +5,7 @@ import {
   parseTranscript,
   extractVoiceCompletion,
   extractCompletionPlain,
+  extractUserPrompt,
   type ParsedTranscript,
 } from "../hooks/lib/transcript-parser";
 // W13: both old paths must re-export the canonical module.
@@ -106,6 +107,42 @@ describe("TranscriptParser — W13 canonical + shims", () => {
       const parsed = parseTranscript(join(TEST_DIR, "nope.jsonl"));
       expect(parsed.completionSummary).toBe("");
       expect(parsed.responseState).toBe("completed");
+    });
+  });
+
+  describe("userPrompt extraction (SF-1 fix)", () => {
+    test("parseTranscript populates userPrompt with the last real user message", () => {
+      const path = writeTranscript(
+        "userprompt.jsonl",
+        jsonl(
+          { type: "user", message: { content: "first prompt" } },
+          { type: "assistant", message: { content: "reply 1" } },
+          { type: "user", message: { content: "fix the relationship bug" } },
+          { type: "assistant", message: { content: "🎯 COMPLETED: done" } }
+        )
+      );
+      const parsed: ParsedTranscript = parseTranscript(path);
+      expect(parsed.userPrompt).toBe("fix the relationship bug"); // LAST real user msg
+    });
+
+    test("extractUserPrompt handles array content with text blocks, ignores tool_result", () => {
+      const content = jsonl(
+        { type: "user", message: { content: [{ type: "text", text: "real prompt here" }] } },
+        { type: "assistant", message: { content: "ok" } },
+        { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "x" }] } } // NOT a real prompt
+      );
+      // last REAL user prompt is the text block, not the trailing tool_result
+      expect(extractUserPrompt(content)).toBe("real prompt here");
+    });
+
+    test("empty/no-user transcript → userPrompt is ''", () => {
+      expect(extractUserPrompt("")).toBe("");
+      const path = writeTranscript("nouser.jsonl", jsonl({ type: "assistant", message: { content: "orphan" } }));
+      expect(parseTranscript(path).userPrompt).toBe("");
+    });
+
+    test("missing file → userPrompt '' (graceful)", () => {
+      expect(parseTranscript(join(TEST_DIR, "nope2.jsonl")).userPrompt).toBe("");
     });
   });
 });

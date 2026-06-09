@@ -18,6 +18,24 @@
 
 ---
 
+## Source Reference (from SOURCES.JSON)
+
+Use these specific sources per investigation phase:
+
+| Investigation Area | Sources |
+|-------------------|---------|
+| **Domain/DNS** | SecurityTrails, DomainTools, crt.sh, DNSDumpster, ViewDNS, Robtex, CertStream |
+| **IP Reputation** | Shodan, Censys, AbuseIPDB, GreyNoise, BinaryEdge, ZoomEye, Criminal IP, IPinfo |
+| **Malware Analysis** | VirusTotal, Hybrid Analysis, ANY.RUN, MalwareBazaar, URLhaus, URLScan.io |
+| **Vulnerability** | NVD, CVE, Exploit-DB, CISA KEV |
+| **Threat Intel** | Pulsedive, IBM X-Force, Cisco Talos, AlienVault OTX, ThreatFox |
+| **Dark Web/Leak** | Ahmia, HIBP, Intelligence X, DeHashed |
+| **Frameworks** | MITRE ATT&CK, D3FEND, ATLAS |
+| **Botnet/C2** | Feodo Tracker, SSL Blacklist |
+| **Government** | CISA, UK NCSC, ENISA |
+
+---
+
 ## Phase 2: Domain & URL Intelligence
 
 **Domain Analysis:**
@@ -53,24 +71,32 @@
 
 ## Phase 4: Threat Intelligence (Researcher Agents)
 
-**Deploy 8 researchers in parallel:**
+**Deploy 8 researchers in parallel with source-specific prompts:**
 
 ```typescript
-// Malware Intelligence (Perplexity x2)
-Task({ subagent_type: "PerplexityResearcher", prompt: "Research malware associated with [entity] via VirusTotal, Hybrid Analysis, Malware Bazaar" })
-Task({ subagent_type: "PerplexityResearcher", prompt: "Check reputation of [entity] via AbuseIPDB, AlienVault OTX, Cisco Talos" })
+// Malware Analysis — VirusTotal, Hybrid Analysis, ANY.RUN, MalwareBazaar, URLhaus, URLScan.io
+Task({ subagent_type: "PerplexityResearcher", prompt: "Search VirusTotal, Hybrid Analysis, ANY.RUN, MalwareBazaar, URLhaus, and URLScan.io for malware associated with [entity]. Report detection ratios, malware families, and behavioral indicators." })
 
-// Threat Actor Profiling (Claude x2)
-Task({ subagent_type: "ClaudeResearcher", prompt: "Profile threat actors associated with [entity] using MITRE ATT&CK, Malpedia" })
-Task({ subagent_type: "ClaudeResearcher", prompt: "Research historical campaigns involving [entity]" })
+// IP/Domain Reputation — Shodan, Censys, AbuseIPDB, GreyNoise, BinaryEdge, Criminal IP
+Task({ subagent_type: "PerplexityResearcher", prompt: "Check reputation of [entity] via AbuseIPDB (abuse reports), GreyNoise (scanner classification), Shodan (exposed services), Censys (certificates), BinaryEdge, and Criminal IP. Report confidence scores and historical flags." })
 
-// C2 Detection (Gemini x2)
-Task({ subagent_type: "GeminiResearcher", prompt: "Detect C2 indicators for [entity] - Cobalt Strike, Metasploit patterns" })
-Task({ subagent_type: "GeminiResearcher", prompt: "Map infrastructure relationships for [entity]" })
+// Threat Actor Profiling — MITRE ATT&CK, Pulsedive, IBM X-Force, AlienVault OTX
+Task({ subagent_type: "ClaudeResearcher", prompt: "Profile threat actors associated with [entity] using MITRE ATT&CK framework, Pulsedive, IBM X-Force Exchange, and AlienVault OTX. Map TTPs, related IOCs, and campaign timelines." })
 
-// Verification (Grok x2)
-Task({ subagent_type: "GrokResearcher", prompt: "Verify IOC claims for [entity] - active vs. historical vs. false positive" })
-Task({ subagent_type: "GrokResearcher", prompt: "Assess attribution confidence for [entity]" })
+// Vulnerability & Exploit Intel — NVD, CVE, Exploit-DB, CISA KEV
+Task({ subagent_type: "ClaudeResearcher", prompt: "Search NVD, CVE databases, Exploit-DB, and CISA Known Exploited Vulnerabilities catalog for vulnerabilities related to [entity]. Assess exploitability and active exploitation status." })
+
+// C2 & Botnet Detection — Feodo Tracker, SSL Blacklist, Cisco Talos, ThreatFox
+Task({ subagent_type: "GeminiResearcher", prompt: "Check [entity] against Feodo Tracker (C2 servers), SSL Blacklist, Cisco Talos intelligence, and ThreatFox for C2 indicators, botnet participation, and known malicious infrastructure." })
+
+// Infrastructure Relationship Mapping — SecurityTrails, DomainTools, Robtex, ViewDNS
+Task({ subagent_type: "GeminiResearcher", prompt: "Map infrastructure relationships for [entity] using SecurityTrails (historical DNS), DomainTools (WHOIS), Robtex (network graphs), and ViewDNS (reverse lookups). Identify co-hosted domains and shared infrastructure." })
+
+// Dark Web & Leak Exposure — Ahmia, HIBP, Intelligence X, DeHashed
+Task({ subagent_type: "GrokResearcher", prompt: "Search Ahmia (Tor), HIBP, Intelligence X, and DeHashed for [entity] exposure on dark web, paste sites, and breach databases. Report leak dates, data types exposed, and underground forum mentions." })
+
+// Attribution Verification & Confidence Assessment
+Task({ subagent_type: "GrokResearcher", prompt: "Verify IOC claims for [entity] — classify as active vs. historical vs. false positive. Cross-reference CISA advisories, UK NCSC alerts, and ENISA publications. Assess attribution confidence with evidence weighting." })
 ```
 
 ---
@@ -102,20 +128,20 @@ Task({ subagent_type: "GrokResearcher", prompt: "Assess attribution confidence f
 
 ## Phase 7: Dark Web Intelligence (Researcher Agents)
 
-**Deploy 6 researchers in parallel:**
+**Deploy 6 researchers in parallel with source-specific prompts:**
 
 ```typescript
-// Paste Sites (Perplexity x2)
-Task({ subagent_type: "PerplexityResearcher", prompt: "Search paste sites for [entity]" })
-Task({ subagent_type: "PerplexityResearcher", prompt: "Check breach databases for [entity]" })
+// Paste Sites & Breach Data — HIBP, Intelligence X, DeHashed
+Task({ subagent_type: "PerplexityResearcher", prompt: "Search HIBP, Intelligence X, and DeHashed for [entity] in paste sites and breach databases. Report breach dates, compromised data types, and exposure scope." })
+Task({ subagent_type: "PerplexityResearcher", prompt: "Check Intelligence X historical search for [entity] — archived pastes, leaked documents, and cached content from removed pages." })
 
-// Dark Web (Claude x2)
-Task({ subagent_type: "ClaudeResearcher", prompt: "Check ransomware leak sites for [entity]" })
-Task({ subagent_type: "ClaudeResearcher", prompt: "Search underground forum mentions for [entity]" })
+// Ransomware & Underground Forums — Ahmia, dedicated leak site monitoring
+Task({ subagent_type: "ClaudeResearcher", prompt: "Check ransomware leak sites and Ahmia (Tor search) for [entity]. Search for data dumps, extortion notices, and victim listings." })
+Task({ subagent_type: "ClaudeResearcher", prompt: "Search underground forum mentions of [entity] — access broker listings, vulnerability discussions, and credential sales." })
 
-// Verification (Gemini + Grok)
-Task({ subagent_type: "GeminiResearcher", prompt: "Search Telegram/Discord for [entity]" })
-Task({ subagent_type: "GrokResearcher", prompt: "Verify dark web exposure for [entity]" })
+// Messaging Platforms & Verification
+Task({ subagent_type: "GeminiResearcher", prompt: "Search Telegram channels and Discord servers for mentions of [entity]. Check known threat actor communication channels and data trading groups." })
+Task({ subagent_type: "GrokResearcher", prompt: "Verify dark web exposure claims for [entity]. Cross-reference with Intelligence X and HIBP. Classify findings as confirmed, unverified, or likely false positive." })
 ```
 
 ---
@@ -180,4 +206,4 @@ Task({ subagent_type: "GrokResearcher", prompt: "Verify dark web exposure for [e
 
 ---
 
-**Reference:** See `EntityTools.md` for detailed tool specifications.
+**Reference:** See `SOURCES.JSON` for the full source catalog. Legacy tool details in `EntityTools.md`.

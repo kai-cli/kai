@@ -69,7 +69,7 @@ const PAI_ONLY_FILES = [
   '.github/workflows/test.yml',
   'hooks/archive/',
   'Plans/',
-  'skills/Utilities/KAIUpgrade/',
+  'skills/KAIUpgrade/',
   'scripts/sync-to-kai.sh',
   'scripts/verify-release.sh',
   'scripts/kai-release-audit.ts',

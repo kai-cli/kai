@@ -25,6 +25,7 @@
  */
 
 import { inference } from '../PAI/Tools/Inference';
+import { readStdinRaw as readStdinWithTimeout } from './lib/hook-io';
 import { isValidWorkingTitle, getWorkingFallback } from './lib/output-validators';
 import { setTabState, getSessionOneWord } from './lib/tab-setter';
 import { getIdentity } from './lib/identity';
@@ -35,15 +36,6 @@ interface HookInput {
   transcript_path: string;
 }
 
-async function readStdinWithTimeout(timeout: number = 5000): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    const timer = setTimeout(() => reject(new Error('Timeout')), timeout);
-    process.stdin.on('data', (chunk) => { data += chunk.toString(); });
-    process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
-    process.stdin.on('error', (err) => { clearTimeout(timer); reject(err); });
-  });
-}
 
 // Common imperative → gerund mappings
 const GERUND_MAP: Record<string, string> = {

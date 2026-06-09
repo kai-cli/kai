@@ -132,7 +132,8 @@ console.log(`  Idle timeout: ${CONFIG.idleTimeout / 60000} minutes`)
 
 await browser.launch({
   headless: CONFIG.headless,
-  viewport: CONFIG.viewport
+  viewport: CONFIG.viewport,
+  ignoreHTTPSErrors: process.env.BROWSER_IGNORE_HTTPS_ERRORS === 'true'
 })
 
 // ============================================

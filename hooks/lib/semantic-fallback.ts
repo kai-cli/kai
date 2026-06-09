@@ -2,7 +2,7 @@
  * semantic-fallback.ts — Embedding-based context routing fallback
  *
  * Fires when LocalContextFirst has no explicit routing match.
- * Uses @huggingface/transformers@^3.8.1 with jina-embeddings-v2-small-en.
+ * Embeds the query via lib/embeddings.ts (shared jina-v2-small-en loader) and ranks index chunks.
  * Graceful degradation when model or index not installed.
  *
  * Default threshold: 0.45 cosine similarity (configurable in settings.json)
@@ -11,8 +11,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { cosineSimilarity } from './similarity';
-
-const MODEL_NAME = 'Xenova/jina-embeddings-v2-small-en';
+import { embed } from './embeddings';
 
 interface EmbeddingChunk {
   path: string;
@@ -36,9 +35,6 @@ interface Settings {
   embeddings?: EmbeddingsConfig;
 }
 
-let pipeline: ((text: string) => Promise<{ data: Float32Array }>) | null = null;
-let pipelineLoading = false;
-
 function indexPath(paiDir: string): string {
   return join(paiDir, 'MEMORY', 'STATE', 'embeddings', 'index.jsonl');
 }
@@ -49,23 +45,9 @@ function loadSettings(paiDir: string): Settings {
   try { return JSON.parse(readFileSync(path, 'utf-8')); } catch { return {}; }
 }
 
-// cosineSimilarity moved to lib/similarity.ts (W1 consolidation — imported above)
-
-async function getPipeline(): Promise<((text: string) => Promise<{ data: Float32Array }>) | null> {
-  if (pipeline) return pipeline;
-  if (pipelineLoading) return null;
-
-  try {
-    pipelineLoading = true;
-    const { pipeline: hfPipeline } = await import('@huggingface/transformers');
-    pipeline = await hfPipeline('feature-extraction', MODEL_NAME, { revision: 'main' }) as any;
-    return pipeline;
-  } catch {
-    console.error('[semantic-fallback] @huggingface/transformers not available — run: bun scripts/EmbeddingIndex.ts --setup');
-    pipelineLoading = false;
-    return null;
-  }
-}
+// cosineSimilarity moved to lib/similarity.ts; embedding model load + embed() moved to
+// lib/embeddings.ts (W1 consolidation — both imported above). The shared embed() keeps the
+// cached-singleton + non-blocking-null behavior this module relied on.
 
 function loadIndex(paiDir: string): EmbeddingChunk[] {
   const path = indexPath(paiDir);
@@ -98,13 +80,10 @@ export async function semanticFallback(
   const threshold = settings.embeddings?.threshold ?? 0.45;
   const maxTokens = settings.embeddings?.maxTokens ?? 2000;
 
-  const pipe = await getPipeline();
-  if (!pipe) return empty;
+  const queryEmbedding = await embed(query);
+  if (!queryEmbedding) return empty;
 
   try {
-    const output = await pipe(query, { pooling: 'mean', normalize: true });
-    const queryEmbedding = Array.from(output.data as Float32Array);
-
     const scored = chunks
       .map(chunk => ({ chunk, score: cosineSimilarity(queryEmbedding, chunk.embedding) }))
       .filter(s => s.score >= threshold)

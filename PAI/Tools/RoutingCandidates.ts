@@ -2,7 +2,7 @@
 /**
  * RoutingCandidates.ts — Surface frequently-read files missing from routing table
  *
- * Reads MEMORY/STATE/read-log.jsonl (written by ReadTracker.hook.ts), aggregates
+ * Reads MEMORY/STATE/read-log.jsonl (written by ReadActivity.hook.ts), aggregates
  * reads by path across sessions, cross-references PAI/CONTEXT_ROUTING.md, and
  * outputs paths that appear in ≥N distinct sessions but have no routing entry.
  *
@@ -135,7 +135,7 @@ if (JSON_OUTPUT) {
 
 if (entries.length === 0) {
   console.log(`No read-log data found at ${LOG_FILE}`);
-  console.log('ReadTracker.hook.ts must run for a few sessions before candidates appear.');
+  console.log('ReadActivity.hook.ts must run for a few sessions before candidates appear.');
   process.exit(0);
 }
 

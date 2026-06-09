@@ -22,6 +22,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { readHookInput } from './lib/hook-io';
+import { encodeProjectDir } from './lib/paths';
 import { rankEntries, type MemoryEntry as ScorerEntry } from './lib/memory-scorer';
 
 interface MemoryEntry {
@@ -141,7 +142,7 @@ function findProjectMemoryDir(): string | null {
 
   // Claude Code encodes paths: /Users/x/Projects/myrepo → -Users-x-Projects-myrepo
   // It replaces both / and _ with -
-  const encoded = claudeProjectDir.replace(/[/_]/g, '-');
+  const encoded = encodeProjectDir(claudeProjectDir);
   const projectMemDir = join(projectsBase, encoded, 'memory');
 
   if (existsSync(join(projectMemDir, 'MEMORY.md'))) {
@@ -153,7 +154,7 @@ function findProjectMemoryDir(): string | null {
     const dirs = readdirSync(projectsBase, { withFileTypes: true })
       .filter(d => d.isDirectory());
 
-    const projectName = basename(claudeProjectDir).replace(/[/_]/g, '-');
+    const projectName = encodeProjectDir(basename(claudeProjectDir));
     const candidates: string[] = [];
 
     for (const dir of dirs) {

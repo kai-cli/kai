@@ -46,7 +46,7 @@ function flushTty(): void {
   // no-op — ttyLog now writes to stderr immediately (captured by run-hook.sh)
 }
 import { join } from 'path';
-import { getPaiDir } from './lib/paths';
+import { getPaiDir, encodeProjectDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
 import { loadLearningDigest, loadWisdomFrames, loadFailurePatterns, loadSignalTrends, loadSynthesisInsights } from './lib/learning-readback';
 import { loadPersonalProjects } from './lib/config-loader';
@@ -673,7 +673,7 @@ async function main() {
       if (meta.length === 0) {
         // First run — look for MEMORY.md to seed meta
         const projectDir = process.env.CLAUDE_PROJECT_DIR || '';
-        const encoded = projectDir ? projectDir.replace(/[/_]/g, '-') : '';
+        const encoded = projectDir ? encodeProjectDir(projectDir) : '';
         const projectMemPath = encoded ? join(paiDir, 'projects', encoded, 'memory', 'MEMORY.md') : '';
         const fallbackPath = join(paiDir, 'MEMORY.md');
         const mdPath = (projectMemPath && existsSync(projectMemPath)) ? projectMemPath : existsSync(fallbackPath) ? fallbackPath : null;
@@ -813,7 +813,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete (v7.1.0)');
+    console.error('✅ KAI session initialization complete (v7.2.0)');
     process.exit(0);
   } catch (error) {
     flushTty();

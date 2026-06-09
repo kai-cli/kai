@@ -12,6 +12,24 @@
 
 ---
 
+## Source Reference (from SOURCES.JSON)
+
+Use these specific sources per investigation phase:
+
+| Investigation Area | Sources |
+|-------------------|---------|
+| **Identity Resolution** | Pipl, Spokeo, BeenVerified, TruePeopleSearch, WhitePages, FastPeopleSearch, Radaris, OSINT Industries, That's Them |
+| **Username Enumeration** | Sherlock, Maigret, WhatsMyName, Namechk, KnowEm, Blackbird |
+| **Email Investigation** | Hunter.io, EmailRep, Epieos, GHunt, Holehe, h8mail, HIBP |
+| **Phone Lookup** | PhoneInfoga, Truecaller, NumVerify |
+| **Image/Face Search** | PimEyes, TinEye, Yandex Images, FaceCheck.ID |
+| **Social Media** | Social Searcher, Osintgram, Snapchat Map |
+| **Academic** | Google Scholar, ResearchGate, ORCID |
+| **Public Records** | PACER, CourtListener, state voter registration |
+| **Genealogy** | FamilySearch, Find A Grave, Ancestry |
+
+---
+
 ## Phase 2: Identifier Collection
 
 **Start with known identifiers:**
@@ -75,20 +93,32 @@
 
 ## Phase 6: Deploy Researcher Fleet
 
-**Launch 6 researchers in parallel for comprehensive coverage:**
+**Launch 8 researchers in parallel for comprehensive source-backed coverage:**
 
 ```typescript
-// Professional Background (Perplexity)
-Task({ subagent_type: "PerplexityResearcher", prompt: "Research [name] professional background, career history, and credentials" })
+// Identity Resolution — Pipl, Spokeo, BeenVerified, TruePeopleSearch, WhitePages, FastPeopleSearch, Radaris
+Task({ subagent_type: "PerplexityResearcher", prompt: "Search Pipl, Spokeo, BeenVerified, TruePeopleSearch, WhitePages, FastPeopleSearch, and Radaris for identity records on [name]. Cross-reference addresses, phone numbers, and known associates." })
 
-// Public Records (Claude)
-Task({ subagent_type: "ClaudeResearcher", prompt: "Search public records for [name] including court records, business filings, property" })
+// Professional Background — LinkedIn, OpenCorporates, USPTO
+Task({ subagent_type: "ClaudeResearcher", prompt: "Research [name] professional background via LinkedIn, OpenCorporates (corporate officer filings), and USPTO (patent searches). Map career history, business affiliations, and credentials." })
 
-// Digital Footprint (Gemini)
-Task({ subagent_type: "GeminiResearcher", prompt: "Map digital footprint for [name] - domains, social media, online presence" })
+// Username & Email Enumeration — Sherlock, Maigret, WhatsMyName, Hunter.io, Epieos, Holehe, HIBP
+Task({ subagent_type: "GeminiResearcher", prompt: "Enumerate usernames for [name] across Sherlock, Maigret, and WhatsMyName. Check email addresses via Hunter.io, Epieos, Holehe, and HIBP for breach exposure." })
 
-// Credential Verification (Grok)
-Task({ subagent_type: "GrokResearcher", prompt: "Verify credentials and claims for [name] - education, certifications, experience" })
+// Social Media Deep Dive — Social Searcher, Osintgram, platform-specific searches
+Task({ subagent_type: "PerplexityResearcher", prompt: "Map social media presence for [name] using Social Searcher. Check Facebook, Twitter/X, Instagram, TikTok, Reddit, and forums. Extract posts, connections, and activity patterns." })
+
+// Public Records & Legal — PACER, CourtListener, state voter registration
+Task({ subagent_type: "ClaudeResearcher", prompt: "Search PACER (federal courts) and CourtListener for legal records involving [name]. Check state voter registration records and property records via county assessor databases." })
+
+// Image & Face Search — PimEyes, TinEye, Yandex Images, FaceCheck.ID
+Task({ subagent_type: "GeminiResearcher", prompt: "Conduct reverse image searches for [name] using PimEyes, TinEye, Yandex Images, and FaceCheck.ID. Identify photo matches across platforms and verify identity consistency." })
+
+// Academic & Publications — Google Scholar, ResearchGate, ORCID
+Task({ subagent_type: "GrokResearcher", prompt: "Search Google Scholar, ResearchGate, and ORCID for academic publications by [name]. Verify claimed education credentials and research output." })
+
+// Credential Verification & Cross-Reference
+Task({ subagent_type: "GrokResearcher", prompt: "Verify all credentials and claims for [name] — education (university registries), certifications (issuing bodies), employment (company records). Flag any inconsistencies across sources." })
 ```
 
 ---
@@ -127,4 +157,4 @@ Task({ subagent_type: "GrokResearcher", prompt: "Verify credentials and claims f
 
 ---
 
-**Reference:** See `PeopleTools.md` for tool details.
+**Reference:** See `SOURCES.JSON` for the full source catalog. Legacy tool details in `PeopleTools.md`.

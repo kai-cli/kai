@@ -667,8 +667,8 @@ skills/OSINT/Workflows/CompanyDueDiligence.md   # Workflow - one level deep
 skills/OSINT/Tools/Analyze.ts                   # Tool - one level deep
 skills/OSINT/CompanyTools.md                    # Context file - in root
 skills/OSINT/Examples.md                        # Context file - in root
-skills/Utilities/Prompting/BeCreative.md                  # Templates in Prompting root
-skills/Utilities/Prompting/StoryExplanation.md            # Templates in Prompting root
+skills/Prompting/BeCreative.md                  # Templates in Prompting root
+skills/Prompting/StoryExplanation.md            # Templates in Prompting root
 skills/PromptInjection/DefenseMechanisms.md     # Context file - in root
 skills/PromptInjection/QuickStartGuide.md       # Context file - in root
 ```
@@ -680,7 +680,7 @@ skills/OSINT/Resources/Examples.md              # Context files go in root, NOT 
 skills/OSINT/Docs/CompanyTools.md               # Context files go in root, NOT Docs/
 skills/OSINT/Templates/Primitives/Extract.md    # THREE levels - NO
 skills/OSINT/Workflows/Company/DueDiligence.md  # THREE levels - NO (use CompanyDueDiligence.md instead)
-skills/Utilities/Prompting/Templates/BeCreative.md        # Templates in root, NOT Templates/ subdirectory
+skills/Prompting/Templates/BeCreative.md        # Templates in root, NOT Templates/ subdirectory
 skills/Research/Workflows/Analysis/Deep.md      # THREE levels - NO
 ```
 
@@ -707,9 +707,9 @@ skills/Research/Workflows/Analysis/Deep.md      # THREE levels - NO
    - Wrong: `Tools/Analysis/Analyze.ts`
 
 **Templates (Prompting skill only):**
-- Templates live in `skills/Utilities/Prompting/` root, NOT nested
-- Correct: `skills/Utilities/Prompting/BeCreative.md`
-- Wrong: `skills/Utilities/Prompting/Templates/BeCreative.md`
+- Templates live in `skills/Prompting/` root, NOT nested
+- Correct: `skills/Prompting/BeCreative.md`
+- Wrong: `skills/Prompting/Templates/BeCreative.md`
 
 ### Context/Resource Files Go in Skill Root
 

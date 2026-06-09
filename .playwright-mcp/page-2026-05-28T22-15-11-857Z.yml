@@ -2,7 +2,7 @@
   - banner [ref=e4]:
     - generic [ref=e5]:
       - img [ref=e6]
-      - heading "PAI Board" [level=1] [ref=e8]
+      - heading "KAI Board" [level=1] [ref=e8]
     - generic [ref=e9]:
       - button "New" [ref=e10] [cursor=pointer]:
         - img [ref=e11]

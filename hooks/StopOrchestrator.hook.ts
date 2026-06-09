@@ -38,6 +38,52 @@ interface HookInput {
 }
 
 
+/**
+ * Graceful-shutdown deadline for the handler fan-out. DocCrossRefIntegrity runs an inference()
+ * call with a 15s internal timeout; this orchestrator-level deadline (20s, 5s margin) is the
+ * BACKSTOP for the case where a handler's own timeout fails to fire (network/subprocess/SDK stall).
+ * Without it, Promise.allSettled never resolves and the Stop hook hangs the session forever.
+ */
+export const HANDLER_DEADLINE_MS = 20000;
+
+/**
+ * Run handlers with an overall deadline. On the happy path this behaves exactly like
+ * Promise.allSettled (all handlers awaited). If the deadline fires first, it returns the names of
+ * the handlers that had NOT yet completed so the caller can log them, then exit gracefully.
+ * Pure + exported for testing — the regression guard for the "Stop hook hangs forever" bug.
+ */
+export async function runHandlersWithDeadline(
+  handlers: Promise<void>[],
+  names: string[],
+  deadlineMs: number = HANDLER_DEADLINE_MS,
+): Promise<{ timedOut: boolean; unfinished: string[]; rejected: string[] }> {
+  const done = new Array(handlers.length).fill(false);
+  const rejected: string[] = [];
+
+  // Wrap each handler so we know which ones finished (and which rejected) even if the deadline wins.
+  const tracked = handlers.map((h, i) =>
+    h.then(
+      () => { done[i] = true; },
+      (reason) => { done[i] = true; rejected.push(names[i]); console.error(`[StopOrchestrator] ${names[i]} handler failed:`, reason); },
+    ),
+  );
+
+  const TIMEOUT = Symbol('timeout');
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<typeof TIMEOUT>((resolve) => {
+    timer = setTimeout(() => resolve(TIMEOUT), deadlineMs);
+  });
+
+  const result = await Promise.race([Promise.all(tracked).then(() => 'ALL_DONE' as const), deadline]);
+  if (timer) clearTimeout(timer);
+
+  if (result === TIMEOUT) {
+    const unfinished = names.filter((_, i) => !done[i]);
+    return { timedOut: true, unfinished, rejected };
+  }
+  return { timedOut: false, unfinished: [], rejected };
+}
+
 async function readStdin(): Promise<HookInput | null> {
   try {
     const decoder = new TextDecoder();
@@ -85,6 +131,7 @@ async function main() {
       raw: '',
       lastMessage: text,
       currentResponseText: text,
+      userPrompt: '', // fast path has no transcript → no user prompt available
       completionSummary: '', // Deprecated — kept for ParsedTranscript type compatibility
       plainCompletion: extractCompletionPlain(text),
       structured: extractStructuredSections(text),
@@ -109,19 +156,20 @@ async function main() {
   ];
   const handlerNames = ['TabState', 'RebuildSkill', 'AlgorithmEnrichment', 'DocCrossRefIntegrity', 'PlanDetection'];
 
-  const results = await Promise.allSettled(handlers);
-
-  // Log any handler failures
-  results.forEach((result, index) => {
-    if (result.status === 'rejected') {
-      console.error(`[StopOrchestrator] ${handlerNames[index]} handler failed:`, result.reason);
-    }
-  });
+  // Graceful shutdown: race the fan-out against an overall deadline so a hung handler can never
+  // wedge the Stop hook indefinitely. Per-handler failures are still isolated + logged.
+  const { timedOut, unfinished } = await runHandlersWithDeadline(handlers, handlerNames);
+  if (timedOut) {
+    console.error(`[StopOrchestrator] Deadline (${HANDLER_DEADLINE_MS}ms) hit — exiting gracefully; unfinished: ${unfinished.join(', ') || 'none'}`);
+  }
 
   process.exit(0);
 }
 
-main().catch((error) => {
-  console.error('[StopOrchestrator] Fatal error:', error);
-  process.exit(0);
-});
+// Only run as the standalone hook — not when imported by tests for the exported helpers.
+if (import.meta.main) {
+  main().catch((error) => {
+    console.error('[StopOrchestrator] Fatal error:', error);
+    process.exit(0);
+  });
+}

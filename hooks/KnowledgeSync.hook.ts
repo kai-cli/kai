@@ -15,9 +15,11 @@
 //   Updates: MEMORY/KNOWLEDGE/.harvest-state.json (mtime tracking)
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'fs';
+import { readJSON, atomicWriteJSON } from './lib/atomic';
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { getPaiDir, paiPath } from './lib/paths';
+import { count as countRatingsStore } from './lib/ratings-store';
 import { inference } from '../PAI/Tools/Inference';
 import { canCallInference, recordInferenceCall, budgetStatus } from './lib/inference-budget';
 import { loadDomainKeywords, loadDomainDescriptions } from './lib/config-loader';
@@ -74,19 +76,12 @@ const KNOWLEDGE_DIR = paiPath('MEMORY', 'KNOWLEDGE');
 const STATE_FILE = join(KNOWLEDGE_DIR, '.harvest-state.json');
 
 function loadState(): HarvestState {
-  if (!existsSync(STATE_FILE)) {
-    return { lastRun: '', fileMtimes: {} };
-  }
-  try {
-    return JSON.parse(readFileSync(STATE_FILE, 'utf-8'));
-  } catch {
-    return { lastRun: '', fileMtimes: {} };
-  }
+  return readJSON<HarvestState>(STATE_FILE, { lastRun: '', fileMtimes: {} });
 }
 
 function saveState(state: HarvestState): void {
   mkdirSync(KNOWLEDGE_DIR, { recursive: true });
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  atomicWriteJSON(STATE_FILE, state);
 }
 
 // ============================================================================
@@ -261,7 +256,6 @@ async function distillDomain(domain: string, facts: string[]): Promise<string | 
 const REFLECTION_AUTO_HARVEST_THRESHOLD = 10;
 const REFLECTION_FILE = join(getPaiDir(), 'MEMORY', 'LEARNING', 'REFLECTIONS', 'algorithm-reflections.jsonl');
 const HARVEST_STATE_FILE = join(getPaiDir(), 'MEMORY', 'STATE', 'reflection-harvest-state.json');
-const RATINGS_FILE = join(getPaiDir(), 'MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
 const SYNTHESIS_STATE_FILE = join(getPaiDir(), 'MEMORY', 'STATE', 'synthesis-state.json');
 const PATTERN_SYNTHESIS_THRESHOLD = 20;
 
@@ -304,7 +298,7 @@ function maybeAutoHarvest(): void {
 
 function maybeSynthesizePatterns(): void {
   try {
-    const totalRatings = countLines(RATINGS_FILE);
+    const totalRatings = countRatingsStore(); // W11: shared ratings-store
     let lastCount = 0;
     if (existsSync(SYNTHESIS_STATE_FILE)) {
       try { lastCount = JSON.parse(readFileSync(SYNTHESIS_STATE_FILE, 'utf-8')).lastRatingCount || 0; } catch {}

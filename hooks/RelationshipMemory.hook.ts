@@ -29,6 +29,7 @@
  */
 
 import { writeFileSync, existsSync, mkdirSync, appendFileSync } from 'fs';
+import { readStdinRaw as readStdinWithTimeout } from './lib/hook-io';
 import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 import { getLocalComponents } from './lib/time';
@@ -56,15 +57,6 @@ interface TranscriptEntry {
 /**
  * Read stdin with timeout
  */
-async function readStdinWithTimeout(timeout: number = 5000): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    const timer = setTimeout(() => reject(new Error('Timeout')), timeout);
-    process.stdin.on('data', (chunk) => { data += chunk.toString(); });
-    process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
-    process.stdin.on('error', (err) => { clearTimeout(timer); reject(err); });
-  });
-}
 
 /**
  * Read transcript using shared TranscriptParser

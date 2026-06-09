@@ -25,7 +25,15 @@
       "ExitPlanMode",
       "Task",
       "Skill",
-      "mcp__*"
+      // Per-server MCP allow rules. The harness rejects a bare "mcp__*" wildcard — a glob is only
+      // valid AFTER a literal mcp__<server>__ prefix. One entry per configured server.
+      "mcp__router__*",
+      "mcp__jenkins__*",
+      "mcp__usp__*",
+      "mcp__build__*",
+      "mcp__github__*",
+      "mcp__cloudflare__*",
+      "mcp__playwright__*"
     ],
 
     // Fully denied — blocked unconditionally

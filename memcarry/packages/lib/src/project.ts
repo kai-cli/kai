@@ -1,7 +1,8 @@
 /**
  * Project + worktree resolution. Resolve EXACTLY ONE active project from cwd/CLAUDE_PROJECT_DIR
- * (never iterate the 32 projects — §11 #20). Reuses Claude Code's lossy /+_→- path encoding so we
- * match `Du_tracking` / `TR-069_TR-369` the same way the live MemoryRecall hook does.
+ * (never iterate the 32 projects — §11 #20). Reuses Claude Code's path encoding (every non-alphanumeric
+ * char → '-') so we match `Du_tracking` / `TR-069_TR-369` / the dotted username the same way the live
+ * MemoryRecall hook does.
  */
 import { execFileSync } from "node:child_process";
 import { basename } from "node:path";
@@ -17,9 +18,14 @@ export interface ActiveProject {
   worktree: string | null;
 }
 
-/** Claude Code encodes a project path by replacing / and _ with - (lossy). */
+/**
+ * Claude Code names `projects/<dir>` by replacing EVERY non-alphanumeric char with '-'.
+ * The old `/[/_]/` form left the '.' in the username (and spaces) intact, computed a
+ * nonexistent store dir, and silently fell back to global memory — the bug that broke
+ * all per-project recall. Match the live hook's canonical encoder exactly.
+ */
 export function encodeProjectDir(absPath: string): string {
-  return absPath.replace(/[/_]/g, "-");
+  return absPath.replace(/[^a-zA-Z0-9]/g, "-");
 }
 
 function safeGit(repoPath: string, args: string[]): string | null {
@@ -55,9 +61,34 @@ export function resolveActiveProject(startDir?: string): ActiveProject {
   };
 }
 
-/** Stable key for a resume-state atom: project + branch (+ worktree if linked). */
+/**
+ * Derive a stable slug from the git remote URL when branch resolution fails (H4).
+ * Turns `git@github.com:org/repo.git` / `https://host/org/repo(.git)` → `repo`. Returns null if no remote.
+ * This gives non-branch / detached-HEAD dirs a stable id instead of the generic "detached" bucket
+ * (~44% of dirs measured). Only consulted in the detached case — branched ids are never affected.
+ */
+export function remoteSlug(repoPath: string): string | null {
+  const url = safeGit(repoPath, ["remote", "get-url", "origin"]);
+  if (!url) return null;
+  const m = url.match(/([^/:]+?)(?:\.git)?\/?$/);
+  const slug = m?.[1]?.replace(/[^A-Za-z0-9._-]/g, "-");
+  return slug && slug.length > 0 ? slug : null;
+}
+
+/**
+ * Stable key for a resume-state atom: project + branch (+ worktree if linked).
+ * H4: when there is NO branch (detached HEAD / non-standard), prefer a remote-derived slug over the
+ * generic "detached" so distinct repos don't collide in one bucket. Branched ids are byte-identical to
+ * before — the fallback only changes the previously-"detached" case.
+ */
 export function resumeStateId(p: ActiveProject): string {
-  const branchPart = (p.branch ?? "detached").replace(/[^A-Za-z0-9._-]/g, "-");
+  let branchPart: string;
+  if (p.branch) {
+    branchPart = p.branch.replace(/[^A-Za-z0-9._-]/g, "-");
+  } else {
+    const slug = remoteSlug(p.repoPath);
+    branchPart = slug ? `detached-${slug}` : "detached";
+  }
   const wtPart = p.worktree ? `_${p.worktree}` : "";
   return `res_${p.name}_${branchPart}${wtPart}`;
 }

@@ -1,12 +1,12 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, rmSync, writeFileSync, readdirSync, appendFileSync } from "fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync, readdirSync, appendFileSync, utimesSync } from "fs";
 import { join } from "path";
 
 // Point PAI_DIR at an isolated temp dir BEFORE importing the cache (paiPath reads it).
 const TEST_DIR = join(import.meta.dir, ".test-transcript-cache");
 process.env.PAI_DIR = TEST_DIR;
 
-const { getCachedTranscript, transcriptCacheDir } = await import("../hooks/lib/transcript-cache");
+const { getCachedTranscript, transcriptCacheDir, pruneOldCaches } = await import("../hooks/lib/transcript-cache");
 const { parseTranscript } = await import("../hooks/lib/transcript-parser");
 
 function jsonl(...entries: object[]): string {
@@ -102,5 +102,24 @@ describe("transcript-cache (W3)", () => {
       join(TEST_DIR, "config", "settings.json"),
       JSON.stringify({ transcriptCache: { enabled: true } })
     );
+  });
+
+  test("pruneOldCaches removes files older than maxAgeDays, keeps recent (SF-4)", () => {
+    const dir = transcriptCacheDir();
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "recent.json"), "{}");
+    writeFileSync(join(dir, "stale.json"), "{}");
+    // backdate stale.json 40 days
+    const old = new Date(Date.now() - 40 * 86400000);
+    utimesSync(join(dir, "stale.json"), old, old);
+    const removed = pruneOldCaches(30);
+    expect(removed).toBe(1);
+    expect(existsSync(join(dir, "recent.json"))).toBe(true);
+    expect(existsSync(join(dir, "stale.json"))).toBe(false);
+  });
+
+  test("pruneOldCaches on missing dir → 0, no throw", () => {
+    rmSync(transcriptCacheDir(), { recursive: true, force: true });
+    expect(pruneOldCaches(30)).toBe(0);
   });
 });

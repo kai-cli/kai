@@ -117,6 +117,23 @@ export async function readHookInput(): Promise<HookInput | null> {
 }
 
 /**
+ * Read RAW stdin text (unparsed, unvalidated) with a timeout. Rejects on timeout/error.
+ *
+ * For hooks that need the raw payload string and do their own JSON.parse — distinct from
+ * readHookInput() (which parses + schema-validates + returns null on bad input). Consolidated from 3
+ * byte-identical copies (RatingCapture, RelationshipMemory, UpdateTabTitle).
+ */
+export async function readStdinRaw(timeout: number = 5000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    const timer = setTimeout(() => reject(new Error('Timeout')), timeout);
+    process.stdin.on('data', (chunk) => { data += chunk.toString(); });
+    process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
+    process.stdin.on('error', (err) => { clearTimeout(timer); reject(err); });
+  });
+}
+
+/**
  * Parse transcript from hook input. Waits 150ms for transcript to be
  * fully written to disk before parsing.
  */

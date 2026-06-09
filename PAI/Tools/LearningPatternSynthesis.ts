@@ -20,6 +20,7 @@ import { parseArgs } from "util";
 import * as fs from "fs";
 import * as path from "path";
 import { paiPath } from "../../hooks/lib/paths";
+import { loadAll as loadAllRatings, loadSince as loadSinceRatings } from "../../hooks/lib/ratings-store";
 
 // ============================================================================
 // Configuration
@@ -297,19 +298,10 @@ function writeSynthesis(result: SynthesisResult, period: string): string {
 // Exports for pai curate integration
 // ============================================================================
 
-/** Load ratings from the JSONL file, optionally filtered to last N days. */
+/** Load ratings from the JSONL file, optionally filtered to last N days. W11: via shared ratings-store. */
 export function loadRatings(days?: number): Rating[] {
-  if (!fs.existsSync(RATINGS_FILE)) return [];
-  const cutoff = days ? Date.now() - days * 86_400_000 : 0;
-  return fs.readFileSync(RATINGS_FILE, 'utf-8')
-    .trim().split('\n').filter(l => l.trim())
-    .flatMap(line => {
-      try {
-        const r = JSON.parse(line) as Rating;
-        if (cutoff && new Date(r.timestamp).getTime() < cutoff) return [];
-        return [r];
-      } catch { return []; }
-    });
+  const entries = days ? loadSinceRatings(days) : loadAllRatings();
+  return entries as unknown as Rating[];
 }
 
 /**
@@ -540,9 +532,7 @@ if (values.trends) {
     console.log('No ratings file found');
     process.exit(0);
   }
-  const content = fs.readFileSync(RATINGS_FILE, 'utf-8');
-  const allRatings: Rating[] = content.split('\n').filter(l => l.trim())
-    .flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } });
+  const allRatings: Rating[] = loadRatings(); // W11: shared ratings-store
 
   console.log(`📊 Loaded ${allRatings.length} total ratings`);
   console.log('🧠 Running behavioral trend analysis...');
@@ -572,19 +562,8 @@ if (!fs.existsSync(RATINGS_FILE)) {
   process.exit(0);
 }
 
-// Read all ratings
-const content = fs.readFileSync(RATINGS_FILE, 'utf-8');
-const allRatings: Rating[] = content
-  .split('\n')
-  .filter(line => line.trim())
-  .map(line => {
-    try {
-      return JSON.parse(line);
-    } catch {
-      return null;
-    }
-  })
-  .filter((r): r is Rating => r !== null);
+// Read all ratings (W11: shared ratings-store)
+const allRatings: Rating[] = loadRatings();
 
 console.log(`📊 Loaded ${allRatings.length} total ratings`);
 

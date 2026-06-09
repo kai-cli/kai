@@ -10,7 +10,7 @@
  * PERFORMANCE: <5ms (single file read)
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { readJSON } from './lib/atomic';
 import { join } from 'path';
 import { getPaiDir } from './lib/paths';
 
@@ -23,12 +23,7 @@ interface MaintenanceState {
 }
 
 function readState(): MaintenanceState | null {
-  try {
-    if (!existsSync(STATE_FILE)) return null;
-    return JSON.parse(readFileSync(STATE_FILE, 'utf-8'));
-  } catch {
-    return null;
-  }
+  return readJSON<MaintenanceState | null>(STATE_FILE, null);
 }
 
 async function main() {

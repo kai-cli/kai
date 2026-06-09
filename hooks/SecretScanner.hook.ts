@@ -27,51 +27,12 @@
 
 import { appendFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+import { SECRET_PATTERNS } from './lib/secret-patterns';
 
 const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 
-// --- Secret Patterns ---
-// Each pattern has a regex and a human-readable description.
-// Patterns are intentionally broad to catch variations.
-// False positives are acceptable — this is warn-only.
-
-const SECRET_PATTERNS: { name: string; pattern: RegExp }[] = [
-  // API Keys (generic)
-  { name: 'API key (generic)', pattern: /(?:api[_-]?key|apikey)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{20,}['"]?/i },
-
-  // AWS
-  { name: 'AWS Access Key', pattern: /AKIA[0-9A-Z]{16}/ },
-  { name: 'AWS Secret Key', pattern: /(?:aws[_-]?secret|secret[_-]?access[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?/i },
-  { name: 'AWS Account ID (in AWS_PROFILE context)', pattern: /(?:Account|account_id|AccountId)\s*[:=]\s*['"]?\d{12}['"]?/i },
-  { name: 'AWS Profile name (personal)', pattern: /AWS_PROFILE\s*[:=]\s*['"]?[A-Za-z][A-Za-z0-9_.-]{4,}['"]?/i },
-
-  // Anthropic
-  { name: 'Anthropic API Key', pattern: /sk-ant-[A-Za-z0-9_\-]{40,}/ },
-
-  // OpenAI
-  { name: 'OpenAI API Key', pattern: /sk-[A-Za-z0-9]{40,}/ },
-
-  // GitHub
-  { name: 'GitHub Token', pattern: /gh[pousr]_[A-Za-z0-9_]{36,}/ },
-  { name: 'GitHub Classic Token', pattern: /ghp_[A-Za-z0-9]{36}/ },
-
-  // Generic tokens
-  { name: 'Bearer token', pattern: /[Bb]earer\s+[A-Za-z0-9_\-\.]{20,}/ },
-  { name: 'Authorization header', pattern: /[Aa]uthorization\s*[:=]\s*['"]?(?:Bearer|Basic|Token)\s+[A-Za-z0-9_\-\.+=]{10,}['"]?/i },
-
-  // Passwords in connection strings or assignments
-  { name: 'Password assignment', pattern: /(?:password|passwd|pass)\s*[:=]\s*['"][^'"]{8,}['"]/i },
-  { name: 'Connection string with password', pattern: /(?:mongodb|postgres|mysql|redis):\/\/[^:]+:[^@]{8,}@/i },
-
-  // Private keys
-  { name: 'Private key header', pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/ },
-
-  // Slack
-  { name: 'Slack token', pattern: /xox[bpras]-[0-9]{10,}-[A-Za-z0-9]{10,}/ },
-
-  // Generic secret/token assignment
-  { name: 'Secret assignment', pattern: /(?:secret|token|credential)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{20,}['"]?/i },
-];
+// Secret patterns are single-sourced in hooks/lib/secret-patterns.ts (the UNION shared with
+// SecretOutputDetector) so the two detectors can never drift apart. Warn-only; broad by design.
 
 // --- Main ---
 

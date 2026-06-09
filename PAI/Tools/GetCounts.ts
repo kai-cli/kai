@@ -35,6 +35,8 @@
 
 import { readdirSync, existsSync, statSync, readFileSync } from "fs";
 import { join } from "path";
+import { count as countRatingsStore } from "../../hooks/lib/ratings-store";
+import { countSkills as countSkillsShared } from "../../hooks/lib/skill-count";
 
 const HOME = process.env.HOME!;
 const PAI_DIR = process.env.PAI_DIR || join(HOME, ".claude");
@@ -97,27 +99,11 @@ function countWorkflowFiles(dir: string): number {
 }
 
 /**
- * Count skills (directories with SKILL.md file)
+ * Count skills — delegates to the single source (hooks/lib/skill-count.ts).
+ * Recursive, excludes .archive, matches BuildManifest/manifest. Was a stale top-level-only count (46 vs 70).
  */
 function countSkills(): number {
-  let count = 0;
-  const skillsDir = join(PAI_DIR, "skills");
-  try {
-    for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
-      // Handle both real directories and symlinks to directories
-      const isDir = entry.isDirectory() ||
-        (entry.isSymbolicLink() && statSync(join(skillsDir, entry.name)).isDirectory());
-      if (isDir) {
-        const skillFile = join(skillsDir, entry.name, "SKILL.md");
-        if (existsSync(skillFile)) {
-          count++;
-        }
-      }
-    }
-  } catch {
-    // skills directory doesn't exist
-  }
-  return count;
+  return countSkillsShared(PAI_DIR);
 }
 
 /**
@@ -142,13 +128,8 @@ function countHooks(): number {
  * Count ratings from ratings.jsonl
  */
 function countRatings(): number {
-  const ratingsFile = join(PAI_DIR, "MEMORY/LEARNING/SIGNALS/ratings.jsonl");
-  try {
-    const content = readFileSync(ratingsFile, 'utf-8');
-    return content.split('\n').filter((line: string) => line.trim()).length;
-  } catch {
-    return 0;
-  }
+  // W11: delegate to the shared ratings-store (one definition of "count ratings").
+  return countRatingsStore(PAI_DIR);
 }
 
 /**

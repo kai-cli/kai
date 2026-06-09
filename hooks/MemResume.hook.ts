@@ -31,6 +31,37 @@ function readStdin(): any {
   }
 }
 
+/**
+ * B1 (PAI adapter — NOT the engine): read the most-recently-updated active PRD's next-action so the
+ * resume block points at concrete in-flight work. "Next action" = the first unchecked `- [ ] ISC-N:`
+ * criterion of the newest non-complete PRD under MEMORY/WORK/. PAI-specific (Algorithm PRD format), so
+ * it lives here in the host adapter, keeping the memcarry engine PAI-free. Degrades silently to null.
+ */
+function activePrdNextAction(): { task: string; next: string } | null {
+  try {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const workDir = `${PAI}/MEMORY/WORK`;
+    if (!fs.existsSync(workDir)) return null;
+    const dirs = fs.readdirSync(workDir)
+      .filter((d: string) => /^\d{8}-\d{6}_/.test(d))
+      .sort()
+      .reverse()
+      .slice(0, 12); // newest dozen — never scan everything
+    for (const d of dirs) {
+      const prd = path.join(workDir, d, "PRD.md");
+      if (!fs.existsSync(prd)) continue;
+      const head = fs.readFileSync(prd, "utf8");
+      const phase = head.match(/^phase:\s*(\w+)/m)?.[1];
+      if (phase === "complete") continue; // only in-flight PRDs
+      const task = head.match(/^task:\s*(.+)$/m)?.[1]?.trim() ?? d;
+      const firstUnchecked = head.match(/^- \[ \] (ISC-[^\n]+)/m)?.[1]?.trim();
+      if (firstUnchecked) return { task, next: firstUnchecked };
+    }
+  } catch { /* degrade silently */ }
+  return null;
+}
+
 function main() {
   const input = readStdin();
   const projectDir = process.env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd();
@@ -62,6 +93,9 @@ function main() {
   lines.push(`Resuming ${project}. Verified-at-load is running; drift (if any) surfaces on your next message.`);
   lines.push(`NEXT: ${payload.cursor.next}`);
   lines.push(`WHERE: ${payload.cursor.summary}`);
+  // B1: surface the active PRD's next-action alongside memcarry's own cursor (PAI adapter enrichment).
+  const prd = activePrdNextAction();
+  if (prd) lines.push(`NEXT (PRD ${prd.task}): ${prd.next}`);
   if (payload.beliefs?.length) {
     lines.push(`\nMental model (UNVERIFIED beliefs — confirm before relying):`);
     for (const b of payload.beliefs) {

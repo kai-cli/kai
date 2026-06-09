@@ -29,6 +29,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { getPaiDir } from '../../hooks/lib/paths';
+import { loadSince, entryDate } from '../../hooks/lib/ratings-store';
 
 const PAI_DIR = getPaiDir();
 
@@ -171,33 +172,12 @@ function loadRecentNotes(daysBack: number = 7): RelationshipNote[] {
 }
 
 /**
- * Load recent ratings from ratings.jsonl
+ * Load recent ratings from ratings.jsonl (W11: via shared ratings-store).
  */
 function loadRecentRatings(daysBack: number = 7): Array<{ rating: number; date: string }> {
-  const ratingsPath = join(PAI_DIR, 'MEMORY/LEARNING/SIGNALS/ratings.jsonl');
-  if (!existsSync(ratingsPath)) return [];
-
-  const ratings: Array<{ rating: number; date: string }> = [];
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - daysBack);
-
-  try {
-    const content = readFileSync(ratingsPath, 'utf-8');
-    for (const line of content.trim().split('\n')) {
-      try {
-        const entry = JSON.parse(line);
-        const entryDate = new Date(entry.timestamp || entry.date);
-        if (entryDate >= cutoff) {
-          ratings.push({
-            rating: entry.rating,
-            date: entryDate.toISOString().split('T')[0]
-          });
-        }
-      } catch {}
-    }
-  } catch {}
-
-  return ratings;
+  return loadSince(daysBack, PAI_DIR)
+    .filter((e) => typeof e.rating === 'number' && entryDate(e) !== null)
+    .map((e) => ({ rating: e.rating, date: entryDate(e)!.toISOString().split('T')[0] }));
 }
 
 /**

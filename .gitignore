@@ -143,3 +143,7 @@ memcarry/store/atoms/project/
 
 # Embeddings index — rebuildable cache (bun scripts/EmbeddingIndex.ts --setup)
 MEMORY/STATE/embeddings/
+
+# Test temp artifacts (e.g. tests/.tmp-api-keys-test bun caches) — never commit or sync
+tests/.tmp*
+*.pile

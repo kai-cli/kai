@@ -1,24 +1,30 @@
 #!/usr/bin/env bash
-# KAI pre-push hook — fast local feedback before CI.
-# Runs bun test + verify-release.sh --quick.
-# Installed by: bash scripts/install-hooks.sh
-# Bypass (auditable): git push --no-verify
+# KAI / PAI pre-push hook — fast local feedback before CI.
+#
+# SINGLE SOURCE, divergence-proof: this one file is correct in BOTH repos by construction.
+# It is synced pai-config → kai, so it must make NO hard assumption about which files exist
+# in the repo it runs in. Every external dependency is existence-guarded ([ -f ... ]); the
+# public-fork PII gate (section 0) is fully self-contained (no external script required).
+#   - In pai-config: section 0 no-ops (remote isn't kai), verify-release runs (present).
+#   - In kai (public): section 0 runs the inline gate, verify-release skips (absent by design).
+#
+# Installed by: bash scripts/install-hooks.sh   |   Bypass (auditable): git push --no-verify
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 # Pre-push receives, on stdin: <local-ref> <local-sha> <remote-ref> <remote-sha> (one line per ref).
-# Capture it now (before any subshell consumes stdin) so check 0 can scan the exact push range.
+# Capture it NOW (before any subshell consumes stdin) so the gate can scan the exact push range.
 PUSH_STDIN="$(cat || true)"
 
 echo "── KAI pre-push checks ──"
 
-# ── 0. PII / personal-data gate (kai public fork only) ───────────────────────
-# Last line of defense against personal data reaching the public fork — independent of the
-# sync mechanism (catches anything sync excludes missed). Scans ONLY the commits being pushed.
+# ── 0. PII / personal-data gate (public fork only) ───────────────────────────
+# Last line of defense against personal data reaching the public fork — INDEPENDENT of the sync
+# mechanism (catches anything the sync excludes missed). Scans ONLY the commits being pushed.
 # This hook is itself public, so it embeds NO PII regexes: personal-data PATHS are safe to list
-# here (dir names), and PII content patterns are loaded from an external file when available
-# (pii-patterns.json is excluded from the public fork by design).
+# here (dir names), and PII CONTENT patterns load from an external file when available
+# (pii-patterns.json is excluded from the public fork by design) with a built-in shape fallback.
 GATE_REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
 if [[ "$GATE_REMOTE_URL" == *"kai-cli/kai"* ]]; then
   echo "Scanning push range for personal data (public-fork gate)..."
@@ -37,8 +43,10 @@ if [[ "$GATE_REMOTE_URL" == *"kai-cli/kai"* ]]; then
   [[ -z "$GATE_RANGE" ]] && GATE_RANGE="HEAD"
 
   # 0a. Personal-data PATHS that must never appear in the public fork (safe to list — just names).
-  GATE_PATHS='^(projects/|daemon/|memcarry/store/|MEMORY/(memcarry|LEARNING|STATE|RELATIONSHIP|WORK|STAGING|CAPABILITIES)/|PAI/USER/|\.claude/)'
-  GATE_CHANGED=$(git diff --name-only "$GATE_RANGE" 2>/dev/null || git show --name-only --format= "$GATE_RANGE" 2>/dev/null || true)
+  # Only consider ADDED/MODIFIED/COPIED/RENAMED files (--diff-filter=ACMR) — DELETIONS can't leak
+  # (a removed file is leaving the repo), and blocking on them would prevent cleanup of junk.
+  GATE_PATHS='^(projects/|daemon/|memcarry/store/|MEMORY/(memcarry|LEARNING|STATE|RELATIONSHIP|WORK|STAGING|CAPABILITIES)/|PAI/USER/|\.claude/|tests/\.tmp)'
+  GATE_CHANGED=$(git diff --name-only --diff-filter=ACMR "$GATE_RANGE" 2>/dev/null || git show --name-only --diff-filter=ACMR --format= "$GATE_RANGE" 2>/dev/null || true)
   GATE_LEAKED=$(echo "$GATE_CHANGED" | grep -E "$GATE_PATHS" || true)
   if [[ -n "$GATE_LEAKED" ]]; then
     echo ""
@@ -61,9 +69,16 @@ if [[ "$GATE_REMOTE_URL" == *"kai-cli/kai"* ]]; then
   GATE_SCAN="$GATE_BUILTIN"
   [[ -n "$GATE_PII_REGEX" ]] && GATE_SCAN="$GATE_PII_REGEX|$GATE_BUILTIN"
 
-  # Scan added content in the range (exclude this hook itself — it documents patterns).
-  GATE_ADDED=$(git diff "$GATE_RANGE" -- . ':(exclude)scripts/hooks/pre-push' 2>/dev/null | grep '^+' || true)
-  GATE_HITS=$(echo "$GATE_ADDED" | grep -niE "$GATE_SCAN" | head -20 || true)
+  # Known-safe GENERIC placeholders used in docs/tests/examples — these are the scrub TARGETS and
+  # deliberate examples, never real PII. Filtered out so the home-dir shape pattern doesn't flag them.
+  # (Real usernames never look like these.) Keep tightly scoped to avoid masking genuine leaks.
+  GATE_ALLOW='/Users/(your\.name|you|a\.b|x\.y|user|username|example|name|test)/'
+
+  # Scan ADDED content in the range (--diff-filter=ACMR: skip deletions; exclude this hook itself,
+  # which documents patterns). `grep '^+'` already targets added lines, but filtering the file set
+  # too avoids scanning the '+' noise from rename/copy diffs.
+  GATE_ADDED=$(git diff --diff-filter=ACMR "$GATE_RANGE" -- . ':(exclude)scripts/hooks/pre-push' 2>/dev/null | grep '^+' || true)
+  GATE_HITS=$(echo "$GATE_ADDED" | grep -niE "$GATE_SCAN" | grep -vE "$GATE_ALLOW" | head -20 || true)
   if [[ -n "$GATE_HITS" ]]; then
     echo ""
     echo "❌ Pre-push BLOCKED: possible PII / secrets in the pushed content:"
@@ -106,7 +121,7 @@ if [[ -f "$REPO_ROOT/manifest.json" ]]; then
   echo "Checking manifest counts..."
   M_SKILLS=$(grep -oE '"skills":\s*[0-9]+' "$REPO_ROOT/manifest.json" | grep -oE '[0-9]+')
   M_HOOKS=$(grep -oE '"hooks":\s*[0-9]+' "$REPO_ROOT/manifest.json" | grep -oE '[0-9]+')
-  F_SKILLS=$(find "$REPO_ROOT/skills" -name SKILL.md | wc -l | tr -d ' ')
+  F_SKILLS=$(find "$REPO_ROOT/skills" -name SKILL.md -not -path '*/.archive/*' | wc -l | tr -d ' ')
   F_HOOKS=$(find "$REPO_ROOT/hooks" -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' ')
   if [[ "$M_SKILLS" != "$F_SKILLS" ]] || [[ "$M_HOOKS" != "$F_HOOKS" ]]; then
     echo ""
@@ -132,12 +147,16 @@ if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
   fi
 fi
 
-# ── 4. Quick release verification (only if the script is present) ──
-# verify-release.sh is pai-config-only (its PII patterns ARE PII) and is excluded from the KAI
-# sync by design — so on the KAI fork it is legitimately absent. Skip gracefully when missing
-# rather than hard-failing (the PII gate at check 0 is the KAI-side safety net). When present
-# (pai-config dev tree), run it as before.
-if [[ -f "$REPO_ROOT/scripts/verify-release.sh" ]]; then
+# ── 4. Quick release verification (public-fork readiness check) ──────────────
+# verify-release.sh validates that the PUBLIC fork has no leaks. It is meaningless against
+# pai-config itself (which contains PII by design — MEMORY/, Plans/, USER/ never sync to kai),
+# so it must run ONLY in the kai context. It's also EXCLUDED from the public fork (its PII
+# patterns ARE PII). Both conditions guarded → correct in every repo by construction:
+#   - pai-config (remote≠kai)         → skip (never scan the private source)
+#   - kai (remote=kai, script absent) → skip gracefully (section 0's inline gate is the real net)
+#   - kai-with-script (both true)     → run
+REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+if [[ "$REMOTE_URL" == *"kai-cli/kai"* && -f "$REPO_ROOT/scripts/verify-release.sh" ]]; then
   echo ""
   echo "Running quick verification..."
   if ! bash "$REPO_ROOT/scripts/verify-release.sh" --quick 2>&1; then
@@ -149,7 +168,7 @@ if [[ -f "$REPO_ROOT/scripts/verify-release.sh" ]]; then
   fi
 else
   echo ""
-  echo "Skipping verify-release.sh (not present — pai-config-only, excluded from this fork)"
+  echo "Skipping verify-release.sh (PAI dev repo, or absent on the public fork — section 0 gate covers leaks)"
 fi
 
 echo ""

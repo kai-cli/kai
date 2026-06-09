@@ -16,22 +16,15 @@
 
 import { appendFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { SECRET_PATTERNS as SHARED_PATTERNS } from './lib/secret-patterns';
 
 const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 const SECURITY_LOG = join(PAI_DIR, 'MEMORY', 'SECURITY', 'security-events.jsonl');
 
-// Same patterns as SecretScanner — scan tool OUTPUT for leakage
-export const SECRET_PATTERNS: { name: string; pattern: RegExp }[] = [
-  { name: 'API key (generic)', pattern: /(?:api[_-]?key|apikey)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{20,}['"]?/i },
-  { name: 'AWS Access Key', pattern: /AKIA[0-9A-Z]{16}/ },
-  { name: 'AWS Secret Key', pattern: /(?:aws[_-]?secret|secret[_-]?access[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?/i },
-  { name: 'Anthropic API Key', pattern: /sk-ant-[A-Za-z0-9_\-]{40,}/ },
-  { name: 'OpenAI API Key', pattern: /sk-[A-Za-z0-9]{40,}/ },
-  { name: 'GitHub Token', pattern: /gh[pousr]_[A-Za-z0-9_]{36,}/ },
-  { name: 'Bearer token', pattern: /[Bb]earer\s+[A-Za-z0-9_\-\.]{20,}/ },
-  { name: 'Private key block', pattern: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/ },
-  { name: 'Password in env/config', pattern: /(?:PASSWORD|PASSWD|SECRET)\s*=\s*['"]?[^\s'"]{8,}['"]?/ },
-];
+// Single-sourced from hooks/lib/secret-patterns.ts (the UNION shared with SecretScanner — no drift).
+// Re-exported here so the existing test (imports SECRET_PATTERNS + scanForSecrets) and the
+// SecurityAuditLoop log contract keep working unchanged.
+export const SECRET_PATTERNS = SHARED_PATTERNS;
 
 function logDetection(toolName: string, patternName: string): void {
   try {

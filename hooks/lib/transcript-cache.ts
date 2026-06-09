@@ -18,7 +18,7 @@
  * Disabled → behaves identically to calling parseTranscript() directly.
  */
 
-import { readFileSync, writeFileSync, statSync, mkdirSync, existsSync, renameSync } from 'fs';
+import { readFileSync, writeFileSync, statSync, mkdirSync, existsSync, renameSync, readdirSync, unlinkSync } from 'fs';
 import { createHash } from 'crypto';
 import { join } from 'path';
 import { parseTranscript, type ParsedTranscript } from './transcript-parser';
@@ -110,4 +110,36 @@ export function getCachedTranscript(transcriptPath: string): ParsedTranscript {
 /** Exported for tests/maintenance: where cache files live. */
 export function transcriptCacheDir(): string {
   return cacheDir();
+}
+
+/**
+ * SF-4: prune cache files not modified within maxAgeDays. One file per transcript-hash accumulates as
+ * old sessions' transcripts age out; this keeps the dir bounded. Returns the number of files removed.
+ * Safe/idempotent — missing dir or unreadable file is skipped, never throws. Run from weekly maintenance.
+ */
+export function pruneOldCaches(maxAgeDays = 30): number {
+  const dir = cacheDir();
+  if (!existsSync(dir)) return 0;
+  const cutoff = Date.now() - maxAgeDays * 86_400_000;
+  let removed = 0;
+  try {
+    for (const f of readdirSync(dir)) {
+      if (!f.endsWith('.json')) continue;
+      const p = join(dir, f);
+      try {
+        if (statSync(p).mtimeMs < cutoff) { unlinkSync(p); removed++; }
+      } catch { /* skip individual file errors */ }
+    }
+  } catch { /* dir unreadable — nothing to prune */ }
+  return removed;
+}
+
+// CLI: `bun hooks/lib/transcript-cache.ts --prune [days]` — used by weekly maintenance.
+if (import.meta.main) {
+  const i = process.argv.indexOf('--prune');
+  if (i >= 0) {
+    const days = parseInt(process.argv[i + 1]) || 30;
+    const n = pruneOldCaches(days);
+    console.log(`[transcript-cache] pruned ${n} cache file(s) older than ${days}d`);
+  }
 }

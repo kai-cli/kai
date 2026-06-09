@@ -29,6 +29,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, basename } from 'path';
 import { inference } from './Inference';
 import { getPaiDir } from '../../hooks/lib/paths';
+import { loadSince as loadSinceRatings, ratingsPath as ratingsStorePath } from '../../hooks/lib/ratings-store';
 
 const PAI_DIR = getPaiDir();
 
@@ -386,27 +387,20 @@ The CONTEXT.md summary is what gets read — the detail above is for manual revi
 export async function migrateExistingFailures(): Promise<{ migrated: number; errors: string[] }> {
   const results = { migrated: 0, errors: [] as string[] };
 
-  // Read ratings.jsonl and find all 1-3 ratings
-  const ratingsFile = join(PAI_DIR, 'MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
-
-  if (!existsSync(ratingsFile)) {
+  // Read ratings and find all 1-3 ratings from the last month (W11: shared ratings-store).
+  if (!existsSync(ratingsStorePath(PAI_DIR))) {
     results.errors.push('ratings.jsonl not found');
     return results;
   }
 
-  const content = readFileSync(ratingsFile, 'utf-8');
-  const lines = content.trim().split('\n');
-
-  // Get ratings from last month
+  // ~31 days covers "last month"; the loop re-checks the exact month boundary below.
+  const recentEntries = loadSinceRatings(31, PAI_DIR);
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    try {
-      const entry = JSON.parse(line);
+  for (const entry of recentEntries) {
       if (entry.rating >= 1 && entry.rating <= 3) {
-        const entryDate = new Date(entry.timestamp);
+        const entryDate = new Date((entry.timestamp as string) || (entry.date as string));
         if (entryDate >= oneMonthAgo) {
           // Create a failure capture from this entry
           // Note: We don't have the full transcript, so we create a minimal capture
@@ -502,9 +496,6 @@ learning files that may contain more context about this failure.
           results.migrated++;
         }
       }
-    } catch (err) {
-      results.errors.push(`Error processing line: ${err}`);
-    }
   }
 
   return results;

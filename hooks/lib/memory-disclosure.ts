@@ -11,6 +11,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { encodeProjectDir } from './paths';
 
 const MAX_INDEX_LINES = 50;
 
@@ -84,7 +85,7 @@ export function loadIndexMemory(paiDir: string): string {
   const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
   let mdPath = '';
   if (claudeProjectDir) {
-    const encoded = claudeProjectDir.replace(/[/_]/g, '-');
+    const encoded = encodeProjectDir(claudeProjectDir);
     const projectMemPath = join(paiDir, 'projects', encoded, 'memory', 'MEMORY.md');
     if (existsSync(projectMemPath)) mdPath = projectMemPath;
   }

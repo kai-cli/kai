@@ -52,6 +52,8 @@ export interface ParsedTranscript {
   lastMessage: string;
   /** Full text from current response turn (all assistant blocks combined) */
   currentResponseText: string;
+  /** Text of the last real user prompt this turn (SF-1: the user side of the exchange) */
+  userPrompt: string;
   /** Completion summary text (from 🗣️ line, used for tab title) */
   completionSummary: string;
   /** Plain completion text (for tab title) */
@@ -171,6 +173,35 @@ export function collectCurrentResponseText(transcriptContent: string): string {
   }
 
   return textParts.join('\n');
+}
+
+/**
+ * Extract the text of the last REAL user prompt from the current turn.
+ * Uses the same "real user message" detection as collectCurrentResponseText (string content, or an
+ * array with at least one {type:'text'} block — NOT a tool_result), then returns that message's text.
+ * Returns '' when no real user prompt is found. (Added for SF-1: RelationshipMemory needs the user side.)
+ */
+export function extractUserPrompt(transcriptContent: string): string {
+  const lines = transcriptContent.trim().split('\n');
+  let lastHuman: unknown = null;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      const entry = JSON.parse(line) as any;
+      if (entry.type === 'human' || entry.type === 'user') {
+        const content = entry.message?.content;
+        if (typeof content === 'string') {
+          lastHuman = content;
+        } else if (Array.isArray(content)) {
+          const hasText = content.some((b: any) => b?.type === 'text' && b?.text?.trim());
+          if (hasText) lastHuman = content;
+        }
+      }
+    } catch {
+      // Skip invalid JSON lines
+    }
+  }
+  return lastHuman ? contentToText(lastHuman) : '';
 }
 
 /**
@@ -368,6 +399,7 @@ export function parseTranscript(transcriptPath: string): ParsedTranscript {
       raw,
       lastMessage,
       currentResponseText,
+      userPrompt: extractUserPrompt(raw),
       completionSummary: extractVoiceCompletion(currentResponseText),
       plainCompletion: extractCompletionPlain(currentResponseText),
       structured: extractStructuredSections(currentResponseText),
@@ -379,6 +411,7 @@ export function parseTranscript(transcriptPath: string): ParsedTranscript {
       raw: '',
       lastMessage: '',
       currentResponseText: '',
+      userPrompt: '',
       completionSummary: '',
       plainCompletion: '',
       structured: {},

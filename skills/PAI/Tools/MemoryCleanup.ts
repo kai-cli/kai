@@ -4,8 +4,9 @@
  *
  * PURPOSE:
  * Runs on a weekly cadence (gated by last-run timestamp). Trims events.jsonl
- * at 10MB, removes session files older than 30 days, and cleans stale
- * prompt-analysis-cache files older than 1 hour.
+ * at 10MB, removes session files older than 30 days, and drains leftover
+ * prompt-analysis-cache files (producer removed in W5b — this just sweeps
+ * any stragglers until the dir empties, then is a no-op).
  *
  * USAGE:
  *   bun ~/.claude/skills/PAI/Tools/MemoryCleanup.ts

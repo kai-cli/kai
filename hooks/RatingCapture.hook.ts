@@ -28,7 +28,8 @@
  * - Implicit sentiment path: 0.5-1.5s (Haiku inference)
  */
 
-import { appendFileSync, mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { readStdinRaw as readStdinWithTimeout } from './lib/hook-io';
 import { join } from 'path';
 import { inference } from '../PAI/Tools/Inference';
 import { getIdentity, getPrincipal, getPrincipalName } from './lib/identity';
@@ -38,6 +39,7 @@ import { captureFailure } from '../PAI/Tools/FailureCapture';
 import { getPaiDir, paiPath } from './lib/paths';
 import { writeDraft } from './lib/staging';
 import { parseExplicitRating, detectCorrections } from './lib/rating-parser';
+import { append as appendRating } from './lib/ratings-store';
 
 
 // ── Shared Types ──
@@ -63,7 +65,6 @@ interface RatingEntry {
 
 // ── Shared Constants ──
 
-const SIGNALS_DIR = paiPath('MEMORY', 'LEARNING', 'SIGNALS');
 const RATINGS_FILE = paiPath('MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
 const LAST_RESPONSE_CACHE = paiPath('MEMORY', 'STATE', 'last-response.txt');
 const MIN_PROMPT_LENGTH = 3;
@@ -82,15 +83,6 @@ function getLastResponse(): string {
 
 // ── Stdin Reader ──
 
-async function readStdinWithTimeout(timeout: number = 5000): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    const timer = setTimeout(() => reject(new Error('Timeout')), timeout);
-    process.stdin.on('data', (chunk) => { data += chunk.toString(); });
-    process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
-    process.stdin.on('error', (err) => { clearTimeout(timer); reject(err); });
-  });
-}
 // parseExplicitRating and detectCorrections are imported from ./lib/rating-parser
 
 // ── Implicit Sentiment Analysis ──
@@ -270,10 +262,12 @@ async function analyzeSentiment(prompt: string, context: string): Promise<Sentim
  * CRITICAL: This throws on failure — explicit ratings must be fail-closed.
  */
 function writeRating(entry: RatingEntry): void {
-  if (!existsSync(SIGNALS_DIR)) mkdirSync(SIGNALS_DIR, { recursive: true });
-  appendFileSync(RATINGS_FILE, JSON.stringify(entry) + '\n', 'utf-8');
+  // W11: append via the shared ratings-store. Preserve the fail-CLOSED contract — append() returns
+  // false on failure (fail-open default), so we throw here to keep explicit ratings fail-closed.
+  if (!appendRating(entry)) {
+    throw new Error(`Failed to append rating to ${RATINGS_FILE}`);
+  }
   const source = entry.source === 'implicit' ? 'implicit' : 'explicit';
-
   console.error(`[RatingCapture] Wrote ${source} rating ${entry.rating} to ${RATINGS_FILE}`);
 }
 

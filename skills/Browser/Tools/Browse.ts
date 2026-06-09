@@ -219,7 +219,8 @@ async function ensureSession(): Promise<number> {
   const env: Record<string, string> = {
     ...process.env as Record<string, string>,
     BROWSER_PORT: String(port),
-    BROWSER_HEADLESS: String(headless)
+    BROWSER_HEADLESS: String(headless),
+    BROWSER_IGNORE_HTTPS_ERRORS: process.env.BROWSER_IGNORE_HTTPS_ERRORS || 'false'
   }
 
   // If headed mode, don't detach - keep connected
@@ -607,7 +608,8 @@ async function startHeaded(url?: string): Promise<void> {
   const env: Record<string, string> = {
     ...process.env as Record<string, string>,
     BROWSER_PORT: String(port),
-    BROWSER_HEADLESS: 'false'
+    BROWSER_HEADLESS: 'false',
+    BROWSER_IGNORE_HTTPS_ERRORS: process.env.BROWSER_IGNORE_HTTPS_ERRORS || 'false'
   }
 
   console.log('KAI Browser Results: Starting headed browser...')

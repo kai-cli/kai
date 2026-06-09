@@ -20,8 +20,11 @@
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { createHash } from 'crypto';
+import { embed, getEmbedder, EMBEDDING_MODEL } from '../hooks/lib/embeddings';
 
-const MODEL_NAME = 'Xenova/jina-embeddings-v2-small-en';
+// W1: model name + embed() now live in hooks/lib/embeddings.ts (single source of truth for
+// pooling args). EMBEDDING_MODEL re-aliased as MODEL_NAME to keep this script's log lines stable.
+const MODEL_NAME = EMBEDDING_MODEL;
 const CHUNK_SIZE_CHARS = 800; // ~200 tokens
 const CHUNK_OVERLAP_CHARS = 200; // ~50 tokens overlap at section boundaries
 
@@ -150,9 +153,12 @@ async function buildIndex(incremental: boolean): Promise<void> {
   const dir = indexDir();
   mkdirSync(dir, { recursive: true });
 
-  const { pipeline } = await import('@huggingface/transformers');
   console.error(`[EmbeddingIndex] Loading model: ${MODEL_NAME}`);
-  const embedder = await pipeline('feature-extraction', MODEL_NAME, { revision: 'main' });
+  const embedder = await getEmbedder();
+  if (!embedder) {
+    console.error('[EmbeddingIndex] Model unavailable — aborting index build');
+    return;
+  }
   console.error('[EmbeddingIndex] Model loaded');
 
   const manifest = loadManifest();
@@ -212,11 +218,10 @@ async function buildIndex(incremental: boolean): Promise<void> {
       const textChunks = chunkText(content, filePath);
       for (const { text, section } of textChunks) {
         if (text.length < 50) continue;
-        // pooling:'mean' + normalize:true → ONE 512-d unit vector per text.
-        // Without pooling, feature-extraction returns a [tokens×512] matrix (the W1/C16 bug
-        // that produced a 5GB index and made cosine comparisons meaningless).
-        const output = await (embedder as any)(text, { pooling: 'mean', normalize: true });
-        const embedding = Array.from(output.data as Float32Array);
+        // embed() bakes in pooling:'mean'+normalize:true (lib/embeddings.ts) → ONE 512-d unit
+        // vector. Single source of truth: the pooling args can't drift from the runtime path.
+        const embedding = await embed(text);
+        if (!embedding) continue;
         writeChunk({ path: filePath, text, embedding, section });
       }
 

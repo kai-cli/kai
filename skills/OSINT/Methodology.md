@@ -246,7 +246,7 @@ Prevents intelligence gaps like missing investor-facing portals on alternative T
 ### Active Investigation
 
 ```
-~/.claude/MEMORY/WORK/$(jq -r '.work_dir' ~/.claude/MEMORY/STATE/current-work.json)/scratch/YYYY-MM-DD-HHMMSS_osint-[target]/
+~/.claude/MEMORY/WORK/$(jq -r '.work_dir' ~/.claude/MEMORY/STATE/current-work.json)/YYYY-MM-DD-HHMMSS_osint-[target]/
   phase1-collection.md
   phase2-analysis.md
   phase3-report.md

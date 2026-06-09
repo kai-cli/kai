@@ -90,7 +90,10 @@ async function main() {
     { name: 'LearningPatternSynthesis', cmd: ['bun', 'PAI/Tools/LearningPatternSynthesis.ts'] },
     { name: 'BehavioralTrends', cmd: ['bun', 'PAI/Tools/LearningPatternSynthesis.ts', '--trends'] },
     { name: 'memory-audit', cmd: ['bun', 'scripts/audit-memory.ts'] },
+    { name: 'embedding-index', cmd: ['bun', 'scripts/EmbeddingIndex.ts', '--incremental'] }, // W1/W9: rebuild changed-file embeddings
+    { name: 'transcript-cache-prune', cmd: ['bun', 'hooks/lib/transcript-cache.ts', '--prune', '30'] }, // SF-4: drop >30d cache files
     { name: 'wiring-reconcile', cmd: ['bun', 'scripts/reconcile-wiring.ts'] },
+    { name: 'security-audit-loop', cmd: ['bun', 'PAI/Tools/SecurityAuditLoop.ts'] }, // W7: dry-run report; human runs --apply
     { name: 'Tests (critical)', cmd: ['bun', 'test', 'tests/SecurityValidator.test.ts', 'tests/PostCompactRecovery.test.ts', 'tests/GitHubWriteGuard.test.ts', 'tests/RiskClassifier.test.ts'] },
   ];
 

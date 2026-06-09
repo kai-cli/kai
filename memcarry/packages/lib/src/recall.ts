@@ -18,6 +18,15 @@ export interface RecallHit {
   expand_when?: string;
 }
 
+/**
+ * W6 provider seam ("integrated core, portable engine"): the engine stays PAI-free, but a host can
+ * INJECT a relevance scorer. Given a lesson and the prompt, return a numeric relevance (higher = more
+ * relevant), or null to fall through to the built-in keyword scoring for that lesson. PAI's adapter can
+ * back this with jina embeddings (semantic-fallback); KAI/others pass nothing and get keyword scoring.
+ * Pure injection — the engine never imports the provider's implementation.
+ */
+export type ScoreProvider = (lesson: LessonAtom, prompt: string) => number | null;
+
 const STOP = new Set([
   "the", "a", "an", "to", "of", "and", "or", "in", "on", "for", "is", "it", "this", "that",
   "with", "fix", "run", "get", "set", "do", "how", "i", "we", "my", "me", "you",
@@ -54,7 +63,8 @@ export function recall(
   atoms: Atom[],
   prompt: string,
   project: string | null,
-  k = 5
+  k = 5,
+  scoreProvider?: ScoreProvider
 ): RecallHit[] {
   const tokens = new Set(tokenize(prompt));
   const hits: RecallHit[] = [];
@@ -63,8 +73,13 @@ export function recall(
     if (a.type !== "lesson") continue;
     const eligible = a.scope === "global" || (project && a.scope === `project:${project}`);
     if (!eligible) continue;
-    const score = scoreLesson(a, tokens);
-    if (score === null) continue;
+    // Built-in keyword score also acts as the precondition GATE (null = doesn't apply here).
+    const keywordScore = scoreLesson(a, tokens);
+    if (keywordScore === null) continue;
+    // W6 seam: an injected provider may override the relevance score for this (gated) lesson.
+    // It cannot resurrect a gated-out lesson — the precondition gate above still governs eligibility.
+    const provided = scoreProvider ? scoreProvider(a, prompt) : null;
+    const score = provided ?? keywordScore;
     hits.push({
       id: a.id,
       scope: a.scope,
