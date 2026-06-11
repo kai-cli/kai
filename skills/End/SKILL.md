@@ -39,7 +39,20 @@ If this session was working on a task with a PRD:
 
 If no active PRD or already up to date, report "PRD current."
 
-### 4. Git Status
+### 4. Docs & Roadmap Currency (VERIFY, don't assume)
+
+The session's work must be reflected in the docs/wiki/roadmap BEFORE closing — confirm it, don't trust memory.
+For each substantive thing built/changed this session, check it is actually written down:
+- **Roadmap** (`docs/planning/ROADMAP-*.md`): are completed items still listed as open? Are new builds recorded?
+  Grep the roadmap for the feature/file names you touched. If stale → fix inline now (mark done/partial, add new).
+- **Wiki** (PAI-Wiki / project wikis): did a new subsystem/behavior get a wiki page or section? Check
+  `pending-wiki-nudge.json` — if the wiki-currency hook flagged un-wikied code, resolve it here.
+- **Verify against live state**, not the conversation: `grep` the doc for what you changed; confirm files
+  marked done actually exist/changed.
+
+If everything is current, report "Docs current." If you fixed drift, report what.
+
+### 5. Git Status
 
 Run `git status` and `git log --oneline @{u}..HEAD` (if upstream exists). Report:
 - Uncommitted changes (list files)
@@ -47,7 +60,7 @@ Run `git status` and `git log --oneline @{u}..HEAD` (if upstream exists). Report
 
 Do NOT commit or push automatically. Just report state and ask if user wants action.
 
-### 5. Summary
+### 6. Summary
 
 One-line session summary: what was accomplished.
 
@@ -58,6 +71,7 @@ One-line session summary: what was accomplished.
 📝 MEMORY: [saved N memories / no new memories]
 📚 KNOWLEDGE: [updated X / current]
 📋 PRD: [updated slug → phase / current / N/A]
+📖 DOCS: [reconciled roadmap/wiki / current]
 🔀 GIT: [N uncommitted files, M unpushed commits / clean]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📍 SESSION: [one-line summary of what was accomplished]

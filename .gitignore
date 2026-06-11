@@ -147,3 +147,6 @@ MEMORY/STATE/embeddings/
 # Test temp artifacts (e.g. tests/.tmp-api-keys-test bun caches) — never commit or sync
 tests/.tmp*
 *.pile
+
+# Personal automation profiles (Automate skill) — local only, like board-config.json
+automations/

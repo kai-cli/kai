@@ -137,6 +137,8 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ModeClassifier.hook.ts" },
           // Detect PAI output format violations and inject correction hint
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh FormatReminder.hook.ts" },
+          // Surface pending wiki-currency nudge (code changed in a wiki-bearing project, wiki untouched)
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh WikiNudge.hook.ts" },
           // Remind when a plan is awaiting approval
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PlanApprovalGuard.hook.ts" },
           // Auto-generate four-word session names (fast, no inference)

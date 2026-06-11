@@ -30,7 +30,7 @@ PAI 5.0.0 is a public open-source release of the personal AI infrastructure syst
 
 ## Decision: Fork the Repository
 
-Create a **new public repo** forked from the current codebase. The personal repo (`YourNameYourLastName/pai-config`) stays frozen at v4.9.0 as your live installation.
+Create a **new public repo** forked from the current codebase. The personal repo (`YourNameYourLastName/kai`) stays frozen at v4.9.0 as your live installation.
 
 **Why fork, not in-place refactor:**
 - Clean slate — no accumulated personal log files, git history with personal data

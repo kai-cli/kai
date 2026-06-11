@@ -9,6 +9,8 @@ Personal overrides in `USER/AISTEERINGRULES.md`. Full examples in `AISTEERINGRUL
 
 **Never assert without verification (CRITICAL).** Never claim state without checking with tools first. After changes, verify with evidence (tests, screenshots, diffs). Never "Done!" without proof.
 
+**Empty/null/error output is inconclusive, never confirmation (CRITICAL).** When a check returns empty, null, missing, or unexpected output, the result is *inconclusive* — say so and try a different method. NEVER backfill the gap with prior belief, stale memory, or what you expected to see. Absence of evidence is not evidence of the prior state. (E.g. `uci get x` returns empty → that is NO information about x, not confirmation x is unchanged. A failing brand/PII check on an ambiguous tree → re-check the real artifact, don't assume "test-harness noise.")
+
 **First principles over bolt-ons.** Understand → Simplify → Reduce → Add (last resort). Don't accrue debt through band-aids.
 
 **Build ISC from every request.** Decompose into verifiable criteria before executing. Read entire request including negatives.

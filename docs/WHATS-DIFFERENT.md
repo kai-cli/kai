@@ -10,8 +10,8 @@ KAI diverges with production hardening, multi-model debate/research, self-learni
 
 | | Daniel's Original (v4.0.3) | This Fork (KAI) |
 |---|---|---|
-| **Skills** | 63 (12 categories) | <!-- KAI:counts:skills:begin -->67<!-- KAI:counts:skills:end --> (streamlined, no dead skills) |
-| **Hooks** | 21 | <!-- KAI:counts:hooks:begin -->54<!-- KAI:counts:hooks:end --> (all through stderr wrapper) |
+| **Skills** | 63 (12 categories) | <!-- KAI:counts:skills:begin -->68<!-- KAI:counts:skills:end --> (streamlined, no dead skills) |
+| **Hooks** | 21 | <!-- KAI:counts:hooks:begin -->55<!-- KAI:counts:hooks:end --> (all through stderr wrapper) |
 | **Agents** | ~6 generic | <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> specialized (named personas) |
 | **Algorithm** | v3.5.0 | <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end --> |
 | **Context footprint** | ~19% at startup | Optimized with lazy loading |
@@ -68,7 +68,7 @@ Instead of one monolithic `settings.json`, configuration is split into purpose-s
 
 ### 4. Hook System Hardening
 
-All <!-- KAI:counts:hooks:begin -->54<!-- KAI:counts:hooks:end --> hooks now go through `run-hook.sh`, which:
+All <!-- KAI:counts:hooks:begin -->55<!-- KAI:counts:hooks:end --> hooks now go through `run-hook.sh`, which:
 
 - **Redirects stderr to `/tmp/pai-hooks/`** — prevents "hook error" messages in Claude Code UI
 - **Async flags on analytics hooks** — PromptAnalysis, RatingCapture, StopOrchestrator, and other inference-heavy hooks run in the background instead of blocking the UI for 15+ seconds

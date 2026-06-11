@@ -3,8 +3,8 @@
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 67,
-    "hooks": 54,
+    "skills": 68,
+    "hooks": 55,
     "agents": 20
   },
   "hookInventory": [
@@ -58,6 +58,7 @@
     "UpdateTabTitle.hook",
     "WebFetchGuard.hook",
     "WeeklyMaintenance.hook",
+    "WikiNudge.hook",
     "WorkCompletionLearning.hook",
     "WorktreeRemove.hook",
     "WorktreeSetup.hook",
@@ -67,6 +68,7 @@
     "Agents",
     "Apify",
     "AudioEditor",
+    "Automate",
     "BeCreative",
     "BrightData",
     "Browser",

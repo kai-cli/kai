@@ -2,7 +2,7 @@
 
 Run these commands on `YourNameYourLastName/kai` BEFORE transferring to `kai-cli/kai`.
 
-**Do not run on `YourNameYourLastName/pai-config` (personal repo) — that history stays private.**
+**Do not run on `YourNameYourLastName/kai` (personal repo) — that history stays private.**
 
 ---
 
@@ -80,4 +80,4 @@ After validation (other tools, manual review):
 
 - `git filter-repo` rewrites all commit SHAs — this breaks any existing clones
 - Run only once, on the final pre-public state
-- After transfer, the personal `YourNameYourLastName/pai-config` is completely unaffected
+- After transfer, the personal `YourNameYourLastName/kai` is completely unaffected

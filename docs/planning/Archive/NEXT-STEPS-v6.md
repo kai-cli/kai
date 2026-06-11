@@ -1,8 +1,8 @@
 # KAI — Roadmap & Next Steps
 
 > Canonical repo: `github.com/kai-cli/kai`
-> pai-config is the private live installation. kai is the scrubbed public fork.
-> Development workflow: develop in pai-config → cherry-pick to kai → verify-release.sh → push
+> kai is the private live installation. kai is the scrubbed public fork.
+> Development workflow: develop in kai → cherry-pick to kai → verify-release.sh → push
 
 ---
 
@@ -37,7 +37,7 @@
 
 See `docs/planning/v5.2.0-PLAN.md` for full detail. All phases complete.
 Memory improvements (302MB→18MB), hook tests, routing intelligence, installer polish,
-steering enforcement design spike. 437 tests. kai @ `f7ff18e`, pai-config @ `e457faa`.
+steering enforcement design spike. 437 tests. kai @ `f7ff18e`, kai @ `e457faa`.
 
 ---
 
@@ -71,7 +71,7 @@ SessionCloseGuard and memory scoring model deferred to v5.6.
 See `docs/planning/v5.6.0-PLAN.md` for full detail. All phases complete.
 Progressive disclosure memory (3-layer), instinct-based learning, embedding fallback,
 MistralResearcher + DeepSeekResearcher, ExtensiveResearch 4-5 types, MemoryRecall hook wired.
-724 tests (pai-config), 744 tests (kai). Both repos synced and pushed.
+724 tests (kai), 744 tests (kai). Both repos synced and pushed.
 
 ---
 

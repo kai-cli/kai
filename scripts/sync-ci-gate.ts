@@ -194,8 +194,9 @@ function scanForPII(filePath: string, paiDir: string = getPaiDir()): string[] {
   const fullPath = join(paiDir, filePath);
   if (!existsSync(fullPath)) return [];
 
-  // Only scan text files
-  if (!/\.(ts|js|md|json|jsonc|yaml|yml|sh|html|txt)$/.test(filePath)) {
+  // Only scan text files. Includes .tsx/.jsx/.css: the React frontend ships to kai and must be
+  // PII/brand-scanned (same blind spot that let "KAI Board" reach public App.tsx).
+  if (!/\.(ts|tsx|js|jsx|css|md|json|jsonc|yaml|yml|sh|html|txt)$/.test(filePath)) {
     return [];
   }
 

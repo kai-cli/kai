@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-06-09T18:24:05.741Z",
+  "generated": "2026-06-11T21:07:25.245Z",
   "skills": {
     "Agents": {
       "source": "kai",
@@ -39,6 +39,26 @@
       ],
       "workflowHashes": {
         "Clean": "sha256:0c7a9df07d20a29540376e82fa0f49adf8b3bb6da2e312b0c4e431ce655d24e4"
+      },
+      "specializes": null
+    },
+    "Automate": {
+      "source": "kai",
+      "path": "skills/Automate/SKILL.md",
+      "hash": "sha256:cb2c2ffc883499da86758a1ea5888f382d9f33eabbef19ebd384d3621e3f0a07",
+      "workflows": [
+        "Define",
+        "Launch",
+        "List",
+        "Status",
+        "Stop"
+      ],
+      "workflowHashes": {
+        "Define": "sha256:5653ff4655ecce983fe0e66a5d1ef907309e324bd5c0f7b1e83a6aa6a904f0ee",
+        "Launch": "sha256:6eea5f258febe35f3f2d396583fc4563cd9599b7987c7d50e0c463338f40394b",
+        "List": "sha256:ee9a2cd99311a03df1adcea805170c28ccfcd8ba8d57bafe55225e154e8bea96",
+        "Status": "sha256:822bf76cb6b4697a544de9e376ff0864bb8e09fe6f4085a6b0548fef0e3241fc",
+        "Stop": "sha256:65effe3fe0f84d8b33cfe9c2c214127d4fbfbfaef7c6368c09c758670fca8e0b"
       },
       "specializes": null
     },
@@ -145,7 +165,7 @@
     "CreateSkill": {
       "source": "kai",
       "path": "skills/CreateSkill/SKILL.md",
-      "hash": "sha256:7ca2d35adf6dc7371a790443a2c16615d7cd15a4db616da1cf1df5ff9bdd9337",
+      "hash": "sha256:3e55063edd0e80ebbe2853f758ef953ea581c437747cc3e9afdf6b714f973ef7",
       "workflows": [
         "CanonicalizeSkill",
         "CreateSkill",
@@ -213,7 +233,7 @@
     "DevTeam": {
       "source": "kai",
       "path": "skills/DevTeam/SKILL.md",
-      "hash": "sha256:e0a5afde4884fddf03c458e0a036daf2c66c6f4a1363eecbe176c77bc29aca98",
+      "hash": "sha256:227423c56ea53ed8fcc57cc919e89d5a151adb49e3bfe57ad5c2bbce37fb1ccb",
       "workflows": [
         "BackgroundFeature",
         "BugFix",
@@ -222,7 +242,7 @@
         "Launch"
       ],
       "workflowHashes": {
-        "BackgroundFeature": "sha256:cc6cbc4d899f493a09fc6c47b5be90c9305489a2d7569ac81450f7a3f6b11740",
+        "BackgroundFeature": "sha256:6a0e93ae9724f3a464da737a9439ca8992058071d5324f6610a2b04879295b9e",
         "BugFix": "sha256:be5fa98bf499353a1bf1936bab9c3a827b3c5611beda9add1a510c5f8690ca38",
         "Feature": "sha256:65d1fb539627d3b5a0761e2328524bc218e85b8a284aa5280d7dff8acd1e3bdb",
         "Investigation": "sha256:7435498529af7663223b32bf3cfa4c82d22cbed35f968df8c2e7922afbf48ebb",
@@ -247,7 +267,7 @@
     "End": {
       "source": "kai",
       "path": "skills/End/SKILL.md",
-      "hash": "sha256:ed3d5e4b1e2399fa98641e24978245d07f41307d66cbc26b8b905626b50ea2e7",
+      "hash": "sha256:d0f2aa7affdfa36e6c9c23f8ae659b9eec76cba084c0d51c47d02550c6715819",
       "workflows": [],
       "workflowHashes": {},
       "specializes": null
@@ -277,7 +297,7 @@
     "Evolve": {
       "source": "kai",
       "path": "skills/Evolve/SKILL.md",
-      "hash": "sha256:6df790215327aec74967d70f84e7d9c29f867806cfd91ea40cb0021bb4dd2633",
+      "hash": "sha256:6c04e35a16a7302338e2c2a4afe9e59ac8debe7d9e3fec8522daa88b57cfdf1b",
       "workflows": [],
       "workflowHashes": {},
       "specializes": null
@@ -344,6 +364,24 @@
       },
       "specializes": null
     },
+    "LinksysDev": {
+      "source": "kai",
+      "path": "skills/LinksysDev/SKILL.md",
+      "hash": "sha256:c27ded3c4860fe157e39467bf9b13ee2d932a5c19ea3e62d657b33ea4c20e448",
+      "workflows": [
+        "FindCode",
+        "MakeChanges",
+        "SubmitWork",
+        "UnderstandBuild"
+      ],
+      "workflowHashes": {
+        "FindCode": "sha256:90e4aaed0afd7206b3282a4d0a5b68741a0a671e12b1675ab09ce6792b70f745",
+        "MakeChanges": "sha256:e96c6e6bc6f99f471e88764fbf038681eb9ad6e1e54f401d640e5f237960ee2f",
+        "SubmitWork": "sha256:5422a34de1edd579d19c617a4e727d2c3d20f73f8ef9deb60d818fe7bb0d1899",
+        "UnderstandBuild": "sha256:40354550fa872f1df2404df599fdf95272f670e5b6bdd53773bf7769bb03dc3e"
+      },
+      "specializes": null
+    },
     "Media": {
       "source": "kai",
       "path": "skills/Media/SKILL.md",
@@ -379,9 +417,27 @@
     "PAI": {
       "source": "kai",
       "path": "skills/PAI/SKILL.md",
-      "hash": "sha256:b184aaef75c9dba17dd9df6c71da75f40b8fdc4445773f5c4c0e74734d352d57",
+      "hash": "sha256:b29dedbcbd4a763c8158cd471d7cddd89c2f33225188b077781d2be44a514f70",
       "workflows": [],
       "workflowHashes": {},
+      "specializes": null
+    },
+    "KAIUpgrade": {
+      "source": "kai",
+      "path": "skills/KAIUpgrade/SKILL.md",
+      "hash": "sha256:85d7ddc42d696f4a4838412d2b03c88944c179fbe3fe8c85ce288fb9097dbc06",
+      "workflows": [
+        "AlgorithmUpgrade",
+        "MineReflections",
+        "ResearchUpgrade",
+        "Upgrade"
+      ],
+      "workflowHashes": {
+        "AlgorithmUpgrade": "sha256:4e99dbc308e8d895e5c008e934f566226f9e421a0f5f2b2b33bf467cd09b1cd1",
+        "MineReflections": "sha256:717dedd34b9301427208a579570c9c1451b60f9cae563373f47b97de64cc78c0",
+        "ResearchUpgrade": "sha256:24035fe995e68c5714ea734836c393254866398bc9b5c7cb9d2bd5b1d839a4c1",
+        "Upgrade": "sha256:50ec25626f0a717810ea2d731f1917a2f628b3e86ed40d7e34aa75ba7cf37642"
+      },
       "specializes": null
     },
     "Parser": {
@@ -455,7 +511,7 @@
         "ParallelAnalysis"
       ],
       "workflowHashes": {
-        "AdversarialValidation": "sha256:3cfe8f17363c40aad7cc8ae810d063669d08148a4fe20839a23ed83faf858d7b",
+        "AdversarialValidation": "sha256:c08e7eb1c38ac1ca656bb37af794ae3f72a714337b812cac48adad79c75fe688",
         "ParallelAnalysis": "sha256:a4cc96533a33e1fadb2f4314db2f73301389e7623ba11779cd0c988904c00ac0"
       },
       "specializes": null
@@ -486,7 +542,7 @@
         "DeepInvestigation": "sha256:e7f4d6ae0710a11a95284bf4a8b515ec93e53bc80ff78aeb008552e882276530",
         "Enhance": "sha256:826206f24d31bae2a2aacefa789dbd20ce66652fcd127814cec5534b5c6a2904",
         "ExtensiveResearch": "sha256:8d8a2842ef09d698f2e4815471d6ca317820ff6e0a577eef5c0df70314632a3c",
-        "ExtractAlpha": "sha256:744ab8f1ffc9604af82b76d660478fa5aa0cbdefc6d1d8f9710c0185a663e8e2",
+        "ExtractAlpha": "sha256:3fa0546558e5a081d6577f243f8b78ee561e38c123e05240b02be680d079506d",
         "ExtractKnowledge": "sha256:26098ee7d488ebe50b19e178150d1710bfb2faf56cdb7acb0642e1228bdfe01c",
         "Fabric": "sha256:f23439ea83b9119545d3e93f333e7bd4451cce0907a5155c2792aeae458b31f0",
         "InterviewResearch": "sha256:e7a4d56f75928d69578a21c9026f336343b39a612d603b17f08fdccbb5e4888d",
@@ -613,7 +669,7 @@
     "WikiQuery": {
       "source": "kai",
       "path": "skills/WikiQuery/SKILL.md",
-      "hash": "sha256:a94af8058cee3da225a4c4185b28b599f179c8ab438869adc2387aa2203f91b6",
+      "hash": "sha256:16225141c9590dc91b9064589177458ce105245213bb9daac752cee3bc32b5ac",
       "workflows": [],
       "workflowHashes": {},
       "specializes": null

@@ -28,6 +28,7 @@ import { handleRebuildSkill } from './handlers/RebuildSkill';
 import { handleAlgorithmEnrichment } from './handlers/AlgorithmEnrichment';
 import { handleDocCrossRefIntegrity } from './handlers/DocCrossRefIntegrity';
 import { handlePlanDetection } from './handlers/PlanDetection';
+import { handleWikiCurrency } from './handlers/WikiCurrency';
 
 interface HookInput {
   session_id: string;
@@ -153,8 +154,9 @@ async function main() {
     handleAlgorithmEnrichment(parsed, hookInput.session_id),
     handleDocCrossRefIntegrity(parsed, hookInput),
     handlePlanDetection(parsed, hookInput.session_id),
+    handleWikiCurrency(parsed, hookInput.session_id),
   ];
-  const handlerNames = ['TabState', 'RebuildSkill', 'AlgorithmEnrichment', 'DocCrossRefIntegrity', 'PlanDetection'];
+  const handlerNames = ['TabState', 'RebuildSkill', 'AlgorithmEnrichment', 'DocCrossRefIntegrity', 'PlanDetection', 'WikiCurrency'];
 
   // Graceful shutdown: race the fan-out against an overall deadline so a hung handler can never
   // wedge the Stop hook indefinitely. Per-handler failures are still isolated + logged.

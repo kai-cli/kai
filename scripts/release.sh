@@ -50,8 +50,17 @@ else
 fi
 
 # ── Gate 3: verify-release.sh ────────────────────────────────
+# SF-15/18 fix: leak/brand checks must run against the SCRUBBED public artifact, not the private
+# kai tree (where PII/brand strings live by design). verify-release.sh now splits checks into
+# STRUCTURAL (run on this repo), ARTIFACT/leak-brand (run on --target), and SECRETS (run on both).
+#
+# Producing/verifying the scrubbed artifact is the job of the sync pipeline (sync-to-kai.sh →
+# sync-ci-gate.ts on the real ~/Projects/kai tree, plus kai's own pre-push gate). Here we run the
+# STRUCTURAL + SECRETS checks against kai; the artifact leak/brand pass happens at sync time
+# against the real kai tree. (Run `bash scripts/verify-release.sh --target <kai-tree>` to scan a
+# specific scrubbed tree directly.)
 echo ""
-echo "── Gate 3: Release verification ──"
+echo "── Gate 3: Release verification (structural + secrets) ──"
 if bash "$REPO_ROOT/scripts/verify-release.sh" 2>&1; then
   gate_pass "verify-release.sh passed"
 else
@@ -59,12 +68,22 @@ else
 fi
 
 # ── Gate 4: Test suite ───────────────────────────────────────
+# bun 1.3.x crashes-on-exit (SIGABRT/C++ teardown panic) AFTER tests complete, which corrupts the
+# pipe and made `grep -q '0 fail'` flaky. Mirror the pre-push hook: detect an ACTUAL non-zero failure
+# count ([1-9][0-9]* fail) and retry once for subprocess-spawn flakiness before failing the gate.
 echo ""
 echo "── Gate 4: Test suite ──"
-if bun test 2>&1 | grep -q '0 fail'; then
-  gate_pass "All tests pass"
+TEST_OUTPUT=$(bun test 2>&1) || true
+if echo "$TEST_OUTPUT" | grep -qE '[1-9][0-9]* fail'; then
+  echo "  Test run had failures — retrying once (subprocess spawn flakiness)..."
+  TEST_OUTPUT=$(bun test 2>&1) || true
+  if echo "$TEST_OUTPUT" | grep -qE '[1-9][0-9]* fail'; then
+    gate_fail "Test suite has failures (failed on retry too) — run 'bun test' for details"
+  else
+    gate_pass "All tests pass (retry)"
+  fi
 else
-  gate_fail "Test suite has failures — run 'bun test' for details"
+  gate_pass "All tests pass"
 fi
 
 # ── Gate 5: BuildDocs freshness ──────────────────────────────
@@ -86,7 +105,10 @@ echo ""
 echo "── Gate 6: Release blockers ──"
 BLOCKERS_FILE="$REPO_ROOT/docs/planning/RELEASE-BLOCKERS.md"
 if [[ -f "$BLOCKERS_FILE" ]]; then
-  OPEN_BLOCKERS=$(grep -c '^\- \[ \]' "$BLOCKERS_FILE" 2>/dev/null || echo "0")
+  # grep exits 1 on no-match. Under `set -euo pipefail` that 1 propagates through the pipe and kills
+  # the whole script (Gate 6 dies silently before tagging). Neutralize grep's exit with `|| true`
+  # INSIDE the command substitution so a zero-blocker count is a clean pass, not a fatal pipe failure.
+  OPEN_BLOCKERS=$( { grep '^\- \[ \]' "$BLOCKERS_FILE" 2>/dev/null || true; } | wc -l | tr -d ' ')
   if [[ "$OPEN_BLOCKERS" -gt 0 ]]; then
     gate_fail "$OPEN_BLOCKERS open blocker(s) in RELEASE-BLOCKERS.md:"
     grep '^\- \[ \]' "$BLOCKERS_FILE" | while read -r line; do echo "    $line"; done

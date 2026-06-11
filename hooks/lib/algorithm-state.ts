@@ -131,19 +131,24 @@ export interface AlgorithmState {
 
 // ── Paths ──
 
-const BASE_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
-const ALGORITHMS_DIR = join(BASE_DIR, 'MEMORY', 'STATE', 'algorithms');
-const SESSION_NAMES_PATH = join(BASE_DIR, 'MEMORY', 'STATE', 'session-names.json');
+// Resolve paths LAZILY (per call), not once at module import. A module-level const captures
+// process.env.PAI_DIR at import time; under Bun's parallel test runner, sibling tests that reassign
+// PAI_DIR then clobber it, so writeState and the test's own path diverged → flaky CI failures.
+// Same class as feedback_parallel_test_home_env (HOME hijack). Functions re-read env every call.
+function baseDir(): string { return process.env.PAI_DIR || join(process.env.HOME!, '.claude'); }
+function algorithmsDir(): string { return join(baseDir(), 'MEMORY', 'STATE', 'algorithms'); }
+function sessionNamesPath(): string { return join(baseDir(), 'MEMORY', 'STATE', 'session-names.json'); }
 
 function ensureDir(): void {
-  if (!existsSync(ALGORITHMS_DIR)) mkdirSync(ALGORITHMS_DIR, { recursive: true });
+  const dir = algorithmsDir();
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
 // ── Read / Write ──
 
 export function readState(sessionId: string): AlgorithmState | null {
   try {
-    const file = join(ALGORITHMS_DIR, `${sessionId}.json`);
+    const file = join(algorithmsDir(), `${sessionId}.json`);
     if (!existsSync(file)) return null;
     const raw = readFileSync(file, 'utf-8').trim();
     if (!raw || raw === '{}') return null;
@@ -167,13 +172,13 @@ export function writeState(state: AlgorithmState): void {
   if (!isPlaceholderName(latestName) && latestName !== state.taskDescription) {
     state.taskDescription = latestName;
   }
-  writeFileSync(join(ALGORITHMS_DIR, `${state.sessionId}.json`), JSON.stringify(state, null, 2));
+  writeFileSync(join(algorithmsDir(), `${state.sessionId}.json`), JSON.stringify(state, null, 2));
 }
 
 function getSessionName(sessionId: string): string {
   try {
-    if (existsSync(SESSION_NAMES_PATH)) {
-      const names = JSON.parse(readFileSync(SESSION_NAMES_PATH, 'utf-8'));
+    if (existsSync(sessionNamesPath())) {
+      const names = JSON.parse(readFileSync(sessionNamesPath(), 'utf-8'));
       if (names[sessionId]) return names[sessionId];
     }
   } catch {}
@@ -522,7 +527,7 @@ export function sweepStaleActive(currentSessionId: string): void {
   try {
     ensureDir();
     const now = Date.now();
-    const files = (readdirSync(ALGORITHMS_DIR) as string[]).filter(f => f.endsWith('.json'));
+    const files = (readdirSync(algorithmsDir()) as string[]).filter(f => f.endsWith('.json'));
     const liveSessionIds = new Set<string>();
 
     for (const file of files) {
@@ -530,7 +535,7 @@ export function sweepStaleActive(currentSessionId: string): void {
       if (sid === currentSessionId) continue; // Skip current session — handled by algorithmEnd
 
       try {
-        const filepath = join(ALGORITHMS_DIR, file);
+        const filepath = join(algorithmsDir(), file);
         const mtime = statSync(filepath).mtimeMs;
         const age = now - mtime;
 
@@ -571,8 +576,8 @@ export function sweepStaleActive(currentSessionId: string): void {
 
     // Validate + sync session-names.json — repair if corrupted, prune orphans
     try {
-      if (existsSync(SESSION_NAMES_PATH)) {
-        const raw = readFileSync(SESSION_NAMES_PATH, 'utf-8').trim();
+      if (existsSync(sessionNamesPath())) {
+        const raw = readFileSync(sessionNamesPath(), 'utf-8').trim();
         const names = JSON.parse(raw) as Record<string, string>;
         const keys = Object.keys(names);
         let pruned = 0;
@@ -583,13 +588,13 @@ export function sweepStaleActive(currentSessionId: string): void {
           }
         }
         if (pruned > 0) {
-          writeFileSync(SESSION_NAMES_PATH, JSON.stringify(names, null, 2));
+          writeFileSync(sessionNamesPath(), JSON.stringify(names, null, 2));
           process.stderr.write(`[sweep] pruned ${pruned} orphaned entries from session-names.json\n`);
         }
       }
     } catch {
       process.stderr.write(`[sweep] session-names.json corrupt — resetting to {}\n`);
-      writeFileSync(SESSION_NAMES_PATH, '{}');
+      writeFileSync(sessionNamesPath(), '{}');
     }
 
   } catch {}

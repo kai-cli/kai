@@ -305,6 +305,8 @@ export function upsertSession(sessionUUID: string, sessionName: string, task: st
         }).toString().trim().slice(0, 40) || undefined;
       } catch { /* non-git project or git unavailable — leave undefined */ }
 
+      const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+
       registry.sessions[slug] = {
         task: task || sessionName || (mode === 'native' ? 'Native session' : 'Starting...'),
         sessionName: sessionName || undefined,
@@ -315,6 +317,7 @@ export function upsertSession(sessionUUID: string, sessionName: string, task: st
         mode: mode,
         started: timestamp,
         updatedAt: timestamp,
+        projectDir,
         lifecycle: {
           startedAt: timestamp,
           ...(commitAtStart ? { commitAtStart } : {}),

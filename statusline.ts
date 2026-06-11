@@ -584,36 +584,84 @@ p(SEP);
 // Line 4: Pending actions (curations, stale memories)
 const ALERT_COLOR = '\x1b[38;2;251;191;36m';
 const ALERT_DIM   = '\x1b[38;2;180;140;30m';
+const ACTIONS_JSON = join(PAI_DIR, 'MEMORY', 'STATE', 'actions.json');
+
+interface ActionItem {
+  type: 'draft' | 'stale_prd' | 'maintenance';
+  summary: string;
+  action: string;
+  file?: string;
+  project?: string;
+  age_days?: number;
+  phase?: string;
+  slug?: string;
+}
 
 function getPendingActions(): string | null {
   const parts: string[] = [];
+  const actions: ActionItem[] = [];
 
   // Check staging drafts
   const stagingDir = join(PAI_DIR, 'MEMORY', 'STAGING');
   try {
     if (existsSync(stagingDir)) {
-      const drafts = readdirSync(stagingDir).filter(f => f.endsWith('.md')).length;
-      if (drafts > 0) parts.push(`${drafts} draft${drafts > 1 ? 's' : ''}→/curate`);
+      const draftFiles = readdirSync(stagingDir).filter(f => f.endsWith('.md'));
+      if (draftFiles.length > 0) {
+        parts.push(`${draftFiles.length} draft${draftFiles.length > 1 ? 's' : ''}→/curate`);
+        for (const f of draftFiles) {
+          actions.push({
+            type: 'draft',
+            summary: f.replace(/\.md$/, ''),
+            action: '/curate',
+            file: join(stagingDir, f),
+          });
+        }
+      }
     }
   } catch {}
 
   // Check stale PRDs (started work, no progress in 7+ days)
+  const workDir = join(PAI_DIR, 'MEMORY', 'WORK');
   try {
     if (existsSync(WORK_JSON)) {
       const work = JSON.parse(readFileSync(WORK_JSON, 'utf-8'));
       const sessions: Record<string, any> = work.sessions ?? {};
       let stalePrds = 0;
       const now = Date.now();
-      for (const s of Object.values(sessions) as any[]) {
+      for (const [slug, s] of Object.entries(sessions) as [string, any][]) {
         if (!s.phase || s.phase === 'complete' || s.phase === 'native') continue;
-        if (s.updated) {
-          const age = now - new Date(s.updated).getTime();
-          if (age > 7 * 86_400_000) stalePrds++;
+        let ageDays = 0;
+        if (s.updatedAt) {
+          ageDays = Math.floor((now - new Date(s.updatedAt).getTime()) / 86_400_000);
+        } else if (s.updated) {
+          ageDays = Math.floor((now - new Date(s.updated).getTime()) / 86_400_000);
         } else if (s.started) {
-          const age = now - new Date(s.started).getTime();
-          if (age > 7 * 86_400_000) stalePrds++;
+          ageDays = Math.floor((now - new Date(s.started).getTime()) / 86_400_000);
         } else {
-          stalePrds++; // No timestamp at all = definitely stale
+          ageDays = 999;
+        }
+        if (ageDays >= 7) {
+          stalePrds++;
+          // Derive project dir: stored in session, or from PRD frontmatter
+          let project: string | undefined = s.projectDir;
+          const prdPath = join(workDir, slug, 'PRD.md');
+          if (!project && existsSync(prdPath)) {
+            try {
+              const head = readFileSync(prdPath, 'utf-8').slice(0, 500);
+              const dirMatch = head.match(/project_dir:\s*(.+)/);
+              if (dirMatch) project = dirMatch[1].trim();
+            } catch {}
+          }
+          actions.push({
+            type: 'stale_prd',
+            summary: s.task?.slice(0, 80) || slug,
+            action: 'close or resume',
+            slug,
+            phase: s.phase,
+            age_days: ageDays,
+            project,
+            file: existsSync(prdPath) ? prdPath : undefined,
+          });
         }
       }
       if (stalePrds > 0) parts.push(`${stalePrds} stale PRD${stalePrds > 1 ? 's' : ''}`);
@@ -626,11 +674,22 @@ function getPendingActions(): string | null {
     if (existsSync(maintState)) {
       const state = JSON.parse(readFileSync(maintState, 'utf-8'));
       const daysSince = Math.floor((Date.now() - state.lastRun) / 86_400_000);
-      if (daysSince >= 7) parts.push(`maint ${daysSince}d overdue`);
+      if (daysSince >= 7) {
+        parts.push(`maint ${daysSince}d overdue`);
+        actions.push({ type: 'maintenance', summary: `${daysSince} days overdue`, action: '/weekly-maintenance' });
+      }
     } else {
       parts.push('maint never run');
+      actions.push({ type: 'maintenance', summary: 'never run', action: '/weekly-maintenance' });
     }
   } catch {}
+
+  // Write manifest for AI consumption
+  if (actions.length > 0) {
+    try { writeFileSync(ACTIONS_JSON, JSON.stringify({ updated: new Date().toISOString(), cwd: currentDir, actions }, null, 2)); } catch {}
+  } else {
+    try { writeFileSync(ACTIONS_JSON, JSON.stringify({ updated: new Date().toISOString(), cwd: currentDir, actions: [] }, null, 2)); } catch {}
+  }
 
   return parts.length > 0 ? parts.join(' │ ') : null;
 }

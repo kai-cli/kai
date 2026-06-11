@@ -3,8 +3,8 @@
 > **Single source of truth for the 7.x line.** Consolidates what was scattered across ROADMAP.md (v6-era),
 > NEXT-STEPS.md, and assorted design docs. Created 2026-06-05.
 >
-> - **pai-config** = private live installation (source of truth). **kai** = scrubbed public fork (`kai-cli/kai`).
-> - Workflow: develop in pai-config → `sync-to-kai.sh` (PII scrub + brand) → verify → push.
+> - **kai** = private live installation (source of truth). **kai** = scrubbed public fork (`kai-cli/kai`).
+> - Workflow: develop in kai → `sync-to-kai.sh` (PII scrub + brand) → verify → push.
 > - Active execution detail for the consolidation effort lives in `~/Projects/PAI-Wiki/findings/`
 >   (`execution-plan.md` = the W-workstream driver; `session-findings-2026-06-05.md` = SF tickets).
 > - Pre-7.x version plans are archived in `docs/planning/archive/`.
@@ -23,7 +23,7 @@
 
 ## 7.2 (in progress) — Consolidation + KAI hardening
 
-**Theme:** Eliminate duplicate flows, activate orphaned components, harden the pai-config↔KAI boundary.
+**Theme:** Eliminate duplicate flows, activate orphaned components, harden the kai↔KAI boundary.
 Driver: `PAI-Wiki/findings/execution-plan.md`. **Do NOT bump VERSION/manifest to 7.2 until this completes** (SF-20).
 
 ### Consolidation workstreams (keystone chain ✅ done)
@@ -57,7 +57,7 @@ Driver: `PAI-Wiki/findings/execution-plan.md`. **Do NOT bump VERSION/manifest to
   via jq (fail-closed); sync-ci-gate Step 2.6 is the drift guard. Scrub proven end-to-end; zero coverage loss.
 - [x] **SF-26 — CLAUDE template landmine** (`f4aa61b`): BuildCLAUDE SessionStart hook now skips rebuild when
   the template is older than CLAUDE.md (self-correcting; was at risk of reverting INVESTIGATE mode).
-- [ ] **SF-15 / SF-18 — sync verifies the wrong tree.** `verify-release.sh` scans pai-config not KAI; sync has
+- [ ] **SF-15 / SF-18 — sync verifies the wrong tree.** `verify-release.sh` scans kai not KAI; sync has
   no per-feature verification. CI runs it with `--warn-pii` (non-blocking) + pre-push gate compensates. Deeper
   fix: run KAI-side checks in the KAI tree. LOW priority.
 
@@ -70,18 +70,48 @@ clean, no silent breakage). Findings split into quick refactor wins (do first) +
 
 ### Refactor / consolidation backlog (quick fixes — validated, LOW risk)
 Same "duplicated logic drifts" class we killed for counts/PII/secrets, applied to utilities:
-- [ ] **Shared `hook-stdin`** — 15 hooks define their OWN `readStdin`/`readStdinWithTimeout`; 10 already import
-  `lib/hook-io.ts`. Consolidate the 15 onto the shared reader (≥6 byte-identical). **HIGH value.**
-- [ ] **`expandPath` → `lib/paths.ts`** — paths.ts exports it; 4 files duplicate it (SecurityValidator even
-  imports paths.ts but ignores its expandPath). ~60 LOC. **HIGH (trivial).**
-- [ ] **`lib/state-io.ts`** — 6 near-identical JSON load-state/save-state copies (KnowledgeSync, InsightExtractor,
-  staging, etc.) → one `loadJsonState/saveJsonState`. ~90 LOC. **MED.**
-- [ ] **`getAlgorithmVersion` (×4 identical), `ensureDir` (×3 identical)** → shared helpers. **MED, quick.**
+- [~] **Shared `hook-stdin`** — PARTIAL (2026-06-08): 3 byte-identical `readStdinWithTimeout` copies consolidated
+  into `lib/hook-io.ts` (`f244bfa`). Remaining: 12 hooks still define their own `readStdin` (14 now import
+  hook-io) — but these have DIFFERENT shapes (custom payloads, partial extraction), not byte-identical. Lower
+  value than first scoped; migrate case-by-case only where the contract matches. **MED.**
+- [~] **`expandPath` → `lib/paths.ts`** — PARTIAL (2026-06-08): SecurityValidator migrated to canonical
+  (`f53dad5`). Remaining 3 local copies: `PAI/Tools/RoutingAudit.ts` (has unique `${PROJECTS_DIR}` handling),
+  `scripts/audit-memory.ts`, `scripts/board.ts` (low-value scripts). **LOW** — deliberately left.
+- [~] **state-io** — PARTIAL (2026-06-08): added `readJSON<T>` single-source to `lib/atomic.ts` + migrated
+  KnowledgeSync/InsightExtractor/WeeklyMaintenance (`a063da6`), also making their saveState crash-safe.
+  Remaining: staging.ts + a few others still inline. Finish the migration onto `readJSON`/`atomicWriteJSON`. **LOW.**
+- [ ] **`getAlgorithmVersion` (×4 identical), `ensureDir` (×3 identical)** → shared helpers. **MED, quick.** ← top quick win
 - [ ] **Split oversized files** (testability, not urgent): `deliberate.ts` 1116L → 3 mode files;
   `dev-team.ts` 1039L → prompts/phases/review/utils. Board/LoadContext/SecurityValidator are cohesive — leave.
 - [ ] **Merge `once-per-session` + `session-end-tracker`** → `lib/session-state.ts` (both manage session
   sentinels). LOW. And **merge `learning-utils` into `learning-readback`** (tightly coupled). LOW.
-- [ ] **Delete `hooks/UpdateTabTitle.hook.ts.bak-4.3.1`** (stray backup). Trivial.
+- [ ] **Delete `hooks/UpdateTabTitle.hook.ts.bak-4.3.1`** (stray backup — confirmed still present). Trivial. ← top quick win
+
+### Shipped this session (2026-06-10b) — Memcarry backup + 7.2 gate confirm
+- [x] **Memcarry repo backed up** — `~/Projects/NewTool/core` had NO git remote (entire codebase
+  disk-only). Created **private** `github.com/YourNameYourLastName/memcarry` + pushed (sensitivity scan
+  found yourcompany/feed-bbf refs → private is correct; flip public later after scrub). Committed pending
+  worktree-concurrency test + fixture PII-genericization (26 tests pass).
+- [x] **7.2 gate (SF-20) confirmed satisfied** — only unchecked W-item is W6b/A1/B3, explicitly
+  signal-blocked & deferred past 7.2. VERSION 7.2.0 == package.json. Bump was correct.
+- [x] **Weekly-maintenance cron live** — job `34e6667f` (Mondays 9:33) in `.claude/scheduled_tasks.json`
+  (gitignored). Deleted orphan root `scheduled_tasks.json` (wrong location, never registered).
+- [x] **Loose tree committed** — Browser `BROWSER_IGNORE_HTTPS_ERRORS` feat; deploy hook-count 54→55
+  (verified 55); KNOWLEDGE distillation; NewTool atom tracked.
+- [x] **Live re-verification** — memcarry (5 atoms, all 4 hooks firing, CLI resume/drift/confirm OK,
+  26 tests) + PAI memory (reconcile-wiring exit 0, embeddings 3514 chunks fresh, 55 hooks no orphans)
+  all confirmed working, not just documented.
+
+### Shipped this session (2026-06-08/09/10) — pulled OUT of the backlog
+- [x] **Project-dir encoder single-source** (`3b0f939`) — 7 sites, the per-project-memory-never-loaded root cause.
+- [x] **Dead git-capture + state-io readJSON** (`a063da6`).
+- [x] **Swallow-catch audit** — 179 catches, 0 new wrong-result bugs; ~12 silent-degrade → SF-9 (`2ecb565`).
+- [x] **algorithm-state.ts test** — 18 tests, lib coverage 32→33 (`ce3857e`).
+- [x] **KAI public sync** — full 7.2.0 sync, 5 PII/leak classes fixed, divergence-proof pre-push (kai `f607cac`).
+- [x] **Wiki-currency nudge** (`ae6e18a`) — Stop `WikiCurrency` handler + `WikiNudge` (UserPromptSubmit) keep
+  project wikis current inline; nudge not gate; ~30ms/project. Docs: PAI-Wiki events/stop.md.
+- [x] **Live full-system validation** — every subsystem executed; embeddings rebuilt fresh. Scorecard:
+  PAI-Wiki/findings/live-validation-2026-06-08.md.
 
 ### New development (build AFTER the quick fixes — the "things we don't have")
 Forward-looking gaps from the review. Each is real, evidence-backed:
@@ -120,11 +150,11 @@ instrument whether a promoted instinct actually prevents the repeat error; auto-
 a lightweight A/B framework to validate system changes. ~3 sessions. (Also unblocks memcarry's value-loop.)
 
 **C. Testing blind spots — CRITICAL for confidence.** Algorithm runtime (OBSERVE→…→VERIFY) has 0 integration
-tests; 69 skills have 0 activation/routing tests; the board has 0 E2E. A regression can ship silently. Build
+tests; 70 skills have 0 activation/routing tests; the board has 0 E2E. A regression can ship silently. Build
 an Algorithm-runtime harness + hook-lifecycle harness + skill-activation tests. ~5 sessions.
 
 **D. Net-new capability ideas (idea-stage, justify before building):**
-- **Skill-discovery recommender** — 69 skills, most undiscovered; embed the prompt, suggest a close-but-not-
+- **Skill-discovery recommender** — 70 skills, most undiscovered; embed the prompt, suggest a close-but-not-
   invoked skill ("this would be faster with /security"). Embeddings already exist. ~2 sessions. **HIGH adoption.**
 - **Inference-budget enforcement** — cost tracked but not enforced; a session could spend $50 silently. Add
   session/task budgets + pre-skill cost estimate + confirm-over-budget. ~1.5 sessions.
@@ -170,7 +200,7 @@ Full detail: `PAI-Wiki/findings/session-findings-2026-06-05.md`. Status synced 2
 | SF-5 | PERF | transcript-cache could skip the 150ms settle wait on a hit | OPEN (minor) |
 | SF-8 | TEST | No concurrency harness for cross-subprocess transcript-cache | OPEN |
 | SF-9 | TEST | No runtime telemetry (cache hit-rate, scorer A/B) for long-term validation; + ~12 silent-degrade catches need visibility (see Observability §A — swallow-catch audit 2026-06-08) | OPEN |
-| SF-15/18 | PROCESS | Sync verification scans pai-config not KAI; CI uses `--warn-pii` so non-blocking | OPEN (compensated) |
+| SF-15/18 | PROCESS | Sync verification scans kai not KAI; CI uses `--warn-pii` so non-blocking | OPEN (compensated) |
 | SF-29 | PLAN | `pai-streamlining-plan.md` is ~40% stale — see "Open follow-ups" below | OPEN (triaged) |
 | SF-30 | INFRA | usp/acsplatform MCP controller unreachable — ✅ **EXPECTED**: AWS ACSPlatform intentionally shut down (cost, not in use). Not a fault. | RESOLVED (by design) |
 | SF-31 | INFRA | router M62 (`EXAMPLESERIAL26001024`) unreachable / `uhttpd:false` — ✅ **EXPECTED**: M62 not currently connected. Not a fault. | RESOLVED (by design) |
