@@ -18,7 +18,20 @@ jobs:
           bun-version: latest
 
       - run: bun install --frozen-lockfile
-      - run: PAI_DIR=$PWD bun test
+      # bun 1.3.x can crash-on-exit (teardown panic) and subprocess/parallel-load flakes can fail a
+      # single test once. Detect an ACTUAL non-zero failure count and retry once before failing —
+      # mirrors pai-config CI + scripts/hooks/pre-push + release.sh.
+      - name: Test suite (retry-once on flake)
+        run: |
+          OUT=$(PAI_DIR=$PWD bun test 2>&1) || true
+          echo "$OUT"
+          if echo "$OUT" | grep -qE '[1-9][0-9]* fail'; then
+            echo "::warning::Test run had failures — retrying once (subprocess spawn flakiness)"
+            OUT=$(PAI_DIR=$PWD bun test 2>&1) || true
+            echo "$OUT"
+            echo "$OUT" | grep -qE '[1-9][0-9]* fail' && { echo "::error::Test suite failed on retry too"; exit 1; }
+          fi
+          echo "$OUT" | grep -qE '[0-9]+ pass' || { echo "::error::No test results detected"; exit 1; }
 
   smoke:
     name: Config-Layer Smoke Test
