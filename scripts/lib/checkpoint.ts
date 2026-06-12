@@ -6,11 +6,15 @@ export interface Checkpoint {
   status: 'started' | 'completed' | 'failed';
   output?: string;
   timestamp: string;
+  /** Monotonic save order — breaks timestamp ties on fast machines (two saves in the same ms). */
+  seq?: number;
 }
 
 export class CheckpointManager {
   private teamDir: string;
   private checkpointsDir: string;
+  /** Process-local monotonic counter so same-millisecond saves still order correctly. */
+  private seqCounter = 0;
 
   constructor(teamDir: string) {
     this.teamDir = teamDir;
@@ -30,6 +34,7 @@ export class CheckpointManager {
       status,
       output,
       timestamp: new Date().toISOString(),
+      seq: ++this.seqCounter,
     };
 
     const checkpointPath = join(this.checkpointsDir, `${phase}.json`);
@@ -49,13 +54,13 @@ export class CheckpointManager {
     if (files.length === 0) return null;
 
     // Find all completed phases
-    const completed: Array<{ phase: string; timestamp: string }> = [];
+    const completed: Array<{ phase: string; timestamp: string; seq: number }> = [];
     for (const file of files) {
       const path = join(this.checkpointsDir, file);
       try {
         const checkpoint: Checkpoint = JSON.parse(readFileSync(path, 'utf-8'));
         if (checkpoint.status === 'completed') {
-          completed.push({ phase: checkpoint.phase, timestamp: checkpoint.timestamp });
+          completed.push({ phase: checkpoint.phase, timestamp: checkpoint.timestamp, seq: checkpoint.seq ?? 0 });
         }
       } catch {
         // Skip malformed checkpoint files
@@ -64,8 +69,12 @@ export class CheckpointManager {
 
     if (completed.length === 0) return null;
 
-    // Return the most recent completed phase
-    completed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Return the most recent completed phase. Sort by timestamp, then by seq to break same-ms ties
+    // (two saves in the same millisecond on fast machines would otherwise sort unstably → flaky CI).
+    completed.sort((a, b) => {
+      const dt = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      return dt !== 0 ? dt : b.seq - a.seq;
+    });
     return completed[0].phase;
   }
 

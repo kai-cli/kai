@@ -20,7 +20,7 @@ jobs:
       - run: bun install --frozen-lockfile
       # bun 1.3.x can crash-on-exit (teardown panic) and subprocess/parallel-load flakes can fail a
       # single test once. Detect an ACTUAL non-zero failure count and retry once before failing —
-      # mirrors pai-config CI + scripts/hooks/pre-push + release.sh.
+      # mirrors kai CI + scripts/hooks/pre-push + release.sh.
       - name: Test suite (retry-once on flake)
         run: |
           OUT=$(PAI_DIR=$PWD bun test 2>&1) || true
