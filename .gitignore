@@ -39,6 +39,9 @@ __pycache__/
 # Cleanup state
 .last-cleanup
 
+# Playwright MCP cache (runtime snapshots)
+.playwright-mcp/
+
 # macOS
 .DS_Store
 
