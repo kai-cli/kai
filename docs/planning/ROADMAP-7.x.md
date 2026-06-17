@@ -87,6 +87,39 @@ Same "duplicated logic drifts" class we killed for counts/PII/secrets, applied t
   sentinels). LOW. And **merge `learning-utils` into `learning-readback`** (tightly coupled). LOW.
 - [ ] **Delete `hooks/UpdateTabTitle.hook.ts.bak-4.3.1`** (stray backup — confirmed still present). Trivial. ← top quick win
 
+### Shipped this session (2026-06-11/12) — v7.2.0 cut, released, CI hardened on Linux
+- [x] **v7.2.0 cut via the release gate** (first time release.sh worked end-to-end) — fixed two release.sh
+  bugs found along the way: Gate-6 `grep -c`/pipefail trap that killed the script before tagging, and a
+  flaky test-grep (now retry-once like pre-push). Tag pushed both repos.
+- [x] **GitHub Releases published** — KAI v7.2.0 (Latest) + backfilled v7.1.0 on public `kai-cli/kai`
+  (prior gap: last Release was v7.0.0; tags existed but no Releases).
+- [x] **SF-15/18 — verify-release scrubbed-tree fix** — `verify-release.sh --target <DIR>` splits checks
+  into STRUCTURAL (invocation repo) / ARTIFACT-leak-brand ($TARGET) / SECRETS (both). Bare run in
+  kai went from 44 false-positive failures → 0. Feature-claim + dangling-hook verifiers now ignore
+  deletion-context. PRD: `MEMORY/WORK/20260610-175307_verify-release-scrubbed-tree/`.
+- [x] **Live brand leak CLOSED** — `frontend/src/App.tsx` shipped "KAI Board" to public kai because
+  `.tsx`/`.css` were in NO brand/PII scrub glob. Added to all globs (sync-to-kai SHARED_FILES + BRAND_FILES
+  + post-sync guard; sync-ci-gate scanForPII; verify-release). Re-synced → App.tsx now "KAI Board",
+  regression-proven.
+- [x] **devices.json leak path closed** — gitignored but rsync ignores gitignore; real router serials +
+  Tailscale creds reached sync (post-guard caught it). Added to EXCLUDE_PATHS + STALE_PERSONAL_FILES purge.
+  Never exposed publicly (verified via gh code-search + history).
+- [x] **CI hardened for Linux** (3 env-specific bugs that passed on macOS): portable `sed_i` helper
+  (BSD `sed -i ''` no-op'd the entire scrub on Linux); ripgrep installed in CI (MemorySearch dep — the
+  long-standing kai red); algorithm-state.ts lazy PAI_DIR resolution (module-const clobbered by
+  Bun parallel runner — same class as [[feedback_parallel_test_home_env]]); checkpoint.ts seq tiebreak
+  (same-ms saves collided on fast CI). Both repos' CI now green.
+- [x] **Steering rule added** — "Empty/null/error output is inconclusive, never confirmation" (CRITICAL)
+  in AISTEERINGRULES.md; born from real assumption failures this session.
+- [x] **Automate skill added** — `/automate` launches headless `claude -p` agents fenced by --allowedTools.
+  Personal profiles (`automations/`) gitignored. Skills 69→70 (kai) / 68 (kai, sync-excluded subset).
+- [x] **Artifact-gate REMOVED (won't-do)** — built an over-engineered Linux-fragile post-scrub CI gate, then
+  deleted it after verifying its leak classes are already covered (PII scan blocks codenames; .tsx glob fix
+  closed the brand class). Redundant defense-in-depth not worth the OS-portability surface. The lesson: the
+  source-glob fix was the real fix; the gate was scaffolding.
+- **Known follow-up:** sync overwrites kai's manifest.json with kai's skill count (70 vs kai's 68) —
+  must regen kai manifest after each sync. Candidate: have sync-to-kai regenerate kai's manifest. LOW.
+
 ### Shipped this session (2026-06-10b) — Memcarry backup + 7.2 gate confirm
 - [x] **Memcarry repo backed up** — `~/Projects/NewTool/core` had NO git remote (entire codebase
   disk-only). Created **private** `github.com/YourNameYourLastName/memcarry` + pushed (sensitivity scan

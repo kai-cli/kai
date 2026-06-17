@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-06-11T21:07:25.245Z",
+  "generated": "2026-06-17T04:57:23.547Z",
   "skills": {
     "Agents": {
       "source": "kai",
@@ -267,7 +267,7 @@
     "End": {
       "source": "kai",
       "path": "skills/End/SKILL.md",
-      "hash": "sha256:d0f2aa7affdfa36e6c9c23f8ae659b9eec76cba084c0d51c47d02550c6715819",
+      "hash": "sha256:9a4ed242cceb794a239d263e856acc7d12a2e25e88986013973c261bfbcdc4f7",
       "workflows": [],
       "workflowHashes": {},
       "specializes": null

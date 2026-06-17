@@ -58,7 +58,10 @@
       {
         // Skill invocation guard — validates skill calls
         "matcher": "Skill",
-        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SkillGuard.hook.ts" }]
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SkillGuard.hook.ts" },
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SkillTracker.hook.ts" }
+        ]
       },
       {
         // URL validation — blocks internal network ranges, flags suspicious domains
@@ -131,6 +134,8 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemoryRecall.hook.ts" },
           // Memcarry: surface verify-at-load drift from this session's resume (read-once, annotate-only)
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemDrift.hook.ts" },
+          // Memcarry A2: every-turn hybrid (keyword+semantic RRF) lesson recall → <memcarry-recall>
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemRecall.hook.ts" },
           // Local context injection — outputs additionalContext
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LocalContextFirst.hook.ts" },
           // Classify effort tier and inject context modifications

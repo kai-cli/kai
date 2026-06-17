@@ -10,16 +10,21 @@
  *   recall "<prompt>" [--project P]— top-K lesson HEADs (UserPromptSubmit)
  *   duplicates                     — read-only duplicate-lesson report
  *   write <atom.json>              — write a validated atom (scope is a write-time choice)
+ *   capture-lesson --when W --do D --because B [--trigger a,b] [--scope global] [--apply]
+ *                                  — capture a session learning as a lesson atom (spec 005); dry-run
+ *                                    previews + dup-checks, --apply writes (the human-confirm gate)
  */
 import {
-  readAllAtoms, parseAtom, writeAtom, renderClaim,
+  readAllAtoms, parseAtom, writeAtom, renderClaim, atomPath,
   resolveActiveProject, resumeStateId,
   verifyAndWriteDrift, consumeDrift, renderDrift,
   captureResumeState, recall, findDuplicates,
+  findLessonById, refineLesson, EmptyRefineError,
+  buildLessonAtom, EmptyLessonError,
   type Atom, type ResumeStateAtom,
 } from "@memcarry/lib";
 import { join } from "node:path";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 
 const STORE = process.env.MEMCARRY_STORE ?? join(import.meta.dir, "..", "..", "..", "store");
@@ -176,6 +181,112 @@ function confirm(project: string) {
   out({ confirmed: true, id: updated.id, next: updated.next, provenance: updated.provenance, path });
 }
 
+/**
+ * `refine` — backflow (spec 004): improve a GLOBAL lesson so the change propagates to every project.
+ * Two-step, mirrors `confirm`: DRAFT (no --apply) shows current claim + proposed diff, writes nothing;
+ * --apply runs refineLesson + writeAtom (same id ⇒ overwrites). The --apply gate IS the human-confirm
+ * anti-loop guarantee — the model only passes --apply after the user says yes.
+ */
+function refine(atomId: string) {
+  const atom = findLessonById(STORE, atomId);
+  if (!atom) {
+    out({ ok: false, error: `no global lesson with id '${atomId}' (backflow targets global lessons only)` });
+    process.exit(1);
+  }
+  const newDo = flag("do");
+  const becauseAppend = flag("because");
+
+  // DRAFT mode: show what would change, write nothing.
+  if (process.argv.indexOf("--apply") === -1) {
+    let proposed: string | null = null;
+    try {
+      if (newDo !== undefined || becauseAppend !== undefined) {
+        proposed = renderClaim(refineLesson(atom, { do: newDo, becauseAppend }, new Date().toISOString()).claim);
+      }
+    } catch { /* draft preview only — ignore EmptyRefine in dry mode */ }
+    out({
+      id: atom.id, scope: atom.scope, provenance: atom.provenance,
+      current: renderClaim(atom.claim),
+      proposed,
+      willWrite: false,
+      hint: `apply with: memcarry refine ${atom.id} --do "..." --because "..." --apply`,
+    });
+    return;
+  }
+
+  // APPLY mode: the human-confirm gate has been crossed.
+  try {
+    const updated = refineLesson(atom, { do: newDo, becauseAppend }, new Date().toISOString());
+    const path = writeAtom(STORE, updated);
+    out({
+      refined: true, id: updated.id, path,
+      provenance: updated.provenance, last_refined: updated.last_refined,
+      claim: renderClaim(updated.claim),
+    });
+  } catch (e) {
+    const msg = e instanceof EmptyRefineError ? e.message : (e as Error).message;
+    out({ ok: false, error: msg });
+    process.exit(1);
+  }
+}
+
+/**
+ * `capture-lesson` — capture (spec 005): turn a session learning into a GLOBAL (or project) lesson atom,
+ * the FORWARD half of the cross-project cycle (refine is the backflow half). Two-step, mirrors `refine`:
+ * DRAFT (no --apply) builds + previews the lesson, runs the recall dup check + exact-id collision guard,
+ * and writes NOTHING; --apply writes via writeAtom. The --apply gate IS the human-confirm anti-loop
+ * guarantee — the model passes --apply only after the user confirms. Scope defaults to global (FR1).
+ */
+function captureLesson() {
+  const draft = {
+    when: flag("when") ?? "",
+    do: flag("do") ?? "",
+    because: flag("because") ?? "",
+    trigger: (flag("trigger") ?? "").split(",").map((t) => t.trim()).filter(Boolean),
+    scope: flag("scope") ?? "global",
+  };
+
+  // Build first — a malformed/empty draft fails here (FR5) with no write, in both dry and apply mode.
+  let atom: Atom;
+  try {
+    atom = buildLessonAtom(draft, new Date().toISOString());
+  } catch (e) {
+    const msg = e instanceof EmptyLessonError ? e.message : (e as Error).message;
+    out({ ok: false, error: msg });
+    process.exit(1);
+  }
+
+  // Dup check (FR6): reuse the shipped recall as the near-duplicate detector (keyword-only here, same as
+  // `doRecall`). A strong hit means "you may already have this — refine instead" (routes to spec 004).
+  const probe = `${draft.do} ${draft.because} ${draft.trigger.join(" ")}`;
+  const similar = recall(readAllAtoms(STORE), probe, null, 3)
+    .filter((h) => h.id !== atom.id)
+    .map((h) => ({ id: h.id, claim: h.claim, score: h.score }));
+  // Exact-id collision (FR6): same claim already on disk ⇒ surface it, don't silently overwrite.
+  const collision = existsSync(atomPath(STORE, atom));
+
+  // DRAFT mode: preview + signals, write nothing.
+  if (process.argv.indexOf("--apply") === -1) {
+    out({
+      id: atom.id, scope: atom.scope, provenance: atom.provenance,
+      proposed: renderClaim(atom.claim),
+      willWrite: false,
+      collision,
+      similar,
+      hint: collision
+        ? `this exact lesson id already exists — refine it instead: memcarry refine ${atom.id} --because "..." --apply`
+        : similar.length
+          ? `similar lesson(s) exist — refine one instead, OR apply to capture new: memcarry capture-lesson ... --apply`
+          : `apply with: memcarry capture-lesson --when "..." --do "..." --because "..." --apply`,
+    });
+    return;
+  }
+
+  // APPLY mode: the human-confirm gate has been crossed.
+  const path = writeAtom(STORE, atom);
+  out({ captured: true, id: atom.id, scope: atom.scope, provenance: atom.provenance, path, claim: renderClaim(atom.claim) });
+}
+
 const [cmd, arg] = process.argv.slice(2);
 const need = (label: string) => {
   if (!arg) { console.error(`usage: mem ${label}`); process.exit(2); }
@@ -192,7 +303,9 @@ switch (cmd) {
   case "duplicates": duplicates(); break;
   case "write": write(need("write <atom.json>")); break;
   case "confirm": confirm(need('confirm <project> [--next "..."]')); break;
+  case "refine": refine(need('refine <atomId> [--do "..."] [--because "..."] [--apply]')); break;
+  case "capture-lesson": captureLesson(); break;
   default:
-    console.error("commands: health | resume | verify | drift | capture | recall | duplicates | write | confirm");
+    console.error("commands: health | resume | verify | drift | capture | recall | duplicates | write | confirm | refine | capture-lesson");
     process.exit(2);
 }

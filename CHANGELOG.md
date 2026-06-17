@@ -172,7 +172,7 @@ Progressive learning, adaptive memory, and research expansion.
 - `hooks/SecurityValidator.hook.ts`, `hooks/SecretScanner.hook.ts` — security prefix rebranded to `[KAI SECURITY]`
 - `hooks/lib/change-detection.ts` — system label rebranded to `KAI System`
 - `PAI/Tools/RoutingAudit.ts` — MEM_PREFIX derived from HOME (portable, no hardcoded paths)
-- Manifest updated: <!-- KAI:counts:skills:begin -->68<!-- KAI:counts:skills:end --> skills, <!-- KAI:counts:hooks:begin -->55<!-- KAI:counts:hooks:end --> hooks, <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> agents
+- Manifest updated: <!-- KAI:counts:skills:begin -->68<!-- KAI:counts:skills:end --> skills, <!-- KAI:counts:hooks:begin -->57<!-- KAI:counts:hooks:end --> hooks, <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> agents
 - VERSION 5.2.0 → 5.6.0
 - README, QUICKSTART, WHATS-DIFFERENT, releases/README updated to KAI 5.6.0
 

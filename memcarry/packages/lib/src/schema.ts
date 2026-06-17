@@ -65,6 +65,7 @@ export const LessonAtom = z.object({
   detail: z.string().optional().describe("on-demand body; never counts against recall cap"),
   last_used: z.string().nullable().default(null),
   use_count: z.number().int().nonnegative().default(0),
+  last_refined: z.string().nullable().default(null), // ISO-8601; set when a backflow refine is confirmed (spec 004 FR9)
 });
 export type LessonAtom = z.infer<typeof LessonAtom>;
 

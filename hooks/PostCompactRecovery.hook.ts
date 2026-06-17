@@ -27,20 +27,46 @@ import { buildRecoveryBlock } from './lib/recovery-block';
  * CACHED resume payload (mem resume ships the cache immediately, no blocking probes). Returns a short
  * resume block or null. Degrades silently — never blocks recovery.
  */
-function memcarryResumeBlock(projectDir: string): string | null {
+function memcarryResumeBlock(projectDir: string): { block: string | null; cursorQuery: string } {
   try {
     const PAI = process.env.PAI_DIR ?? `${process.env.HOME}/.claude`;
     const cli = process.env.MEMCARRY_CLI ?? `${PAI}/memcarry/packages/cli/src/index.ts`;
-    if (!existsSync(cli)) return null;
+    if (!existsSync(cli)) return { block: null, cursorQuery: '' };
     const project = basename(projectDir);
     // resume ships the CACHED payload immediately; the async verify it kicks is detached + idempotent,
     // so re-running on compaction is cheap and safe (no --no-verify flag exists / needed).
     const raw = execFileSync('bun', ['run', cli, 'resume', project, '--start', projectDir],
       { encoding: 'utf8', timeout: 4000, stdio: ['ignore', 'pipe', 'ignore'] });
     const payload = JSON.parse(raw);
-    if (!payload?.found) return null;
+    if (!payload?.found) return { block: null, cursorQuery: '' };
     const lines = [`<memcarry-resume project="${project}" reinjected-after-compaction>`,
       `NEXT: ${payload.cursor.next}`, `WHERE: ${payload.cursor.summary}`, `</memcarry-resume>`];
+    // The cursor (next + summary) is the "what am I working on" signal — used as the recall query for
+    // H2 lesson re-injection, since the compaction event carries no user prompt.
+    const cursorQuery = `${payload.cursor.next ?? ''} ${payload.cursor.summary ?? ''}`.trim();
+    return { block: lines.join('\n'), cursorQuery };
+  } catch {
+    return { block: null, cursorQuery: '' };
+  }
+}
+
+/**
+ * H2 lesson re-injection: after compaction, re-surface the relevant memcarry LESSONS too (not just the
+ * resume cursor). Recalls against the resume cursor text (the compaction event has no user prompt).
+ * Uses the SHARED recallLessons helper (same as MemRecall) so the two can't drift. Never throws.
+ */
+async function memcarryRecallBlock(projectDir: string, query: string): Promise<string | null> {
+  if (!query.trim()) return null;
+  try {
+    const PAI = process.env.PAI_DIR ?? `${process.env.HOME}/.claude`;
+    const STORE = process.env.MEMCARRY_STORE ?? `${PAI}/MEMORY/memcarry/store`;
+    const CACHE = process.env.MEMCARRY_VEC_CACHE ?? `${PAI}/memcarry/index/recall-vectors.json`;
+    const { recallLessons } = await import('./lib/memcarry-semantic.js');
+    const { hits } = await recallLessons(STORE, CACHE, query, basename(projectDir), 5);
+    if (hits.length === 0) return null;
+    const lines = [`<memcarry-recall reinjected-after-compaction>`];
+    for (const h of hits) lines.push(`- ${h.claim}`);
+    lines.push(`</memcarry-recall>`);
     return lines.join('\n');
   } catch {
     return null;
@@ -86,13 +112,16 @@ async function main() {
     algorithmState: parsedAlgorithmState,
   });
 
-  // H2: re-inject the memcarry resume context too (lost in compaction). Appended, degrades to nothing.
+  // H2: re-inject memcarry context lost in compaction — both the resume CURSOR and the relevant
+  // LESSONS (recalled against the cursor). Appended, each degrades to nothing independently.
   const projectDir = process.env.CLAUDE_PROJECT_DIR || (input as any).cwd || process.cwd();
-  const memBlock = memcarryResumeBlock(projectDir);
-  const fullBlock = memBlock ? `${recoveryBlock}\n\n${memBlock}` : recoveryBlock;
+  const { block: resumeBlock, cursorQuery } = memcarryResumeBlock(projectDir);
+  const recallBlock = await memcarryRecallBlock(projectDir, cursorQuery);
+  const memBlocks = [resumeBlock, recallBlock].filter(Boolean).join('\n\n');
+  const fullBlock = memBlocks ? `${recoveryBlock}\n\n${memBlocks}` : recoveryBlock;
 
   console.log(JSON.stringify({ additionalContext: fullBlock }));
-  console.error(`[PostCompactRecovery] Recovery context injected for session ${sessionId?.slice(0, 8) || 'unknown'}${memBlock ? ' (+memcarry)' : ''}`);
+  console.error(`[PostCompactRecovery] Recovery context injected for session ${sessionId?.slice(0, 8) || 'unknown'}${resumeBlock ? ' (+memcarry-resume)' : ''}${recallBlock ? ' (+memcarry-recall)' : ''}`);
   process.exit(0);
 }
 

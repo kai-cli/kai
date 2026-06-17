@@ -14,16 +14,26 @@ export interface RecallHit {
   id: string;
   scope: string;
   claim: string; // rendered WHEN→DO→BECAUSE
-  score: number;
+  score: number; // fused RRF score (used for sort); higher = more relevant
+  keywordRank: number | null; // 1-based rank in the keyword ranking (always set for gated-in lessons)
+  semanticRank: number | null; // 1-based rank in the semantic ranking; null if no/!provider score
   expand_when?: string;
 }
 
+/** RRF constant — standard k=60; parameter-free fusion, robust at tiny store sizes (B2). */
+const RRF_K = 60;
+
 /**
  * W6 provider seam ("integrated core, portable engine"): the engine stays PAI-free, but a host can
- * INJECT a relevance scorer. Given a lesson and the prompt, return a numeric relevance (higher = more
- * relevant), or null to fall through to the built-in keyword scoring for that lesson. PAI's adapter can
- * back this with jina embeddings (semantic-fallback); KAI/others pass nothing and get keyword scoring.
- * Pure injection — the engine never imports the provider's implementation.
+ * INJECT a semantic relevance scorer. Given a lesson and the prompt, return a raw similarity (higher =
+ * more relevant — e.g. cosine 0..1), or null to abstain (that lesson then has no semantic rank). PAI's
+ * adapter backs this with jina embeddings; KAI/others pass nothing → pure keyword ranking.
+ *
+ * B2 fusion: the provider stays PER-LESSON and returns a raw score, NOT a rank — it cannot see the whole
+ * candidate set. `recall()` collects all provider scores, derives the semantic RANKING, and fuses it with
+ * the keyword ranking via RRF. The provider's absolute scale is irrelevant; only the induced order is
+ * used, so an exact-identifier keyword hit is never drowned by a high cosine. Pure injection — the engine
+ * never imports the provider's implementation.
  */
 export type ScoreProvider = (lesson: LessonAtom, prompt: string) => number | null;
 
@@ -67,27 +77,67 @@ export function recall(
   scoreProvider?: ScoreProvider
 ): RecallHit[] {
   const tokens = new Set(tokenize(prompt));
-  const hits: RecallHit[] = [];
 
+  // Pass 1: GATE + per-lesson scores. The keyword score also acts as the precondition gate
+  // (null = doesn't apply here → excluded, never consumes budget, §11 #12). The provider is only
+  // consulted for gated-in lessons, so it can never resurrect a gated-out one.
+  interface Cand {
+    atom: LessonAtom;
+    keywordScore: number; // > 0 for all candidates
+    semanticScore: number | null; // raw provider similarity, or null (abstain / no provider)
+  }
+  const cands: Cand[] = [];
   for (const a of atoms) {
     if (a.type !== "lesson") continue;
     const eligible = a.scope === "global" || (project && a.scope === `project:${project}`);
     if (!eligible) continue;
-    // Built-in keyword score also acts as the precondition GATE (null = doesn't apply here).
     const keywordScore = scoreLesson(a, tokens);
-    if (keywordScore === null) continue;
-    // W6 seam: an injected provider may override the relevance score for this (gated) lesson.
-    // It cannot resurrect a gated-out lesson — the precondition gate above still governs eligibility.
-    const provided = scoreProvider ? scoreProvider(a, prompt) : null;
-    const score = provided ?? keywordScore;
-    hits.push({
-      id: a.id,
-      scope: a.scope,
-      claim: renderClaim(a.claim),
-      score,
-      expand_when: a.expand_when,
-    });
+    if (keywordScore === null) continue; // gated out
+    const semanticScore = scoreProvider ? scoreProvider(a, prompt) : null;
+    cands.push({ atom: a, keywordScore, semanticScore });
   }
 
-  return hits.sort((x, y) => y.score - x.score).slice(0, k);
+  // Pass 2: derive the two RANKINGS, then fuse via RRF (B2). Rank = 1-based position after sorting
+  // by the respective score desc. A lesson absent from a ranking contributes 0 to that RRF term.
+  const keywordRankOf = rankMap(cands, (c) => c.keywordScore);
+  const semanticCands = cands.filter((c) => c.semanticScore !== null);
+  const semanticRankOf = rankMap(semanticCands, (c) => c.semanticScore as number);
+
+  const hits: RecallHit[] = cands.map((c) => {
+    const kRank = keywordRankOf.get(c.atom.id) ?? null;
+    const sRank = semanticRankOf.get(c.atom.id) ?? null;
+    const score =
+      (kRank !== null ? 1 / (RRF_K + kRank) : 0) + (sRank !== null ? 1 / (RRF_K + sRank) : 0);
+    return {
+      id: c.atom.id,
+      scope: c.atom.scope,
+      claim: renderClaim(c.atom.claim),
+      score,
+      keywordRank: kRank,
+      semanticRank: sRank,
+      expand_when: c.atom.expand_when,
+    };
+  });
+
+  // Sort by fused score desc; stable tiebreak by id so output is deterministic.
+  return hits
+    .sort((x, y) => y.score - x.score || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+    .slice(0, k);
+}
+
+/**
+ * Build id→rank (1-based) by sorting candidates by `scoreOf` desc. Deterministic tiebreak by atom id so
+ * equal scores get stable ranks (matters for RRF reproducibility at tiny store sizes).
+ */
+function rankMap<T extends { atom: LessonAtom }>(
+  items: T[],
+  scoreOf: (c: T) => number
+): Map<string, number> {
+  const sorted = [...items].sort((a, b) => {
+    const d = scoreOf(b) - scoreOf(a);
+    return d !== 0 ? d : a.atom.id < b.atom.id ? -1 : a.atom.id > b.atom.id ? 1 : 0;
+  });
+  const m = new Map<string, number>();
+  sorted.forEach((c, i) => m.set(c.atom.id, i + 1));
+  return m;
 }

@@ -15,6 +15,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync, readdirSync } from 'fs';
 import { join, basename } from 'path';
 import { spawnSync } from 'child_process';
+import { parseGitState } from './hooks/lib/git-state';
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -587,7 +588,7 @@ const ALERT_DIM   = '\x1b[38;2;180;140;30m';
 const ACTIONS_JSON = join(PAI_DIR, 'MEMORY', 'STATE', 'actions.json');
 
 interface ActionItem {
-  type: 'draft' | 'stale_prd' | 'maintenance';
+  type: 'draft' | 'stale_prd' | 'maintenance' | 'persona_review' | 'git_unpushed' | 'git_dirty' | 'gh_reviews' | 'wiki_stale';
   summary: string;
   action: string;
   file?: string;
@@ -595,6 +596,60 @@ interface ActionItem {
   age_days?: number;
   phase?: string;
   slug?: string;
+}
+
+const GH_REVIEWS_CACHE = join(PAI_DIR, 'MEMORY', 'STATE', '.gh-reviews-cache.json');
+const WIKI_STALE_CACHE = join(PAI_DIR, 'MEMORY', 'STATE', '.wiki-stale-cache.json');
+const GH_CACHE_TTL = 1800_000; // 30 minutes
+const WIKI_CACHE_TTL = 86_400_000; // 24 hours
+
+// Persona-review reminder: fire X days after the review window opened (time-based, per YourName 2026-06-15),
+// surfacing accrued skill-usage count as context so it's clear whether enough signal exists.
+const PERSONA_REVIEW_DAYS = 21;
+const PERSONA_STATE = join(PAI_DIR, 'MEMORY', 'STATE', '.persona-review.json');
+const SKILL_USAGE_LOG = join(PAI_DIR, 'MEMORY', 'STATE', 'skill-usage.jsonl');
+
+/** Count lines in skill-usage.jsonl (cheap usage signal). 0 if absent/unreadable. */
+function skillUsageCount(): number {
+  try {
+    return readFileSync(SKILL_USAGE_LOG, 'utf-8').split('\n').filter(l => l.trim()).length;
+  } catch { return 0; }
+}
+
+/**
+ * Returns a persona-review ActionItem when the window is >= PERSONA_REVIEW_DAYS old, else null.
+ * Self-initializes the state file (anchored at first run / PERSONA.md ratification). After firing,
+ * the user re-runs the review and resets the window via the action.
+ */
+function checkPersonaReview(): ActionItem | null {
+  try {
+    let opened: number;
+    let dismissedUntil = 0;
+    if (existsSync(PERSONA_STATE)) {
+      const st = JSON.parse(readFileSync(PERSONA_STATE, 'utf-8'));
+      opened = st.windowOpened ?? Date.now();
+      dismissedUntil = st.snoozeUntil ?? 0;
+    } else {
+      // First sighting — anchor the window now (PERSONA.md ratified 2026-06-15).
+      opened = Date.parse('2026-06-15T00:00:00Z');
+      try { mkdirSync(join(PAI_DIR, 'MEMORY', 'STATE'), { recursive: true }); } catch {}
+      try { writeFileSync(PERSONA_STATE, JSON.stringify({ windowOpened: opened, snoozeUntil: 0 }, null, 2)); } catch {}
+    }
+    const now = Date.now();
+    if (now < dismissedUntil) return null; // snoozed
+    const ageDays = Math.floor((now - opened) / 86_400_000);
+    if (ageDays < PERSONA_REVIEW_DAYS) return null;
+    const used = skillUsageCount();
+    return {
+      type: 'persona_review',
+      summary: `${ageDays}d since persona scoping, ${used} skill invocations logged — revisit Tier-2 cuts with usage data`,
+      // Self-contained instruction (no slash command exists): read the histogram + the Tier-1 doc.
+      action: `Run: jq -r .skill ${SKILL_USAGE_LOG} | sort | uniq -c | sort -rn — then refine specs/memcarry/PERSONA.md cuts/merges against the counts. To snooze, set snoozeUntil in MEMORY/STATE/.persona-review.json.`,
+      age_days: ageDays,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function getPendingActions(): string | null {
@@ -620,7 +675,10 @@ function getPendingActions(): string | null {
     }
   } catch {}
 
-  // Check stale PRDs (started work, no progress in 7+ days)
+  // Check stale PRDs (started work, no progress in 7+ days).
+  // READ-ONLY: the statusline never writes shared state. Orphaned sessions (WORK/ dir gone) are simply
+  // SKIPPED here so they don't show as false stale-PRDs; the actual work.json self-heal write lives in
+  // scripts/weekly-maintenance.ts (between-sessions, not the render path).
   const workDir = join(PAI_DIR, 'MEMORY', 'WORK');
   try {
     if (existsSync(WORK_JSON)) {
@@ -629,7 +687,9 @@ function getPendingActions(): string | null {
       let stalePrds = 0;
       const now = Date.now();
       for (const [slug, s] of Object.entries(sessions) as [string, any][]) {
-        if (!s.phase || s.phase === 'complete' || s.phase === 'native') continue;
+        if (!s.phase || s.phase === 'complete' || s.phase === 'native' || s.phase === 'done') continue;
+        // Orphaned (dir removed but still active in index) → skip; weekly-maintenance heals the write.
+        if (!existsSync(join(workDir, slug))) continue;
         let ageDays = 0;
         if (s.updatedAt) {
           ageDays = Math.floor((now - new Date(s.updatedAt).getTime()) / 86_400_000);
@@ -668,6 +728,56 @@ function getPendingActions(): string | null {
     }
   } catch {}
 
+  // Check git state — ONE call (porcelain=v2 --branch gives ahead/behind + dirty together;
+  // fails non-zero outside a repo, so no separate rev-parse needed). Was 3 spawns, now 1.
+  try {
+    const gs = spawnSync('git', ['status', '--porcelain=v2', '--branch'], { cwd: currentDir, timeout: 2000 });
+    if (gs.status === 0) {
+      const { ahead, dirty } = parseGitState(gs.stdout.toString());
+      if (ahead > 0) {
+        parts.push(`${ahead} unpushed`);
+        actions.push({ type: 'git_unpushed', summary: `${ahead} commit${ahead > 1 ? 's' : ''} ahead of upstream`, action: 'git push' });
+      }
+      if (dirty > 0) {
+        parts.push(`${dirty} dirty`);
+        actions.push({ type: 'git_dirty', summary: `${dirty} uncommitted file${dirty > 1 ? 's' : ''}`, action: 'git add + commit' });
+      }
+    }
+  } catch {}
+
+  // Check GitHub reviews awaiting (cached — background refresh via cron).
+  // Surfaces gh-auth failure (not silent): the cron records authed:false on `gh` failure so a deauth
+  // shows "gh auth?" instead of masking real review requests (observability-hole rule).
+  try {
+    if (existsSync(GH_REVIEWS_CACHE)) {
+      const cache = JSON.parse(readFileSync(GH_REVIEWS_CACHE, 'utf-8'));
+      const age = Date.now() - (cache.updated ?? 0);
+      if (age < GH_CACHE_TTL) {
+        if (cache.authed === false) {
+          parts.push('gh auth?');
+          actions.push({ type: 'gh_reviews', summary: 'gh not authenticated — PR reviews unknown (run: gh auth login)', action: 'gh auth login' });
+        } else if (cache.reviews?.length > 0) {
+          parts.push(`${cache.reviews.length} PR review${cache.reviews.length > 1 ? 's' : ''}`);
+          for (const pr of cache.reviews) {
+            actions.push({ type: 'gh_reviews', summary: `#${pr.number}: ${pr.title}`.slice(0, 80), action: `gh pr view ${pr.number}` });
+          }
+        }
+      }
+    }
+  } catch {}
+
+  // Check wiki page staleness (cached — background refresh daily)
+  try {
+    if (existsSync(WIKI_STALE_CACHE)) {
+      const cache = JSON.parse(readFileSync(WIKI_STALE_CACHE, 'utf-8'));
+      const age = Date.now() - (cache.updated ?? 0);
+      if (age < WIKI_CACHE_TTL && cache.staleCount > 0) {
+        parts.push(`${cache.staleCount} wiki stale`);
+        actions.push({ type: 'wiki_stale', summary: `${cache.staleCount} pages not verified in 90+ days`, action: 'review wiki Last Verified dates' });
+      }
+    }
+  } catch {}
+
   // Check maintenance overdue
   const maintState = join(PAI_DIR, 'MEMORY', 'STATE', '.weekly-maintenance.json');
   try {
@@ -683,6 +793,13 @@ function getPendingActions(): string | null {
       actions.push({ type: 'maintenance', summary: 'never run', action: '/weekly-maintenance' });
     }
   } catch {}
+
+  // Persona-review reminder (time-based, surfaces accrued usage as context)
+  const personaAction = checkPersonaReview();
+  if (personaAction) {
+    parts.push(`persona review (${personaAction.age_days}d)`);
+    actions.push(personaAction);
+  }
 
   // Write manifest for AI consumption
   if (actions.length > 0) {

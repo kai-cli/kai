@@ -12,12 +12,36 @@
  * Called by: WeeklyMaintenance.hook.ts nudge, or manually
  */
 
-import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const PAI_DIR = process.env.PAI_DIR ?? join(process.env.HOME!, '.claude');
 const STATE_FILE = join(PAI_DIR, 'MEMORY', 'STATE', '.weekly-maintenance.json');
+const WORK_JSON = join(PAI_DIR, 'MEMORY', 'STATE', 'work.json');
 const DRY_RUN = process.argv.includes('--dry-run');
+
+/**
+ * Self-heal orphaned work.json sessions: an active session whose WORK/<slug> dir is gone is marked
+ * complete. Moved here from statusline.ts (W: render path must stay read-only — it must never mutate
+ * shared state). Returns how many were healed. Best-effort; never throws.
+ */
+function healOrphanedSessions(): number {
+  try {
+    if (!existsSync(WORK_JSON)) return 0;
+    const work = JSON.parse(readFileSync(WORK_JSON, 'utf-8'));
+    const sessions: Record<string, any> = work.sessions ?? {};
+    const workDir = join(PAI_DIR, 'MEMORY', 'WORK');
+    let healed = 0;
+    for (const [slug, s] of Object.entries(sessions) as [string, any][]) {
+      if (!s.phase || s.phase === 'complete' || s.phase === 'native' || s.phase === 'done') continue;
+      if (!existsSync(join(workDir, slug))) { s.phase = 'complete'; healed++; }
+    }
+    if (healed > 0) writeFileSync(WORK_JSON, JSON.stringify(work, null, 2));
+    return healed;
+  } catch {
+    return 0;
+  }
+}
 
 interface TaskResult {
   name: string;
@@ -117,6 +141,12 @@ async function main() {
     const icon = result.status === 'pass' ? '✅' : result.status === 'warn' ? '⚠️' : '❌';
     console.log(` ${icon} (${result.durationMs}ms)`);
   }
+
+  // Self-heal orphaned work.json sessions (moved out of the statusline render path)
+  process.stdout.write('  Healing orphaned sessions...');
+  const healed = healOrphanedSessions();
+  results.push({ name: 'session-self-heal', status: 'pass', message: `${healed} orphaned session(s) marked complete`, durationMs: 0 });
+  console.log(` ✅ ${healed} healed`);
 
   // GitHub check
   process.stdout.write('  Checking GitHub...');

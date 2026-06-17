@@ -22,6 +22,23 @@ Review the conversation for anything worth persisting:
 
 If anything qualifies, write to memory. If nothing new, report "No new memories."
 
+### 1b. Memcarry backflow safety net
+
+Check whether any GLOBAL lesson recalled this session should be refined (the B→A backflow net, spec 004 FR8):
+- Read `MEMORY/STATE/memcarry-recalled-${session_id}.jsonl` (atom ids surfaced this session). If absent/empty → report "No recalled lessons." and skip.
+- For each recalled lesson id, ask: did this session establish anything that makes that lesson **wrong, incomplete, or in need of a caveat**?
+- If yes for any: surface a WAS/NOW preview via `memcarry refine <id> --do "…" --because "…"` (no `--apply`) and ask {PRINCIPAL.NAME} to confirm. On confirm only, re-run with `--apply`. NEVER `--apply` without confirmation (anti-circular-loop gate).
+- If nothing learned contradicts/extends them → report "Recalled lessons still accurate." Do NOT refine speculatively.
+- CLI: `${PAI_DIR}/memcarry/packages/cli/src/index.ts`, `MEMCARRY_STORE=$PAI_DIR/MEMORY/memcarry/store`.
+
+### 1c. Memcarry capture safety net
+
+Check whether this session produced a durable, reusable LESSON worth keeping (the forward/capture half, spec 005 FR8 — sibling to the 1b backflow net):
+- Review the session for a cross-project rule or gotcha {PRINCIPAL.NAME} established that ISN'T already a recalled lesson (those go through 1b refine, not capture).
+- If yes: draft the `WHEN → DO → BECAUSE` and preview via `memcarry capture-lesson --when "…" --do "…" --because "…" --trigger "a,b" [--scope global|project:<name>]` (no `--apply`). It dup-checks — if it reports `similar`/`collision`, prefer `refine` of that atom instead. Ask {PRINCIPAL.NAME} to confirm. On confirm only, re-run with `--apply`. NEVER `--apply` without confirmation (anti-circular-loop gate).
+- If nothing durable was learned → report "No new lessons to capture." Do NOT capture speculatively or pump the store.
+- CLI/store paths same as 1b.
+
 ### 2. Knowledge Sync
 
 Check if domain knowledge files were updated or should be updated based on work done:

@@ -76,7 +76,7 @@ All configuration lives in `~/.claude/config/*.jsonc` (JSON with comments):
 | File | What it controls |
 |------|-----------------|
 | `identity.jsonc` | Your name, assistant name, timezone |
-| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->55<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
+| `hooks.jsonc` | <!-- KAI:counts:hooks:begin -->57<!-- KAI:counts:hooks:end --> lifecycle hooks (security, formatting, etc.) |
 | `permissions.jsonc` | Tool permissions (allow/deny/ask rules) |
 | `preferences.jsonc` | Environment variables, MCP servers, tech stack |
 | `notifications.jsonc` | Alert routing (disabled by default) |
@@ -112,7 +112,7 @@ For complex tasks, KAI uses a 7-phase execution framework:
 
 Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
-### Hooks (<!-- KAI:counts:hooks:begin -->55<!-- KAI:counts:hooks:end --> lifecycle events)
+### Hooks (<!-- KAI:counts:hooks:begin -->57<!-- KAI:counts:hooks:end --> lifecycle events)
 Automated behaviors that fire on specific events:
 - **SecretScanner** — warns if you're about to commit secrets
 - **GitHubWriteGuard** — requires confirmation before git push

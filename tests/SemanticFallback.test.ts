@@ -1,6 +1,20 @@
-import { describe, it, expect, afterEach } from 'bun:test';
+import { describe, it, expect, afterEach, mock } from 'bun:test';
 import { existsSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
+
+// Mock the embedder so this test NEVER loads the real @huggingface/transformers model.
+// Rationale: loading the native jina model crashes Bun 1.3.14 with a C++ exception during process
+// teardown (exit 133/SIGABRT) — a known Bun↔native-NAPI bug, NOT our code. embed() returning null is
+// also the EXACT "model not available → graceful degradation" path this suite is written to verify
+// (see the third semanticFallback test). So mocking is faithful to intent, not a coverage loss.
+// Must be registered before semantic-fallback is imported (Bun hoists imports; mock.module applies).
+mock.module('../hooks/lib/embeddings', () => ({
+  embed: async () => null,
+  getEmbedder: async () => null,
+  EMBEDDING_MODEL: 'Xenova/jina-embeddings-v2-small-en',
+  EMBEDDING_DIM: 512,
+}));
+
 import { isIndexAvailable, isKnowledgePath, semanticFallback } from '../hooks/lib/semantic-fallback';
 
 const TMP = join('/tmp', 'test-semantic-fallback-' + Date.now());
@@ -66,8 +80,8 @@ describe('semanticFallback', () => {
   });
 
   it('returns empty result when model not available (graceful degradation)', async () => {
-    // This test confirms no throw when @huggingface/transformers is not available
-    // in test environment — the function should return empty, not crash
+    // embed() is mocked to return null (model unavailable) — the function must short-circuit to the
+    // empty result at the `if (!queryEmbedding) return empty` guard, WITHOUT throwing or loading a model.
     const paiDir = mkPaiDir();
     const fakeChunk = {
       path: 'test.md',
@@ -78,11 +92,10 @@ describe('semanticFallback', () => {
       join(paiDir, 'MEMORY', 'STATE', 'embeddings', 'index.jsonl'),
       JSON.stringify(fakeChunk) + '\n'
     );
-    // With fake embedding data and possibly no model installed, should not throw
     const result = await semanticFallback(paiDir, 'test query');
-    // Either returns content (if model installed) or empty (graceful degradation)
-    expect(typeof result.content).toBe('string');
-    expect(typeof result.confidence).toBe('number');
-    expect(Array.isArray(result.sources)).toBe(true);
+    // Model unavailable → deterministic empty (graceful degradation), never a throw.
+    expect(result.content).toBe('');
+    expect(result.confidence).toBe(0);
+    expect(result.sources).toHaveLength(0);
   });
 });
