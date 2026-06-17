@@ -1,6 +1,6 @@
 # Pipelines
 
-> **KAI 7.3.0** — Stable release.
+> **KAI 7.3.1** — Stable release.
 
 **Chaining Actions into Sequential Workflows**
 

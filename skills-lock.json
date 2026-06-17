@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-06-17T04:57:23.547Z",
+  "generated": "2026-06-17T18:41:33.270Z",
   "skills": {
     "Agents": {
       "source": "kai",
@@ -134,6 +134,14 @@
       "source": "kai",
       "path": "skills/ContentAnalysis/SKILL.md",
       "hash": "sha256:e8d570cbefe1d5dbe688adc5cc06fb5917b97b74a80bc048d8938277ad828c8e",
+      "workflows": [],
+      "workflowHashes": {},
+      "specializes": null
+    },
+    "Copy": {
+      "source": "kai",
+      "path": "skills/Copy/SKILL.md",
+      "hash": "sha256:70b7d6a36ac398ff3f02109057e2f7909ee7af4345f3d3018f32400552fd119f",
       "workflows": [],
       "workflowHashes": {},
       "specializes": null

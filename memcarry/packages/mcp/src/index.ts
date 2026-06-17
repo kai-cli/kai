@@ -7,10 +7,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { readAllAtoms } from "@memcarry/lib";
-import { join } from "node:path";
+import { readAllAtoms, resolveStoreRoot } from "@memcarry/lib";
 
-const STORE = process.env.MEMCARRY_STORE ?? join(import.meta.dir, "..", "..", "..", "store");
+const STORE = resolveStoreRoot();
 
 process.on("uncaughtException", (err) => {
   process.stderr.write(`[mem-mcp] uncaught: ${err}\n`);

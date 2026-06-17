@@ -61,7 +61,7 @@
   // PAI version information
   "pai": {
     "repoUrl": "github.com/kai-cli/kai",
-    "version": "7.3.0",
+    "version": "7.3.1",
     "algorithmVersion": "3.14.0",
     "productName": "KAI"
   },

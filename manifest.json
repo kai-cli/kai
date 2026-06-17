@@ -1,9 +1,9 @@
 {
-  "version": "7.3.0",
+  "version": "7.3.1",
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 68,
+    "skills": 69,
     "hooks": 57,
     "agents": 20
   },
@@ -77,6 +77,7 @@
     "Cloudflare",
     "ContentAnalysis",
     "ContentAnalysis/ExtractWisdom",
+    "Copy",
     "Council",
     "CreateCLI",
     "CreateSkill",

@@ -206,6 +206,15 @@ skills already built. Full detail: the 4 audit reports (this review).
 ## 7.3+ (candidate / parked ideas)
 
 Triaged from the old design docs. Promote to a 7.x release when picked up.
+- **SpecKit-as-a-skill** 🆕 2026-06-17 — pull SpecKit's spec/plan generation *patterns* into a first-class PAI
+  skill (peer to `/research`, `/firstprinciples`) so spec-driven development is available from ANY project
+  session, not just where SpecKit is installed. Goal: a reusable `/speckit` (or similar) skill covering **all
+  phases** of the SpecKit flow (spec → plan → tasks → implement), mapped onto PAI's existing Algorithm/PRD
+  machinery (we already have `specs/` + spec-status lifecycle in Algorithm v3.14.0 OBSERVE/LEARN). Next step:
+  audit what SpecKit actually provides (its templates, phase prompts, artifact shapes) and draft the
+  integration — which phases become skill sub-commands, what reuses Algorithm vs. what's net-new. **LIVE
+  candidate, idea-stage** — needs the capability audit + design draft before building. Relates to the existing
+  Spec-Driven Dev shipped in v6.0.0 and the `specs/` lookup in Algorithm OBSERVE.
 - **Knowledge Cascade** (`knowledge-cascade-design.md`) — knowledge scattered across 6+ locations (wiki, memory,
   KNOWLEDGE/, projects) with no sync mechanism. Real unsolved problem; relates to W6/memory work. **LIVE candidate.**
 - **MCP Rearchitect** (`MCP-REARCHITECT-PLAN.md`) — MCP config/discovery friction (tools "connected but not

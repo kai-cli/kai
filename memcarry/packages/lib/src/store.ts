@@ -15,6 +15,24 @@ import { parseAtom, type Atom, type LessonAtom } from "./schema.js";
 
 const FM_DELIM = "---";
 
+/**
+ * Canonical store-root resolution — the SINGLE source of truth shared by the CLI, the MCP server,
+ * and the hooks. Resolution order:
+ *   1. MEMCARRY_STORE env (explicit override, set in settings.json)
+ *   2. ${PAI_DIR}/MEMORY/memcarry/store  (PAI_DIR set in settings.json)
+ *   3. ${HOME}/.claude/MEMORY/memcarry/store  (last-resort default)
+ *
+ * Historically the CLI/MCP fell back to `<repo>/memcarry/store` (the package-relative seed dir),
+ * which silently diverged from the live store whenever MEMCARRY_STORE was unset in a spawned
+ * process. This helper makes every entrypoint resolve to the same canonical location the hooks
+ * already use (`${PAI}/MEMORY/memcarry/store`), so writes can never split-brain again.
+ */
+export function resolveStoreRoot(): string {
+  if (process.env.MEMCARRY_STORE) return process.env.MEMCARRY_STORE;
+  const pai = process.env.PAI_DIR ?? join(process.env.HOME ?? "", ".claude");
+  return join(pai, "MEMORY", "memcarry", "store");
+}
+
 /** Serialize an atom to markdown: JSON frontmatter (lossless) + rendered body for humans. */
 export function serializeAtom(atom: Atom): string {
   const fm = JSON.stringify(atom, null, 2);

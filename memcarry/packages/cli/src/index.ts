@@ -21,13 +21,14 @@ import {
   captureResumeState, recall, findDuplicates,
   findLessonById, refineLesson, EmptyRefineError,
   buildLessonAtom, EmptyLessonError,
+  resolveStoreRoot,
   type Atom, type ResumeStateAtom,
 } from "@memcarry/lib";
 import { join } from "node:path";
 import { readFileSync, existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 
-const STORE = process.env.MEMCARRY_STORE ?? join(import.meta.dir, "..", "..", "..", "store");
+const STORE = resolveStoreRoot();
 
 function flag(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
