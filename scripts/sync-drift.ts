@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * sync-drift.ts - Detect drift between kai and kai repos
+ * sync-drift.ts - Detect drift between pai-config and kai repos
  *
- * PURPOSE: Compare file lists and contents between kai and kai.
+ * PURPOSE: Compare file lists and contents between pai-config and kai.
  * Reports files that exist in one but not the other, and files with different content.
  *
  * USAGE:
@@ -25,10 +25,10 @@ import { join } from 'path';
 import { createHash } from 'crypto';
 import { execSync } from 'child_process';
 
-const PAI_DIR = join(process.env.HOME!, 'Projects', 'kai');
+const PAI_DIR = join(process.env.HOME!, 'Projects', 'pai-config');
 const KAI_DIR = process.env.KAI_DIR || join(process.env.HOME!, 'Projects', 'kai');
 
-// Files that exist ONLY in kai (should not be synced from kai)
+// Files that exist ONLY in kai (should not be synced from pai-config)
 const KAI_ONLY_FILES = [
   '.github/workflows/test.yml',
   'CHANGELOG.md',
@@ -58,7 +58,7 @@ const KAI_ONLY_FILES = [
   'tests/OncePerSession.test.ts',
 ];
 
-// Files excluded from sync (kai only, should NOT appear in kai)
+// Files excluded from sync (pai-config only, should NOT appear in kai)
 const PAI_ONLY_FILES = [
   'CLAUDE.md',
   'VERSION',
@@ -69,7 +69,7 @@ const PAI_ONLY_FILES = [
   '.github/workflows/test.yml',
   'hooks/archive/',
   'Plans/',
-  'skills/KAIUpgrade/',
+  'skills/PAIUpgrade/',
   'scripts/sync-to-kai.sh',
   'scripts/verify-release.sh',
   'scripts/kai-release-audit.ts',

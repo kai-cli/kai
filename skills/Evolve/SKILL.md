@@ -43,8 +43,8 @@ description: Instinct Evolution Dashboard. USE WHEN /evolve, instinct dashboard,
 Active: N | Eligible (surfacing): N | Archive-eligible (decayed): N
 
 ### High Confidence (ready for promotion)
-• [95%] [kai, hooks, bun] Use bun test --bail for faster feedback  ×7
-• [82%] [kai, hooks] Never modify hook input schema directly         ×4
+• [95%] [pai-config, hooks, bun] Use bun test --bail for faster feedback  ×7
+• [82%] [pai-config, hooks] Never modify hook input schema directly         ×4
 
 ### Active
 • [65%] [testing] Always run tests before reporting done                    ×3

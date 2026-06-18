@@ -18,15 +18,15 @@ import { execSync } from 'child_process';
 // This prevents interference from parallel tests (e.g., ApiKeys.test.ts) that modify HOME
 const PAI_DIR = (() => {
   if (process.env.PAI_DIR) return process.env.PAI_DIR;
-  // If running from kai root, use cwd
+  // If running from pai-config root, use cwd
   const cwd = process.cwd();
-  if (cwd.endsWith('kai')) return cwd;
+  if (cwd.endsWith('pai-config')) return cwd;
   // Otherwise use standard path (this will be correct before tests modify HOME)
-  return join(process.env.HOME!, 'Projects', 'kai');
+  return join(process.env.HOME!, 'Projects', 'pai-config');
 })();
 const TEST_DIR = join(PAI_DIR, 'tests', '.sync-gate-test-tmp');
 
-// sync-to-kai.sh is kai only (excluded from kai sync)
+// sync-to-kai.sh is pai-config only (excluded from kai sync)
 const hasSyncScript = existsSync(join(PAI_DIR, 'scripts', 'sync-to-kai.sh'));
 
 describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
@@ -80,7 +80,7 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
     const relPath = 'tests/.sync-gate-test-tmp/pii-test.ts';
 
     // Write file with known PII pattern
-    writeFileSync(testFile, '// Email: test@example.com\nconst foo = "bar";');
+    writeFileSync(testFile, '// Email: test@linksys.com\nconst foo = "bar";');
 
     const patterns = scanForPII(relPath, PAI_DIR);
 
@@ -93,7 +93,7 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
     }
 
     expect(patterns.length).toBeGreaterThan(0);
-    expect(patterns.some(p => p.includes('yourcompany'))).toBe(true);
+    expect(patterns.some(p => p.includes('linksys'))).toBe(true);
   });
 
   test('does not flag clean file', () => {
@@ -130,7 +130,7 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
     const relPath = 'tests/.sync-gate-test-tmp/pii-public.ts';
 
     // Write a file with PII that would be classified as public
-    writeFileSync(testFile, '// Author: Your Name\nconst config = { email: "test@example.com" };');
+    writeFileSync(testFile, '// Author: Deven Ducommun\nconst config = { email: "test@linksys.com" };');
 
     // Add to git tracking temporarily
     try {
@@ -202,7 +202,7 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
   test('manifest counts align with filesystem', () => {
     const manifestPath = join(PAI_DIR, 'manifest.json');
     if (!existsSync(manifestPath)) {
-      // Manifest doesn't exist in kai (kai-only), skip test
+      // Manifest doesn't exist in pai-config (kai-only), skip test
       expect(true).toBe(true);
       return;
     }

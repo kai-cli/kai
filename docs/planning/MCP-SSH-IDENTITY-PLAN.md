@@ -2,7 +2,7 @@
 
 > **Created:** 2026-06-08
 > **Status:** Plan (not started) — design for review before building
-> **Repo:** `~/Projects/yourcompany-mcp/` (router-mcp package), config in `~/.config/yourcompany-mcp/devices.json`
+> **Repo:** `~/Projects/linksys-mcp/` (router-mcp package), config in `~/.config/linksys-mcp/devices.json`
 > **Related:** [[MCP-REARCHITECT-PLAN]] (config/tool-registration friction — a DIFFERENT layer)
 > **Design goal:** structured + extensible — an identity model with room to grow, not a one-off MAC patch.
 
@@ -31,7 +31,7 @@ on the desk → you're silently operating the wrong router. There is no `mac` fi
    (MAC and/or serial), never by IP. IP/host becomes a *connection hint*, not the identity.
 2. **Verify on connect (trust-on-first-use + check).** After connecting, read the live hardware identity
    from the box and assert it matches the intended device. Mismatch = loud refusal, not silent wrong-box.
-3. **One identity model, many access methods.** SSH, USP/ACSPlatform, serial console, future cloud-API — each
+3. **One identity model, many access methods.** SSH, USP/Oktopus, serial console, future cloud-API — each
    is an `accessMethod` on the same device record. Adding a method shouldn't reshape identity.
 4. **Self-describing: "what am I connected to / what can I reach"** is a first-class tool, not guesswork.
 5. **Fail loud, single source of truth** (carry over from MCP-REARCHITECT-PLAN).
@@ -47,14 +47,14 @@ on the desk → you're silently operating the wrong router. There is no `mac` fi
     {
       "id": "lab-m60du",                 // stable human key (slug), never changes
       "identity": {                       // VERIFIED hardware identity (the source of truth)
-        "serial": "EXAMPLESERIAL26001024",
+        "serial": "LK62DU5Q26001024",
         "mac": "AA:BB:CC:DD:EE:FF",       // primary LAN MAC — the disambiguator
         "model": "M60-DU"
       },
       "connections": [                    // ordered, multiple methods per device
         { "method": "ssh", "host": "192.168.1.1", "port": 22,
-          "username": "root", "credentialRef": "YOURCOMPANY_ROUTER_M62_PASS" },
-        { "method": "usp", "controller": "acsplatform-personal", "endpointId": "..." }
+          "username": "root", "credentialRef": "LINKSYS_ROUTER_M62_PASS" },
+        { "method": "usp", "controller": "oktopus-personal", "endpointId": "..." }
       ],
       "verify": {                         // how to read live identity to confirm the match
         "ssh": "cat /sys/class/net/*/address | head -1",   // or `uci`/`ubus` source

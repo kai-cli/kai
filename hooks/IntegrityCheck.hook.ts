@@ -2,7 +2,7 @@
 /**
  * IntegrityCheck.hook.ts - PAI Integrity Check (SessionEnd)
  *
- * Runs system integrity check — detects KAI system file changes, spawns background maintenance.
+ * Runs system integrity check — detects PAI system file changes, spawns background maintenance.
  * Doc cross-ref integrity is handled by StopOrchestrator → DocCrossRefIntegrity (Stop event).
  *
  * TRIGGER: SessionEnd

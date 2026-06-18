@@ -1,5 +1,5 @@
 /**
- * change-detection.ts - Utilities for detecting KAI system changes
+ * change-detection.ts - Utilities for detecting PAI system changes
  *
  * Parses transcripts for file modification tool_use blocks and categorizes
  * changes to determine if background integrity maintenance is needed.
@@ -200,7 +200,7 @@ function createFileChange(tool: 'Write' | 'Edit', path: string): FileChange {
 // ============================================================================
 
 /**
- * Categorize a file path by its location in the KAI system.
+ * Categorize a file path by its location in the PAI system.
  */
 export function categorizeChange(path: string): ChangeCategory | null {
   // Check exclusions first
@@ -266,7 +266,7 @@ function isStructuralPath(path: string): boolean {
  * Determine if changes are significant enough to warrant background integrity check.
  */
 export function isSignificantChange(changes: FileChange[]): boolean {
-  // Filter to only KAI system changes
+  // Filter to only PAI system changes
   const systemChanges = changes.filter(c => c.category !== null);
 
   if (systemChanges.length === 0) return false;

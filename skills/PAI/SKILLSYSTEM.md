@@ -6,7 +6,7 @@
 
 ## THIS IS THE AUTHORITATIVE SOURCE
 
-This document defines the **required structure** for every skill in the KAI system.
+This document defines the **required structure** for every skill in the PAI system.
 
 **ALL skill creation MUST follow this structure** - including skills created by the CreateSkill skill.
 

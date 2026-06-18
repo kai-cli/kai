@@ -7,7 +7,7 @@
  *
  * Maintains a session-scoped ledger at MEMORY/STATE/session-writes.jsonl.
  * Each entry records the file path and a content hash of what PAI wrote.
- * InstinctCapture reads this ledger to detect when a user reverts KAI's changes.
+ * InstinctCapture reads this ledger to detect when a user reverts PAI's changes.
  *
  * Ledger is cleared at session start by LoadContext.hook.ts.
  */

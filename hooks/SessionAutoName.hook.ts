@@ -163,7 +163,7 @@ RULES:
 6. EVERY prompt has a topic. "check memory" → "Memory Check". "fix the build" → "Build Fix". "where is our PAT" → "GitHub PAT". Only output "New Session" for literal greetings with zero content ("hi", "hey", "hello").
 7. NEVER produce noun soup — every word must be necessary. "Plan Candidate List Deferred" is 4 unrelated nouns. "v5.7 Planning" is clear.
 
-GOOD: "KAI Board", "GitHub PAT", "TR-369 Cert", "Feed BBF PR", "v5.8 Release", "MCP Auth Fix", "Session Naming"
+GOOD: "PAI Board", "GitHub PAT", "TR-369 Cert", "Feed BBF PR", "v5.8 Release", "MCP Auth Fix", "Session Naming"
 BAD: "Plan Candidate List Deferred" (noun soup), "Analyzing Input" (LLM action), "New Session" (lazy — find the topic)
 
 Output ONLY the name. Nothing else.`;
@@ -290,7 +290,7 @@ export function extractFallbackName(prompt: string): string | null {
  */
 function getCustomTitle(sessionId: string): string | null {
   try {
-    // Search both lowercase (Claude Code native) and uppercase (KAI) project dirs
+    // Search both lowercase (Claude Code native) and uppercase (PAI) project dirs
     const searchDirs = [
       paiPath('projects'),  // Claude Code native (lowercase) — primary
       paiPath('Projects'),  // PAI uppercase — fallback

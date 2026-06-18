@@ -1,6 +1,6 @@
 # Spec 003 — MemCarry Retrieval Sprint
 
-> **Status:** Draft for review · **Owner:** YourName · **Created:** 2026-06-12
+> **Status:** Draft for review · **Owner:** Deven · **Created:** 2026-06-12
 > **Supersedes:** `specs/002-claude-harness/brief.md` ("Sentinel") — that brief was an independent
 > re-derivation of work already done in `~/Projects/NewTool/ARCHITECTURE.md` (Ferrymem) and built as
 > MemCarry. This spec implements the **next roadmap items**, it does not design a new system.
@@ -35,7 +35,7 @@ recall fused, run ambiently per-turn.** Pure vector misses exact identifiers (`M
 
 ### Item 1 — B2: Hybrid (semantic + keyword) recall  ⭐ core fix · PARTLY BUILT
 
-> **Re-baselined 2026-06-12 against live `kai/memcarry`.** A **`ScoreProvider` seam already
+> **Re-baselined 2026-06-12 against live `pai-config/memcarry`.** A **`ScoreProvider` seam already
 > exists** in the live `recall.ts` (W6 work, tested in `w6.test.ts`): `recall()` accepts an optional
 > per-lesson `ScoreProvider = (lesson, prompt) => number | null`; the engine stays embedding-free and a
 > host injects semantics. **Remaining work** = (a) implement the jina-backed provider on the host/adapter
@@ -207,9 +207,9 @@ one. (Resolves spec open-question #5 / PROGRAM Thread B.)
 
 bun 1.3.14 / node 26 · live store `~/.claude/MEMORY/memcarry/store` (set `MEMCARRY_STORE`).
 
-**CANONICAL BUILD TARGET (CORRECTED 2026-06-12):** `~/Projects/kai/memcarry` — this IS the live
-copy (`~/.claude` → `kai` symlink; live hooks invoke `${PAI}/memcarry/packages/cli/...`).
-`kai/memcarry` syncs FROM kai. `~/Projects/NewTool/core` is a **STALE older snapshot** — do NOT
+**CANONICAL BUILD TARGET (CORRECTED 2026-06-12):** `~/Projects/pai-config/memcarry` — this IS the live
+copy (`~/.claude` → `pai-config` symlink; live hooks invoke `${PAI}/memcarry/packages/cli/...`).
+`kai/memcarry` syncs FROM pai-config. `~/Projects/NewTool/core` is a **STALE older snapshot** — do NOT
 build there; it must be reconciled/retired (new task). Live hooks: `~/.claude/hooks/Mem{Resume,Drift,
 Capture}.hook.ts`. jina embeddings already wired in PAI (`hooks/lib/embeddings.ts`, no API key) — the
 host-side `ScoreProvider` reuses them.

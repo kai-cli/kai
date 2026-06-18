@@ -377,7 +377,7 @@ describe('RatingCapture integration: correction-draft staging handoff', () => {
     expect(drafts[0].type).toBe('correction');
     expect(drafts[0].sourceRating).toBe(5);
     expect(drafts[0].confidence).toBe(0.65);
-    expect(drafts[0].targetProject).toBe('kai');
+    expect(drafts[0].targetProject).toBe('pai-config');
   });
 
   it('staging-state.json totalGenerated increments after draft is written', async () => {

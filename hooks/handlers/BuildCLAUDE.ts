@@ -9,7 +9,7 @@
  * Current session uses the existing CLAUDE.md (already loaded).
  * Rebuild ensures the NEXT session gets the fresh version.
  *
- * SF-26 GUARD: in kai (dev repo) CLAUDE.md is HAND-MAINTAINED and the template is intentionally a
+ * SF-26 GUARD: in pai-config (dev repo) CLAUDE.md is HAND-MAINTAINED and the template is intentionally a
  * KAI-only artifact (regenerated from CLAUDE.md at sync time). The template here is older than CLAUDE.md and
  * lacks live content (e.g. INVESTIGATE mode). Rebuilding would REVERT hand edits. So: skip the rebuild
  * whenever CLAUDE.md.template is OLDER than CLAUDE.md (stale template = do not trust it). Fresh KAI installs,

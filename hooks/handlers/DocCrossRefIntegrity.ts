@@ -160,7 +160,7 @@ function isHookModified(modifiedFiles: Set<string>): boolean {
 }
 
 /**
- * Check if ANY meaningful KAI system file was modified.
+ * Check if ANY meaningful PAI system file was modified.
  * This is the broader gate — catches skills, hooks, tools, config, components,
  * workflows, and SYSTEM docs. Excludes MEMORY/WORK, MEMORY/LEARNING, MEMORY/STATE,
  * and other non-system paths.
@@ -708,7 +708,7 @@ export async function handleDocCrossRefIntegrity(
   const modifiedFiles = getModifiedFiles(hookInput.transcript_path);
   console.error(`${TAG} Modified files in session: ${modifiedFiles.size}`);
 
-  // Run if ANY meaningful KAI system file was modified (skills, hooks, tools, config, components, workflows, SYSTEM docs)
+  // Run if ANY meaningful PAI system file was modified (skills, hooks, tools, config, components, workflows, SYSTEM docs)
   const hasDocChanges = isSystemDocModified(modifiedFiles);
   const hasHookChanges = isHookModified(modifiedFiles);
   const hasAnySystemChange = isSystemFileModified(modifiedFiles);

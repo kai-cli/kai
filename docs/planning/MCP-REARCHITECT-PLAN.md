@@ -30,10 +30,10 @@ Likely cause: Claude Code has an internal tool registration limit or silent fail
 MCP servers can be configured in THREE different places, each with different discovery rules:
 
 1. **`~/.claude/settings.json` → `mcpServers` key** — Global user-level. Currently EMPTY (no mcpServers key exists).
-2. **`.mcp.json` in project root** — Picked up when `enableAllProjectMcpServers: true`. The `feed_bbf` project has NO `.mcp.json`. The `yourcompany-mcp` project has one but it's empty (`{}`).
+2. **`.mcp.json` in project root** — Picked up when `enableAllProjectMcpServers: true`. The `feed_bbf` project has NO `.mcp.json`. The `linksys-mcp` project has one but it's empty (`{}`).
 3. **External plugins** (`~/.claude-pre-symlink/plugins/marketplaces/...`) — How github and playwright actually load. Hidden directory structure.
 
-**The actual config that works** lives in `yourcompany-mcp/config/settings-snippet.json` — a reference file that must be manually installed somewhere. It's never been installed into `settings.json`. The servers somehow load anyway (likely from a prior `claude mcp add` invocation that stores config in a hidden DB).
+**The actual config that works** lives in `linksys-mcp/config/settings-snippet.json` — a reference file that must be manually installed somewhere. It's never been installed into `settings.json`. The servers somehow load anyway (likely from a prior `claude mcp add` invocation that stores config in a hidden DB).
 
 **Failure 3: We previously had to DELETE .mcp.json to fix things**
 
@@ -48,7 +48,7 @@ credentialRef: z.string().min(1).refine(
   { message: "Referenced environment variable is not set" }
 )
 ```
-If any referenced env var (`YOURCOMPANY_ROUTER_M62_PASS`, `YOURCOMPANY_JENKINS_TOKEN`, etc.) is missing when the server process spawns, the server exits immediately with a validation error. The MCP server `env` block in config must pass these through, but:
+If any referenced env var (`LINKSYS_ROUTER_M62_PASS`, `LINKSYS_JENKINS_TOKEN`, etc.) is missing when the server process spawns, the server exits immediately with a validation error. The MCP server `env` block in config must pass these through, but:
 - Different projects have different env blocks
 - Claude Code's env inheritance from shell profile is inconsistent
 - No graceful degradation — one missing var kills the entire server
@@ -64,8 +64,8 @@ If any referenced env var (`YOURCOMPANY_ROUTER_M62_PASS`, `YOURCOMPANY_JENKINS_T
 
 All server configs use absolute paths:
 ```json
-"command": "/Users/your.name/.bun/bin/bun",
-"args": ["run", "/Users/your.name/Projects/yourcompany-mcp/packages/router/src/index.ts"]
+"command": "/Users/deven.ducommun/.bun/bin/bun",
+"args": ["run", "/Users/deven.ducommun/Projects/linksys-mcp/packages/router/src/index.ts"]
 ```
 Moving the project, changing username, or using a different machine breaks everything.
 
@@ -98,7 +98,7 @@ Combined with THREE competing config mechanisms and env var fragility, the resul
 
 **Phase 3: Observability**
 
-1. Add structured startup log to `~/.local/state/yourcompany-mcp/startup.log` — timestamped, shows which tools registered
+1. Add structured startup log to `~/.local/state/linksys-mcp/startup.log` — timestamped, shows which tools registered
 2. Add a meta-tool `mcp_status` that reports: server name, PID, tools registered, last error
 3. Write a `scripts/doctor.sh` that checks all servers can start and register tools
 
@@ -106,9 +106,9 @@ Combined with THREE competing config mechanisms and env var fragility, the resul
 
 1. Replace absolute paths with relative resolution:
    - `command: "bun"` (rely on PATH)
-   - `args: ["run", "${PAI_DIR}/../Projects/yourcompany-mcp/packages/router/src/index.ts"]` or
+   - `args: ["run", "${PAI_DIR}/../Projects/linksys-mcp/packages/router/src/index.ts"]` or
    - Use a launcher script: `~/.claude/mcp/start-router.sh` that resolves paths
-2. Store credential env var names in one place (`~/.config/yourcompany-mcp/env.sh`) that all servers source
+2. Store credential env var names in one place (`~/.config/linksys-mcp/env.sh`) that all servers source
 
 ### Immediate Fix (Today)
 
@@ -129,11 +129,11 @@ To get router SSH working for PR #72 validation:
 | File | Action |
 |------|--------|
 | `~/.claude/settings.json` | Add `mcpServers` block from snippet |
-| `yourcompany-mcp/packages/common/src/registry.ts` | Remove `.refine()` on credentialRef/passwordRef |
-| `yourcompany-mcp/.mcp.json` | Delete or leave empty |
-| `yourcompany-mcp/config/settings-snippet.json` | Keep as reference but not canonical |
-| `yourcompany-mcp/packages/*/src/index.ts` | Add startup logging |
-| `~/.config/yourcompany-mcp/env.sh` | New: single source for credential env vars |
+| `linksys-mcp/packages/common/src/registry.ts` | Remove `.refine()` on credentialRef/passwordRef |
+| `linksys-mcp/.mcp.json` | Delete or leave empty |
+| `linksys-mcp/config/settings-snippet.json` | Keep as reference but not canonical |
+| `linksys-mcp/packages/*/src/index.ts` | Add startup logging |
+| `~/.config/linksys-mcp/env.sh` | New: single source for credential env vars |
 
 ## Success Criteria
 

@@ -1,6 +1,6 @@
-# KAI Board API Contract
+# PAI Board API Contract
 
-REST API and SSE event protocol for the KAI Board dashboard.
+REST API and SSE event protocol for the PAI Board dashboard.
 
 ## Server Configuration
 
@@ -73,7 +73,7 @@ Get all library items (manual + auto-discovered projects).
 [
   {
     "name": "Pai Config",
-    "path": "~/Projects/kai/",
+    "path": "~/Projects/pai-config/",
     "description": "Personal AI Infrastructure configuration",
     "tags": ["pai-project"],
     "pinned": true,

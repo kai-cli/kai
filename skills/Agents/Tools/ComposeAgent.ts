@@ -4,7 +4,7 @@
  * ComposeAgent - Dynamic Agent Composition from Traits
  *
  * Composes specialized agents on-the-fly by combining traits.
- * Merges base traits (ships with KAI) with user customizations.
+ * Merges base traits (ships with PAI) with user customizations.
  *
  * Configuration files:
  *   Base:  ~/.claude/skills/Agents/Data/Traits.yaml

@@ -9,7 +9,7 @@
    ~/.claude/PAI/USER/SKILLCUSTOMIZATIONS/Art/PREFERENCES.md
    ```
 
-2. **Apply the KAI Theme** derived from Art preferences:
+2. **Apply the PAI Theme** derived from Art preferences:
 
 | Art Preference | Remotion Application |
 |----------------|---------------------|

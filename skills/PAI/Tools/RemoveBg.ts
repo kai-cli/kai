@@ -4,7 +4,7 @@
  * remove-bg - Background Removal CLI
  *
  * Remove backgrounds from images using the remove.bg API.
- * Part of the Images skill for KAI system.
+ * Part of the Images skill for PAI system.
  *
  * Usage:
  *   remove-bg input.png                    # Overwrites original

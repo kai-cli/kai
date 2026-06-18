@@ -3,7 +3,7 @@
 **Branch**: `004-backflow` (SpecKit workspace doc; no git branch) | **Date**: 2026-06-15
 **Spec**: `specs/memcarry/004-backflow/spec.md`
 
-> **Target codebase:** `~/Projects/kai/memcarry` (canonical, vendored). NOT this SpecKit clone.
+> **Target codebase:** `~/Projects/pai-config/memcarry` (canonical, vendored). NOT this SpecKit clone.
 
 ## Summary
 Build the backflow workflow: refine a global lesson atom from any project so the improvement propagates
@@ -46,7 +46,7 @@ the proven CLI+hooks path (like recall/resume/drift).
 **Result: PASS.** Note: Principle V is the spec's central guarantee — the plan must keep the confirm step
 non-bypassable. Complexity Tracking empty.
 
-## Project Structure (in `~/Projects/kai/memcarry`)
+## Project Structure (in `~/Projects/pai-config/memcarry`)
 ```
 packages/lib/src/
 ├── schema.ts        # MODIFY: add `last_refined: z.string().nullable().default(null)` to LessonAtom (FR9)
@@ -57,7 +57,7 @@ packages/lib/src/
 packages/cli/src/index.ts   # MODIFY: add `refine` command, mirrors `confirm` (read→draft→confirm→write)
 # packages/mcp — NOT TOUCHED. MCP dropped from scope (unregistered stub; Claude can't call it).
 
-(host adapter — kai)
+(host adapter — pai-config)
 ~/.claude/hooks/  → End-skill step (FR8 safety net): flag global atoms recalled-but-not-refined this session
                     (inline <memcarry-refine> diff via additionalContext — FR10). Trigger A applies via
                     the `memcarry refine` CLI on user confirm — the proven hook+CLI path.

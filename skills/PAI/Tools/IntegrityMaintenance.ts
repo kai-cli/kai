@@ -294,7 +294,7 @@ function generateDescriptiveTitle(changes: FileChange[]): string {
   else if (hasConfig) {
     title = 'System Configuration Updated';
   }
-  // KAI system changes
+  // PAI system changes
   else if (hasPAISystem) {
     const docNames = paths
       .filter(p => p.includes('skills/PAI/'))
@@ -612,7 +612,7 @@ async function generateNarrativeWithAI(
     .map(c => `- ${c.path} (${c.category || 'other'})`)
     .join('\n');
 
-  const prompt = `You are analyzing a Claude Code session to generate documentation for a KAI (Kaizen AI Infrastructure) system update.
+  const prompt = `You are analyzing a Claude Code session to generate documentation for a PAI (Personal AI Infrastructure) system update.
 
 ## Session Transcript (most recent messages)
 ${contextSummary}
@@ -735,7 +735,7 @@ async function generateVerboseNarrative(
     const match = c.path.match(/skills\/([^/]+)\//);
     if (match) skillNames.add(match[1]);
   }
-  const skillContext = skillNames.size > 0 ? [...skillNames].slice(0, 3).join(', ') : 'KAI system';
+  const skillContext = skillNames.size > 0 ? [...skillNames].slice(0, 3).join(', ') : 'PAI system';
 
   return {
     narrative: {

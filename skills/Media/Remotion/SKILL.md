@@ -20,7 +20,7 @@ Create professional videos programmatically with React.
 
 ## Quick Reference
 
-- **Theme:** Always use KAI_THEME from `Tools/Theme.ts`
+- **Theme:** Always use PAI_THEME from `Tools/Theme.ts`
 - **Art Integration:** Load Art preferences before creating content
 - **Critical:** NO CSS animations - use `useCurrentFrame()` only
 - **Output:** Always to `~/Downloads/` first

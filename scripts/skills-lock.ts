@@ -156,7 +156,7 @@ function buildLockEntry(skill: DiscoveredSkill): SkillEntry {
   }
 
   return {
-    source: 'kai',
+    source: 'pai-config',
     path: skill.skillPath,
     hash: hashContent(skill.skillContent),
     workflows: skill.workflows.map(w => w.name),

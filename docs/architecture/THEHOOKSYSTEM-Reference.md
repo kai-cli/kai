@@ -399,7 +399,7 @@ const USER_NAME = getPrincipalName(); // "{YourName}"
 
 **Why settings.json?**
 - Programmatic access via `JSON.parse()` - no regex parsing markdown
-- Central to the KAI install wizard
+- Central to the PAI install wizard
 - Single source of truth for all configuration
 - Tool-friendly: easy to read/write from any language
 

@@ -5,7 +5,7 @@
 STATE_DIR="$HOME/.claude/MEMORY/STATE"
 GH_CACHE="$STATE_DIR/.gh-reviews-cache.json"
 WIKI_CACHE="$STATE_DIR/.wiki-stale-cache.json"
-WIKI_DIR="$HOME/Projects/YourCompany-Wiki"
+WIKI_DIR="$HOME/Projects/Linksys-Wiki"
 
 # --- GitHub PRs awaiting review ---
 # Record auth status explicitly: a deauthed `gh` must surface "gh auth?" in the statusline, NOT

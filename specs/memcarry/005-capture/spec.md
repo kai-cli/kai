@@ -1,6 +1,6 @@
 # Spec 005 — Capture: turn a session learning into a lesson atom
 
-> **Status:** Shipped (2026-06-16) · **Owner:** YourName · **Created:** 2026-06-16
+> **Status:** Shipped (2026-06-16) · **Owner:** Deven · **Created:** 2026-06-16
 > **Why this exists:** Backflow (spec 004) made a global lesson *refinable* — but the store is **starved**.
 > Measured 2026-06-15: 11 days live, 137 resumes fired, 312 ratings on disk, yet only **6 atoms / 8
 > captures**, almost all Phase-0 fixtures. Retrieval is healthy and exercised; it just has almost nothing
@@ -16,7 +16,7 @@
   per-lesson. (Not always-global: avoids polluting the global namespace with project-specific rules. Not
   project-first-then-promote: that delays the cross-project win and adds a step.)
 - Q: What surface triggers in-conversation capture (Trigger A)? → A: **Steering rule + End-skill net** —
-  mirror backflow (004) exactly. AISTEERINGRULES rule fires when YourName establishes a durable lesson; the
+  mirror backflow (004) exactly. AISTEERINGRULES rule fires when Deven establishes a durable lesson; the
   End-skill is the safety net. **No new `/remember` slash command** for the MVP (add only if in-flow
   ergonomics later demand it).
 - Q: Does the MVP draft from the transcript or stay human-dictated? → A: **Transcript-assisted in the MVP** —
@@ -60,7 +60,7 @@ lesson the model drafts without confirm is at most `model-asserted` (and the MVP
 without confirm — same `--apply` gate as `refine`). This makes the capture path structurally loop-safe,
 identical to backflow's guarantee.
 
-**YourName's guardrail (honored, from NEXT-STEPS §0):** do NOT artificially pump the store. Grow it with
+**Deven's guardrail (honored, from NEXT-STEPS §0):** do NOT artificially pump the store. Grow it with
 lessons genuinely worth keeping, at human-confirmed trust. Quality over volume. No bulk-import.
 
 ## Scope — assisted, human-confirmed capture (the chosen automation level for the MVP)
@@ -68,7 +68,7 @@ lessons genuinely worth keeping, at human-confirmed trust. Quality over volume. 
 The system does the WORK (drafts the WHEN→DO→BECAUSE lesson from the session); the human does the JUDGMENT
 (confirm). Specifically:
 1. **Trigger = A+B combo, mirroring backflow** — (A, primary) a fast in-conversation flow ("/remember"-style)
-   when YourName says "remember this" / "that's a lesson" / establishes a durable rule; the model drafts the
+   when Deven says "remember this" / "that's a lesson" / establishes a durable rule; the model drafts the
    lesson + shows it; on confirm, it writes via the `memcarry capture-lesson` CLI. (B, safety net) the
    **End-skill** asks whether anything learned this session is a durable lesson worth keeping.
 2. **The model DRAFTS** a `LessonAtom`, **transcript-assisted**: it reuses `parseTranscript` (the same parser
@@ -120,7 +120,7 @@ The system does the WORK (drafts the WHEN→DO→BECAUSE lesson from the session
   (id generated deterministically from the claim — slug of `do` or content hash) prevents a silent
   overwrite; on collision, surface the colliding atom. The only NEW code is the id guard; the fuzzy check is
   recall (003) + refine (004). Threshold starts conservative and is tuned during build against real atoms.
-- **FR7:** Trigger A (in-conversation) — an AISTEERINGRULES rule + a `/remember`-style surface: when YourName
+- **FR7:** Trigger A (in-conversation) — an AISTEERINGRULES rule + a `/remember`-style surface: when Deven
   establishes a durable rule, the model drafts the lesson and applies it via the `memcarry capture-lesson`
   CLI on confirm (the proven hook+CLI path; **NOT MCP** — same rationale as backflow FR7).
 - **FR8:** Trigger B (safety net) — the **End-skill** asks whether anything learned this session is a durable
@@ -166,8 +166,8 @@ The system does the WORK (drafts the WHEN→DO→BECAUSE lesson from the session
 
 ## Build environment
 
-Target: `~/Projects/kai/memcarry` (canonical, vendored — the live copy; `~/.claude` → `kai`
-symlink; live hooks invoke `${PAI}/memcarry/packages/cli/...`). `kai/memcarry` syncs FROM kai.
+Target: `~/Projects/pai-config/memcarry` (canonical, vendored — the live copy; `~/.claude` → `pai-config`
+symlink; live hooks invoke `${PAI}/memcarry/packages/cli/...`). `kai/memcarry` syncs FROM pai-config.
 `writeAtom` (atomic temp+rename) + `LessonAtom` schema + the `confirm`/`refine` patterns already exist in
 `packages/lib/src/{store,schema}.ts` + `packages/cli/src/index.ts`. Tests: hermetic fixtures, injectable
 embedder (never load the real model — `reference_bun_transformers_teardown_crash`). Full suite must stay green.

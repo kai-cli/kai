@@ -92,7 +92,7 @@ describe('generate', () => {
     run('generate');
     const lock = readLock();
     const entry = lock.skills['Alpha'];
-    expect(entry.source).toBe('kai');
+    expect(entry.source).toBe('pai-config');
     expect(entry.path).toBe('skills/Alpha/SKILL.md');
     expect(entry.hash).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(Array.isArray(entry.workflows)).toBe(true);
@@ -343,7 +343,7 @@ describe('validateSpecialization', () => {
     generated: '2026-01-01T00:00:00Z',
     skills: {
       Alpha: {
-        source: 'kai',
+        source: 'pai-config',
         path: 'skills/Alpha/SKILL.md',
         hash: 'sha256:abc',
         workflows: ['WorkflowA', 'WorkflowB', 'WorkflowC'],

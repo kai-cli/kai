@@ -184,7 +184,7 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 # DevTeam — Autonomous Development Team Orchestration
 
-Spins up coordinated AI agent teams (PM, Dev, QA) to autonomously investigate, fix, and verify bugs or build features. Supports Bedrock multi-model review (KAI) or Claude-only adversarial review (KAI).
+Spins up coordinated AI agent teams (PM, Dev, QA) to autonomously investigate, fix, and verify bugs or build features. Supports Bedrock multi-model review (PAI) or Claude-only adversarial review (KAI).
 
 ## Workflow Routing
 

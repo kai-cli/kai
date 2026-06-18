@@ -11,7 +11,7 @@
 
 When spawning specialized agents (Architect, Engineer, Designer, etc.), each agent needs to know:
 1. What their role is
-2. Which parts of the KAI Skills system are relevant to their work
+2. Which parts of the PAI Skills system are relevant to their work
 3. What output format to use
 
 **The Solution**: ONE markdown context file per agent type that acts as a "reading list" pointing to relevant Skills.

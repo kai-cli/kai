@@ -3,8 +3,8 @@
 > **Single source of truth for the 7.x line.** Consolidates what was scattered across ROADMAP.md (v6-era),
 > NEXT-STEPS.md, and assorted design docs. Created 2026-06-05.
 >
-> - **kai** = private live installation (source of truth). **kai** = scrubbed public fork (`kai-cli/kai`).
-> - Workflow: develop in kai → `sync-to-kai.sh` (PII scrub + brand) → verify → push.
+> - **pai-config** = private live installation (source of truth). **kai** = scrubbed public fork (`kai-cli/kai`).
+> - Workflow: develop in pai-config → `sync-to-kai.sh` (PII scrub + brand) → verify → push.
 > - Active execution detail for the consolidation effort lives in `~/Projects/PAI-Wiki/findings/`
 >   (`execution-plan.md` = the W-workstream driver; `session-findings-2026-06-05.md` = SF tickets).
 > - Pre-7.x version plans are archived in `docs/planning/archive/`.
@@ -23,7 +23,7 @@
 
 ## 7.2 (in progress) — Consolidation + KAI hardening
 
-**Theme:** Eliminate duplicate flows, activate orphaned components, harden the kai↔KAI boundary.
+**Theme:** Eliminate duplicate flows, activate orphaned components, harden the pai-config↔KAI boundary.
 Driver: `PAI-Wiki/findings/execution-plan.md`. **Do NOT bump VERSION/manifest to 7.2 until this completes** (SF-20).
 
 ### Consolidation workstreams (keystone chain ✅ done)
@@ -57,7 +57,7 @@ Driver: `PAI-Wiki/findings/execution-plan.md`. **Do NOT bump VERSION/manifest to
   via jq (fail-closed); sync-ci-gate Step 2.6 is the drift guard. Scrub proven end-to-end; zero coverage loss.
 - [x] **SF-26 — CLAUDE template landmine** (`f4aa61b`): BuildCLAUDE SessionStart hook now skips rebuild when
   the template is older than CLAUDE.md (self-correcting; was at risk of reverting INVESTIGATE mode).
-- [ ] **SF-15 / SF-18 — sync verifies the wrong tree.** `verify-release.sh` scans kai not KAI; sync has
+- [ ] **SF-15 / SF-18 — sync verifies the wrong tree.** `verify-release.sh` scans pai-config not KAI; sync has
   no per-feature verification. CI runs it with `--warn-pii` (non-blocking) + pre-push gate compensates. Deeper
   fix: run KAI-side checks in the KAI tree. LOW priority.
 
@@ -95,9 +95,9 @@ Same "duplicated logic drifts" class we killed for counts/PII/secrets, applied t
   (prior gap: last Release was v7.0.0; tags existed but no Releases).
 - [x] **SF-15/18 — verify-release scrubbed-tree fix** — `verify-release.sh --target <DIR>` splits checks
   into STRUCTURAL (invocation repo) / ARTIFACT-leak-brand ($TARGET) / SECRETS (both). Bare run in
-  kai went from 44 false-positive failures → 0. Feature-claim + dangling-hook verifiers now ignore
+  pai-config went from 44 false-positive failures → 0. Feature-claim + dangling-hook verifiers now ignore
   deletion-context. PRD: `MEMORY/WORK/20260610-175307_verify-release-scrubbed-tree/`.
-- [x] **Live brand leak CLOSED** — `frontend/src/App.tsx` shipped "KAI Board" to public kai because
+- [x] **Live brand leak CLOSED** — `frontend/src/App.tsx` shipped "PAI Board" to public kai because
   `.tsx`/`.css` were in NO brand/PII scrub glob. Added to all globs (sync-to-kai SHARED_FILES + BRAND_FILES
   + post-sync guard; sync-ci-gate scanForPII; verify-release). Re-synced → App.tsx now "KAI Board",
   regression-proven.
@@ -106,24 +106,24 @@ Same "duplicated logic drifts" class we killed for counts/PII/secrets, applied t
   Never exposed publicly (verified via gh code-search + history).
 - [x] **CI hardened for Linux** (3 env-specific bugs that passed on macOS): portable `sed_i` helper
   (BSD `sed -i ''` no-op'd the entire scrub on Linux); ripgrep installed in CI (MemorySearch dep — the
-  long-standing kai red); algorithm-state.ts lazy PAI_DIR resolution (module-const clobbered by
+  long-standing pai-config red); algorithm-state.ts lazy PAI_DIR resolution (module-const clobbered by
   Bun parallel runner — same class as [[feedback_parallel_test_home_env]]); checkpoint.ts seq tiebreak
   (same-ms saves collided on fast CI). Both repos' CI now green.
 - [x] **Steering rule added** — "Empty/null/error output is inconclusive, never confirmation" (CRITICAL)
   in AISTEERINGRULES.md; born from real assumption failures this session.
 - [x] **Automate skill added** — `/automate` launches headless `claude -p` agents fenced by --allowedTools.
-  Personal profiles (`automations/`) gitignored. Skills 69→70 (kai) / 68 (kai, sync-excluded subset).
+  Personal profiles (`automations/`) gitignored. Skills 69→70 (pai-config) / 68 (kai, sync-excluded subset).
 - [x] **Artifact-gate REMOVED (won't-do)** — built an over-engineered Linux-fragile post-scrub CI gate, then
   deleted it after verifying its leak classes are already covered (PII scan blocks codenames; .tsx glob fix
   closed the brand class). Redundant defense-in-depth not worth the OS-portability surface. The lesson: the
   source-glob fix was the real fix; the gate was scaffolding.
-- **Known follow-up:** sync overwrites kai's manifest.json with kai's skill count (70 vs kai's 68) —
+- **Known follow-up:** sync overwrites kai's manifest.json with pai-config's skill count (70 vs kai's 68) —
   must regen kai manifest after each sync. Candidate: have sync-to-kai regenerate kai's manifest. LOW.
 
 ### Shipped this session (2026-06-10b) — Memcarry backup + 7.2 gate confirm
 - [x] **Memcarry repo backed up** — `~/Projects/NewTool/core` had NO git remote (entire codebase
-  disk-only). Created **private** `github.com/YourNameYourLastName/memcarry` + pushed (sensitivity scan
-  found yourcompany/feed-bbf refs → private is correct; flip public later after scrub). Committed pending
+  disk-only). Created **private** `github.com/DevenDucommun/memcarry` + pushed (sensitivity scan
+  found linksys/feed-bbf refs → private is correct; flip public later after scrub). Committed pending
   worktree-concurrency test + fixture PII-genericization (26 tests pass).
 - [x] **7.2 gate (SF-20) confirmed satisfied** — only unchecked W-item is W6b/A1/B3, explicitly
   signal-blocked & deferred past 7.2. VERSION 7.2.0 == package.json. Bump was correct.
@@ -242,10 +242,10 @@ Full detail: `PAI-Wiki/findings/session-findings-2026-06-05.md`. Status synced 2
 | SF-5 | PERF | transcript-cache could skip the 150ms settle wait on a hit | OPEN (minor) |
 | SF-8 | TEST | No concurrency harness for cross-subprocess transcript-cache | OPEN |
 | SF-9 | TEST | No runtime telemetry (cache hit-rate, scorer A/B) for long-term validation; + ~12 silent-degrade catches need visibility (see Observability §A — swallow-catch audit 2026-06-08) | OPEN |
-| SF-15/18 | PROCESS | Sync verification scans kai not KAI; CI uses `--warn-pii` so non-blocking | OPEN (compensated) |
+| SF-15/18 | PROCESS | Sync verification scans pai-config not KAI; CI uses `--warn-pii` so non-blocking | OPEN (compensated) |
 | SF-29 | PLAN | `pai-streamlining-plan.md` is ~40% stale — see "Open follow-ups" below | OPEN (triaged) |
-| SF-30 | INFRA | usp/acsplatform MCP controller unreachable — ✅ **EXPECTED**: AWS ACSPlatform intentionally shut down (cost, not in use). Not a fault. | RESOLVED (by design) |
-| SF-31 | INFRA | router M62 (`EXAMPLESERIAL26001024`) unreachable / `uhttpd:false` — ✅ **EXPECTED**: M62 not currently connected. Not a fault. | RESOLVED (by design) |
+| SF-30 | INFRA | usp/oktopus MCP controller unreachable — ✅ **EXPECTED**: AWS Oktopus intentionally shut down (cost, not in use). Not a fault. | RESOLVED (by design) |
+| SF-31 | INFRA | router M62 (`LK62DU5Q26001024`) unreachable / `uhttpd:false` — ✅ **EXPECTED**: M62 not currently connected. Not a fault. | RESOLVED (by design) |
 | SF-32 | OPS | Embeddings index drifted 49 files stale before manual `--incremental` (2026-06-08) — add rebuild to weekly maintenance so semantic routing doesn't silently degrade | OPEN |
 
 Full live-validation scorecard: [[PAI-Wiki/findings/live-validation-2026-06-08]].
@@ -318,10 +318,10 @@ confirmed end-to-end), inference engine + board + statusline all respond. Remain
 - [x] **Embeddings index fresh** ✅ DONE 2026-06-08 (live): index was 49 files stale (built Jun 4) → ran
   `EmbeddingIndex.ts --incremental` → 3514 chunks fresh. Incremental skip-logic verified working (2nd run:
   "170 unchanged"). **Follow-up SF-32**: add this rebuild to weekly maintenance so it doesn't drift again.
-- [x] **SF-30 — usp/acsplatform controller unreachable** ✅ RESOLVED (by design): the AWS ACSPlatform instance was
+- [x] **SF-30 — usp/oktopus controller unreachable** ✅ RESOLVED (by design): the AWS Oktopus instance was
   intentionally shut down (cost — not in use). The DEVICE_UNREACHABLE from `usp_controller_health` is expected;
   the usp MCP server itself is healthy (10 tools registered). Restart the AWS instance if/when USP work resumes.
-- [x] **SF-31 — router M62 unreachable** ✅ RESOLVED (by design): M62 (`EXAMPLESERIAL26001024`) is not currently
+- [x] **SF-31 — router M62 unreachable** ✅ RESOLVED (by design): M62 (`LK62DU5Q26001024`) is not currently
   connected. The earlier successful `router_health` read was from a cached/prior connection; it's offline now
   by choice, not broken. Reconnect when lab testing resumes.
 - [ ] **SF-32 — weekly embeddings rebuild.** Wire `EmbeddingIndex.ts --incremental` into WeeklyMaintenance so

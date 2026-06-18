@@ -48,7 +48,7 @@ function makeDraft(overrides: Partial<{
     sourceRating: 9,
     confidence: 0.85,
     generated: new Date().toISOString(),
-    targetProject: 'kai',
+    targetProject: 'pai-config',
     targetFilename: 'feedback_test_pattern.md',
     title: 'Test Pattern',
     content: 'This is the test pattern content.',
@@ -82,7 +82,7 @@ describe('staging - writeDraft', () => {
     const content = readFileSync(join(tmpDir, 'MEMORY', 'STAGING', filename), 'utf-8');
     expect(content).toContain('confidence: 0.9');
     expect(content).toContain('source_rating: 8');
-    expect(content).toContain('target_project: kai');
+    expect(content).toContain('target_project: pai-config');
     expect(content).toContain('expires:');
   });
 
@@ -152,7 +152,7 @@ describe('staging - listDrafts', () => {
     expect(draft.confidence).toBe(0.88);
     expect(draft.sourceRating).toBe(9);
     expect(draft.type).toBe('success-pattern');
-    expect(draft.targetProject).toBe('kai');
+    expect(draft.targetProject).toBe('pai-config');
     expect(draft.expires).toBeTruthy();
     expect(draft.filename).toBeTruthy();
   });

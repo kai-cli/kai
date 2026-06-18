@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * ============================================================================
- * THE ALGORITHM CLI — Run the KAI Algorithm in Loop or Interactive mode
+ * THE ALGORITHM CLI — Run the PAI Algorithm in Loop or Interactive mode
  * ============================================================================
  *
  * A unified CLI for executing Algorithm sessions against PRDs.

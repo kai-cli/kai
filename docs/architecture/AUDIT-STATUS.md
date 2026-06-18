@@ -1,4 +1,4 @@
-# KAI v.4.1 Audit — Status & Next Steps
+# PAI v4.4.1 Audit — Status & Next Steps
 
 > Branch: `v4.4.1-dev` | Last updated: 2026-03-12
 > Companion docs: `IMPROVEMENT-INDEX.md`, `NEXT-STEPS.md` (repo root)

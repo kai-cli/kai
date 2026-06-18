@@ -2,8 +2,8 @@
  * memcarry-semantic.ts — HOST-SIDE semantic ScoreProvider for memcarry recall (B2 / Fork 1).
  *
  * The memcarry core (`@memcarry/lib`) stays embedding-free and exposes a per-lesson `ScoreProvider`
- * seam. THIS module is the KAI host's implementation of that seam: it backs recall with jina
- * embeddings (KAI's shared `embed()` / `cosineSimilarity()`), so the portable core never imports a
+ * seam. THIS module is the PAI host's implementation of that seam: it backs recall with jina
+ * embeddings (PAI's shared `embed()` / `cosineSimilarity()`), so the portable core never imports a
  * model. KAI/others pass no provider and get keyword-only recall.
  *
  * ASYNC↔SYNC bridge: `embed()` is async but `ScoreProvider` is sync. So `buildSemanticProvider()`
@@ -96,7 +96,7 @@ export type EmbedFn = (text: string) => Promise<number[] | null>;
  * @param lessons   the candidate lesson atoms (host reads these from the store)
  * @param prompt    the user prompt
  * @param cache     vector cache (rebuildable); mutated + should be flushed by the caller after
- * @param embedFn   defaults to KAI's shared embed(); injectable for tests
+ * @param embedFn   defaults to PAI's shared embed(); injectable for tests
  */
 export async function buildSemanticProvider(
   lessons: LessonAtom[],

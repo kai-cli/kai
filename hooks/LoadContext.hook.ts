@@ -724,7 +724,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
       console.log(message);
       ttyLog('\n✅ PAI dynamic context loaded...');
     } else {
-      ttyLog('\n✅ KAI session ready...');
+      ttyLog('\n✅ PAI session ready...');
     }
 
     // Active work summary
@@ -813,7 +813,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete (v7.3.1)');
+    console.error('✅ PAI session initialization complete (v7.3.1)');
     process.exit(0);
   } catch (error) {
     flushTty();

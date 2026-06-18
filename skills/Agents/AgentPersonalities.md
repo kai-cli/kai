@@ -2,7 +2,7 @@
 
 **Canonical source of truth for all PAI agent personality definitions.**
 
-This file defines the character, voice settings, backstories, and personality traits for all agents in the KAI system. The voice server reads this configuration to deliver personality-driven voice communication.
+This file defines the character, voice settings, backstories, and personality traits for all agents in the PAI system. The voice server reads this configuration to deliver personality-driven voice communication.
 
 ## Hybrid Agent Model
 

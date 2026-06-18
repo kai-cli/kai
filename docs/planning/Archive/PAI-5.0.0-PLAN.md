@@ -30,11 +30,11 @@ PAI 5.0.0 is a public open-source release of the personal AI infrastructure syst
 
 ## Decision: Fork the Repository
 
-Create a **new public repo** forked from the current codebase. The personal repo (`YourNameYourLastName/kai`) stays frozen at v4.9.0 as your live installation.
+Create a **new public repo** forked from the current codebase. The personal repo (`DevenDucommun/pai-config`) stays frozen at v4.9.0 as your live installation.
 
 **Why fork, not in-place refactor:**
 - Clean slate — no accumulated personal log files, git history with personal data
-- Your personal PAI keeps all YourCompany-specific optimizations working
+- Your personal PAI keeps all Linksys-specific optimizations working
 - Public repo can be a clean generic system without risk to your live setup
 - Framework improvements (Algorithm versions, security hooks) can be manually ported — ~5 min per bump
 
@@ -141,7 +141,7 @@ The upgrade never force-pushes or silently discards changes.
 
 ### The One New File: `config/domains.jsonc`
 
-All hardcoded YourCompany content collapses into a single user-editable file:
+All hardcoded Linksys content collapses into a single user-editable file:
 
 ```jsonc
 {
@@ -167,7 +167,7 @@ All hardcoded YourCompany content collapses into a single user-editable file:
 - `DOMAIN_KEYWORDS` + `DOMAIN_DESCRIPTIONS` in KnowledgeSync.hook.ts
 - `PROJECT_DOMAIN_MAP` + `EXCLUDED_PROJECTS` in knowledge-readback.ts
 - Domain definitions in KnowledgeHarvester.ts
-- `YOURCOMPANY_PATTERNS` in LocalContextFirst.hook.ts
+- `LINKSYS_PATTERNS` in LocalContextFirst.hook.ts
 
 ### New lib: `hooks/lib/config-loader.ts`
 Single module with caching that all hooks import. No hook reads domain config directly.
@@ -221,8 +221,8 @@ Generates 8 files from templates. Idempotent on re-run.
 | `StandardsTracker/` | Move to `skills-examples/` | Same |
 | `NPITracker/` | Move to `skills-examples/` | Same |
 | `WeeklyStatus/` | Genericize | Replace "Fortinet leadership" with `{PRINCIPAL.ORG}` |
-| `OneOnOne/` | Keep, fix | Replace "YourName" with `{PRINCIPAL.NAME}` |
-| `DecisionLog/` | Keep, fix | Replace "YourName" with `{PRINCIPAL.NAME}` |
+| `OneOnOne/` | Keep, fix | Replace "Deven" with `{PRINCIPAL.NAME}` |
+| `DecisionLog/` | Keep, fix | Replace "Deven" with `{PRINCIPAL.NAME}` |
 
 **`skills-examples/` exclusion guarantee:** Files in `skills-examples/` must not be indexed, auto-loaded, or triggerable as active skills. The skill discovery mechanism only scans `skills/` (not `skills-examples/`). This must be verified in Phase A before shipping.
 
@@ -235,8 +235,8 @@ Generates 8 files from templates. Idempotent on re-run.
 | R3 | `hooks/lib/knowledge-readback.ts` | Replace with config-loader.ts (Phase B) |
 | R4 | `hooks/KnowledgeSync.hook.ts` | Replace with config-loader.ts (Phase B) |
 | R5 | `hooks/LocalContextFirst.hook.ts` | Rewrite as config-driven (Phase B) |
-| R6 | `PAI/CONTEXT_ROUTING.md` | Strip YourCompany section; generate from template |
-| R7 | `PAI/PAIAGENTSYSTEM.md` | Remove OpenWRT/YourCompany agents section |
+| R6 | `PAI/CONTEXT_ROUTING.md` | Strip Linksys section; generate from template |
+| R7 | `PAI/PAIAGENTSYSTEM.md` | Remove OpenWRT/Linksys agents section |
 | R8 | `agents/Stakeholder*.md`, `ProductStrategist.md`, `TechnicalReviewer.md` | Replace `{PRINCIPAL.NAME}`, strip company refs |
 | R9 | `PAI/Tools/Banner*.ts` (4 files) | Change fallback URL to public org URL |
 | R10 | `install.sh` | Update URL to public repo |
@@ -244,7 +244,7 @@ Generates 8 files from templates. Idempotent on re-run.
 | R12 | `Plans/archive/` | Delete; add to .gitignore |
 | R13 | `PAI/Tools/KnowledgeHarvester.ts` | Replace with config-loader.ts (Phase B) |
 | R14 | Skills | See disposition table above |
-| R15–R20 | Various docs + README | Replace `YourNameYourLastName` URLs, personal names |
+| R15–R20 | Various docs + README | Replace `DevenDucommun` URLs, personal names |
 
 **Spot check before shipping:**
 - `config/spinner-tips.json` and `config/spinner-verbs.json` — scan for personal content

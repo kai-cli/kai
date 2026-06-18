@@ -3,7 +3,7 @@
 <!--
 PAI SYSTEM ARCHITECTURE TEMPLATE
 ================================
-This file defines the GENERIC architecture patterns for any Kaizen AI.
+This file defines the GENERIC architecture patterns for any Personal AI Infrastructure.
 These are the foundational patterns that apply to ALL PAI implementations.
 
 WHAT GOES HERE:
@@ -21,7 +21,7 @@ WHAT DOES NOT GO HERE:
 USER CUSTOMIZATIONS GO IN: USER/ARCHITECTURE.md
 -->
 
-**The Founding Principles and Universal Architecture Patterns for Kaizen AI**
+**The Founding Principles and Universal Architecture Patterns for Personal AI Infrastructure**
 
 This document defines the foundational architecture that applies to ALL PAI implementations. For user-specific customizations, see `USER/ARCHITECTURE.md`.
 
@@ -29,7 +29,7 @@ This document defines the foundational architecture that applies to ALL PAI impl
 
 ## Core Philosophy
 
-**KAI is scaffolding for AI, not a replacement for human intelligence.**
+**PAI is scaffolding for AI, not a replacement for human intelligence.**
 
 The system is designed on the principle that **AI systems need structure to be reliable**. Like physical scaffolding supports construction work, PAI provides the architectural framework that makes AI assistance dependable, maintainable, and effective.
 
@@ -55,13 +55,13 @@ The most powerful AI systems are being built inside companies for companies. PAI
 - Your AI should know your priorities and make decisions aligned with them
 - Personal infrastructure means AI that works for you, not just with you
 
-**Key Takeaway:** AI should magnify everyone. KAI is the infrastructure that makes AI truly personal.
+**Key Takeaway:** AI should magnify everyone. PAI is the infrastructure that makes AI truly personal.
 
 ### 2. The Continuously Upgrading Algorithm (THE CENTERPIECE)
 
 **This is the gravitational center of PAI—everything else exists to serve it.**
 
-KAI is built around a universal algorithm for accomplishing any task: **Current State → Ideal State** via verifiable iteration. This pattern applies at every scale—fixing a typo, building a feature, launching a company, human flourishing.
+PAI is built around a universal algorithm for accomplishing any task: **Current State → Ideal State** via verifiable iteration. This pattern applies at every scale—fixing a typo, building a feature, launching a company, human flourishing.
 
 **Why everything else exists:**
 - The **Memory System** captures signals from every interaction
@@ -70,7 +70,7 @@ KAI is built around a universal algorithm for accomplishing any task: **Current 
 - The **Sentiment Analysis** extracts implicit feedback from user messages
 - The **Rating System** captures explicit quality signals
 
-All of this feeds back into improving **The Algorithm itself**. KAI is not a static tool—it is a continuously upgrading algorithm that gets better at helping you with every interaction.
+All of this feeds back into improving **The Algorithm itself**. PAI is not a static tool—it is a continuously upgrading algorithm that gets better at helping you with every interaction.
 
 PAI can:
 - Update its own documentation
@@ -105,7 +105,7 @@ Before any code, before any architecture—there must be clear thinking:
 
 **The system architecture matters more than the underlying AI model.**
 
-A well-structured system with good scaffolding will outperform a more powerful model with poor structure. KAI's value comes from:
+A well-structured system with good scaffolding will outperform a more powerful model with poor structure. PAI's value comes from:
 
 - Organized workflows that guide AI execution
 - Routing systems that activate the right context
@@ -423,7 +423,7 @@ PAI actions and pipelines run in two environments with identical behavior:
 
 ### Architecture
 
-**Arbol** is the Cloudflare Workers deployment of KAI's action/pipeline system. It follows the UNIX philosophy — each action is a separate Worker that does one thing, pipelines are Workers that chain actions via service bindings.
+**Arbol** is the Cloudflare Workers deployment of PAI's action/pipeline system. It follows the UNIX philosophy — each action is a separate Worker that does one thing, pipelines are Workers that chain actions via service bindings.
 
 | Component | Local | Cloud |
 |-----------|-------|-------|

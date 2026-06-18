@@ -36,9 +36,9 @@ interface WikiProject {
 
 const HOME = process.env.HOME || '';
 const WIKI_PROJECTS: WikiProject[] = [
-  { repo: join(HOME, 'Projects/kai'), name: 'PAI', wikiRepo: join(HOME, 'Projects/PAI-Wiki') },
+  { repo: join(HOME, 'Projects/pai-config'), name: 'PAI', wikiRepo: join(HOME, 'Projects/PAI-Wiki') },
   { repo: join(HOME, 'Projects/Du_tracking'), name: 'Du-tracking', wikiSubdir: 'wiki/' },
-  // YourCompany firmware code lives in many repos; its wiki is ~/Projects/YourCompany-Wiki — wire per-repo if needed.
+  // Linksys firmware code lives in many repos; its wiki is ~/Projects/Linksys-Wiki — wire per-repo if needed.
 ];
 
 /** Code-file extensions whose substantive change implies the wiki may need updating. */

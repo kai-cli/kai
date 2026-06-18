@@ -556,7 +556,7 @@ This methodology applies to itself.
 
 ---
 
-## Integration with KAI Skills
+## Integration with PAI Skills
 
 ### Development Skill
 Science manifests as TDD:
