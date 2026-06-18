@@ -2,7 +2,7 @@
 /**
  * MCP server — what the MODEL calls mid-turn (memory_health + stub memory_resume/memory_write).
  * Phase-0: bootstrap + stdio handshake + health, so the transport/lifecycle is testable before
- * Phase-1 logic lands. Pattern copied from linksys-mcp packages/jenkins/src/index.ts.
+ * Phase-1 logic lands. Pattern copied from yourcompany-mcp packages/jenkins/src/index.ts.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";

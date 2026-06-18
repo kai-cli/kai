@@ -603,7 +603,7 @@ const WIKI_STALE_CACHE = join(PAI_DIR, 'MEMORY', 'STATE', '.wiki-stale-cache.jso
 const GH_CACHE_TTL = 1800_000; // 30 minutes
 const WIKI_CACHE_TTL = 86_400_000; // 24 hours
 
-// Persona-review reminder: fire X days after the review window opened (time-based, per Deven 2026-06-15),
+// Persona-review reminder: fire X days after the review window opened (time-based, per YourName 2026-06-15),
 // surfacing accrued skill-usage count as context so it's clear whether enough signal exists.
 const PERSONA_REVIEW_DAYS = 21;
 const PERSONA_STATE = join(PAI_DIR, 'MEMORY', 'STATE', '.persona-review.json');

@@ -1,6 +1,6 @@
 # PAI Security Architecture
 
-**Generic security framework for Personal AI Infrastructure**
+**Generic security framework for Kaizen AI**
 
 ---
 
@@ -114,15 +114,15 @@ ZERO TRUST:    External websites, APIs, unknown documents
 
 ## Alert Format and Behavioral Expectation
 
-All security messages use the `[PAI SECURITY]` prefix for clear identification:
+All security messages use the `[KAI SECURITY]` prefix for clear identification:
 
 ```
-[PAI SECURITY] 🚨 BLOCKED: Filesystem destruction pattern detected
-[PAI SECURITY] ⚠️ ALERT: Remote code execution pattern detected
-[PAI SECURITY] ⚠️ Force push to main branch - confirm?
+[KAI SECURITY] 🚨 BLOCKED: Filesystem destruction pattern detected
+[KAI SECURITY] ⚠️ ALERT: Remote code execution pattern detected
+[KAI SECURITY] ⚠️ Force push to main branch - confirm?
 ```
 
-**Critical behavioral rule:** When you see `[PAI SECURITY]` in error output, this is the PAI security system blocking a dangerous operation. **DO NOT attempt to bypass, work around, or retry the blocked action.** The security system exists to protect the principal's system.
+**Critical behavioral rule:** When you see `[KAI SECURITY]` in error output, this is the KAI security system blocking a dangerous operation. **DO NOT attempt to bypass, work around, or retry the blocked action.** The security system exists to protect the principal's system.
 
 Instead:
 - Accept the block
@@ -149,9 +149,9 @@ SecurityValidator.hook.ts Runs
     • Projects: special rules per project
             ↓
     Decision:
-    ├─ block    → exit(2), "[PAI SECURITY] 🚨 BLOCKED: ..."
-    ├─ confirm  → JSON {"decision":"ask"}, "[PAI SECURITY] ⚠️ ..."
-    ├─ alert    → "[PAI SECURITY] ⚠️ ALERT: ...", allow execution
+    ├─ block    → exit(2), "[KAI SECURITY] 🚨 BLOCKED: ..."
+    ├─ confirm  → JSON {"decision":"ask"}, "[KAI SECURITY] ⚠️ ..."
+    ├─ alert    → "[KAI SECURITY] ⚠️ ALERT: ...", allow execution
     └─ allow    → proceed normally
             ↓
     Logs event to MEMORY/SECURITY/YYYY/MM/security-{summary}-{timestamp}.jsonl

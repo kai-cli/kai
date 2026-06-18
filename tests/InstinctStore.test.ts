@@ -131,7 +131,7 @@ describe('surfaceInstincts', () => {
   it('filters below SURFACE_THRESHOLD', () => {
     const paiDir = mkPaiDir();
     createInstinct(paiDir, 'Low confidence instinct test for surfacing', 'correction', 'ctx'); // 0.3 < 0.5
-    const surfaced = surfaceInstincts(paiDir, '/Users/test/Projects/pai-config/');
+    const surfaced = surfaceInstincts(paiDir, '/Users/test/Projects/kai/');
     expect(surfaced.length).toBe(0);
   });
 
@@ -139,7 +139,7 @@ describe('surfaceInstincts', () => {
     const paiDir = mkPaiDir();
     let inst = createInstinct(paiDir, 'High confidence instinct test surfacing', 'correction', 'ctx');
     reinforceInstinct(paiDir, inst.id); // 0.5
-    const surfaced = surfaceInstincts(paiDir, '/Users/test/Projects/pai-config/');
+    const surfaced = surfaceInstincts(paiDir, '/Users/test/Projects/kai/');
     expect(surfaced.length).toBe(1);
   });
 });
@@ -191,7 +191,7 @@ describe('formatInstinctContext', () => {
 describe('clusterInstincts', () => {
   it('clusters instincts with ≥2 shared tags', () => {
     const instincts: Instinct[] = [
-      { id: 'a', text: 'a', confidence: 0.9, tags: ['bun', 'testing', 'pai-config'], created: '', last_triggered: '', last_decayed_at: '', trigger_count: 5, source: 'correction', context: '', active: true },
+      { id: 'a', text: 'a', confidence: 0.9, tags: ['bun', 'testing', 'kai'], created: '', last_triggered: '', last_decayed_at: '', trigger_count: 5, source: 'correction', context: '', active: true },
       { id: 'b', text: 'b', confidence: 0.85, tags: ['bun', 'testing', 'hooks'], created: '', last_triggered: '', last_decayed_at: '', trigger_count: 4, source: 'correction', context: '', active: true },
       { id: 'c', text: 'c', confidence: 0.8, tags: ['git', 'deployment'], created: '', last_triggered: '', last_decayed_at: '', trigger_count: 3, source: 'repetition', context: '', active: true },
     ];

@@ -176,4 +176,4 @@ SUMMARY, ANALYSIS, ACTIONS, RESULTS, STATUS, CAPTURE, NEXT, STORY EXPLANATION, C
 | `source` field | Omitted | `"ComposeAgent"` or `"manual"` |
 | Permissions | Full custom permissions block | Standard permissions (can customize) |
 | `subagent_type` | Uses agent name (e.g., `Engineer`) | Always `general-purpose` |
-| Lifecycle | Permanent, ships with PAI | User-managed (create/delete) |
+| Lifecycle | Permanent, ships with KAI | User-managed (create/delete) |

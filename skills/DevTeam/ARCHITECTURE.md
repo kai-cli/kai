@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-A system that takes a bug report, issue, or feature request and autonomously spins up a coordinated development team of AI agents (PM, Dev, QA) to investigate, fix, and verify. Works with Bedrock multi-model review (PAI) or Claude-only agents (KAI).
+A system that takes a bug report, issue, or feature request and autonomously spins up a coordinated development team of AI agents (PM, Dev, QA) to investigate, fix, and verify. Works with Bedrock multi-model review (KAI) or Claude-only agents (KAI).
 
 ## Architecture
 

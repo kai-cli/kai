@@ -6,7 +6,7 @@ See `contracts/cli-and-hooks.md` for interface details and `data-model.md` for s
 ## Prerequisites
 
 ```bash
-cd ~/Projects/pai-config/memcarry          # LIVE canonical (NOT NewTool/core — tombstoned)
+cd ~/Projects/kai/memcarry          # LIVE canonical (NOT NewTool/core — tombstoned)
 bun install
 export MEMCARRY_STORE="$HOME/.claude/MEMORY/memcarry/store"   # live store (6 atoms)
 bun test                                                       # baseline: 35 tests green

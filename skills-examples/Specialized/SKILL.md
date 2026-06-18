@@ -19,7 +19,7 @@ This skill **specializes** the system `Research` skill for firmware development 
 - `StandardResearch` — Uses firmware-aware agent configuration with Jenkins, OpenWrt, and build system context injected
 
 **Extends (adds):**
-- `FirmwareBuildSearch` — Searches linksys-mcp build tools and Jenkins artifact history
+- `FirmwareBuildSearch` — Searches yourcompany-mcp build tools and Jenkins artifact history
 
 **Inherits unchanged:**
 - `QuickResearch`, `ExtensiveResearch`, `DeepInvestigation`, all other system workflows
@@ -38,6 +38,6 @@ This catches typos in workflow names (must match parent's exact workflow names) 
 | Workflow | When to Use |
 |----------|-------------|
 | StandardResearch | General firmware research (overrides system version with firmware context) |
-| FirmwareBuildSearch | Search Jenkins builds, OpenWrt packages, linksys-mcp tools |
+| FirmwareBuildSearch | Search Jenkins builds, OpenWrt packages, yourcompany-mcp tools |
 
 See system `Research` skill for all inherited workflows.

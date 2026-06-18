@@ -1,7 +1,7 @@
 # SpecKit Workspace Constitution
 
 > **Scope:** This constitution is SHARED across every spec in this workspace (firmware features,
-> TypeScript tools, future work). It encodes **universal principles** — how Deven wants ANY spec
+> TypeScript tools, future work). It encodes **universal principles** — how YourName wants ANY spec
 > designed and ANY build executed — not domain rules. Domain-specific constraints (device state,
 > language, perf targets) live in each feature's own spec/plan, never here. Sourced from PAI AI
 > Steering Rules + MemCarry's hardened-review discipline (ARCHITECTURE.md §11).

@@ -1,7 +1,7 @@
 /**
  * SystemIntegrity.ts - Automatic system integrity maintenance handler
  *
- * Detects PAI system changes from the transcript and spawns background
+ * Detects KAI system changes from the transcript and spawns background
  * IntegrityMaintenance.ts to update references and document changes.
  *
  * TRIGGER: SessionEnd hook (via IntegrityCheck.hook.ts)
@@ -130,7 +130,7 @@ function spawnIntegrityMaintenance(
  *
  * This handler:
  * 1. Parses the transcript for file modification tool_use blocks
- * 2. Filters for PAI system paths (excludes WORK/, LEARNING/)
+ * 2. Filters for KAI system paths (excludes WORK/, LEARNING/)
  * 3. Checks throttle cooldown (max once per 5 min)
  * 4. Spawns background IntegrityMaintenance.ts if changes detected
  */
@@ -150,9 +150,9 @@ export async function handleSystemIntegrity(
   const changes = parseToolUseBlocks(hookInput.transcript_path);
   console.error(`[SystemIntegrity] Found ${changes.length} file changes in transcript`);
 
-  // Filter to only PAI system changes
+  // Filter to only KAI system changes
   const systemChanges = changes.filter(c => c.category !== null);
-  console.error(`[SystemIntegrity] ${systemChanges.length} are PAI system changes`);
+  console.error(`[SystemIntegrity] ${systemChanges.length} are KAI system changes`);
 
   if (systemChanges.length === 0) {
     console.error('[SystemIntegrity] No system changes detected, skipping');

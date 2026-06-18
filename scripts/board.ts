@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * PAI Board v2 — Personal project dashboard
+ * KAI Board v2 — Personal project dashboard
  *
  * Features:
  *   - Multi-directory PRD scanning with auto-refresh (SSE)
@@ -984,7 +984,7 @@ Bun.serve({
   },
 });
 
-console.log(`PAI Board v2 running at http://${HOST}:${PORT}${HOST === "127.0.0.1" ? " (loopback only — use --host 0.0.0.0 for LAN)" : " ⚠️ LAN-exposed"}`);
+console.log(`KAI Board v2 running at http://${HOST}:${PORT}${HOST === "127.0.0.1" ? " (loopback only — use --host 0.0.0.0 for LAN)" : " ⚠️ LAN-exposed"}`);
 if (!BOARD_TOKEN) console.log(`  ⓘ No PAI_BOARD_TOKEN set — mutation endpoints are open (fine on loopback). Set it to gate spawn/kill.`);
 console.log(`Scanning ${SCAN_DIRS.length} directories:`);
 for (const dir of SCAN_DIRS) console.log(`  → ${dir}`);

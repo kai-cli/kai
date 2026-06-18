@@ -43,7 +43,7 @@ describe('KnowledgeSchema', () => {
         '---',
         'domain: firmware',
         'updated: 2026-05-18',
-        'tags: [openwrt, embedded, linksys]',
+        'tags: [openwrt, embedded, yourcompany]',
         'related: [api-and-services]',
         '---',
         '## Content here',
@@ -54,7 +54,7 @@ describe('KnowledgeSchema', () => {
       expect(result).not.toBeNull();
       expect(result!.meta.domain).toBe('firmware');
       expect(result!.meta.updated).toBe('2026-05-18');
-      expect(result!.meta.tags).toEqual(['openwrt', 'embedded', 'linksys']);
+      expect(result!.meta.tags).toEqual(['openwrt', 'embedded', 'yourcompany']);
       expect(result!.meta.related).toEqual(['api-and-services']);
       expect(result!.body).toContain('## Content here');
       expect(result!.slug).toBe('test');

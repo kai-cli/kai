@@ -33,9 +33,9 @@ const DEVICE_PATTERNS = [
 ];
 
 const CORRECT_AUTH_PATTERNS = [
-  /\$LINKSYS_ROUTER_M6[02](DU)?_PASS/,
-  /\$\{LINKSYS_ROUTER_M6[02](DU)?_PASS\}/,
-  /"\$LINKSYS_ROUTER_M6[02](DU)?_PASS"/,
+  /\$YOURCOMPANY_ROUTER_M6[02](DU)?_PASS/,
+  /\$\{YOURCOMPANY_ROUTER_M6[02](DU)?_PASS\}/,
+  /"\$YOURCOMPANY_ROUTER_M6[02](DU)?_PASS"/,
 ];
 
 async function main() {
@@ -70,12 +70,12 @@ async function main() {
     const message = `⚠️ DEVICE AUTH REQUIRED — bare ssh will hang (no interactive input).
 
 Use this pattern instead:
-  sshpass -p "$LINKSYS_ROUTER_M62_PASS" ssh -o StrictHostKeyChecking=no root@192.168.1.1 "<command>"
-  sshpass -p "$LINKSYS_ROUTER_M60_PASS" ssh -o StrictHostKeyChecking=no root@192.168.1.1 "<command>"
+  sshpass -p "$YOURCOMPANY_ROUTER_M62_PASS" ssh -o StrictHostKeyChecking=no root@192.168.1.1 "<command>"
+  sshpass -p "$YOURCOMPANY_ROUTER_M60_PASS" ssh -o StrictHostKeyChecking=no root@192.168.1.1 "<command>"
 
-Device registry: ~/.config/linksys-mcp/devices.json
-M62 (lab, SSH): env LINKSYS_ROUTER_M62_PASS
-M60 (remote, USP-only): env LINKSYS_ROUTER_M60_PASS — SSH may not be available
+Device registry: ~/.config/yourcompany-mcp/devices.json
+M62 (lab, SSH): env YOURCOMPANY_ROUTER_M62_PASS
+M60 (remote, USP-only): env YOURCOMPANY_ROUTER_M60_PASS — SSH may not be available
 
 Or use MCP tools: mcp__router__router_exec (handles auth automatically)`;
 
@@ -88,8 +88,8 @@ Or use MCP tools: mcp__router__router_exec (handles auth automatically)`;
 
   if (hasHardcodedPassword) {
     const message = `⚠️ NEVER hardcode device passwords. Use env vars:
-  sshpass -p "$LINKSYS_ROUTER_M62_PASS" ssh ...
-  sshpass -p "$LINKSYS_ROUTER_M60_PASS" ssh ...
+  sshpass -p "$YOURCOMPANY_ROUTER_M62_PASS" ssh ...
+  sshpass -p "$YOURCOMPANY_ROUTER_M60_PASS" ssh ...
 
 Passwords are in env vars (loaded from ~/.zshenv). See TOOLS.md.`;
 
@@ -100,10 +100,10 @@ Passwords are in env vars (loaded from ~/.zshenv). See TOOLS.md.`;
   // General device access without clear auth — add context reminder (don't block)
   const context = `<device-auth-reminder>
 Device access detected. Auth reference:
-- M62 (lab SSH): sshpass -p "$LINKSYS_ROUTER_M62_PASS" ssh -o StrictHostKeyChecking=no root@192.168.1.1
-- M60 (remote): USP-only via ACS platform (env vars per ~/.config/linksys-mcp/devices.json) — no SSH
-- MCP tools: mcp__router__router_exec (serial from ~/.config/linksys-mcp/devices.json)
-- Device registry: see ~/.config/linksys-mcp/devices.json
+- M62 (lab SSH): sshpass -p "$YOURCOMPANY_ROUTER_M62_PASS" ssh -o StrictHostKeyChecking=no root@192.168.1.1
+- M60 (remote): USP-only via ACS platform (env vars per ~/.config/yourcompany-mcp/devices.json) — no SSH
+- MCP tools: mcp__router__router_exec (serial from ~/.config/yourcompany-mcp/devices.json)
+- Device registry: see ~/.config/yourcompany-mcp/devices.json
 </device-auth-reminder>`;
 
   console.log(JSON.stringify({ additionalContext: context }));

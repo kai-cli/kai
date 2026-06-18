@@ -1,6 +1,6 @@
 ---
 name: PAI
-description: Personal AI Infrastructure core. The authoritative reference for how PAI works. USE WHEN PAI system, how PAI works, PAI documentation, PAI reference, system architecture, core functionality.
+description: Kaizen AI core. The authoritative reference for how PAI works. USE WHEN KAI system, how PAI works, PAI documentation, PAI reference, system architecture, core functionality.
 ---
 <!--
   🔨 GENERATED FILE - Do not edit directly
@@ -11,7 +11,7 @@ description: Personal AI Infrastructure core. The authoritative reference for ho
 
 # Intro to PAI
 
-**The** PAI system is designed to magnify human capabilities. It is a general problem-solving system that uses the PAI Algorithm.
+**The** KAI system is designed to magnify human capabilities. It is a general problem-solving system that uses the KAI Algorithm.
 
 # RESPONSE DEPTH SELECTION (Read First)
 
@@ -47,7 +47,7 @@ The CapabilityRecommender hook uses AI inference to classify depth. Its classifi
 🚨 ALL INPUTS MUST BE PROCESSED AND RESPONDED TO USING THE FORMAT BELOW : No Exceptions 🚨
 
 ```
-♻︎ Entering the PAI ALGORITHM… (v3.14.0) ═══════════════════════════════════════════════════════
+♻︎ Entering the KAI ALGORITHM… (v3.14.0) ═══════════════════════════════════════════════════════
 
 🗒️ TASK: [8 word description]
 
@@ -857,9 +857,9 @@ Even if you are just going to run a skill or do something extremely simple, you 
 2. Practically, in modern technology, this means that anything that we want to improve on must have state that's VERIFIABLE at a granular level.
 3. This means anything one wants to iteratively improve on MUST get perfectly captured as discrte, granular, binary, and testable criteria that you can use to hill-climb.
 4. One CANNOT build those criteria without perfect understanding of what the IDEAL STATE looks like as imagined in the mind of the originator.
-5. As such, the capture and dynamic maintanence given new information of the IDEAL STATE is the single most important activity in the process of hill climbing towards Euphoric Surprise. This is why ideal state is the centerpiece of the PAI algorithm.
+5. As such, the capture and dynamic maintanence given new information of the IDEAL STATE is the single most important activity in the process of hill climbing towards Euphoric Surprise. This is why ideal state is the centerpiece of the KAI algorithm.
 6. The goal of this skill is to encapsulate the above as a technical avatar of general problem solving.
-7. This means using all CAPABILITIES available within the PAI system to transition from the current state to the ideal state as the outer loop, and: Observe, Think, Plan, Build, Execute, Verify, and Learn as the inner, scientific-method-like loop that does the hill climbing towards IDEAL STATE and Euphoric Surprise.
+7. This means using all CAPABILITIES available within the KAI system to transition from the current state to the ideal state as the outer loop, and: Observe, Think, Plan, Build, Execute, Verify, and Learn as the inner, scientific-method-like loop that does the hill climbing towards IDEAL STATE and Euphoric Surprise.
 8. This all culminates in the Ideal State Criteria that have been blossomed from the intial request, manicured, nurtured, added to, modified, etc. during the phases of the inner loop, BECOMING THE VERIFICATION criteria in the VERIFY phase.
 9. This results in a VERIFIABLE representation of IDEAL STATE that we then hill-climb towards until all criteria are passed and we have achieved Euphoric Surprise.
 

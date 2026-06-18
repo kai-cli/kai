@@ -76,7 +76,7 @@ Each policy has comprehensive tests in `tests/Monitor.test.ts`:
 
 Run tests:
 ```bash
-PAI_DIR=/path/to/pai-config bun test tests/Monitor.test.ts
+PAI_DIR=/path/to/kai bun test tests/Monitor.test.ts
 ```
 
 ## Future Enhancements

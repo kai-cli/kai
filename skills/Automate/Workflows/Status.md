@@ -20,7 +20,7 @@ Check what autonomous agents are currently running.
 ACTIVE AGENTS
 ─────────────────────────────────────────────
 PID     Status  CWD                    Running
-56926   busy    ~/Projects/pai-config  2h 14m
+56926   busy    ~/Projects/kai  2h 14m
 74302   idle    ~/Projects             45m
 ─────────────────────────────────────────────
 Total: 2 active sessions

@@ -26,7 +26,7 @@ export function expandPath(path: string): string {
 }
 
 /**
- * Get the PAI directory (expanded)
+ * Get the KAI directory (expanded)
  * Priority: PAI_DIR env var (expanded) → ~/.claude
  */
 export function getPaiDir(): string {
@@ -78,7 +78,7 @@ export function getMemoryDir(): string {
  * Encode an absolute project path to its Claude Code transcript/memory store dir name.
  *
  * Claude Code names `~/.claude/projects/<dir>` by replacing EVERY non-alphanumeric character with `-`
- * (so `/Users/deven.ducommun/Projects/Instant_Help` → `-Users-deven-ducommun-Projects-Instant-Help`).
+ * (so `/Users/your.name/Projects/Instant_Help` → `-Users-your.name-Projects-Instant-Help`).
  *
  * SINGLE SOURCE — fixes a system-wide bug where 6 call sites used `replace(/[/_]/g,'-')`, which missed the
  * `.` in the username (and spaces), computed a nonexistent dir, and silently fell back to GLOBAL memory.

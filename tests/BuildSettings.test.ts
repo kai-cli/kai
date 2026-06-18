@@ -327,7 +327,7 @@ describe('buildSettings dry-run behavior', () => {
   test('buildSettings() output passes validateConfig', () => {
     const merged = buildSettings(RELEASE_PAI_DIR);
     const { valid, errors } = validateConfig(merged);
-    // Live pai-config should always have valid config
+    // Live kai should always have valid config
     expect(errors).toEqual([]);
     expect(valid).toBe(true);
   });

@@ -237,7 +237,7 @@ Goals appear in `claude agents` TUI and help user track parallel work.
 
 ```typescript
 // Phase 0: Orchestrator setup
-const target = resolveTargetRepo("~/Projects/pai-config");
+const target = resolveTargetRepo("~/Projects/kai");
 const ciExists = fs.existsSync(`${target}/.github/workflows/`);
 
 // Phase 1: PM scoping (foreground, interactive)
@@ -295,7 +295,7 @@ if (mergePlan) {
 ## Resource Context
 
 Pass resource hints in task descriptions:
-- `"Check ~/Projects/Linksys-Wiki/firmware/build-system.md for build commands"`
+- `"Check ~/Projects/YourCompany-Wiki/firmware/build-system.md for build commands"`
 - `"Use mcp__router__router_exec for live device testing"`
 - `"CI workflow at .github/workflows/test.yml"`
 

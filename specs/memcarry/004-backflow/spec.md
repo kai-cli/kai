@@ -1,6 +1,6 @@
 # Spec 004 — Backflow: refine a global lesson from any project
 
-> **Status:** Draft for review · **Owner:** Deven · **Created:** 2026-06-15
+> **Status:** Draft for review · **Owner:** YourName · **Created:** 2026-06-15
 > **Why this exists:** the root pain (NEXT-STEPS.md "ROOT PAIN") = bidirectional cross-project knowledge
 > cycling. Forward (A→B) works via global-atom recall. **Backflow (B→A) — a lesson improved in project B
 > flowing back to project A — has no workflow today.** This spec builds it. It is the true differentiator
@@ -114,6 +114,6 @@ The system does all the WORK; the human does the JUDGMENT (one word). Specifical
 5. (added) ~~Confirm weight?~~ → **One-word inline confirm** — the anti-loop gate, kept minimal.
 
 ## Build environment
-Target: `~/Projects/pai-config/memcarry` (canonical, vendored). `writeAtom` (overwrite-by-id) + provenance
+Target: `~/Projects/kai/memcarry` (canonical, vendored). `writeAtom` (overwrite-by-id) + provenance
 tiers already exist in `packages/lib/src/{store,schema}.ts`. Tests: hermetic fixtures, injectable embedder
 (never load the real model — `reference_bun_transformers_teardown_crash`). Full suite must stay green.

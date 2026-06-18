@@ -6,7 +6,7 @@
 
 ## ✅ DONE — the retrieval sprint (003-memcarry-retrieval)
 
-All four items live + committed in pai-config (5 commits, full suite 1828 green):
+All four items live + committed in kai (5 commits, full suite 1828 green):
 - **B2** hybrid keyword+semantic RRF recall — `memcarry/packages/lib/src/recall.ts` + host `ScoreProvider`/cache
 - **A2** every-prompt recall — `hooks/MemRecall.hook.ts` (registered, in-process, degrades to keyword-only)
 - **B1** PRD-aware resume — `hooks/MemResume.hook.ts` (was already built)
@@ -16,7 +16,7 @@ All four items live + committed in pai-config (5 commits, full suite 1828 green)
 ## ✅ DONE — backflow (004) + capture (005): the cross-project cycle is CLOSED (2026-06-16)
 - **004 backflow** (B→A) — `memcarry refine` + `refine.ts`; a global lesson improved in B propagates everywhere. FR10 relaxed (MCP-orphan tag dropped). SHIPPED + pushed.
 - **005 capture** (forward) — `memcarry capture-lesson` + `capture-lesson.ts`; turns a session learning into a `human-confirmed` lesson atom. Steering rule + End-skill 1c net. SHIPPED + pushed (`06ff9d3`). Full suite 60 green.
-- **Cycle proven on REAL atoms (dogfood 2026-06-16):** captured 2 lessons from the build session → live store grew **6→8** (lessons 2→4); both recall #1 from unrelated projects (linksys-mcp, feed-bbf). First organic growth since Phase-0 fixtures.
+- **Cycle proven on REAL atoms (dogfood 2026-06-16):** captured 2 lessons from the build session → live store grew **6→8** (lessons 2→4); both recall #1 from unrelated projects (yourcompany-mcp, feed-bbf). First organic growth since Phase-0 fixtures.
 - **Net:** the §0 root pain ("nothing turns a learning into a lesson") is now mechanically solved. The store grows hands-confirmed. The remaining work is FEEDING it (curated migration, below) + tuning (dup threshold, below).
 
 ### Fast-follow — dup-check similarity threshold tune (found during 005 dogfood, 2026-06-16)
@@ -52,7 +52,7 @@ real** — do not trust the 2026-06-04 JSON.
 
 ## 🎯 THE ROOT PAIN, FINALLY NAMED (2026-06-15) — and what it implies
 
-Deven's actual frustration that started this whole program: **bidirectional cross-project knowledge
+YourName's actual frustration that started this whole program: **bidirectional cross-project knowledge
 cycling.** "I had deep knowledge in project A → it never surfaced in B → I re-learned + refined it in B →
 the refinement never flowed BACK to A → so A became stale and I couldn't trust it." Both directions fail.
 
@@ -98,7 +98,7 @@ forward-only propagation (which PAI already does lossy-ly). **The backflow workf
 - **So the store isn't starving from immaturity or low signal — there's a missing mechanism.** Retrieval
   (137 resumes, recall firing) is healthy; it just has almost nothing transferable to retrieve.
 
-**The unblock = a capture→lesson path. Two flavors (Deven's instinct: don't artificially pump the store):**
+**The unblock = a capture→lesson path. Two flavors (YourName's instinct: don't artificially pump the store):**
 - **Assisted capture (preferred first):** a fast flow (`/remember`-style or End-skill step) turning a
   session learning into a **human-confirmed** lesson atom. Safe, high-trust, zero pollution. Grows the
   store with exactly the lessons you'd want.
@@ -151,9 +151,9 @@ existing `SessionEndComposite` (+ its README) as the template. Re-verify the hoo
 real cost. The only true composites worth building are the two unconditional events. Optional micro-tidy:
 merge the 2-hook `PreToolUse:Bash` and `PreToolUse:Skill` matchers to share their command/skill parse.
 
-### 2. Persona scoping (Tier 1) — READY, NEEDS DEVEN'S INPUT
+### 2. Persona scoping (Tier 1) — READY, NEEDS YOURNAME'S INPUT
 - Define which of the ~49 skills / capabilities actually serve the four hats (TPM / PM / QA / Engineer).
-- Pure input from Deven, not analysis. Unblocks the eventual W4 capability-cluster streamlining.
+- Pure input from YourName, not analysis. Unblocks the eventual W4 capability-cluster streamlining.
 - Two-tier plan (locked): initial definition now → audit real usage → refine.
 
 ### 3. NEW atom type: `synthesis` / `briefing` — CANDIDATE (schema-expansion phase)
@@ -167,7 +167,7 @@ merge the 2-hook `PreToolUse:Bash` and `PreToolUse:Skill` matchers to share thei
   `lesson` (durable rule) and `resume-state` (work cursor). Captures findings as ready-to-reference
   content (bullets/facts/decisions/gaps + any human clarifications that aren't in wiki/code). Retrieved by
   the SAME MemRecall hook already built — no new location (avoids the fragmentation that caused the bug).
-- **Why type-3 over the alternatives Deven listed:** (1) richer memory files = low-effort interim, works
+- **Why type-3 over the alternatives YourName listed:** (1) richer memory files = low-effort interim, works
   in current schema; (2) a dedicated Deliverables/ folder = a NEW location, mildly conflicts with the
   one-unified-store principle — only acceptable if indexed by the same retrieval; (3) **the new atom type
   is the architecturally-aligned answer** — same store, same retrieval, distinct trust/shape.
@@ -185,7 +185,7 @@ resumes), 312 ratings already exist, but the store is stuck at 6 atoms because *
 learning into a lesson atom.** That's a missing mechanism, not immaturity.
 
 - **When ready to build:** assisted capture first (human-confirmed, safe), A1 auto-ingestion staged after.
-- **Deven's guardrail (honored):** don't artificially pump the store — grow it with lessons genuinely worth
+- **YourName's guardrail (honored):** don't artificially pump the store — grow it with lessons genuinely worth
   keeping, at human-confirmed trust. Quality over volume, consistent with the whole MemCarry ethos.
 - **Still genuinely deferred:** B3 reinforcement (needs atoms first, §1), persona Tier-2 (needs skill-usage
   data — tracker just started, 2 entries), synthesis atom type (§3), W4 cleanup (needs persona + fresh scan).

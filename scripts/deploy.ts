@@ -330,7 +330,7 @@ function createBoardConfigTemplate(): string {
 }
 
 // --- .env template ---
-const ENV_TEMPLATE = `# PAI Environment Configuration
+const ENV_TEMPLATE = `# KAI Environment Configuration
 # Add your API keys here
 
 # Required for Research skill
@@ -498,7 +498,7 @@ async function main() {
 
 ## Board
 
-The PAI Board runs at http://localhost:3333
+The KAI Board runs at http://localhost:3333
 
 \`\`\`bash
 bun ~/.claude/scripts/board.ts

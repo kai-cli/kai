@@ -48,7 +48,7 @@ const resume: ResumeStateAtom = {
     session_id: "9763b0b3-efb9-41d8-9faf-b239c4625338",
     write_ts: NOW,
   },
-  next: "Confirm PR #81 merged cleanly; then verify LinksysWRT#358 (Dev AP-enable) closed.",
+  next: "Confirm PR #81 merged cleanly; then verify ExampleWRT#358 (Dev AP-enable) closed.",
   summary: "Merged PR #81 (fixes #358); was documenting the Jenkins-v2 build migration.",
   verified_facts: [
     { kind: "gh-pr", recorded: "merged", state: "unverified" }, // probe fills this at load
@@ -64,7 +64,7 @@ const resume: ResumeStateAtom = {
   ],
   blockers: [],
   also_touched: [
-    `${HOME}/Projects/Linksys-Wiki`,
+    `${HOME}/Projects/YourCompany-Wiki`,
     `${HOME}/.claude`, // skill edits
   ],
 };

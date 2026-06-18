@@ -8,8 +8,8 @@ description: "Task list for MemCarry Retrieval Sprint implementation"
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/cli-and-hooks.md, quickstart.md
 **Constitution**: `.specify/memory/constitution.md` v1.0.0 — Principle I mandates runnable checks ⇒ **tests included**.
 
-> **Target repo:** `~/Projects/pai-config/memcarry` (LIVE canonical `@memcarry/*` monorepo) — NOT this SpecKit repo, NOT the tombstoned NewTool/core.
-> Paths: `packages/lib/src/*`, `packages/cli/src/index.ts` (in pai-config/memcarry); host hooks at `~/.claude/hooks/Mem*.hook.ts`.
+> **Target repo:** `~/Projects/kai/memcarry` (LIVE canonical `@memcarry/*` monorepo) — NOT this SpecKit repo, NOT the tombstoned NewTool/core.
+> Paths: `packages/lib/src/*`, `packages/cli/src/index.ts` (in kai/memcarry); host hooks at `~/.claude/hooks/Mem*.hook.ts`.
 > Run with `MEMCARRY_STORE="$HOME/.claude/MEMORY/memcarry/store"`. Sync to kai via `sync-to-kai.sh`; never edit kai or NewTool/core.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -28,10 +28,10 @@ description: "Task list for MemCarry Retrieval Sprint implementation"
 
 ## Phase 1: Setup
 
-> **TARGET = `~/Projects/pai-config/memcarry`** (the LIVE copy; `~/.claude`→pai-config symlink). NOT
-> `NewTool/core` (stale). All `core/...` paths below are under `~/Projects/pai-config/memcarry/`.
+> **TARGET = `~/Projects/kai/memcarry`** (the LIVE copy; `~/.claude`→kai symlink). NOT
+> `NewTool/core` (stale). All `core/...` paths below are under `~/Projects/kai/memcarry/`.
 
-- [ ] T001 Baseline green: from `~/Projects/pai-config/memcarry` run `bun install && bun test` — record the existing **35** tests pass (`lib`+`phase1`+`w6` test files) before any change (Constitution IV regression baseline).
+- [ ] T001 Baseline green: from `~/Projects/kai/memcarry` run `bun install && bun test` — record the existing **35** tests pass (`lib`+`phase1`+`w6` test files) before any change (Constitution IV regression baseline).
 - [ ] T002 Confirm `index/` is gitignored; verify `MEMCARRY_STORE=~/.claude/MEMORY/memcarry/store` via `bun run packages/cli/src/index.ts health` (expect ~6 atoms).
 - [ ] T002b Reconcile the stale `~/Projects/NewTool/core`: diff vs live (`recall.ts`, `project.ts`, `transcript.ts`, `phase1.test.ts`, missing `w6.test.ts`); decide retire-or-resync so work doesn't fork. Record decision. (Addresses the 4-copy divergence; do NOT build in NewTool/core.)
 
@@ -55,7 +55,7 @@ description: "Task list for MemCarry Retrieval Sprint implementation"
 **Independent test:** Scenarios 1-4 in quickstart.md pass.
 **Note:** the `ScoreProvider` seam + precondition gate already EXIST in live `recall.ts`. The change is replacing `provided ?? keywordScore` (replace) with RRF fusion.
 
-- [x] T007 [US1] ✅ In `recall.ts`, two-pass: gate+score all eligible lessons, then `rankMap()` derives keyword + semantic rankings. Provider stays per-lesson raw score (commit-ready in pai-config/memcarry).
+- [x] T007 [US1] ✅ In `recall.ts`, two-pass: gate+score all eligible lessons, then `rankMap()` derives keyword + semantic rankings. Provider stays per-lesson raw score (commit-ready in kai/memcarry).
 - [x] T008 [US1] ✅ Replaced `provided ?? keywordScore` with **RRF fusion** `1/(60+kRank)+1/(60+sRank)` (absent ranking → 0 term); `RecallHit` extended with `keywordRank`/`semanticRank`; deterministic id-tiebreak.
 - [x] T009 [US1] ✅ Gate runs before fusion; "provider cannot resurrect gated-out lesson" test passes; added exact-identifier-not-drowned test. (w6.test.ts updated from replace→RRF semantics.)
 - [ ] T010 [US1] Degraded mode: provider returns null for all (embedder down) ⇒ semantic term 0 everywhere ⇒ pure keyword ranking; never throw; recall reads atoms from disk (survives MCP down). Per Constitution rule 3 (REVISED): on a swallowed degrade that drops recall, emit a `console.error`/heartbeat line — don't vanish silently. Depends on T008.

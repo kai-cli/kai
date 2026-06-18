@@ -10,7 +10,7 @@
  *   Pattern 2: Repeated instruction (≥20-char exact substring match)
  *   Pattern 3: Low rating signal (≤3) bridged from ratings.jsonl
  *   Pattern 4: File revert detection (v5.7) — user externally modified a file PAI wrote,
- *              reverting ≥50% of PAI's changes
+ *              reverting ≥50% of KAI's changes
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -95,8 +95,8 @@ import { createHash } from 'crypto';
 const REVERT_THRESHOLD = 0.5;
 
 /**
- * Pattern 4: Detect if user externally reverted PAI's writes.
- * Checks all tracked files — if current content hash differs from PAI's write
+ * Pattern 4: Detect if user externally reverted KAI's writes.
+ * Checks all tracked files — if current content hash differs from KAI's write
  * and the file has been substantially changed back, create a revert instinct.
  */
 export function detectReverts(paiDir: string): void {
@@ -114,7 +114,7 @@ export function detectReverts(paiDir: string): void {
       if (currentHash === entry.contentHash) continue;
 
       // File was modified externally. Check if it's a revert by comparing snippet presence.
-      // If PAI's snippet content is no longer in the file, it's likely reverted.
+      // If KAI's snippet content is no longer in the file, it's likely reverted.
       if (entry.snippet && entry.snippet.length > 20) {
         const snippetNormalized = entry.snippet.trim().substring(0, 60);
         if (!currentContent.includes(snippetNormalized)) {

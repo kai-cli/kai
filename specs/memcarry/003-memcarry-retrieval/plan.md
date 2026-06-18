@@ -6,10 +6,10 @@
 **Input**: Feature specification from `specs/003-memcarry-retrieval/spec.md`
 
 > **Target codebase is external to this repo.** SpecKit is the design studio; implementation lands in
-> the LIVE canonical copy **`~/Projects/pai-config/memcarry/`** (= `~/.claude/memcarry`) + its adapter
+> the LIVE canonical copy **`~/Projects/kai/memcarry/`** (= `~/.claude/memcarry`) + its adapter
 > hooks `~/.claude/hooks/Mem*.hook.ts`. (`~/Projects/NewTool/core` was tombstoned 2026-06-12 — stale,
 > do NOT build there. NewTool/ remains the design-docs home only.) `core/...` paths below = under
-> `pai-config/memcarry/`.
+> `kai/memcarry/`.
 
 ## Summary
 
@@ -95,7 +95,7 @@ specs/003-memcarry-retrieval/
 └── tasks.md             # Phase 2 output (/speckit-tasks — NOT created here)
 ```
 
-### Source Code (in `~/Projects/pai-config/memcarry/` — LIVE canonical, NOT this repo)
+### Source Code (in `~/Projects/kai/memcarry/` — LIVE canonical, NOT this repo)
 
 ```text
 packages/lib/src/
@@ -116,7 +116,7 @@ packages/cli/src/index.ts  # MODIFY: pass host ScoreProvider through to recall()
 └── ~/.claude/hooks/MemCapture.hook.ts        # unchanged this sprint
 ```
 
-**Structure Decision**: Edit the LIVE `pai-config/memcarry` monorepo (sync to kai via `sync-to-kai.sh`;
+**Structure Decision**: Edit the LIVE `kai/memcarry` monorepo (sync to kai via `sync-to-kai.sh`;
 never edit kai or the tombstoned NewTool/core). Core stays embedding-free — the `ScoreProvider` seam
 already exists; we only add RRF fusion in `recall()`. The jina provider + vector cache live **host-side**
 (PAI adapter) per Fork 1. New hooks `MemRecall`/`MemCompact`; `MemResume` B1 is already built (verify).

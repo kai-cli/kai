@@ -42,7 +42,7 @@ Powerful but narrow. You'll know when you need them.
 | `/science` | Scientific method applied to technical questions. Hypothesis, experiment, evidence, conclusion. | Rigorous investigation where you need provable answers |
 | `/usmetrics` | 68 US economic indicators from FRED, EIA, Treasury, BLS, Census. Trend analysis and correlation. | Economic research, market context |
 | `/secupdates` | Security news monitoring and analysis. Breach reports, CVEs, research papers. | Staying current on security landscape |
-| `/wikiquery` | Query the Linksys Engineering Wiki (81 pages of firmware, build, Jenkins knowledge). | Domain-specific technical questions |
+| `/wikiquery` | Query the YourCompany Engineering Wiki (81 pages of firmware, build, Jenkins knowledge). | Domain-specific technical questions |
 | `/worldthreatmodelharness` | Adversarial analysis across 11 time horizons (6mo to 50yr). | Stress-testing strategies, investments, or decisions against future scenarios |
 | `/evals` | Agent evaluation framework: code-based/model-based/human graders, pass@k metrics. | Testing agent behavior, regression testing |
 | `/promptinjection` | LLM security testing: jailbreak attempts, guardrail bypass, injection vectors. | Security assessment of AI applications |

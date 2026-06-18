@@ -51,12 +51,12 @@ fi
 
 # ── Gate 3: verify-release.sh ────────────────────────────────
 # SF-15/18 fix: leak/brand checks must run against the SCRUBBED public artifact, not the private
-# pai-config tree (where PII/brand strings live by design). verify-release.sh now splits checks into
+# kai tree (where PII/brand strings live by design). verify-release.sh now splits checks into
 # STRUCTURAL (run on this repo), ARTIFACT/leak-brand (run on --target), and SECRETS (run on both).
 #
 # Producing/verifying the scrubbed artifact is the job of the sync pipeline (sync-to-kai.sh →
 # sync-ci-gate.ts on the real ~/Projects/kai tree, plus kai's own pre-push gate). Here we run the
-# STRUCTURAL + SECRETS checks against pai-config; the artifact leak/brand pass happens at sync time
+# STRUCTURAL + SECRETS checks against kai; the artifact leak/brand pass happens at sync time
 # against the real kai tree. (Run `bash scripts/verify-release.sh --target <kai-tree>` to scan a
 # specific scrubbed tree directly.)
 echo ""

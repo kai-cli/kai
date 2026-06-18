@@ -271,7 +271,7 @@ This is the actual "firehose" - every message, tool call, and response. PAI leve
 4. Deduplicates across projects using Jaccard similarity
 5. Distills each domain into ~200-300 word summary via fast LLM inference (Haiku)
 
-**Session injection:** `LoadContext.hook.ts` reads KNOWLEDGE/ files at session start. Selects 2-3 domains relevant to the current project directory (e.g., pai-config gets ai-infrastructure; WiFi-Troubleshooter gets products + ui + api). Controlled by `settings.dynamicContext.knowledgeInjection`.
+**Session injection:** `LoadContext.hook.ts` reads KNOWLEDGE/ files at session start. Selects 2-3 domains relevant to the current project directory (e.g., kai gets ai-infrastructure; WiFi-Troubleshooter gets products + ui + api). Controlled by `settings.dynamicContext.knowledgeInjection`.
 
 **Regeneration:** `bun run PAI/Tools/KnowledgeHarvester.ts` (full harvest) or `--scan` (inventory only)
 

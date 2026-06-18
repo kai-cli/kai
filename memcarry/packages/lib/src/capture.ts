@@ -18,7 +18,7 @@ export interface CaptureResult {
 }
 
 /**
- * Build a resume-state draft. `ghSlug` (e.g. "linksys/feed_bbf") lets us record a gh-pr fact.
+ * Build a resume-state draft. `ghSlug` (e.g. "yourcompany/feed_bbf") lets us record a gh-pr fact.
  * `next`/`summary` are mechanical placeholders — the adapter overwrites them with an LLM draft the
  * user confirms at /end. Provenance is auto-captured (lowest trust) until confirmed.
  */

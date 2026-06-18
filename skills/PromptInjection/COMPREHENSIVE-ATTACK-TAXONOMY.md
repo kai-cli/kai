@@ -1416,7 +1416,7 @@ This comprehensive taxonomy synthesizes cutting-edge research on prompt injectio
 
 **CRITICAL REMINDER:** All techniques in this taxonomy are for **authorized security testing only**. Unauthorized use of these techniques against systems you do not own or have explicit permission to test is illegal and unethical.
 
-**This research is part of PAI's ethical hacking security practice.**
+**This research is part of KAI's ethical hacking security practice.**
 
 ---
 

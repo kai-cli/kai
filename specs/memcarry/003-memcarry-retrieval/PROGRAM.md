@@ -1,6 +1,6 @@
 # Program Scope — Memcarry + PAI Convergence
 
-> **Status:** Scope-capture for review (pre-speckit) · **Owner:** Deven · **Created:** 2026-06-12
+> **Status:** Scope-capture for review (pre-speckit) · **Owner:** YourName · **Created:** 2026-06-12
 > **Reads from:** `~/Projects/NewTool/{ARCHITECTURE.md, PLAN.md, ROADMAP.md, SATURATION-CANDIDATES.json}`
 > **Purpose:** Capture the FULL scope before firing speckit, so the plan covers all three threads:
 > (1) finish Memcarry's retrieval, (2) compaction recovery, (3) the PAI cleanup/rewrite decision.
@@ -15,13 +15,13 @@
    Thread C near-term = fix the 23 findings + extract shared engines + streamline for persona, keeping
    PAI. Long-term north star: **grow PAI's capabilities into Memcarry's typed core one at a time
    (strangler-fig), add a build/type-check gate + contract tests, run on bun.** This delivers ~80% of
-   the hardening Deven wants (refactor-safety, killed duplication, enforced cross-module contracts) at
+   the hardening YourName wants (refactor-safety, killed duplication, enforced cross-module contracts) at
    low risk. **Compilation to a sealed binary is explicitly NOT the goal** — it mainly buys
    distribution/sealing (low value for single-user/single-machine) and cannot dissolve the Claude Code
    hook boundary anyway (ARCHITECTURE.md §11 #1: hooks are detached subprocesses). Best achievable shape
    = compiled/typed core + thin hook shims, which Memcarry's CLI already IS. NO big-bang rewrite —
    violates "surgical fixes only" + the run-alongside-for-a-month rule.
-3. **Persona scoping → TWO-TIER.** Tier 1: Deven defines the four-hats capability set up front
+3. **Persona scoping → TWO-TIER.** Tier 1: YourName defines the four-hats capability set up front
    (initial input). Tier 2: audit real usage (which of 49 skills/hooks actually fire) and refine the
    cut as we go. Not a one-shot decision — an initial cut + ongoing evidence-based refinement.
 

@@ -1,11 +1,11 @@
 # Quickstart — Validating Backflow
 
 Proves the B→A cycle: refine a global lesson in one project, see the update everywhere.
-Run from `~/Projects/pai-config/memcarry`. See `contracts/refine.md` + `data-model.md` for detail.
+Run from `~/Projects/kai/memcarry`. See `contracts/refine.md` + `data-model.md` for detail.
 
 ## Prerequisites
 ```bash
-cd ~/Projects/pai-config/memcarry && bun install
+cd ~/Projects/kai/memcarry && bun install
 export MEMCARRY_STORE="$HOME/.claude/MEMORY/memcarry/store"
 bun test    # baseline green before changes
 ```

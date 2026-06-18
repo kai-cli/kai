@@ -4,7 +4,7 @@
 
 PAI provides two CLI tools for running infrastructure from the terminal:
 
-1. **The Algorithm CLI** — Run the PAI Algorithm against PRDs in loop or interactive mode
+1. **The Algorithm CLI** — Run the KAI Algorithm against PRDs in loop or interactive mode
 2. **The Arbol CLI** — Run actions and pipelines locally
 
 Both tools use `bun` as their runtime.
@@ -15,7 +15,7 @@ Both tools use `bun` as their runtime.
 
 **Location:** `~/.claude/skills/PAI/Tools/algorithm.ts`
 
-The Algorithm CLI executes the PAI Algorithm (Observe → Think → Plan → Build → Execute → Verify → Learn) against PRD files. It supports two modes: autonomous loop execution (no human needed) and interactive sessions (human-in-the-loop).
+The Algorithm CLI executes the KAI Algorithm (Observe → Think → Plan → Build → Execute → Verify → Learn) against PRD files. It supports two modes: autonomous loop execution (no human needed) and interactive sessions (human-in-the-loop).
 
 ### Quick Start
 
@@ -131,7 +131,7 @@ The CLI accepts PRD references in multiple formats:
 
 ### Dashboard Integration
 
-The Algorithm CLI integrates with the PAI dashboard by writing state to `MEMORY/STATE/algorithms/`:
+The Algorithm CLI integrates with the KAI dashboard by writing state to `MEMORY/STATE/algorithms/`:
 
 - Creates a persistent session entry for each loop run
 - Syncs criteria status (passing/failing) from PRD checkboxes after each iteration

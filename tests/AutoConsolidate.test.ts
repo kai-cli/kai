@@ -36,7 +36,7 @@ source_rating: n/a
 confidence: ${confidence}
 generated: ${generated}
 expires: ${expires}
-target_project: pai-config
+target_project: kai
 target_filename: feedback_test.md
 title: "${title}"
 ---

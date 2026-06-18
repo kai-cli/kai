@@ -83,7 +83,7 @@ export function reconcile(paiDir = PAI_DIR, wikiDir = WIKI_DIR): ReconcileResult
 
   // ---- Invariant 2: SessionEnd topology is one of two VALID shapes ----
   // Topology is DETECTED from the config, not assumed — so this guard is correct in both
-  // pai-config (post-W4: composite mode) and the KAI fork (pre-W4: individual mode), with no
+  // kai (post-W4: composite mode) and the KAI fork (pre-W4: individual mode), with no
   // repo-name branching. The only hard error is the double-run hazard: composite + leftovers.
   const seCmds = commandsForEvent(events.SessionEnd ?? []);
   const seFiles = seCmds.map(hookFileFromCommand).filter(Boolean) as string[];

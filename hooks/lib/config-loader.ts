@@ -1,5 +1,5 @@
 /**
- * config-loader.ts — Domain config reader for pai-config
+ * config-loader.ts — Domain config reader for kai
  *
  * Reads config/domains.jsonc and exposes typed accessors.
  * All functions return empty/default values if the file is missing or malformed.

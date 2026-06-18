@@ -74,6 +74,6 @@ and fixes the three things that made PAI memory feel unreliable: **surfaces, ver
 trust tiers so confirmed facts outrank guesses.
 
 ## Implementation status (2026-06-15)
-Live + committed in pai-config: B2 hybrid recall, A2 every-prompt MemRecall hook, B1 PRD-aware resume,
+Live + committed in kai: B2 hybrid recall, A2 every-prompt MemRecall hook, B1 PRD-aware resume,
 H2 compaction recovery. Runs alongside PAI memory (not a replacement yet). Value loop + schema expansion
 (incl. the synthesis atom type) are deferred pending daily-use signal. Full detail: PROGRAM.md, NEXT-STEPS.md.

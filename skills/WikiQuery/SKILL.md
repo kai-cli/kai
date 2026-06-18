@@ -1,6 +1,6 @@
 ---
 name: WikiQuery
-description: Query the Linksys Engineering Wiki for firmware, build system, Jenkins, GitHub, and repository knowledge. USE WHEN wiki, wiki query, check wiki, what do we know about, linksys knowledge, firmware knowledge, build knowledge, jenkins knowledge, look up in wiki, wiki search.
+description: Query the YourCompany Engineering Wiki for firmware, build system, Jenkins, GitHub, and repository knowledge. USE WHEN wiki, wiki query, check wiki, what do we know about, yourcompany knowledge, firmware knowledge, build knowledge, jenkins knowledge, look up in wiki, wiki search.
 ---
 
 ## Customization
@@ -12,20 +12,20 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 # WikiQuery Skill
 
-Fast knowledge retrieval from the Linksys Engineering Wiki (`~/Projects/Linksys-Wiki/`).
+Fast knowledge retrieval from the YourCompany Engineering Wiki (`~/Projects/YourCompany-Wiki/`).
 
 ## When To Use
 
-- Any question about Linksys firmware, repos, build system, Jenkins, GitHub processes
+- Any question about YourCompany firmware, repos, build system, Jenkins, GitHub processes
 - Before doing web research on topics the wiki likely covers
 - When onboarding to a new area of the codebase
-- When another skill or workflow needs Linksys engineering context
+- When another skill or workflow needs YourCompany engineering context
 
 ## Workflow
 
 ### Step 1: Load the Index
 
-Read `~/Projects/Linksys-Wiki/index.md` to see all available pages.
+Read `~/Projects/YourCompany-Wiki/index.md` to see all available pages.
 
 ### Step 2: Identify Relevant Pages
 
@@ -76,7 +76,7 @@ Read index → identify 3-4 pages → cross-reference → synthesize. For comple
 
 ## Integration with Other Skills
 
-Other skills should invoke WikiQuery when they need Linksys context:
+Other skills should invoke WikiQuery when they need YourCompany context:
 - **Research skill**: Check wiki BEFORE doing web research
 - **Engineer skill**: Check wiki for build/process knowledge before investigating repos
 - **Architect skill**: Check wiki for existing patterns and decisions
@@ -100,7 +100,7 @@ User: "wiki: does the wiki cover EasyMesh?"
 ## Wiki Location
 
 ```
-~/Projects/Linksys-Wiki/
+~/Projects/YourCompany-Wiki/
 ├── schema.md          ← Structure rules (read if creating/updating pages)
 ├── index.md           ← START HERE for all queries
 ├── log.md             ← Operation history
@@ -119,5 +119,5 @@ User: "wiki: does the wiki cover EasyMesh?"
 
 If the wiki doesn't have what you need:
 - `~/Projects/Knowledge/` — Reference docs, specs, source code snapshots
-- `~/.claude/projects/-Users-deven-ducommun-Projects-Learning-Linksys-Repo/memory/` — PAI memory (deepest firmware knowledge)
+- `~/.claude/projects/-Users-your.name-Projects-Learning-YourCompany-Repo/memory/` — PAI memory (deepest firmware knowledge)
 - Actual GitHub repos via `gh` CLI

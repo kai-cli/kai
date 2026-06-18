@@ -113,7 +113,7 @@ Replace the 9 individual SessionEnd hooks with:
     "hooks": [
       {
         "type": "command",
-        "command": "/Users/deven.ducommun/.claude/hooks/lib/run-hook.sh SessionEndComposite.hook.ts",
+        "command": "/Users/your.name/.claude/hooks/lib/run-hook.sh SessionEndComposite.hook.ts",
         "async": true
       }
     ]

@@ -26,10 +26,10 @@ Before running the installer, make sure you have:
 
 ```bash
 # Clone the repo
-git clone https://github.com/kai-cli/kai ~/pai-config
+git clone https://github.com/kai-cli/kai ~/kai
 
 # Run the installer
-bash ~/pai-config/install.sh
+bash ~/kai/install.sh
 ```
 
 The installer will:
@@ -91,7 +91,7 @@ bun ~/.claude/hooks/handlers/BuildSettings.ts
 
 ## What You Get
 
-### Skills (<!-- KAI:counts:skills:begin -->71<!-- KAI:counts:skills:end --> modules)
+### Skills (<!-- KAI:counts:skills:begin -->69<!-- KAI:counts:skills:end --> modules)
 KAI includes specialized skills invoked with slash commands or automatically:
 - **Research** — multi-agent parallel research with dedup
 - **Security** — recon, web assessment, prompt injection testing
@@ -110,7 +110,7 @@ Spawned automatically when the task matches:
 For complex tasks, KAI uses a 7-phase execution framework:
 **Observe** (understand) > **Think** (pressure-test) > **Plan** > **Build** > **Execute** > **Verify** > **Learn**
 
-Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes PAI systematically reliable rather than just "AI that tries."
+Each task gets Ideal State Criteria (ISC) — verifiable checkboxes that must all pass. This is what makes KAI systematically reliable rather than just "AI that tries."
 
 ### Hooks (<!-- KAI:counts:hooks:begin -->57<!-- KAI:counts:hooks:end --> lifecycle events)
 Automated behaviors that fire on specific events:
@@ -161,7 +161,7 @@ ls -la ~/.claude/MEMORY/STATE/*.log
 
 ### Want to re-run the installer
 ```bash
-bash ~/pai-config/install.sh
+bash ~/kai/install.sh
 # It detects existing config and offers to migrate or overwrite
 ```
 

@@ -631,7 +631,7 @@ function createNeofetchBanner(): string {
   // ─────────────────────────────────────────────────────────────────
 
   // PAI Header
-  const paiHeader = `${BOLD}${nc}P${RESET}${BOLD}${np}A${RESET}${BOLD}${c}I${RESET} ${f}|${RESET} ${t}Personal AI Infrastructure${RESET}`;
+  const paiHeader = `${BOLD}${nc}P${RESET}${BOLD}${np}A${RESET}${BOLD}${c}I${RESET} ${f}|${RESET} ${t}Kaizen AI${RESET}`;
   lines.push(center(paiHeader, width));
   lines.push("");
 

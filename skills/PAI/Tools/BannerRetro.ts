@@ -109,7 +109,7 @@ const COLORS = {
   frame: rgb(0, 140, 0),             // Frame green
   highlight: rgb(100, 255, 100),     // Highlighted text
 
-  // For the PAI logo gradient
+  // For the KAI logo gradient
   cyan: rgb(0, 255, 255),            // Cyan accent
   blue: rgb(100, 150, 255),          // Blue accent
   purple: rgb(200, 100, 255),        // Purple accent
@@ -492,11 +492,11 @@ function createRetroBanner(): string {
   // ─────────────────────────────────────────────────────────────────────────
   // MIDDLE SECTION: Double-line box with branding
   // ─────────────────────────────────────────────────────────────────────────
-  const brandingText = "  PAI | Personal AI Infrastructure  ";
+  const brandingText = "  PAI | Kaizen AI  ";
   const brandingWidth = brandingText.length + 2;
 
   lines.push(`${a}${BOX.dtl}${BOX.dh.repeat(brandingWidth)}${BOX.dtr}${RESET}`);
-  lines.push(`${a}${BOX.dv}${RESET} ${g}${BOLD}PAI${RESET} ${gd}|${RESET} ${h}Personal AI Infrastructure${RESET}  ${a}${BOX.dv}${RESET}`);
+  lines.push(`${a}${BOX.dv}${RESET} ${g}${BOLD}PAI${RESET} ${gd}|${RESET} ${h}Kaizen AI${RESET}  ${a}${BOX.dv}${RESET}`);
   lines.push(`${a}${BOX.dbl}${BOX.dh.repeat(brandingWidth)}${BOX.dbr}${RESET}`);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -614,7 +614,7 @@ function createPureASCIIBanner(): string {
 
   // Double-line title (ASCII approximation)
   lines.push(`${gd}+======================================+${RESET}`);
-  lines.push(`${gd}||${RESET}  ${g}PAI${RESET} ${gd}|${RESET} ${h}Personal AI Infrastructure${RESET}  ${gd}||${RESET}`);
+  lines.push(`${gd}||${RESET}  ${g}PAI${RESET} ${gd}|${RESET} ${h}Kaizen AI${RESET}  ${gd}||${RESET}`);
   lines.push(`${gd}+======================================+${RESET}`);
 
   lines.push("");
@@ -680,7 +680,7 @@ function createCompactRetroBanner(): string {
   }
 
   lines.push("");
-  lines.push(`${g}PAI${RESET} ${gd}|${RESET} ${h}Personal AI Infrastructure${RESET}`);
+  lines.push(`${g}PAI${RESET} ${gd}|${RESET} ${h}Kaizen AI${RESET}`);
   lines.push(`${gd}> github.com/kai-cli/kai${RESET}`);
 
   return lines.join("\n");

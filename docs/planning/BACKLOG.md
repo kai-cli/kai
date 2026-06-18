@@ -49,6 +49,6 @@ Detail + rationale in `PAI-Wiki/findings/session-findings-2026-06-05.md` (SF-1�
 ## Post-KAI-sync tickets (added 2026-06-05)
 Detail in `PAI-Wiki/findings/session-findings-2026-06-05.md` (SF-12…SF-20).
 - [ ] **SF-19 — KAI CI is red (HIGH).** kai-cli/kai Actions failing ≥3 pushes: 2 failing tests on bun 1.3.14 + `bash -e` has no SF-2 panic guard. Identify the 2 tests, fix/gate them, make CI resilient to the bun panic.
-- [ ] **SF-18 — verify-release.sh scans pai-config not KAI.** The sync's Step-6 gate is false signal; make it scan the KAI tree (pairs with SF-15 per-feature verification).
+- [ ] **SF-18 — verify-release.sh scans kai not KAI.** The sync's Step-6 gate is false signal; make it scan the KAI tree (pairs with SF-15 per-feature verification).
 - [ ] **SF-20 — version reconciliation (HOLD until main task done).** VERSION 7.1.0 ≠ manifest 7.0.0 in both repos; memcarry 0.0.1 unversioned. Bump to **7.2** + changelog (W2/W3/W4/W13 + Memcarry public) AFTER consolidation completes. Do NOT bump mid-task.
 - [ ] **Stale-ticket hygiene.** SF-7/10/11/12/13/14/16/17 are DONE — keep findings table current.

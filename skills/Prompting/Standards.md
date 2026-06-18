@@ -725,7 +725,7 @@ Run the update script to sync latest patterns:
 ~/.claude/skills/PAI/Tools/fabric/update-patterns.sh
 ```
 
-This pulls upstream updates via `fabric -U` and syncs to PAI's local copy.
+This pulls upstream updates via `fabric -U` and syncs to KAI's local copy.
 
 ---
 
@@ -988,7 +988,7 @@ Verify across multiple sources. Develop competing hypotheses. Track confidence l
 
 # Prompt Templating System
 
-**Foundation:** Based on Anthropic's official `{{variable}}` syntax, industry patterns (LangChain, Handlebars, DSPy), and PAI's unique skill architecture.
+**Foundation:** Based on Anthropic's official `{{variable}}` syntax, industry patterns (LangChain, Handlebars, DSPy), and KAI's unique skill architecture.
 
 **Philosophy:** Templates enable prompts to write prompts—dynamic composition where structure is fixed but content is parameterized. This is core PAI DNA.
 
@@ -1232,7 +1232,7 @@ const output = renderTemplate('Primitives/Briefing.hbs', {
 
 ---
 
-## Integration with PAI Systems
+## Integration with KAI Systems
 
 | System | Template Use |
 |--------|--------------|

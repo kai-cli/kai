@@ -1,10 +1,10 @@
 # Persona Definition — Tier 1 (capability scoping)
 
-> **Written 2026-06-15.** Tier 1 of the two-tier persona plan: Deven defines the four-hats capability
+> **Written 2026-06-15.** Tier 1 of the two-tier persona plan: YourName defines the four-hats capability
 > set up front (this doc) → Tier 2 refines by real usage data (tracking added now, decisions later).
-> **Goal (Deven's words):** "reduce noise and clean up signal… reduce some and cleanup/combine others so
+> **Goal (YourName's words):** "reduce noise and clean up signal… reduce some and cleanup/combine others so
 > we don't have so many branching tools… it feels overwhelming." Side goal: lighter/faster via the rewrite.
-> **Grounding:** ROLE_CONTEXT = EM/PLM Director, Linksys (firmware + frontend teams), TR-069/369 cert,
+> **Grounding:** ROLE_CONTEXT = EM/PLM Director, YourCompany (firmware + frontend teams), TR-069/369 cert,
 > build modernization, security/privacy focus. Four hats: TPM · PM · QA · Engineer.
 
 ## The problem this scopes
@@ -20,9 +20,9 @@ extraneous tools + overlapping clusters. The noise is two kinds: (1) tools that 
    (Telemetry today is too sparse to mine — 15k transcripts but skill calls aren't cleanly logged.)
 5. Execution = part of the rewrite, NOT a destructive sweep now. This doc is the TARGET, not a delete list to run today.
 
-## 🔴 CUT (7) — don't serve an EM/PLM at Linksys
+## 🔴 CUT (7) — don't serve an EM/PLM at YourCompany
 `OSINT` · `PrivateInvestigator` · `WorldThreatModelHarness` · `AudioEditor` · `USMetrics`
-(Deven confirmed all 5 cuttable) + `Apify` · `BrightData` (social-media/e-commerce scraping — not the domain).
+(YourName confirmed all 5 cuttable) + `Apify` · `BrightData` (social-media/e-commerce scraping — not the domain).
 
 ## How skills + sub-modes are invoked (the mechanism merges rely on)
 Skills are **intent-routed by natural language**, not called by path. Each SKILL.md has a routing table
@@ -30,7 +30,7 @@ mapping trigger phrases → a `Workflows/*.md` mode. Example (Research, today): 
 "quick research"→Quick, "extensive/deep research"→Extensive, "deep investigation/map the landscape"→
 Iterative. You can also force one with the slash form `/research`; phrasing still selects the mode.
 
-**MERGE DESIGN PRINCIPLE (from Deven's Q 2026-06-15):** a merge = fold sub-skills in as MODES of the
+**MERGE DESIGN PRINCIPLE (from YourName's Q 2026-06-15):** a merge = fold sub-skills in as MODES of the
 parent, each KEEPING a discoverable trigger phrase in the parent's routing table. A merge is only good
 if every former skill's capability stays reachable by an obvious phrase — otherwise it hides capability
 behind un-guessable phrasing. This is WHY Research + Security are flagged ⚠️: their modes are used
@@ -47,21 +47,21 @@ distinctly, so their trigger phrases must survive the merge intact (or keep them
 | Thinking, FirstPrinciples, BeCreative, IterativeDepth, Science | **Thinking** (modes) | all analytical/creative thinking modes | low risk |
 | Scraping, BrightData*, Apify*, Parser | **Scraping** | web-extraction variants (*also in cut list) | low risk |
 | ContentAnalysis, ExtractWisdom, Fabric | **ContentAnalysis** | content extraction / wisdom — heavy overlap | low risk |
-| Security, WebAssessment, RedTeam, PromptInjection, SECUpdates | **Security** (sub-modes) | 5 entries, ONE focus area | ⚠️ Deven may want these split (focus area) |
+| Security, WebAssessment, RedTeam, PromptInjection, SECUpdates | **Security** (sub-modes) | 5 entries, ONE focus area | ⚠️ YourName may want these split (focus area) |
 
 ## 🟢 KEEP standalone — distinct + core to the hats (~22 after merges)
-**Engineer:** LinksysDev, WikiQuery, Development, CreateCLI, CreateSkill
+**Engineer:** YourCompanyDev, WikiQuery, Development, CreateCLI, CreateSkill
 **QA:** Evals (+ QATester agent)
 **PM/analysis:** Research (merged), Thinking (merged), ContentAnalysis (merged)
 **Security (focus area):** Security (merged or split — TBD)
-**System/meta (run the harness):** PAI, Telos, Curate, Evolve, End, Automate, Delegation, DevTeam, Agents, PAIUpgrade, Prompting
+**System/meta (run the harness):** PAI, Telos, Curate, Evolve, End, Automate, Delegation, DevTeam, Agents, KAIUpgrade, Prompting
 **Situational-but-kept:** Media, Documents, Browser, Cloudflare
 
 ## Hat → capability map (the "what serves me" record)
 - **TPM** (program/release/risk/stakeholder): Telos, Delegation, DevTeam, End, Automate + the ProductStrategist/StakeholderCommunicator agents
 - **PM** (roadmap/specs/prioritize): Development, Research, Thinking, ContentAnalysis + ProductStrategist/TechnicalReviewer agents
 - **QA** (test/validate/verify): Evals, Security, Browser + QATester/UIReviewer agents
-- **Engineer** (firmware/code/build/debug): LinksysDev, WikiQuery, Development, CreateCLI, CreateSkill, Browser + Engineer/Architect agents
+- **Engineer** (firmware/code/build/debug): YourCompanyDev, WikiQuery, Development, CreateCLI, CreateSkill, Browser + Engineer/Architect agents
 
 ## Tier 2 — evidence-based refinement (next)
 - **✅ DONE — tracking live:** `hooks/SkillTracker.hook.ts` (commit 976f023) logs every Skill invocation
