@@ -1,4 +1,4 @@
-> **KAI 7.3.1** — Stable release.
+> **KAI 7.3.2** — Stable release.
 
 # PAI Command-Line Tools
 

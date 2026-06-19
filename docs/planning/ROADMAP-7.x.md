@@ -240,6 +240,22 @@ foundation for validating everything else"). All items verified against live cod
 ### 3. Memory recall quality
 - [ ] SF-3: wire embeddings into MemoryRecall scorer (keyword-only → semantic; confirmed live 33% miss)
 
+### 4. Sync-fidelity gate (release safety) — SF-35 🆕 2026-06-19 `scoping`
+- [ ] **SF-35 — post-sync content-fidelity gate.** Nothing today proves kai's synced content matches the
+      scrubbed kai source; a dropped/garbled/half-scrubbed file would ship silently. The manual
+      593/594 byte-diff during the 7.3.2 release was the *only* time fidelity was checked, and by hand.
+      **Why both existing tools are INVALID signals (verified 2026-06-19, do not just "wire one in"):**
+      (1) `scripts/sync-drift.ts` compares **raw** kai vs kai, so it flags all ~168 intentionally
+      PII-scrubbed / brand-transformed files as "drift" — AND it `exit 0`s even when it reports drift
+      (its header claims exit 1; integrity bug). (2) `sync-to-kai.sh --dry-run` reports ~100 "would
+      change" purely from rsync **mtime** noise — the real release commit touched only 16 files and the
+      kai tree was clean. **Correct design:** after a sync, replicate the scrub+brand transform into a
+      temp tree, then content-diff temp↔kai **respecting KAI_ONLY + `--exclude` lists**; any *unexpected*
+      file (present/missing/differing outside the allowlist) → `exit 1`. Wire into `verify-release.sh`
+      (post-sync, `--target` aware) + a test that deliberately introduces drift and asserts the gate fails
+      (per the "gates must actually fail" doctrine). Also fix sync-drift.ts's `exit 0`-on-drift bug or
+      retire it. ~1 session. Successor to SF-15/18 (verify-release scrubbed-tree fix).
+
 _No "candidates" limbo here by design — every not-yet-committed idea lives in the **Backlog** below with
 an explicit target release. If something should pull into 7.4.0, promote it from the backlog into a spine
 section above; don't leave it floating._
