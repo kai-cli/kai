@@ -65,6 +65,40 @@ describe('SecurityValidator Unit Tests', () => {
       expect(['block', 'allow'].includes(result.action)).toBe(true);
     });
 
+    test('blocks mv of project memory file (rayhunter bypass)', () => {
+      const result = validateBashCommand('mv ~/.claude/projects/-Users-x-Projects-rayhunter/memory/project_foo.md /tmp/');
+      expect(result.action).toBe('block');
+      expect(result.reason).toContain('memory');
+    });
+
+    test('blocks mv of MEMORY tree file', () => {
+      const result = validateBashCommand('mv ~/.claude/MEMORY/KNOWLEDGE/foo.md /tmp/bar.md');
+      expect(result.action).toBe('block');
+      expect(result.reason).toContain('memory');
+    });
+
+    test('blocks file-level rm of project memory .md', () => {
+      const result = validateBashCommand('rm ~/.claude/projects/-Users-x-Projects-rayhunter/memory/project_foo.md');
+      expect(result.action).toBe('block');
+      expect(result.reason).toContain('memory');
+    });
+
+    test('blocks rm -f of MEMORY .md file', () => {
+      const result = validateBashCommand('rm -f ~/.claude/MEMORY/WISDOM/note.md');
+      expect(result.action).toBe('block');
+      expect(result.reason).toContain('memory');
+    });
+
+    test('does NOT block mv of an unrelated file named memory.ts', () => {
+      const result = validateBashCommand('mv src/memory.ts src/store.ts');
+      expect(result.action).toBe('allow');
+    });
+
+    test('does NOT block rm of a non-memory source file', () => {
+      const result = validateBashCommand('rm build/output.md');
+      expect(result.action).toBe('allow');
+    });
+
     test('confirms git push', () => {
       const result = validateBashCommand('git push origin main');
       expect(result.action).toBe('confirm');

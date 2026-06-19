@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { checkEnvironment, formatStatus, type EnvStatus } from '../hooks/lib/env-check';
+import { checkEnvironment, formatStatus, detectCwdMismatch, type EnvStatus } from '../hooks/lib/env-check';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -138,6 +138,76 @@ describe('env-check.ts', () => {
 
       const status = checkEnvironment(testDir);
       expect(status.critical).toBeUndefined();
+    });
+  });
+
+  describe('detectCwdMismatch', () => {
+    const home = join(testDir, 'home');
+    beforeEach(() => mkdirSync(home, { recursive: true }));
+
+    test('warns when cwd IS the home dir with no project marker', () => {
+      const warning = detectCwdMismatch(home, home);
+      expect(warning).toBeDefined();
+      expect(warning).toContain('home directory');
+    });
+
+    test('warns when cwd is an immediate child of home with no marker (~/Projects)', () => {
+      const projects = join(home, 'Projects');
+      mkdirSync(projects, { recursive: true });
+      const warning = detectCwdMismatch(projects, home);
+      expect(warning).toBeDefined();
+      expect(warning).toContain('parent directory');
+    });
+
+    test('silent for a real project dir with .git (even directly under home)', () => {
+      const proj = join(home, 'myproject');
+      mkdirSync(join(proj, '.git'), { recursive: true });
+      expect(detectCwdMismatch(proj, home)).toBeUndefined();
+    });
+
+    test('still WARNS for ~/Projects even with a .claude dir (the rayhunter case)', () => {
+      // .claude is NOT a project marker — it's a side-effect of running claude anywhere.
+      // ~/Projects/.claude exists on the real machine and is exactly the catch-all that lost data.
+      const proj = join(home, 'Projects');
+      mkdirSync(join(proj, '.claude'), { recursive: true });
+      const warning = detectCwdMismatch(proj, home);
+      expect(warning).toBeDefined();
+      expect(warning).toContain('parent directory');
+    });
+
+    test('silent for a child-of-home dir that has a real project marker (package.json)', () => {
+      const proj = join(home, 'standalone');
+      mkdirSync(proj, { recursive: true });
+      writeFileSync(join(proj, 'package.json'), '{}');
+      expect(detectCwdMismatch(proj, home)).toBeUndefined();
+    });
+
+    test('silent for a deep project dir (not home or immediate child)', () => {
+      const deep = join(home, 'Projects', 'rayhunter');
+      mkdirSync(deep, { recursive: true });
+      expect(detectCwdMismatch(deep, home)).toBeUndefined();
+    });
+
+    test('silent when cwd or home is empty', () => {
+      expect(detectCwdMismatch('', home)).toBeUndefined();
+      expect(detectCwdMismatch(home, '')).toBeUndefined();
+    });
+
+    test('trailing slashes do not break home-equality detection', () => {
+      const warning = detectCwdMismatch(home + '/', home);
+      expect(warning).toBeDefined();
+    });
+
+    test('checkEnvironment surfaces cwdWarning for a parent dir', () => {
+      process.env.ANTHROPIC_API_KEY = 'k'; // suppress critical
+      const prevHome = process.env.HOME;
+      process.env.HOME = home;
+      try {
+        const status = checkEnvironment(testDir, home);
+        expect(status.cwdWarning).toBeDefined();
+      } finally {
+        if (prevHome !== undefined) process.env.HOME = prevHome; else delete process.env.HOME;
+      }
     });
   });
 

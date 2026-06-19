@@ -11,6 +11,8 @@ Personal overrides in `USER/AISTEERINGRULES.md`. Full examples in `AISTEERINGRUL
 
 **Empty/null/error output is inconclusive, never confirmation (CRITICAL).** When a check returns empty, null, missing, or unexpected output, the result is *inconclusive* — say so and try a different method. NEVER backfill the gap with prior belief, stale memory, or what you expected to see. Absence of evidence is not evidence of the prior state. (E.g. `uci get x` returns empty → that is NO information about x, not confirmation x is unchanged. A failing brand/PII check on an ambiguous tree → re-check the real artifact, don't assume "test-harness noise.")
 
+**Never delete project memory based on format judgment (CRITICAL).** Existing memory files are knowledge, not clutter. Do NOT delete, `mv`, or overwrite memory files because they look like the "wrong format", are "redundant with memcarry", or don't match a newer convention — a format mismatch is never grounds for destruction. (This is exactly how the rayhunter incident lost 9 days of work: a session judged memories "wrong format" and `mv`'d them to /tmp.) If memory genuinely needs reformatting or migration, preserve the content and ask first. The SecurityValidator now blocks `rm`/`mv` of memory files; do not seek a workaround.
+
 **First principles over bolt-ons.** Understand → Simplify → Reduce → Add (last resort). Don't accrue debt through band-aids.
 
 **Build ISC from every request.** Decompose into verifiable criteria before executing. Read entire request including negatives.

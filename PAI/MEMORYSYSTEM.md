@@ -8,6 +8,27 @@
 
 ---
 
+## ⚠️ Start Claude in the project directory (CRITICAL for memory routing)
+
+**Always `cd` into the target project before starting Claude — `cd ~/Projects/myproject && claude`,
+never `cd ~/Projects && claude`.**
+
+Memory is routed by the session's working directory: a project's memories live in
+`~/.claude/projects/<cwd-encoded>/memory/`. If you start a session from a **parent** directory
+(`~/Projects`, or `~`), every memory that session saves routes to the **catch-all** project keyed to
+that parent path — invisible to any session later started *inside* the actual project subdirectory.
+
+This is not hypothetical: the rayhunter incident (2026-06-17) lost 9 days of operational knowledge
+this exact way — sessions ran from `~/Projects/`, so all their memories landed in the catch-all and the
+project itself had none. Heavy Agent/subagent delegation amplified it (subagents can't save memory at
+all — no CLAUDE.md loaded — so the parent is the only writer, and it was writing to the wrong project).
+
+**Enforcement:** `EnvironmentStatus.hook.ts` (SessionStart) now *detects* this — if you start from a
+parent dir with no project marker, it warns inline at session start (see `hooks/lib/env-check.ts`
+`detectCwdMismatch`). The detection is the guard; this section is the why.
+
+---
+
 ## v5.6.0 New Features (2026-05-20)
 
 ### Feature A: Progressive Disclosure Memory (3-Layer)

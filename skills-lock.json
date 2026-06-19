@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-06-17T18:41:33.270Z",
+  "generated": "2026-06-19T05:27:49.318Z",
   "skills": {
     "Agents": {
       "source": "kai",
@@ -375,14 +375,16 @@
     "LinksysDev": {
       "source": "kai",
       "path": "skills/LinksysDev/SKILL.md",
-      "hash": "sha256:c27ded3c4860fe157e39467bf9b13ee2d932a5c19ea3e62d657b33ea4c20e448",
+      "hash": "sha256:b44bc0f78a22e5532fd2b40331ee53a93a7a90f6e110fe8919ec107329433c48",
       "workflows": [
+        "AddDevice",
         "FindCode",
         "MakeChanges",
         "SubmitWork",
         "UnderstandBuild"
       ],
       "workflowHashes": {
+        "AddDevice": "sha256:27d874111931ac39eea6089b905f9049af020acca115879f954173af7e2cd94e",
         "FindCode": "sha256:90e4aaed0afd7206b3282a4d0a5b68741a0a671e12b1675ab09ce6792b70f745",
         "MakeChanges": "sha256:e96c6e6bc6f99f471e88764fbf038681eb9ad6e1e54f401d640e5f237960ee2f",
         "SubmitWork": "sha256:5422a34de1edd579d19c617a4e727d2c3d20f73f8ef9deb60d818fe7bb0d1899",

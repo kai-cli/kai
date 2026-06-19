@@ -80,12 +80,9 @@ Same "duplicated logic drifts" class we killed for counts/PII/secrets, applied t
 - [~] **state-io** — PARTIAL (2026-06-08): added `readJSON<T>` single-source to `lib/atomic.ts` + migrated
   KnowledgeSync/InsightExtractor/WeeklyMaintenance (`a063da6`), also making their saveState crash-safe.
   Remaining: staging.ts + a few others still inline. Finish the migration onto `readJSON`/`atomicWriteJSON`. **LOW.**
-- [ ] **`getAlgorithmVersion` (×4 identical), `ensureDir` (×3 identical)** → shared helpers. **MED, quick.** ← top quick win
-- [ ] **Split oversized files** (testability, not urgent): `deliberate.ts` 1116L → 3 mode files;
-  `dev-team.ts` 1039L → prompts/phases/review/utils. Board/LoadContext/SecurityValidator are cohesive — leave.
-- [ ] **Merge `once-per-session` + `session-end-tracker`** → `lib/session-state.ts` (both manage session
-  sentinels). LOW. And **merge `learning-utils` into `learning-readback`** (tightly coupled). LOW.
-- [ ] **Delete `hooks/UpdateTabTitle.hook.ts.bak-4.3.1`** (stray backup — confirmed still present). Trivial. ← top quick win
+_The still-open quick-fix items (getAlgorithmVersion/ensureDir helpers, oversized-file splits, session-state
+merge, stray .bak delete, and the unfinished hook-stdin/expandPath/state-io migrations) now live in the
+**🔧 Refactor / tech-debt backlog** below — single source, no drift._
 
 ### Shipped this session (2026-06-11/12) — v7.2.0 cut, released, CI hardened on Linux
 - [x] **v7.2.0 cut via the release gate** (first time release.sh worked end-to-end) — fixed two release.sh
@@ -186,47 +183,186 @@ a lightweight A/B framework to validate system changes. ~3 sessions. (Also unblo
 tests; 70 skills have 0 activation/routing tests; the board has 0 E2E. A regression can ship silently. Build
 an Algorithm-runtime harness + hook-lifecycle harness + skill-activation tests. ~5 sessions.
 
-**D. Net-new capability ideas (idea-stage, justify before building):**
-- **Skill-discovery recommender** — 70 skills, most undiscovered; embed the prompt, suggest a close-but-not-
-  invoked skill ("this would be faster with /security"). Embeddings already exist. ~2 sessions. **HIGH adoption.**
-- **Inference-budget enforcement** — cost tracked but not enforced; a session could spend $50 silently. Add
-  session/task budgets + pre-skill cost estimate + confirm-over-budget. ~1.5 sessions.
-- **Context-routing health auditor** — CONTEXT_ROUTING.md is hand-maintained and drifts; weekly-check active
-  work-domains vs routing coverage, suggest additions. ~1.5 sessions.
-- **Cross-repo concept coherence** — knowledge silos across the 15+ repos; a concept graph + coherence check.
-  ~2.5 sessions. (Relates to Knowledge Cascade above.)
-- **Capability versioning/rollback** — per-skill changelog + `/rollback :skill`. ~1.5 sessions. MED.
-
-Top-3 by value (per the audit): (1) Observability — foundation for validating everything else;
-(2) Close the learning loop — makes "self-improving" real; (3) Skill-discovery recommender — unlocks the 69
-skills already built. Full detail: the 4 audit reports (this review).
+**A/B/C above are the audit's reasoning record** (the *why* behind the work). A landed in 7.4.0; B and C
+are now targeted in the **📋 Backlog** (7.7.0 and 8.0.0). **D — net-new capability ideas** (skill-discovery
+recommender, inference-budget enforcement, context-routing auditor, cross-repo coherence, capability
+versioning/rollback) are likewise all homed in the Backlog with target releases — see there, not here, so
+they can't drift. Audit Top-3 by value: (1) Observability [→7.4.0], (2) Close the learning loop [→7.7.0],
+(3) Skill-discovery recommender [→7.6.0].
 
 ---
 
-## 7.3+ (candidate / parked ideas)
+## 7.3.2 (patch — SHIPPED 2026-06-18) — memory-safety guards
 
-Triaged from the old design docs. Promote to a 7.x release when picked up.
-- **SpecKit-as-a-skill** 🆕 2026-06-17 — pull SpecKit's spec/plan generation *patterns* into a first-class PAI
-  skill (peer to `/research`, `/firstprinciples`) so spec-driven development is available from ANY project
-  session, not just where SpecKit is installed. Goal: a reusable `/speckit` (or similar) skill covering **all
-  phases** of the SpecKit flow (spec → plan → tasks → implement), mapped onto PAI's existing Algorithm/PRD
-  machinery (we already have `specs/` + spec-status lifecycle in Algorithm v3.14.0 OBSERVE/LEARN). Next step:
-  audit what SpecKit actually provides (its templates, phase prompts, artifact shapes) and draft the
-  integration — which phases become skill sub-commands, what reuses Algorithm vs. what's net-new. **LIVE
-  candidate, idea-stage** — needs the capability audit + design draft before building. Relates to the existing
-  Spec-Driven Dev shipped in v6.0.0 and the `specs/` lookup in Algorithm OBSERVE.
-- **Knowledge Cascade** (`knowledge-cascade-design.md`) — knowledge scattered across 6+ locations (wiki, memory,
-  KNOWLEDGE/, projects) with no sync mechanism. Real unsolved problem; relates to W6/memory work. **LIVE candidate.**
-- **MCP Rearchitect** (`MCP-REARCHITECT-PLAN.md`) — MCP config/discovery friction (tools "connected but not
-  exposed", config single-source). Partially addressed by v5.9 MCP-resilience work; re-assess what remains. **NEEDS RE-SCOPE.**
-- **MCP SSH / device-identity** (`MCP-SSH-IDENTITY-PLAN.md`) 🆕 2026-06-08 — can't reliably tell *what we're
-  connected to* / *what we can access*: all 3 router-mcp devices share `192.168.1.1`, identity is alias-only
-  and unverified. Plan: identify by stable hardware key (MAC/serial) + verify-on-connect + add/swap/retire
-  lifecycle, structured to scale 3→N devices. **HIGH friction, LIVE candidate.** (Distinct layer from MCP Rearchitect.)
-- **CrewAI pattern adoption** (`crewai-adoption-plan.md`) — borrowed orchestration patterns mapped to releases.
-  **PARKED** — revisit if multi-agent orchestration becomes a priority.
-- **Steering enforcement** (`steering-enforcement-design.md`) — was "ready for v5.3.0"; likely shipped
-  (PlanApprovalGuard). **VERIFY shipped → archive.**
+Full detail in `CHANGELOG.md`. **Patch scope = fixes + recurrence guards only**, all built + tested:
+- [x] SecurityValidator `rm`+`mv` memory guard (4 pattern files, 6 unit tests)
+- [x] Format-judgment steering rule (`AISTEERINGRULES.md`, CRITICAL)
+- [x] sync-to-kai atomicity (`.git/.sync-scrub-in-progress` sentinel + pre-commit/pre-push refusal)
+- [x] CWD-mismatch detection at SessionStart (`env-check.ts` `detectCwdMismatch`, 9 tests; `.claude/`
+      deliberately NOT a marker — it's the catch-all dir's own side-effect)
+- [x] CWD startup docs (`PAI/MEMORYSYSTEM.md`)
+
+The net-new memory *capabilities* this incident motivated are NOT here — they're the 7.4 minor below.
+(History note: the `3a62455` draft coupled this patch into 7.4 via a "graduating from 7.3.2" section,
+duplicating every item across both. That coupling was the error — a patch must ship as a patch.
+Decoupled 2026-06-18; all items verified against live code.)
+
+---
+
+## 7.4.0 (DRAFT — minor) — Memory capabilities + observability
+
+**Theme: Make knowledge loss *visible*, then build the capabilities that route knowledge correctly.**
+
+The net-new work motivated by the rayhunter incident — feature-sized, so it lands in a minor, not the
+7.3.2 patch. Observability leads: the rayhunter loss was invisible precisely because there was no
+telemetry on memory recall/save or hook behavior — you cannot prove the 7.3.2 guards held, or that the
+new capabilities below help, without it. This matches the 2026-06-08 audit's Top-3 ("Observability —
+foundation for validating everything else"). All items verified against live code 2026-06-18.
+
+**Spine (committed):**
+
+### 1. Observability FIRST (section A from 2026-06-08 audit) — the verification substrate
+- [ ] Telemetry layer: hook latency, skill/tool usage, **memory-recall hit-rate**, **memory-save events
+      per project**, inference cost. (The two bold metrics would have made rayhunter visible on day 1.)
+- [ ] Silent-degrade visibility (the ~12 swallow-catch sites from SF-9)
+- [ ] `/health` or board view for runtime telemetry
+- [x] ~~SF-32: weekly embeddings rebuild~~ **ALREADY DONE** — `EmbeddingIndex.ts --incremental` is wired into
+      `weekly-maintenance.ts:117`. (Validation 2026-06-18 found it shipped; was wrongly still listed open.)
+
+### 2. Memory-routing capabilities (the net-new wiring, measured by §1)
+- [ ] CrossProjectIndex surfacing in MemRecall (`PAI/Tools/CrossProjectIndex.ts` exists — wiring only)
+- [ ] **Agent knowledge harvesting via PostToolUse `Task` matcher** — NOT TaskCompleted/SubagentStop
+      (verified 2026-06-18: those are PAI agent-teams enum values, not Claude-Code-native events, and
+      do NOT fire on Agent-tool returns; PostToolUse `Task` is the documented hook point that fires in
+      the parent when a subagent returns). New hook on the parent side.
+- [ ] MemCapture steering rule — parent must checkpoint after Agent returns
+
+### 3. Memory recall quality
+- [ ] SF-3: wire embeddings into MemoryRecall scorer (keyword-only → semantic; confirmed live 33% miss)
+
+_No "candidates" limbo here by design — every not-yet-committed idea lives in the **Backlog** below with
+an explicit target release. If something should pull into 7.4.0, promote it from the backlog into a spine
+section above; don't leave it floating._
+
+---
+
+## 7.5.0 (DRAFT — minor) — Subagent context inheritance + agent resilience
+
+**Theme: Give delegated subagents the context they silently lose today.**
+
+Last in the line because the keystone work is **gated on Anthropic upstream** (issue #69283 /
+`docs/github-issue-subagent-context.md`) — it cannot be release-committed on someone else's roadmap.
+The parent-side workaround is the fallback that *can* ship regardless.
+
+### Keystone (gated — wire if/when upstream ships)
+- [ ] If Anthropic ships `context_files` / `inherit_context` (#69283) — wire into PAI agent system
+- [ ] `inherit_hooks` support if available — wire SecurityValidator + MemCapture into subagents
+      (today PreToolUse hooks don't fire for subagents — #69260, OPEN)
+
+### Parent-side workaround (ships regardless of upstream)
+- [ ] Inject critical rules (CLAUDE.md essentials + memory-save instruction) into Agent prompts via
+      a pre-dispatch hook — the brittle-but-available middle ground until a real `inherit_context` lands
+- [ ] Tiered injection (none / rules / full) mirroring the #69283 proposal, decided by the parent
+      per-delegation — so an Explore grep doesn't pay 60K but a research agent gets project rules
+
+### Dependency note
+7.5.0's keystone depends on 7.4.0's PostToolUse `Task`-matcher harvesting hook as the parent-side
+safety net: even with the workaround, the parent remains the only actor that can persist memory, so
+7.4.0 must land first.
+
+---
+
+## 📋 Backlog — the no-lose system (READ THIS)
+
+**The rule that prevents lost ideas:** every not-yet-committed idea, design note, or even a passing
+*"we should maybe…"* thought MUST land in this backlog with an **explicit target** — a dated release
+(7.6.0 / 7.7.0 / 8.0.0) or a long-horizon bucket (9.0+ / Someday). **There is no "candidate" limbo and
+no un-targeted item.** An idea with no target is the bug (that's how SpecKit got passed over: it was
+"on the roadmap" but only in a candidate list with no release, so it was invisible to every "what's
+next" decision and silently skipped).
+
+**Two mechanisms, both required:**
+1. **A home** — every item is under a dated header below. Targets are *intentions*, freely re-dated; the
+   point is that none is blank.
+2. **A surfacing trigger** — at every release cut, the owning release's backlog block is reviewed and each
+   item is promoted (→ a committed spine section) or explicitly re-dated. WeeklyMaintenance also echoes
+   the next two releases' backlog so it stays in view. A home without a trigger is still limbo.
+
+**How to add (also see the global memory `[[roadmap-backlog-capture]]`):** drop a bullet under the right
+target with `🆕 <date>`, a one-line what + why, and a status tag (`idea` / `scoping` / `ready`). When
+unsure of the release, use **Someday** — never leave it out of the doc. Discussion-only thoughts are
+welcome: tag them `thought`.
+
+Status legend: `idea` (raw) · `scoping` (needs design/audit) · `ready` (scoped, buildable) ·
+`thought` (discussion point, may never build) · `parked` (deliberately dormant) · `verify` (may already be done).
+
+---
+
+## 7.6.0 (TARGETED) — Spec-driven dev + skill discoverability
+
+- [ ] **SpecKit-as-a-skill** `ready` 🆕 2026-06-17 — pull SpecKit's spec/plan/tasks/implement *patterns* into
+  a first-class PAI `/speckit` skill (peer to `/research`), available from ANY session, mapped onto PAI's
+  Algorithm/PRD machinery (we already have `specs/` + spec-status lifecycle in Algorithm v3.14.0).
+  **Groundwork already exists:** `~/Projects/SpecKit/` is a cloned `github/spec-kit` v0.10.1 "design
+  studio" with 10 upstream `speckit-*` skills installed locally (2026-06-10) — but those are vendor skills
+  scoped to that one workspace, NOT PAI-global. Next step: audit the upstream skills' templates/phase-prompts,
+  decide which become `/speckit` sub-commands vs. reuse Algorithm. Relates to Spec-Driven Dev shipped v6.0.0.
+- [ ] **Skill-discovery recommender** `scoping` — 71 skills, most undiscovered; embed the prompt, suggest a
+  close-but-not-invoked skill ("this would be faster with /security"). Embeddings already exist. ~2 sessions.
+  **HIGH adoption** (audit Top-3). Pairs naturally with the SpecKit discoverability theme.
+
+## 7.7.0 (TARGETED) — Close the learning loop + knowledge cohesion
+
+- [ ] **Close the learning loop** `scoping` (audit §B, HIGH/STRATEGIC) — PAI collects ratings/instincts/
+  reflections but never *verifies they change behavior*. Instrument whether a promoted instinct prevents the
+  repeat error; auto-surface recurring corrections; lightweight A/B for system changes. ~3 sessions. Also
+  unblocks memcarry's value-loop. (Depends on 7.4.0 observability as the measurement substrate.)
+- [ ] **Knowledge Cascade** `scoping` (`knowledge-cascade-design.md`) — knowledge scattered across 6+
+  locations (wiki, memory, KNOWLEDGE/, projects) with no sync mechanism. Relates to CrossProjectIndex (7.4.0)
+  and W6/memcarry. **LIVE.**
+- [ ] **Cross-repo concept coherence** `idea` — knowledge silos across 15+ repos; a concept graph + coherence
+  check. ~2.5 sessions. (Superset of / relates to Knowledge Cascade — consider merging at scoping.)
+
+## 8.0.0 (HORIZON) — Confidence + cost + capability lifecycle
+
+- [ ] **Testing blind spots** `scoping` (audit §C, CRITICAL-for-confidence) — Algorithm runtime has 0
+  integration tests; 71 skills have 0 activation/routing tests; board has 0 E2E. Build Algorithm-runtime
+  harness + hook-lifecycle harness + skill-activation tests. ~5 sessions.
+- [ ] **Inference-budget enforcement** `idea` — session/task **dollar-cost** budgets + pre-skill estimate +
+  confirm-over-budget. **Note (validated 2026-06-18):** `hooks/lib/inference-budget.ts` already exists but is
+  a *different* thing — a SessionEnd LLM-**call-count** cap (max 3, anti-timeout), wired into KnowledgeSync.
+  This item is the cost-dollar layer; reuse that file's state-store pattern, don't rebuild it. ~1.5 sessions.
+- [ ] **Capability versioning/rollback** `idea` — per-skill changelog + `/rollback :skill`. ~1.5 sessions. MED.
+- [x] **Context-routing health auditor** ✅ **DONE 2026-06-18** — `PAI/Tools/RoutingAudit.ts` already did the
+  audit/discover/propose work; the only gap was automation. Wired into `weekly-maintenance.ts` as the
+  `routing-audit` task (read-only audit mode). Closed same session it was validated.
+- [ ] **MCP SSH / device-identity** `ready` 🆕 2026-06-08 (`MCP-SSH-IDENTITY-PLAN.md`) — can't reliably tell
+  *what we're connected to*: all 3 router-mcp devices share `192.168.1.1`, identity is alias-only/unverified.
+  Identify by stable hardware key (MAC/serial) + verify-on-connect + add/swap/retire lifecycle, 3→N devices.
+  **HIGH friction.**
+
+## 9.0+ / Someday (PARKED — revisit when the trigger condition hits)
+
+- [ ] **MCP Rearchitect** `parked` (`MCP-REARCHITECT-PLAN.md`) — MCP config/discovery friction. Partially
+  addressed by v5.9 MCP-resilience. **NEEDS RE-SCOPE** before it can be targeted — re-assess what remains.
+- [ ] **CrewAI pattern adoption** `parked` (`crewai-adoption-plan.md`) — orchestration patterns. Revisit IF
+  multi-agent orchestration becomes a priority.
+- [x] **Steering enforcement** ✅ **VERIFIED SHIPPED 2026-06-18** — all 5 spec components live: `PlanDetection.ts`
+  (Stop-phase plan detector, wired into StopOrchestrator), `PlanApprovalGuard.hook.ts` (UserPromptSubmit,
+  registered), `plan-pending.json` state, SessionCleanup clears it (`:222`), 68 tests pass. Design doc already
+  in `docs/planning/Archive/`. Nothing to build — closed.
+
+## 🔧 Refactor / tech-debt backlog (LOW-risk cleanups, no release urgency — target 7.6.0 unless pulled sooner)
+
+Quick wins from the 2026-06-08 audit; do opportunistically alongside themed work:
+- [ ] **`getAlgorithmVersion` (×4 identical), `ensureDir` (×3 identical)** → shared helpers. **MED, quick.** ← top quick win
+- [x] **Delete `hooks/UpdateTabTitle.hook.ts.bak-4.3.1`** ✅ DONE 2026-06-18 (stray backup removed; live file intact).
+- [ ] **Finish `hook-stdin` migration** — 12 hooks still define own `readStdin` (different shapes); migrate
+  case-by-case where the contract matches. **MED.**
+- [ ] **Finish `expandPath` → `lib/paths.ts`** — 3 local copies remain (RoutingAudit has unique handling). **LOW.**
+- [ ] **Finish `state-io` migration** — staging.ts + a few others still inline; move onto `readJSON`/`atomicWriteJSON`. **LOW.**
+- [ ] **Split oversized files** — `deliberate.ts` 1116L → 3 mode files; `dev-team.ts` 1039L → prompts/phases/review/utils. **LOW.**
+- [ ] **Merge `once-per-session` + `session-end-tracker`** → `lib/session-state.ts`; merge `learning-utils` into `learning-readback`. **LOW.**
 
 ---
 
@@ -246,7 +382,7 @@ Full detail: `PAI-Wiki/findings/session-findings-2026-06-05.md`. Status synced 2
 | SF-29 | PLAN | `pai-streamlining-plan.md` is ~40% stale — see "Open follow-ups" below | OPEN (triaged) |
 | SF-30 | INFRA | usp/acsplatform MCP controller unreachable — ✅ **EXPECTED**: AWS ACSPlatform intentionally shut down (cost, not in use). Not a fault. | RESOLVED (by design) |
 | SF-31 | INFRA | router M62 (`EXAMPLESERIAL26001024`) unreachable / `uhttpd:false` — ✅ **EXPECTED**: M62 not currently connected. Not a fault. | RESOLVED (by design) |
-| SF-32 | OPS | Embeddings index drifted 49 files stale before manual `--incremental` (2026-06-08) — add rebuild to weekly maintenance so semantic routing doesn't silently degrade | OPEN |
+| SF-32 | OPS | Embeddings index drifted 49 files stale before manual `--incremental` (2026-06-08) — add rebuild to weekly maintenance so semantic routing doesn't silently degrade | ✅ DONE — wired into `weekly-maintenance.ts:117` (confirmed 2026-06-18) |
 
 Full live-validation scorecard: [[PAI-Wiki/findings/live-validation-2026-06-08]].
 
@@ -324,8 +460,8 @@ confirmed end-to-end), inference engine + board + statusline all respond. Remain
 - [x] **SF-31 — router M62 unreachable** ✅ RESOLVED (by design): M62 (`EXAMPLESERIAL26001024`) is not currently
   connected. The earlier successful `router_health` read was from a cached/prior connection; it's offline now
   by choice, not broken. Reconnect when lab testing resumes.
-- [ ] **SF-32 — weekly embeddings rebuild.** Wire `EmbeddingIndex.ts --incremental` into WeeklyMaintenance so
-  semantic routing (Layer 2) doesn't silently degrade as memory grows. Small, mechanical.
+- [x] **SF-32 — weekly embeddings rebuild.** ✅ DONE — `EmbeddingIndex.ts --incremental` is wired into
+  `weekly-maintenance.ts:117`. (Confirmed 2026-06-18 during backlog validation; was wrongly still open.)
 - **SF-3 confirmed live** (no new ticket): a clearly-relevant MemoryRecall query scored only 33% — the
   keyword-only scorer limitation is real and observable. Wiring embeddings into recall scoring (pairs with W6)
   is the fix.

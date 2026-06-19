@@ -8,6 +8,22 @@
 
 set -euo pipefail
 
+# Sync-atomicity guard: sync-to-kai.sh drops .sync-scrub-in-progress in .git/ at rsync time and only
+# clears it after the post-scrub PII guard passes. If it's present, the working tree may hold
+# UNSCRUBBED pai-config content (PAI brand / PII) mid-sync — committing now would capture it. Refuse.
+# (Only ever exists in the kai repo; a harmless no-op in pai-config.)
+GIT_DIR_PATH="$(git rev-parse --git-dir 2>/dev/null || echo .git)"
+if [ -f "$GIT_DIR_PATH/.sync-scrub-in-progress" ]; then
+  echo ""
+  echo "🛡️  COMMIT BLOCKED — sync scrub in progress."
+  echo "    $(cat "$GIT_DIR_PATH/.sync-scrub-in-progress" 2>/dev/null)"
+  echo "    The tree may contain un-scrubbed content. Re-run sync-to-kai.sh to completion"
+  echo "    (it clears the sentinel after the PII guard passes), then commit."
+  echo "    Override (only if you know the scrub finished): rm '$GIT_DIR_PATH/.sync-scrub-in-progress'"
+  echo ""
+  exit 1
+fi
+
 # Secret patterns (same patterns as SecretScanner.hook.ts + extras for tool output)
 PATTERNS=(
   # GitHub tokens

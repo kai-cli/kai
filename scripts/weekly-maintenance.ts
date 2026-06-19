@@ -117,6 +117,7 @@ async function main() {
     { name: 'embedding-index', cmd: ['bun', 'scripts/EmbeddingIndex.ts', '--incremental'] }, // W1/W9: rebuild changed-file embeddings
     { name: 'transcript-cache-prune', cmd: ['bun', 'hooks/lib/transcript-cache.ts', '--prune', '30'] }, // SF-4: drop >30d cache files
     { name: 'wiring-reconcile', cmd: ['bun', 'scripts/reconcile-wiring.ts'] },
+    { name: 'routing-audit', cmd: ['bun', 'PAI/Tools/RoutingAudit.ts'] }, // report stale/missing CONTEXT_ROUTING paths (read-only audit)
     { name: 'security-audit-loop', cmd: ['bun', 'PAI/Tools/SecurityAuditLoop.ts'] }, // W7: dry-run report; human runs --apply
     { name: 'Tests (critical)', cmd: ['bun', 'test', 'tests/SecurityValidator.test.ts', 'tests/PostCompactRecovery.test.ts', 'tests/GitHubWriteGuard.test.ts', 'tests/RiskClassifier.test.ts'] },
   ];
@@ -191,6 +192,24 @@ async function main() {
       console.log(`  ${icon} ${r.name}: ${r.message}`);
     }
   }
+
+  // Backlog surfacing trigger — keep targeted ideas in view so nothing rots in limbo (the SpecKit
+  // lesson; see roadmap "📋 Backlog — the no-lose system"). Echo the next TARGETED release block.
+  try {
+    const roadmap = join(PAI_DIR, '..', 'Projects', 'kai', 'docs', 'planning', 'ROADMAP-7.x.md');
+    const rmPath = existsSync(roadmap) ? roadmap : join(process.env.HOME!, 'Projects/kai/docs/planning/ROADMAP-7.x.md');
+    if (existsSync(rmPath)) {
+      const lines = readFileSync(rmPath, 'utf-8').split('\n');
+      const start = lines.findIndex(l => /^## .*\(TARGETED\)/.test(l));
+      if (start >= 0) {
+        const end = lines.findIndex((l, i) => i > start && /^## /.test(l));
+        const block = lines.slice(start, end > start ? end : start + 12).filter(l => l.trim());
+        console.log('\n── 📋 Backlog: next targeted release (review — promote or re-date) ──');
+        for (const l of block) console.log(`  ${l}`);
+        console.log('  → Promote ready items into a committed spine section, or re-date. Don\'t leave floating.');
+      }
+    }
+  } catch { /* non-fatal — surfacing is a nudge, not a gate */ }
 
   // Update state sentinel
   const state = {

@@ -13,6 +13,15 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
+# Sync-atomicity guard: refuse to push while a sync scrub is mid-flight (see scripts/hooks/pre-commit
+# and sync-to-kai.sh). Only ever present in the kai repo; harmless no-op in pai-config.
+GIT_DIR_PATH="$(git rev-parse --git-dir 2>/dev/null || echo .git)"
+if [ -f "$GIT_DIR_PATH/.sync-scrub-in-progress" ]; then
+  echo "🛡️  PUSH BLOCKED — sync scrub in progress ($GIT_DIR_PATH/.sync-scrub-in-progress)."
+  echo "    Re-run sync-to-kai.sh to completion, then push. It may hold un-scrubbed content."
+  exit 1
+fi
+
 # Pre-push receives, on stdin: <local-ref> <local-sha> <remote-ref> <remote-sha> (one line per ref).
 # Capture it NOW (before any subshell consumes stdin) so the gate can scan the exact push range.
 PUSH_STDIN="$(cat || true)"

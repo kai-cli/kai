@@ -25,6 +25,14 @@
         "reason": "Bulk delete of critical PAI directories"
       },
       {
+        "pattern": "\\bmv\\s+[^&|;]*\\.claude/(projects/[^ ]*/memory|MEMORY)/",
+        "reason": "Moving PAI memory files via shell causes silent knowledge loss (the rayhunter mv-to-/tmp bypass) — edit memory with tools, never mv it"
+      },
+      {
+        "pattern": "\\brm\\s+[^&|;]*\\.claude/(projects/[^ ]*/memory|MEMORY)/[^ ]*\\.md",
+        "reason": "Deleting a PAI memory file via shell bypasses curation — use the memory/curation path, not rm"
+      },
+      {
         "pattern": ">(\\s+)?~/.claude/settings\\.json",
         "reason": "Redirect overwrite of settings.json (use BuildSettings.ts)"
       },
