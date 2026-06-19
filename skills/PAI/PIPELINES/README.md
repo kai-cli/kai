@@ -1,6 +1,6 @@
 # PAI Pipelines
 
-> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
+> **KAI 7.1.0** — Stable release.
 
 Pipelines chain actions together. A pipeline is just a list of actions executed in order using the **pipe model** — the output of each action becomes the input of the next.
 

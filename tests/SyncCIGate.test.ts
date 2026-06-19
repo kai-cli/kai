@@ -33,7 +33,9 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
   test('parses EXCLUDE_PATHS from sync-to-kai.sh', () => {
     const excludePaths = parseExcludePaths(PAI_DIR);
     expect(excludePaths.length).toBeGreaterThan(0);
-    expect(excludePaths).toContain('CLAUDE.md');
+    // /CLAUDE.md is root-anchored (leading '/') so the bare basename exclude
+    // doesn't also freeze nested CLAUDE.md files at depth. See sync-to-kai.sh.
+    expect(excludePaths).toContain('/CLAUDE.md');
     expect(excludePaths).toContain('VERSION');
     expect(excludePaths).toContain('config/identity.jsonc');
   });
@@ -52,6 +54,19 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
 
     const result = classifyFile('CLAUDE.md', excludePaths, kaiOnlyFiles);
     expect(result).toBe('private');
+  });
+
+  test('root-anchored exclude does NOT classify nested namesakes as private', () => {
+    // Regression: a bare 'CLAUDE.md'/'README.md'/'TOOLS.md' exclude used to match
+    // the same basename at every depth (rsync semantics), freezing tracked nested
+    // files like PAI/TOOLS.md and MEMORY/README.md in kai. Anchoring to '/NAME'
+    // fixed it; this asserts nested namesakes classify as public (they should sync).
+    const excludePaths = parseExcludePaths(PAI_DIR);
+    const kaiOnlyFiles = parseKaiOnlyFiles(PAI_DIR);
+
+    expect(classifyFile('skills/Media/Art/Tools/CLAUDE.md', excludePaths, kaiOnlyFiles)).toBe('public');
+    expect(classifyFile('PAI/TOOLS.md', excludePaths, kaiOnlyFiles)).toBe('public');
+    expect(classifyFile('MEMORY/README.md', excludePaths, kaiOnlyFiles)).toBe('public');
   });
 
   test('classifies file in KAI_ONLY_FILES as kai-only', () => {

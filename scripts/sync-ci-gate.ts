@@ -154,6 +154,11 @@ function getTrackedFiles(paiDir: string = getPaiDir()): string[] {
 
 // Check if file path matches pattern (with glob support for directories)
 function matchesPattern(filePath: string, pattern: string): boolean {
+  // A leading '/' in an rsync filter anchors the pattern to the transfer root.
+  // classifyFile works with root-relative paths, so a root-anchored pattern is
+  // just an exact-from-root match — strip the anchor and fall through to the
+  // exact/prefix logic below (which is already root-relative, not depth-matching).
+  if (pattern.startsWith('/')) pattern = pattern.slice(1);
   if (pattern.endsWith('/')) {
     return filePath.startsWith(pattern);
   }

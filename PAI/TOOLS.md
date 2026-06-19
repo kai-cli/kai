@@ -17,6 +17,16 @@ pai upgrade            # Upgrade PAI
 pai version            # Show version info
 ```
 
+### Agent View — Background Session Management
+Manage autonomous background sessions and parallel work.
+```bash
+claude agents                    # TUI for managing background sessions
+claude --bg "task description"   # Dispatch background session
+claude --agent <name> --bg       # Dispatch named agent in background
+/bg                              # Send current work to background (within session)
+/goal                            # Set completion condition for autonomous work
+```
+
 ### algorithm.ts — Algorithm CLI
 Run the PAI Algorithm in loop or interactive mode against PRDs.
 ```bash

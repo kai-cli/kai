@@ -146,7 +146,7 @@ interface StopPayload extends BasePayload {
 |------|---------|----------|--------------|
 | `QuestionAnswered.hook.ts` | Reset tab state after question answered | No | Kitty terminal |
 | `PRDSync.hook.ts` | Sync PRD frontmatter → work.json | No | `MEMORY/WORK/`, `work.json` |
-| `ReadTracker.hook.ts` | Track PAI-internal file reads for routing analysis | No | `MEMORY/STATE/read-log.jsonl` |
+| `ReadActivity.hook.ts` | Track PAI-internal file reads for routing analysis (merged ReadTracker + MemoryAccessTracker, W5a) | No | `MEMORY/STATE/read-log.jsonl` |
 
 ### Stop Hooks
 

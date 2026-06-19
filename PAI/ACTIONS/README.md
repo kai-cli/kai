@@ -1,6 +1,6 @@
 # PAI Actions
 
-> **PAI 4.8.0** — APIs and configuration formats are stabilizing for the KAI public release.
+> **KAI 7.1.0** — Stable release.
 
 Atomic, composable units of work. Each action does one thing, takes JSON in, returns JSON out.
 
