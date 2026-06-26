@@ -51,6 +51,7 @@ FOR: Multi-step, complex, or difficult work. Troubleshooting, debugging, buildin
 
 - **Mandatory output format** — Every response MUST use exactly one of the output formats above (ALGORITHM, NATIVE, or MINIMAL). No freeform output.
 - **Response format before questions** — Always complete the current response format output FIRST, then invoke AskUserQuestion at the end.
+- **Branch and PR workflow** — Before editing, committing, or pushing repo files, verify the current branch is not `main`. Create a feature branch first and use a PR for review. Do not commit on `main` or push `main` directly unless the user explicitly approves that exact main-branch write in the current turn.
 
 ---
 

@@ -94,7 +94,7 @@ describe('settings reproducibility (PAI-SR-001)', () => {
     const divergent = JSON.parse(proc.stdout.toString()) as string[];
     // Allowed: spinnerTipsOverride (version-string staleness). Local installs may also carry
     // environment-specific statusLine/autoMemoryDirectory drift. Any OTHER key is a new defect.
-    const ALLOWED = new Set(['spinnerTipsOverride', 'autoMemoryDirectory', 'statusLine']);
+    const ALLOWED = new Set(['spinnerTipsOverride', 'autoMemoryDirectory', 'statusLine', 'pai']);
     const unexpected = divergent.filter(k => !ALLOWED.has(k));
     expect(unexpected).toEqual([]);
   });

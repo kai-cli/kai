@@ -1,6 +1,6 @@
 # Pipelines
 
-> **KAI 7.1.0** — Stable release.
+> **KAI 7.4.2** — Stable release.
 
 **Orchestrating Sequences of Actions with Verification Gates**
 

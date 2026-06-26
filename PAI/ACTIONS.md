@@ -1,6 +1,6 @@
 # Actions
 
-> **KAI 7.3.2** — Stable release.
+> **KAI 7.4.2** — Stable release.
 
 **Atomic, Composable Units of Work**
 

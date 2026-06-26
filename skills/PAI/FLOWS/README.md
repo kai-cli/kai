@@ -1,6 +1,6 @@
 # PAI Flows
 
-> **KAI 7.1.0** — Stable release.
+> **KAI 7.4.2** — Stable release.
 
 Flows connect **sources** to **pipelines** on a **schedule**. A flow fetches content from an external source (RSS feed, API, etc.), pipes it through a pipeline of actions, and delivers results to a destination (email, webhook, etc.).
 

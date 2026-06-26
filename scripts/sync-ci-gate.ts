@@ -72,6 +72,19 @@ function getKaiDir(): string {
   return process.env.KAI_DIR || join(process.env.HOME!, 'Projects', 'kai');
 }
 
+function isPublicKaiRepo(root: string): boolean {
+  try {
+    const remote = execSync('git remote get-url origin', {
+      cwd: root,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return remote.includes('kai-cli/kai');
+  } catch {
+    return false;
+  }
+}
+
 // PII patterns loaded from external file (excluded from kai sync to avoid leaking identifiers)
 function loadPIIPatterns(paiDir: string): string[] {
   const patternsPath = join(paiDir, 'scripts', 'pii-patterns.json');
@@ -384,6 +397,7 @@ function runDependencyClosureReport(paiDir: string): { errors: string[]; warning
 function main() {
   const PAI_DIR = getPaiDir();
   const KAI_DIR = getKaiDir();
+  const syncScript = join(PAI_DIR, 'scripts', 'sync-to-kai.sh');
 
   console.log('\n=== Sync CI Gate ===');
   console.log(`PAI: ${PAI_DIR}`);
@@ -392,6 +406,35 @@ function main() {
   if (!existsSync(PAI_DIR)) {
     fail(`PAI directory not found: ${PAI_DIR}`);
     process.exit(1);
+  }
+
+  if (!existsSync(syncScript) && isPublicKaiRepo(PAI_DIR)) {
+    info('Public KAI checkout detected; sync-to-kai.sh is intentionally not shipped');
+    const manifestPath = join(PAI_DIR, 'manifest.json');
+    const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf-8')) : null;
+    if (!manifest?.counts) {
+      fail('manifest.json missing product counts');
+      process.exit(1);
+    }
+    const actualSkills = execSync(
+      "find skills -name SKILL.md -not -path '*/.archive/*' | wc -l | tr -d ' '",
+      { cwd: PAI_DIR, encoding: 'utf-8' }
+    ).trim();
+    const actualHooks = execSync(
+      "find hooks -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' '",
+      { cwd: PAI_DIR, encoding: 'utf-8' }
+    ).trim();
+    const actualAgents = execSync(
+      "find agents -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' '",
+      { cwd: PAI_DIR, encoding: 'utf-8' }
+    ).trim();
+    if (String(manifest.counts.skills) !== actualSkills || String(manifest.counts.hooks) !== actualHooks || String(manifest.counts.agents) !== actualAgents) {
+      fail(`Manifest counts do not match filesystem (${actualSkills} skills, ${actualHooks} hooks, ${actualAgents} agents)`);
+      process.exit(1);
+    }
+    pass(`Public KAI manifest counts match filesystem (${actualSkills} skills, ${actualHooks} hooks, ${actualAgents} agents)`);
+    console.log('\n✅ Public KAI sync readiness gate skipped private sync checks\n');
+    process.exit(0);
   }
 
   // Step 1: Parse sync rules

@@ -1,6 +1,6 @@
 # MEMORY - Unified Memory System
 
-**Version:** 7.3.2 (Projects-native architecture, 2026-01-12)
+**Version:** 7.4.2 (Projects-native architecture, 2026-01-12)
 
 Full documentation: `~/.claude/skills/PAI/MEMORYSYSTEM.md`
 

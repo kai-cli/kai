@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "targets": [
+    { "file": "manifest.json", "kind": "json-version", "category": "config" },
+    { "file": "settings.json", "kind": "settings-pai-version", "category": "config", "optional": true },
+    { "file": "config/preferences.jsonc", "kind": "preferences-pai-algo", "category": "config" },
+    { "file": "install.sh", "kind": "install-major-minor", "category": "config" },
+    { "file": "PAI/Tools/Banner.ts", "kind": "banner-pai-algo-fallback", "category": "fallback" },
+    { "file": "PAI/Tools/BuildCLAUDE.ts", "kind": "buildclaude-default-algo", "category": "fallback" },
+    { "file": "PAI/Tools/BuildCLAUDE.ts", "kind": "buildclaude-default-pai", "category": "fallback" },
+    { "file": "CLAUDE.md", "kind": "h1-kai-version", "category": "docs", "optional": true },
+    { "file": "README.md", "kind": "h1-kai-version", "category": "docs" },
+    { "file": "README.md", "kind": "readme-algo-inline", "category": "docs" },
+    { "file": "docs/WHATS-DIFFERENT.md", "kind": "whats-different-title", "category": "docs" },
+    { "file": "docs/WHATS-DIFFERENT.md", "kind": "whats-different-deploying", "category": "docs" },
+    { "file": "docs/WHATS-DIFFERENT.md", "kind": "whats-different-table-version", "category": "docs" },
+    { "file": "docs/WHATS-DIFFERENT.md", "kind": "whats-different-algo-table", "category": "docs" },
+    { "file": "config/spinner-tips.json", "kind": "spinner-tip-pai-algo", "category": "docs" },
+    { "file": "hooks/LoadContext.hook.ts", "kind": "loadcontext-init-version", "category": "docs" },
+    { "file": "hooks/lib/recovery-block.ts", "kind": "recovery-block-algo", "category": "docs" },
+    { "file": "MEMORY/README.md", "kind": "architecture-version-banner", "category": "docs" },
+    { "file": "skills/PAI/MEMORYSYSTEM.md", "kind": "architecture-version-banner", "category": "docs" }
+  ],
+  "discover": [
+    {
+      "roots": ["PAI", "skills/PAI"],
+      "extensions": [".md"],
+      "kind": "stable-release-banner",
+      "category": "docs"
+    }
+  ]
+}
