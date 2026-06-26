@@ -24,6 +24,19 @@ if [ -f "$GIT_DIR_PATH/.sync-scrub-in-progress" ]; then
   exit 1
 fi
 
+# Branch workflow guard: repo changes must happen on feature branches and flow through PRs.
+# Override only when the user explicitly approves a main-branch write in the current turn:
+#   PAI_ALLOW_MAIN_WRITE=1 git commit ...
+CURRENT_BRANCH="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+if [[ "$CURRENT_BRANCH" == "main" && "${PAI_ALLOW_MAIN_WRITE:-}" != "1" ]]; then
+  echo ""
+  echo "❌ Commit blocked: current branch is main."
+  echo "   Create a feature branch and open a PR instead."
+  echo "   Explicit one-off override: PAI_ALLOW_MAIN_WRITE=1 git commit ..."
+  echo ""
+  exit 1
+fi
+
 # Secret patterns (same patterns as SecretScanner.hook.ts + extras for tool output)
 PATTERNS=(
   # GitHub tokens

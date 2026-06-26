@@ -10,13 +10,14 @@
  * AND passes on the good input.
  */
 import { describe, test, expect } from 'bun:test';
-import { readFileSync, mkdtempSync, rmSync, cpSync } from 'fs';
+import { readFileSync, mkdtempSync, rmSync, cpSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { spawnSync } from 'child_process';
 
 const REPO = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const HOOK = readFileSync(join(REPO, 'scripts/hooks/pre-push'), 'utf-8');
+const PRE_COMMIT_HOOK = readFileSync(join(REPO, 'scripts/hooks/pre-commit'), 'utf-8');
 
 describe('pre-push repo-safety guards are wired (incident 2026-06-22)', () => {
   test('R1 large-deletion guard present with override', () => {
@@ -50,6 +51,14 @@ describe('pre-push repo-safety guards are wired (incident 2026-06-22)', () => {
     expect(HOOK).toContain('PAI_PRE_PUSH_FULL_TESTS');
     expect(HOOK).toContain('MEMORY/KNOWLEDGE/*.md');
     expect(HOOK).toContain('MEMORY/memcarry/store/atoms/*');
+  });
+
+  test('main-branch workflow guard is wired in commit and push hooks', () => {
+    expect(PRE_COMMIT_HOOK).toContain('Commit blocked: current branch is main');
+    expect(PRE_COMMIT_HOOK).toContain('PAI_ALLOW_MAIN_WRITE');
+    expect(HOOK).toContain('direct main-branch push');
+    expect(HOOK).toContain('refs/heads/main');
+    expect(HOOK).toContain('PAI_ALLOW_MAIN_WRITE');
   });
 });
 
@@ -106,6 +115,60 @@ describe('R3 core.bare canary — real hook execution', () => {
       const out = (res.stdout || '') + (res.stderr || '');
       expect(res.status).toBe(1);                                   // blocked, not crashed-through
       expect(out).toContain('core.bare=true on a working repo');   // explicit diagnostic fired
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('main-branch workflow guard — real hook execution', () => {
+  test('pre-commit hook blocks commits on main before scanning staged files', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'main-commit-guard-'));
+    try {
+      const run = (args: string[], opts: any = {}) =>
+        spawnSync('git', args, { cwd: dir, encoding: 'utf-8', ...opts });
+      run(['init', '-q', '-b', 'main']);
+      run(['config', 'user.email', 'maintainer@kai-cli.com']);
+      run(['config', 'user.name', 'KAI Maintainer']);
+      writeFileSync(join(dir, 'f.txt'), 'x');
+      run(['add', '.']);
+      cpSync(join(REPO, 'scripts/hooks/pre-commit'), join(dir, 'hook.sh'));
+
+      const res = spawnSync('bash', [join(dir, 'hook.sh')], {
+        cwd: dir,
+        encoding: 'utf-8',
+      });
+      const out = (res.stdout || '') + (res.stderr || '');
+      expect(res.status).toBe(1);
+      expect(out).toContain('Commit blocked: current branch is main');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('pre-push hook blocks direct main push before expensive gates', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'main-push-guard-'));
+    try {
+      const run = (args: string[], opts: any = {}) =>
+        spawnSync('git', args, { cwd: dir, encoding: 'utf-8', ...opts });
+      run(['init', '-q', '-b', 'main']);
+      run(['config', 'user.email', 'maintainer@kai-cli.com']);
+      run(['config', 'user.name', 'KAI Maintainer']);
+      writeFileSync(join(dir, 'f.txt'), 'x');
+      run(['add', '.']);
+      run(['commit', '-qm', 'base']);
+      const tip = run(['rev-parse', 'HEAD']).stdout.trim();
+      cpSync(join(REPO, 'scripts/hooks/pre-push'), join(dir, 'hook.sh'));
+
+      const res = spawnSync('bash', [join(dir, 'hook.sh')], {
+        cwd: dir,
+        input: `refs/heads/main ${tip} refs/heads/main 000\n`,
+        encoding: 'utf-8',
+      });
+      const out = (res.stdout || '') + (res.stderr || '');
+      expect(res.status).toBe(1);
+      expect(out).toContain('direct main-branch push');
+      expect(out).not.toContain('Running tests');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

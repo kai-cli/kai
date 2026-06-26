@@ -29,6 +29,8 @@ Personal overrides in `USER/AISTEERINGRULES.md`. Full examples in `AISTEERINGRUL
 
 **Check git remote before push.** Run `git remote -v` to verify correct repo.
 
+**Branch and PR workflow (CRITICAL).** Before editing, committing, or pushing repo files, verify the current branch is not `main`. Create a feature branch first and use a PR for review. Do not commit on `main` or push `main` directly unless {PRINCIPAL.NAME} explicitly approves that exact main-branch write in the current turn.
+
 **Don't modify user content without asking.** Never edit quotes or user-written text.
 
 **Minimal scope.** Only change what was asked. No bonus refactoring, no extra cleanup.

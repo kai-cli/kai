@@ -1,6 +1,6 @@
 # PAI Actions
 
-> **KAI 7.1.0** — Stable release.
+> **KAI 7.4.2** — Stable release.
 
 Atomic, composable units of work. Each action does one thing, takes JSON in, returns JSON out.
 

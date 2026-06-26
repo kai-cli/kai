@@ -36,6 +36,23 @@ fi
 # Capture it NOW (before any subshell consumes stdin) so the gate can scan the exact push range.
 PUSH_STDIN="$(cat || true)"
 
+# Branch workflow guard: changes should leave local repos through feature branches and PRs.
+# Override only when the user explicitly approves a main-branch write in the current turn:
+#   PAI_ALLOW_MAIN_WRITE=1 git push origin main
+if [[ "${PAI_ALLOW_MAIN_WRITE:-}" != "1" ]]; then
+  while read -r lref _lsha rref _rsha; do
+    [[ -z "${lref:-}" ]] && continue
+    if [[ "$lref" == "refs/heads/main" || "$rref" == "refs/heads/main" ]]; then
+      echo ""
+      echo "❌ Pre-push BLOCKED: direct main-branch push."
+      echo "   Push a feature branch and open a PR instead."
+      echo "   Explicit one-off override: PAI_ALLOW_MAIN_WRITE=1 git push ..."
+      echo ""
+      exit 1
+    fi
+  done <<< "$PUSH_STDIN"
+fi
+
 echo "── KAI pre-push checks ──"
 
 # ── Compute the push range once (shared by the repo-safety + PII gates) ──────
