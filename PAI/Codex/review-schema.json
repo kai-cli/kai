@@ -1,0 +1,41 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "concerns", "fail"],
+      "description": "pass = no material issues; concerns = works but has risks worth addressing; fail = has blocking defects"
+    },
+    "summary": {
+      "type": "string",
+      "description": "2-4 sentence independent assessment of the artifact under review"
+    },
+    "findings": {
+      "type": "array",
+      "description": "Specific issues, risks, or recommendations. Empty array if none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "title", "detail", "location", "recommendation"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"]
+          },
+          "title": { "type": "string", "description": "Short label for the finding" },
+          "detail": { "type": "string", "description": "What the issue is and why it matters" },
+          "location": {
+            "type": ["string", "null"],
+            "description": "File path / line / component, or null if not applicable"
+          },
+          "recommendation": {
+            "type": ["string", "null"],
+            "description": "Concrete suggested fix, or null if none"
+          }
+        }
+      }
+    }
+  }
+}

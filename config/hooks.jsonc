@@ -52,7 +52,7 @@
       },
       {
         // Agent spawn guard — validates agent parameters before execution
-        "matcher": "Task",
+        "matcher": "Agent",
         "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh AgentExecutionGuard.hook.ts" }]
       },
       {
@@ -104,6 +104,19 @@
         // scoring) into one PostToolUse:Read parse. Path-disjoint branches; async, no stdout.
         "matcher": "Read",
         "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ReadActivity.hook.ts", "async": true }]
+      },
+      {
+        // PAI-SR-002 fix: AlgorithmTracker reads PostToolUse fields (tool_name/tool_input/tool_result)
+        // but was registered ONLY under Stop, where those fields don't exist → dormant. Register it on
+        // the events whose payloads it actually consumes: Bash (phase-curl detection), TaskCreate/TaskUpdate
+        // (ISC criteria), and Agent (subagent spawn tracking — current tool name; was retired "Task").
+        "matcher": "Bash|TaskCreate|TaskUpdate|Agent",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh AlgorithmTracker.hook.ts", "async": true }]
+      },
+      {
+        // Capture-loss guard — reminds parent to checkpoint durable subagent findings after Agent returns
+        "matcher": "Agent",
+        "hooks": [{ "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh AgentMemoryCapture.hook.ts" }]
       }
     ],
 
@@ -157,7 +170,9 @@
           // Capture 1-10 ratings from prompt patterns + implicit sentiment
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh RatingCapture.hook.ts", "async": true },
           // W10: TerminalState's UPS branch removed (duplicated UpdateTabTitle). UpdateTabTitle owns the title.
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateTabTitle.hook.ts", "async": true }
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh UpdateTabTitle.hook.ts", "async": true },
+          // Metadata-only heartbeat so latency investigations can prove UserPromptSubmit telemetry fired.
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh TurnTelemetry.hook.ts", "async": true }
         ]
       }
     ],
@@ -208,9 +223,9 @@
           // W10: TerminalState's Stop branch removed — completion tab is owned by handlers/TabState
           // inside StopOrchestrator (ordered fan-out), which avoids the prior multi-writer race on Stop.
           // Orchestrate stop-phase handlers (15s inference — must be async)
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh StopOrchestrator.hook.ts", "async": true },
-          // Track algorithm phase progress (236ms, no stdout needed)
-          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh AlgorithmTracker.hook.ts", "async": true }
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh StopOrchestrator.hook.ts", "async": true }
+          // AlgorithmTracker moved Stop → PostToolUse (PAI-SR-002): it reads PostToolUse payload fields,
+          // which a Stop payload never carries. See the PostToolUse "Bash|TaskCreate|TaskUpdate|Agent" group.
         ]
       }
     ],
@@ -220,6 +235,15 @@
       {
         "hooks": [
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PreCompact.hook.ts" }
+        ]
+      }
+    ],
+
+    // UserPromptExpansion — direct slash command telemetry (does not gate prompts)
+    "UserPromptExpansion": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SkillTracker.hook.ts", "async": true }
         ]
       }
     ],

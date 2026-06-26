@@ -4,14 +4,16 @@
  *
  * PURPOSE:
  * Single hook for all rating capture. Handles both explicit ratings (1-10 pattern)
- * and implicit sentiment detection (AI inference).
+ * and deterministic implicit signals. LLM-backed implicit sentiment is opt-in only
+ * because UserPromptSubmit inference timeouts block prompt launch in practice.
  *
  * TRIGGER: UserPromptSubmit
  *
  * FLOW:
  * 1. Parse input from stdin
  * 2. Check for explicit rating pattern → if found, write and exit
- * 3. If no explicit rating, run AI sentiment inference (Haiku, ~1s)
+ * 3. If no explicit rating, capture cheap deterministic signals only by default
+ * 4. Optional: if PAI_ENABLE_IMPLICIT_RATING_INFERENCE=1, run AI sentiment inference
  * 4. Write result to ratings.jsonl
  * 5. Capture learnings for low ratings (<6), full failure capture for <=3
  *
@@ -21,11 +23,12 @@
  * SIDE EFFECTS:
  * - Writes to: MEMORY/LEARNING/SIGNALS/ratings.jsonl
  * - Writes to: MEMORY/LEARNING/<category>/<YYYY-MM>/*.md (for low ratings)
- * - API call: Haiku inference for implicit sentiment (fast/cheap)
+ * - Optional API call: Haiku inference for implicit sentiment
  *
  * PERFORMANCE:
  * - Explicit rating path: <50ms (no inference)
- * - Implicit sentiment path: 0.5-1.5s (Haiku inference)
+ * - Deterministic implicit path: <50ms
+ * - Opt-in implicit sentiment path: bounded by inference timeout
  */
 
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
@@ -36,10 +39,10 @@ import { getIdentity, getPrincipal, getPrincipalName } from './lib/identity';
 import { getLearningCategory } from './lib/learning-utils';
 import { getISOTimestamp, getLocalComponents } from './lib/time';
 import { captureFailure } from '../PAI/Tools/FailureCapture';
-import { getPaiDir, paiPath } from './lib/paths';
+import { getPaiDir, paiPath, lastResponseCachePath } from './lib/paths';
 import { writeDraft } from './lib/staging';
 import { parseExplicitRating, detectCorrections } from './lib/rating-parser';
-import { append as appendRating } from './lib/ratings-store';
+import { append as appendRating, type RatingEntry } from './lib/ratings-store';
 
 
 // ── Shared Types ──
@@ -52,31 +55,23 @@ interface HookInput {
   hook_event_name: string;
 }
 
-interface RatingEntry {
-  timestamp: string;
-  rating: number;
-  session_id: string;
-  comment?: string;
-  source?: 'implicit' | 'explicit';
-  sentiment_summary?: string;
-  confidence?: number;
-  response_preview?: string;  // Truncated last response that was rated (from cache)
-}
-
 // ── Shared Constants ──
 
 const RATINGS_FILE = paiPath('MEMORY', 'LEARNING', 'SIGNALS', 'ratings.jsonl');
-const LAST_RESPONSE_CACHE = paiPath('MEMORY', 'STATE', 'last-response.txt');
 const MIN_PROMPT_LENGTH = 3;
 const MIN_CONFIDENCE = 0.5;
+const ENABLE_IMPLICIT_RATING_INFERENCE = process.env.PAI_ENABLE_IMPLICIT_RATING_INFERENCE === '1';
 
 /**
  * Read cached last response written by LastResponseCache.hook.ts.
  * Stop fires before next UserPromptSubmit, so cache is always fresh.
+ * Keyed by session_id (PAI-SR-041) so another session's response is never attached
+ * to this session's rating.
  */
-function getLastResponse(): string {
+function getLastResponse(sessionId: string): string {
   try {
-    if (existsSync(LAST_RESPONSE_CACHE)) return readFileSync(LAST_RESPONSE_CACHE, 'utf-8');
+    const cache = lastResponseCachePath(sessionId);
+    if (existsSync(cache)) return readFileSync(cache, 'utf-8');
   } catch {}
   return '';
 }
@@ -431,7 +426,7 @@ async function main() {
       isExplicitRating = true; // Mark as explicit for catch handler
       console.error(`[RatingCapture] Explicit rating: ${explicitResult.rating}${explicitResult.comment ? ` - ${explicitResult.comment}` : ''}`);
 
-      const cachedResponse = getLastResponse();
+      const cachedResponse = getLastResponse(data.session_id);
       const entry: RatingEntry = {
         timestamp: getISOTimestamp(),
         rating: explicitResult.rating,
@@ -456,7 +451,7 @@ async function main() {
 
       if (explicitResult.rating < 5) {
         // Read cached last response (written by LastResponseCache.hook.ts on previous Stop event)
-        const responseContext = getLastResponse();
+        const responseContext = getLastResponse(data.session_id);
 
         captureLowRatingLearning(explicitResult.rating, explicitResult.comment || '', responseContext, 'explicit');
 
@@ -517,7 +512,7 @@ async function main() {
       if (POSITIVE_PRAISE_WORDS.has(normalizedPrompt) || POSITIVE_PHRASES.has(normalizedPrompt)
           || (promptWords.length === 2 && promptWords.every(w => POSITIVE_PRAISE_WORDS.has(w)))) {
         console.error(`[RatingCapture] Positive praise fast-path: "${prompt.trim()}" → rating 8`);
-        const cachedResponse = getLastResponse();
+        const cachedResponse = getLastResponse(data.session_id);
         writeRating({
           timestamp: getISOTimestamp(),
           rating: 8,
@@ -530,6 +525,11 @@ async function main() {
   
         process.exit(0);
       }
+    }
+
+    if (!ENABLE_IMPLICIT_RATING_INFERENCE) {
+      console.error('[RatingCapture] Implicit sentiment inference disabled; set PAI_ENABLE_IMPLICIT_RATING_INFERENCE=1 to enable');
+      process.exit(0);
     }
 
     // Await sentiment analysis — must complete before process exits
@@ -556,7 +556,7 @@ async function main() {
 
       console.error(`[RatingCapture] Implicit: ${sentiment.rating}/10 (conf: ${sentiment.confidence}) - ${sentiment.summary}`);
 
-      const implicitCachedResponse = getLastResponse();
+      const implicitCachedResponse = getLastResponse(data.session_id);
       const entry: RatingEntry = {
         timestamp: getISOTimestamp(),
         rating: sentiment.rating,

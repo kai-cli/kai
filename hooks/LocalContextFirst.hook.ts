@@ -23,8 +23,11 @@ import { readHookInput } from './lib/hook-io';
 import { paiPath } from './lib/paths';
 import { semanticFallback, isIndexAvailable } from './lib/semantic-fallback';
 import { checkRulesChanges } from './lib/rules-watcher';
+import { redactSecrets } from './lib/redact';
 
 const DOMAINS_CONFIG_PATH = paiPath('config', 'domains.jsonc');
+const KNOWLEDGE_DIR = paiPath('MEMORY', 'KNOWLEDGE');
+const MAX_DOMAIN_CHARS = 4000;
 
 export function loadDomainPatterns(): Array<{ domain: string; keywords: string[] }> {
   if (!existsSync(DOMAINS_CONFIG_PATH)) return [];
@@ -51,6 +54,64 @@ export function matchesDomainTopics(prompt: string, patterns: Array<{ domain: st
     }
   }
   return matched;
+}
+
+function domainKnowledgePath(domain: string, knowledgeDir = KNOWLEDGE_DIR): string {
+  return join(knowledgeDir, `${domain}.md`);
+}
+
+export function readDomainKnowledge(domain: string, maxChars = MAX_DOMAIN_CHARS, knowledgeDir = KNOWLEDGE_DIR): string | null {
+  const path = domainKnowledgePath(domain, knowledgeDir);
+  if (!existsSync(path)) return null;
+  try {
+    const raw = readFileSync(path, 'utf-8').trim();
+    if (!raw) return null;
+    const redacted = redactSecrets(raw);
+    if (redacted.length <= maxChars) return redacted;
+    return `${redacted.slice(0, maxChars).trimEnd()}\n\n[... truncated domain knowledge to ${maxChars} chars]`;
+  } catch {
+    return null;
+  }
+}
+
+export function buildDomainContext(
+  matched: string[],
+  maxChars = MAX_DOMAIN_CHARS,
+  knowledgeDir = KNOWLEDGE_DIR,
+): { context: string; injected: string[]; missing: string[] } {
+  const injected: string[] = [];
+  const missing: string[] = [];
+  const sections: string[] = [];
+
+  for (const domain of matched) {
+    const content = readDomainKnowledge(domain, maxChars, knowledgeDir);
+    if (!content) {
+      missing.push(domain);
+      continue;
+    }
+    injected.push(domain);
+    sections.push(`## ${domain}\n\n${content}`);
+  }
+
+  const body = sections.length > 0
+    ? `\n\nRetrieved domain knowledge:\n\n${sections.join('\n\n---\n\n')}`
+    : '';
+  const missingLine = missing.length > 0
+    ? `\n\nMissing knowledge files for matched domains: [${missing.join(', ')}]`
+    : '';
+
+  const context = `<local-context-hint>
+Topic matches configured domains: [${matched.join(', ')}]
+
+Use the injected local knowledge below before web research. If more detail is needed, check:
+1. PAI/CONTEXT_ROUTING.md → your domain-specific paths
+2. MEMORY/KNOWLEDGE/<domain>.md
+3. config/domains.jsonc for domain routing${body}${missingLine}
+
+Local context is faster and more accurate than web research for your domain topics.
+</local-context-hint>`;
+
+  return { context, injected, missing };
 }
 
 /**
@@ -94,18 +155,9 @@ Apply any updated instructions from these files to the current session.
   const matched = patterns.length > 0 ? matchesDomainTopics(prompt, patterns) : [];
 
   if (matched.length > 0) {
-    const context = `<local-context-hint>
-Topic matches configured domains: [${matched.join(', ')}]
-
-Check local knowledge sources before web research:
-1. PAI/CONTEXT_ROUTING.md → your domain-specific paths
-2. Your configured local knowledge base (config/domains.jsonc)
-
-Local context is faster and more accurate than web research for your domain topics.
-</local-context-hint>`;
-
+    const { context, injected, missing } = buildDomainContext(matched);
     console.log(JSON.stringify({ additionalContext: context }));
-    console.error(`[LocalContextFirst] Matched domains: ${matched.join(', ')}`);
+    console.error(`[LocalContextFirst] Matched domains: ${matched.join(', ')}; injected: ${injected.join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'}`);
     process.exit(0);
   }
 

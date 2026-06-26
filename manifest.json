@@ -3,12 +3,13 @@
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 69,
-    "hooks": 57,
+    "skills": 70,
+    "hooks": 59,
     "agents": 20
   },
   "hookInventory": [
     "AgentExecutionGuard.hook",
+    "AgentMemoryCapture.hook",
     "AlgorithmTracker.hook",
     "CheckVersion.hook",
     "ConfigChange.hook",
@@ -56,6 +57,7 @@
     "TaskCompleted.hook",
     "TeammateIdle.hook",
     "TerminalState.hook",
+    "TurnTelemetry.hook",
     "UpdateCounts.hook",
     "UpdateTabTitle.hook",
     "WebFetchGuard.hook",
@@ -100,6 +102,7 @@
     "Investigation",
     "Investigation/PrivateInvestigator",
     "IterativeDepth",
+    "KAIUpgrade",
     "Media",
     "Media/Art",
     "Media/Remotion",

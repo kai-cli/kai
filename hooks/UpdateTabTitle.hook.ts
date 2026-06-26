@@ -18,8 +18,8 @@
  *
  * FLOW:
  * 1. Extract quick title from prompt (deterministic, instant) → 🧠 purple
- * 2. Run inference for better summary → validate with isValidWorkingTitle
- * 3. Show validated title → ⚙️ orange
+ * 2. Show deterministic validated title → ⚙️ orange
+ * 3. Optional: if PAI_ENABLE_TAB_TITLE_INFERENCE=1, run inference for a better summary
  * 4. If validation fails both paths → getWorkingFallback()
  *
  */
@@ -36,6 +36,7 @@ interface HookInput {
   transcript_path: string;
 }
 
+const ENABLE_TAB_TITLE_INFERENCE = process.env.PAI_ENABLE_TAB_TITLE_INFERENCE === '1';
 
 // Common imperative → gerund mappings
 const GERUND_MAP: Record<string, string> = {
@@ -194,8 +195,12 @@ async function main() {
     const thinkingTitle = quickTitle || getWorkingFallback();
     setTabState({ title: `🧠 ${prefix}${thinkingTitle}`, state: 'thinking', sessionId: data.session_id });
 
-    // Phase 2: Run inference for better title
-    const inferredTitle = await summarizePrompt(prompt);
+    // Phase 2: use deterministic title by default. Per-prompt inference is opt-in because
+    // UserPromptSubmit waits on this process in practice, so 10s inference timeouts stall prompts.
+    const inferredTitle = ENABLE_TAB_TITLE_INFERENCE ? await summarizePrompt(prompt) : null;
+    if (!ENABLE_TAB_TITLE_INFERENCE) {
+      console.error('[UpdateTabTitle] Inference disabled; set PAI_ENABLE_TAB_TITLE_INFERENCE=1 to enable');
+    }
     const finalTitle = inferredTitle || (quickTitle && isValidWorkingTitle(quickTitle) ? quickTitle : getWorkingFallback());
     setTabState({ title: `⚙️ ${prefix}${finalTitle}`, state: 'working', sessionId: data.session_id });
 

@@ -35,6 +35,11 @@ import { spawn, execSync } from "child_process";
 import { existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
+import {
+  classifyInferenceError,
+  emitInferenceTelemetry,
+  inferProviderFromEnv,
+} from "../../hooks/lib/inference-telemetry";
 
 export type InferenceLevel = 'fast' | 'standard' | 'smart';
 
@@ -73,6 +78,7 @@ export interface InferenceOptions {
   level?: InferenceLevel;
   expectJson?: boolean;
   timeout?: number;
+  caller?: string;
 }
 
 export interface InferenceResult {
@@ -99,6 +105,22 @@ export async function inference(options: InferenceOptions): Promise<InferenceRes
   const config = LEVEL_CONFIG[level];
   const startTime = Date.now();
   const timeout = options.timeout || config.defaultTimeout;
+  const caller = options.caller || inferCaller();
+  const provider = inferProviderFromEnv();
+
+  function finish(result: InferenceResult): InferenceResult {
+    emitInferenceTelemetry({
+      caller,
+      provider,
+      model: config.model,
+      level,
+      success: result.success,
+      latency_ms: result.latencyMs,
+      timeout_ms: timeout,
+      error_class: classifyInferenceError(result.error),
+    });
+    return result;
+  }
 
   return new Promise((resolve) => {
     // Build environment WITHOUT ANTHROPIC_API_KEY to force subscription auth
@@ -140,13 +162,13 @@ export async function inference(options: InferenceOptions): Promise<InferenceRes
     // Handle timeout
     const timeoutId = setTimeout(() => {
       proc.kill('SIGTERM');
-      resolve({
+      resolve(finish({
         success: false,
         output: '',
         error: `Timeout after ${timeout}ms`,
         latencyMs: Date.now() - startTime,
         level,
-      });
+      }));
     }, timeout);
 
     proc.on('close', (code) => {
@@ -154,13 +176,13 @@ export async function inference(options: InferenceOptions): Promise<InferenceRes
       const latencyMs = Date.now() - startTime;
 
       if (code !== 0) {
-        resolve({
+        resolve(finish({
           success: false,
           output: stdout,
           error: stderr || `Process exited with code ${code}`,
           latencyMs,
           level,
-        });
+        }));
         return;
       }
 
@@ -180,45 +202,51 @@ export async function inference(options: InferenceOptions): Promise<InferenceRes
           if (!candidate) continue;
           try {
             const parsed = JSON.parse(candidate);
-            resolve({
+            resolve(finish({
               success: true,
               output,
               parsed,
               latencyMs,
               level,
-            });
+            }));
             return;
           } catch { /* try next candidate */ }
         }
-        resolve({
+        resolve(finish({
           success: false,
           output,
           error: 'Failed to parse JSON response',
           latencyMs,
           level,
-        });
+        }));
         return;
       }
 
-      resolve({
+      resolve(finish({
         success: true,
         output,
         latencyMs,
         level,
-      });
+      }));
     });
 
     proc.on('error', (err) => {
       clearTimeout(timeoutId);
-      resolve({
+      resolve(finish({
         success: false,
         output: '',
         error: err.message,
         latencyMs: Date.now() - startTime,
         level,
-      });
+      }));
     });
   });
+}
+
+function inferCaller(): string {
+  const script = process.argv[1];
+  if (script) return script.split('/').slice(-2).join('/');
+  return 'unknown';
 }
 
 /**

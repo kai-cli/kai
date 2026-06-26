@@ -167,7 +167,7 @@ describe('shouldBlockSkill', () => {
 });
 
 // --- LocalContextFirst tests ---
-import { loadDomainPatterns, matchesDomainTopics } from '../hooks/LocalContextFirst.hook';
+import { buildDomainContext, loadDomainPatterns, matchesDomainTopics, readDomainKnowledge } from '../hooks/LocalContextFirst.hook';
 
 describe('matchesDomainTopics', () => {
   const patterns = [
@@ -215,6 +215,54 @@ describe('loadDomainPatterns', () => {
   test('returns array (may be empty if no config)', () => {
     const patterns = loadDomainPatterns();
     expect(Array.isArray(patterns)).toBe(true);
+  });
+});
+
+describe('LocalContextFirst domain knowledge injection', () => {
+  test('buildDomainContext injects matched domain body content', () => {
+    const dir = join(tmpdir(), `local-context-domain-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'firmware.md'), 'Firmware local facts go here.\nUse release_v1.1 for builds.\n');
+      const result = buildDomainContext(['firmware'], 4000, dir);
+      expect(result.injected).toEqual(['firmware']);
+      expect(result.missing).toEqual([]);
+      expect(result.context).toContain('Retrieved domain knowledge');
+      expect(result.context).toContain('## firmware');
+      expect(result.context).toContain('Firmware local facts go here');
+      expect(result.context).toContain('Use the injected local knowledge below before web research');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('buildDomainContext reports missing matched domain files without dropping the hint', () => {
+    const dir = join(tmpdir(), `local-context-missing-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    mkdirSync(dir, { recursive: true });
+    try {
+      const result = buildDomainContext(['missing-domain'], 4000, dir);
+      expect(result.injected).toEqual([]);
+      expect(result.missing).toEqual(['missing-domain']);
+      expect(result.context).toContain('Topic matches configured domains: [missing-domain]');
+      expect(result.context).toContain('Missing knowledge files for matched domains: [missing-domain]');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('readDomainKnowledge truncates and redacts credential-shaped content', () => {
+    const dir = join(tmpdir(), `local-context-redact-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    mkdirSync(dir, { recursive: true });
+    try {
+      const fixtureSecret = ['super', 'secret', 'value'].join('');
+      writeFileSync(join(dir, 'security.md'), `password="${fixtureSecret}"\n` + 'x'.repeat(80));
+      const content = readDomainKnowledge('security', 40, dir)!;
+      expect(content).toContain('[REDACTED:Password assignment]');
+      expect(content).not.toContain(fixtureSecret);
+      expect(content).toContain('[... truncated domain knowledge to 40 chars]');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

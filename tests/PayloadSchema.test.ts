@@ -221,6 +221,27 @@ describe('PostToolUse', () => {
   });
 });
 
+// ── UserPromptExpansion ──────────────────────────────────────────────────────
+
+describe('UserPromptExpansion', () => {
+  test('valid direct slash command payload', () => {
+    const r = validatePayload({
+      ...base('UserPromptExpansion'),
+      command_name: 'pai:end',
+      args: '--summary',
+      source: 'user',
+      cwd: '/tmp/project',
+    });
+    expect(r.valid).toBe(true);
+    expect(r.missing).toEqual([]);
+  });
+
+  test('missing command_name stays valid so telemetry can no-op fail-open', () => {
+    const r = validatePayload(base('UserPromptExpansion'));
+    expect(r.valid).toBe(true);
+  });
+});
+
 // ── ValidationResult shape ────────────────────────────────────────────────────
 
 describe('result shape', () => {

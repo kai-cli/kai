@@ -17,7 +17,7 @@ import { embed } from './embeddings';
 const DEDUP_THRESHOLD = 0.85;
 const VECTORS_FILE = 'MEMORY/STATE/embeddings/instinct-vectors.jsonl';
 
-interface VectorEntry {
+export interface VectorEntry {
   id: string;
   text: string;
   vector: number[];

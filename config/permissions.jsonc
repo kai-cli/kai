@@ -23,7 +23,7 @@
       "NotebookEdit",
       "TodoWrite",
       "ExitPlanMode",
-      "Task",
+      "Agent",
       "Skill",
       // Per-server MCP allow rules. The harness rejects a bare "mcp__*" wildcard — a glob is only
       // valid AFTER a literal mcp__<server>__ prefix. One entry per configured server.

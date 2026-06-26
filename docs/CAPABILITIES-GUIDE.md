@@ -11,7 +11,7 @@ These are the capabilities you'll use most sessions. Learn these first.
 | `/research` | Multi-agent parallel research across 6 AI models (Claude, Gemini, Grok, DeepSeek, Mistral, Perplexity). Decomposes queries, runs parallel searches, synthesizes into structured reports. | Any time you need to know something beyond the codebase — technology decisions, market research, competitor analysis, how-to questions |
 | `/devteam` | Spins up autonomous agent teams (PM + Dev + QA) that scope, implement, and verify work. Supports bug-fix, feature, and investigation presets with adaptive retry. | Fix a bug end-to-end, build a feature, or investigate a root cause without hand-holding each step |
 | `/deliberate` | Multi-model deliberation via AWS Bedrock (DeepSeek, Mistral, Llama) or Claude adversarial review. Models debate and reach consensus. | Architecture decisions, code review, document review, any "should we do X or Y?" question |
-| `/end` | Session wrap-up: saves memories, updates knowledge, syncs PRDs, reports git status. | End of every working session |
+| `/end` | Session wrap-up checklist: saves memories, updates knowledge, syncs PRDs, reports git status. This is conversational; it does not guarantee Claude's native `SessionEnd` lifecycle hook fired. | End of every working session |
 | `/media` | Visual content: images (Flux, GPT-Image-1), diagrams (Mermaid), infographics, video (Remotion). | Need a header image, architecture diagram, flowchart, or any visual |
 | `/browser` | Headless browser automation via Playwright. Navigate, click, fill forms, screenshot, extract data. | Test a UI, scrape a page, automate a workflow, verify a deployment |
 

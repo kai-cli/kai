@@ -13,7 +13,7 @@
  */
 
 import { readHookInput } from './lib/hook-io';
-import { paiPath } from './lib/paths';
+import { lastResponseCachePath } from './lib/paths';
 import { readFileSync, existsSync } from 'fs';
 
 // Format markers that indicate a properly formatted response
@@ -52,7 +52,7 @@ async function main() {
   const input = await readHookInput();
   if (!input) process.exit(0);
 
-  const cachePath = paiPath('MEMORY', 'STATE', 'last-response.txt');
+  const cachePath = lastResponseCachePath(input.session_id);
   if (!existsSync(cachePath)) {
     console.error('[FormatReminder] No cached response — skipping');
     process.exit(0);

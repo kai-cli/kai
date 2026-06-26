@@ -13,7 +13,8 @@
     // Skills, hooks, memory, and config all live here
     "PAI_DIR": "${HOME}/.claude",
 
-    // Memcarry store: git-tracked + synced under PAI MEMORY (atoms = source of truth)
+    // Memcarry store under PAI MEMORY. Durable global lessons may be curated/tracked;
+    // project resume-state atoms are runtime/session state and are gitignored.
     "MEMCARRY_STORE": "${HOME}/.claude/MEMORY/memcarry/store",
 
     // Base directory for projects
@@ -116,8 +117,7 @@
       "PAI/USER/AISTEERINGRULES.md",
       "PAI/USER/PROJECTS/PROJECTS.md",
       "PAI/USER/TELOS/DIGEST.md",
-      "TOOLS.md",
-      "CAPABILITIES.md"
+      "TOOLS.md"
     ]
   },
 

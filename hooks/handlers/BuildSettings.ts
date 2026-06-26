@@ -63,11 +63,28 @@ function readJSON(path: string): unknown {
   }
 }
 
+/**
+ * Vars that, if referenced but empty, would collapse a path to a broken root-relative
+ * string (e.g. `${PAI_DIR}/hooks/...` → `/hooks/...`). We fail closed rather than write
+ * an invalid settings.json (PAI-SR-001).
+ */
+const PATH_CRITICAL_VARS = new Set(['PAI_DIR', 'HOME']);
+
 /** Expand ${VAR} and $VAR references in string values using process.env. */
 function expandEnvVars(value: string): string {
+  const resolve = (name: string): string => {
+    const v = process.env[name];
+    if ((v === undefined || v === '') && PATH_CRITICAL_VARS.has(name)) {
+      throw new Error(
+        `BuildSettings: refusing to expand \${${name}} — it is unset/empty, which would ` +
+        `collapse paths to a broken root-relative form. Set ${name} before building settings.`
+      );
+    }
+    return v ?? '';
+  };
   return value
-    .replace(/\$\{(\w+)\}/g, (_, name) => process.env[name] ?? '')
-    .replace(/\$(\w+)/g, (_, name) => process.env[name] ?? '');
+    .replace(/\$\{(\w+)\}/g, (_, name) => resolve(name))
+    .replace(/\$(\w+)/g, (_, name) => resolve(name));
 }
 
 /** Recursively expand env var references in all string values of an object. */
@@ -229,6 +246,41 @@ export function validateConfig(merged: Record<string, unknown>): ValidationResul
   else if (!Array.isArray(st.tips)) errors.push('spinnerTipsOverride.tips: must be an array');
 
   return { valid: errors.length === 0, errors };
+}
+
+// ── Source ↔ generated equivalence (PAI-SR-001 regression gate) ──────────────
+
+/** Fields legitimately present only at runtime — excluded from equivalence checks. */
+const RUNTIME_ONLY_FIELDS = new Set(['counts', 'feedbackSurveyState']);
+
+/** Stable stringify with sorted keys, so field-order differences are not divergence. */
+function canonicalize(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalize).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const keys = Object.keys(obj).sort();
+    return `{${keys.map(k => JSON.stringify(k) + ':' + canonicalize(obj[k])).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * Compare a freshly-built settings object against the live settings.json semantically,
+ * ignoring runtime-only fields and key ordering. Returns the list of divergent top-level
+ * keys (empty = reproducible). This is the gate that would have caught PAI-SR-001:
+ * a live key with no source (model, autoMemoryDirectory) shows up as divergence.
+ */
+export function findSettingsDivergence(
+  built: Record<string, unknown>,
+  live: Record<string, unknown>,
+): string[] {
+  const divergent: string[] = [];
+  const keys = new Set([...Object.keys(built), ...Object.keys(live)]);
+  for (const key of keys) {
+    if (RUNTIME_ONLY_FIELDS.has(key)) continue;
+    if (canonicalize(built[key]) !== canonicalize(live[key])) divergent.push(key);
+  }
+  return divergent.sort();
 }
 
 // ── Merge ──────────────────────────────────────────────────────────────────

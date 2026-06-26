@@ -13,6 +13,17 @@ description: Session wrap-up checklist — saves memory, updates knowledge, chec
 
 Execute each step in order. Report results inline. Do NOT prompt for confirmation except for destructive actions (commit, push).
 
+## Native SessionEnd boundary
+
+`/end` is a PAI checklist skill. It is not the same thing as Claude's native `SessionEnd` lifecycle
+event, and running this checklist does not prove the native `SessionEnd` hook received a valid payload.
+The native hook fires only when Claude's runtime ends/closes a session and may occasionally invoke hooks
+with empty/invalid stdin. If you need to force lifecycle cleanup for a transcript, run:
+
+`bun scripts/run-session-end-composite.ts --transcript-path <path-to-transcript.jsonl> --session-id <id>`
+
+Then report whether the manual lifecycle cleanup succeeded.
+
 ### 1. Memory Check
 
 Review the conversation for anything worth persisting:
@@ -62,8 +73,14 @@ The session's work must be reflected in the docs/wiki/roadmap BEFORE closing —
 For each substantive thing built/changed this session, check it is actually written down:
 - **Roadmap** (`docs/planning/ROADMAP-*.md`): are completed items still listed as open? Are new builds recorded?
   Grep the roadmap for the feature/file names you touched. If stale → fix inline now (mark done/partial, add new).
-- **Wiki** (PAI-Wiki / project wikis): did a new subsystem/behavior get a wiki page or section? Check
-  `pending-wiki-nudge.json` — if the wiki-currency hook flagged un-wikied code, resolve it here.
+- **Wiki** (PAI-Wiki / project wikis): did a new subsystem/behavior get a wiki page or section?
+  **RUN the detector live — do NOT just read `pending-wiki-nudge.json`** (that flag is written by the
+  Stop hook against work that was uncommitted at a Stop boundary; incrementally-committed work leaves
+  it empty — the blind spot that let an entire build ship un-wikied 2026-06-21). Run:
+  `bun -e "import('${PAI_DIR}/hooks/handlers/WikiCurrency.ts').then(m=>{const r=m.analyzeRepo({repo:'<repo>',name:'x',wikiRepo:'<wiki>'});console.log(r?.codeLines,'code lines, wikiTouched:',r?.wikiTouched)})"`
+  (the handler now unions uncommitted + committed-unpushed `@{u}..HEAD`). If it reports substantive
+  code lines with `wikiTouched: false` → the wiki is stale for this session's work; write/update the
+  page now before closing, or explicitly note why deferred.
 - **Verify against live state**, not the conversation: `grep` the doc for what you changed; confirm files
   marked done actually exist/changed.
 

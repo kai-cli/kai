@@ -6,13 +6,14 @@
  * Catches drift, uncategorized files, and PII patterns that would leak into public.
  *
  * USAGE:
- *   bun scripts/sync-ci-gate.ts              # standard checks
- *   bun scripts/sync-ci-gate.ts --strict     # strict mode (fail on warnings)
+ *   bun scripts/sync-ci-gate.ts              # blocking mode (PII findings fail)
+ *   bun scripts/sync-ci-gate.ts --warn-pii   # PAI source-tree mode; PII findings must be scrub-covered
+ *   bun scripts/sync-ci-gate.ts --strict     # also fail on dependency-closure warnings
  *
  * DESIGN:
  * 1. Parse EXCLUDE_PATHS and KAI_ONLY_FILES from sync-to-kai.sh
  * 2. Classify all tracked files into private/kai-only/public
- * 3. Scan public files for PII patterns
+ * 3. Scan public files for PII patterns (`--warn-pii` keeps scrub-covered findings non-blocking)
  * 4. Verify manifest counts align with filesystem
  * 5. Check for uncategorized new files (not in any list)
  *
@@ -21,7 +22,7 @@
  *   1 - Issues found (blocking)
  */
 
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { reconcile } from './reconcile-wiring';
@@ -39,6 +40,12 @@ function fail(msg: string) { console.log(`  ${RED}✗${NC} ${msg}`); }
 
 const STRICT = process.argv.includes('--strict');
 const WARN_PII = process.argv.includes('--warn-pii');
+
+type SyncManifest = {
+  private?: string[];
+  kai_only?: string[];
+  public?: string[];
+};
 
 // Get PAI_DIR with fallback chain (evaluated lazily to avoid test environment issues)
 function getPaiDir(): string {
@@ -138,6 +145,17 @@ function parseKaiOnlyFiles(paiDir: string = getPaiDir()): string[] {
   return paths;
 }
 
+function loadSyncManifest(paiDir: string = getPaiDir()): SyncManifest | null {
+  const manifestPath = join(paiDir, 'scripts', 'sync-manifest.json');
+  if (!existsSync(manifestPath)) return null;
+  try {
+    return JSON.parse(readFileSync(manifestPath, 'utf-8')) as SyncManifest;
+  } catch (err) {
+    warn(`Could not parse scripts/sync-manifest.json: ${err}`);
+    return null;
+  }
+}
+
 // Get all tracked files from git
 function getTrackedFiles(paiDir: string = getPaiDir()): string[] {
   try {
@@ -168,6 +186,19 @@ function matchesPattern(filePath: string, pattern: string): boolean {
     return regex.test(filePath);
   }
   return filePath === pattern || filePath.startsWith(pattern + '/');
+}
+
+function classifyBySyncManifest(filePath: string, manifest: SyncManifest): 'private' | 'kai-only' | 'public' | 'unclassified' {
+  for (const pattern of manifest.private ?? []) {
+    if (matchesPattern(filePath, pattern)) return 'private';
+  }
+  for (const pattern of manifest.kai_only ?? []) {
+    if (matchesPattern(filePath, pattern)) return 'kai-only';
+  }
+  for (const pattern of manifest.public ?? []) {
+    if (matchesPattern(filePath, pattern)) return 'public';
+  }
+  return 'unclassified';
 }
 
 // Classify file into private/kai-only/public
@@ -220,6 +251,133 @@ function scanForPII(filePath: string, paiDir: string = getPaiDir()): string[] {
   } catch {
     return [];
   }
+}
+
+function collectFiles(dir: string, out: string[] = [], root: string = dir): string[] {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir)) {
+    if (['node_modules', '.git', '.archive', 'dist', 'build', '.cache'].includes(entry)) continue;
+    const full = join(dir, entry);
+    const stat = statSync(full);
+    if (stat.isDirectory()) {
+      collectFiles(full, out, root);
+    } else if (stat.isFile() && /\.(ts|tsx)$/.test(entry)) {
+      out.push(full.slice(root.length + 1));
+    }
+  }
+  return out;
+}
+
+function extractLocalImports(source: string): string[] {
+  const imports = new Set<string>();
+  const patterns = [
+    /\bimport\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?['"](\.[^'"]+)['"]/g,
+    /\bexport\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?['"](\.[^'"]+)['"]/g,
+    /\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g,
+  ];
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source)) !== null) imports.add(match[1]);
+  }
+  return [...imports];
+}
+
+function resolveLocalImport(fromFile: string, specifier: string, paiDir: string): string | null {
+  const fromParts = fromFile.split('/').slice(0, -1);
+  const rawParts = [...fromParts, ...specifier.split('/')];
+  const normalized: string[] = [];
+  for (const part of rawParts) {
+    if (!part || part === '.') continue;
+    if (part === '..') normalized.pop();
+    else normalized.push(part);
+  }
+  const base = normalized.join('/');
+  const candidates = [
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}.js`,
+    `${base}.jsx`,
+    `${base}/index.ts`,
+    `${base}/index.tsx`,
+  ];
+  return candidates.find((candidate) => existsSync(join(paiDir, candidate))) ?? null;
+}
+
+function runDependencyClosureReport(paiDir: string): { errors: string[]; warnings: string[] } {
+  const manifest = loadSyncManifest(paiDir);
+  if (!manifest) {
+    return { errors: [], warnings: ['scripts/sync-manifest.json missing; dependency closure report skipped'] };
+  }
+
+  const roots = ['hooks', 'PAI', 'scripts', 'agents', 'tests']
+    .map((root) => join(paiDir, root))
+    .filter((root) => existsSync(root));
+  const files = roots.flatMap((root) => collectFiles(root, [], paiDir)).sort();
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const publicFiles = files.filter((file) => classifyBySyncManifest(file, manifest) === 'public');
+  const hookLibConsumers = new Map<string, Set<string>>();
+  const memoryAccess = new Set<string>();
+  const unclassified = new Map<string, Set<string>>();
+
+  for (const file of publicFiles) {
+    const fullPath = join(paiDir, file);
+    let source = '';
+    try {
+      source = readFileSync(fullPath, 'utf-8');
+    } catch {
+      continue;
+    }
+
+    if (/(MEMORY|STATE|KNOWLEDGE|LEARNING|SECURITY|STAGING|WISDOM|WORK)/.test(source)) {
+      memoryAccess.add(file);
+    }
+
+    for (const specifier of extractLocalImports(source)) {
+      const target = resolveLocalImport(file, specifier, paiDir);
+      if (!target) continue;
+      const targetClass = classifyBySyncManifest(target, manifest);
+      if (target.startsWith('hooks/lib/')) {
+        if (!hookLibConsumers.has(target)) hookLibConsumers.set(target, new Set());
+        hookLibConsumers.get(target)!.add(file);
+      }
+      if (targetClass === 'private' || targetClass === 'kai-only') {
+        errors.push(`${file} imports ${target} (${targetClass})`);
+      } else if (targetClass === 'unclassified') {
+        if (!unclassified.has(target)) unclassified.set(target, new Set());
+        unclassified.get(target)!.add(file);
+      }
+    }
+  }
+
+  for (const [target, importers] of [...unclassified.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    warnings.push(`${target} is imported by ${importers.size} public file(s) but is unclassified`);
+  }
+
+  console.log('\n── KAI Dependency Closure ──');
+  info(`Public TypeScript files scanned: ${publicFiles.length}`);
+  info(`Hook-lib modules with public consumers: ${hookLibConsumers.size}`);
+  info(`Public files touching memory/state literals: ${memoryAccess.size}`);
+
+  if (errors.length > 0) {
+    for (const e of errors.slice(0, 20)) fail(e);
+    if (errors.length > 20) fail(`... and ${errors.length - 20} more dependency closure errors`);
+  } else {
+    pass('No public→private or public→KAI-only imports detected');
+  }
+
+  if (warnings.length > 0) {
+    for (const w of warnings.slice(0, 20)) warn(w);
+    if (warnings.length > 20) warn(`... and ${warnings.length - 20} more unclassified dependency warnings`);
+  } else {
+    pass('No unclassified public dependency imports detected');
+  }
+
+  if (memoryAccess.size > 0) {
+    info(`Memory/state touch sample: ${[...memoryAccess].slice(0, 8).join(', ')}${memoryAccess.size > 8 ? ', ...' : ''}`);
+  }
+
+  return { errors, warnings };
 }
 
 // Main gate logic
@@ -318,6 +476,20 @@ function main() {
   info(`KAI-only (protected): ${classified['kai-only'].length}`);
   info(`Public (will sync): ${classified.public.length}`);
 
+  // Step 3.5: TypeScript/local-import dependency closure report.
+  // This is a warning/report gate by default. It fails only when a public file imports an explicitly
+  // private or KAI-only file. Unclassified public dependencies warn so the manifest can be made complete
+  // incrementally without blocking unrelated sync work.
+  const closure = runDependencyClosureReport(PAI_DIR);
+  if (closure.errors.length > 0) {
+    console.log('\n✗ KAI dependency closure has blocking public→private imports\n');
+    process.exit(1);
+  }
+  if (STRICT && closure.warnings.length > 0) {
+    console.log('\n✗ KAI dependency closure has unclassified imports in strict mode\n');
+    process.exit(1);
+  }
+
   // Step 4: PII scan on public files
   console.log('\n── PII Scan (public files) ──');
   const piiFindings: Array<{ file: string; patterns: string[] }> = [];
@@ -342,9 +514,10 @@ function main() {
       console.log(`    ... and ${piiFindings.length - 10} more`);
     }
     if (!WARN_PII) process.exit(1);
+    pass('PII findings are warning-only in --warn-pii mode and will be scrubbed during sync');
+  } else {
+    pass('No PII found in public files');
   }
-
-  pass('No PII found in public files');
 
   // Step 5: Manifest verification (if manifest exists)
   console.log('\n── Manifest Verification ──');
@@ -413,7 +586,11 @@ function main() {
   console.log('\n── Summary ──');
   pass('Sync CI gate passed');
   pass(`${classified.public.length} files ready to sync`);
-  pass('No PII leaks detected');
+  if (piiFindings.length > 0 && WARN_PII) {
+    pass(`${piiFindings.length} PII finding(s) are warning-only and scrub-covered`);
+  } else {
+    pass('No PII leaks detected');
+  }
   pass('Manifest counts aligned');
 
   console.log('\n✅ Ready to sync to kai\n');

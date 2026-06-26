@@ -22,14 +22,34 @@ function logLines(): any[] {
 }
 
 test("records a named skill invocation (skill, project, session)", () => {
-  const r = run(JSON.stringify({ tool_name: "Skill", tool_input: { skill: "Research" }, session_id: "s1", cwd: "/x/feed-bbf" }));
+  const r = run(JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Skill", tool_input: { skill: "Research" }, session_id: "s1", cwd: "/x/feed-bbf" }));
   expect(r.status).toBe(0);
   const lines = logLines();
   expect(lines).toHaveLength(1);
   expect(lines[0].skill).toBe("Research");
   expect(lines[0].project).toBe("feed-bbf");
   expect(lines[0].session).toBe("s1");
+  expect(lines[0].source).toBe("PreToolUse:Skill");
   expect(typeof lines[0].ts).toBe("string");
+});
+
+test("records direct slash command telemetry from UserPromptExpansion", () => {
+  const r = run(JSON.stringify({
+    hook_event_name: "UserPromptExpansion",
+    command_name: "/pai:end",
+    args: "--summary",
+    source: "user",
+    session_id: "s2",
+    cwd: "/x/kai",
+  }));
+
+  expect(r.status).toBe(0);
+  const lines = logLines();
+  expect(lines).toHaveLength(1);
+  expect(lines[0].skill).toBe("pai:end");
+  expect(lines[0].project).toBe("kai");
+  expect(lines[0].session).toBe("s2");
+  expect(lines[0].source).toBe("UserPromptExpansion");
 });
 
 test("records nothing when no skill field (exit 0)", () => {
@@ -45,9 +65,9 @@ test("never throws on malformed input (exit 0, no log)", () => {
 });
 
 test("appends across multiple invocations (usage accumulates)", () => {
-  run(JSON.stringify({ tool_name: "Skill", tool_input: { skill: "Research" }, cwd: "/x/a" }));
-  run(JSON.stringify({ tool_name: "Skill", tool_input: { skill: "Security" }, cwd: "/x/a" }));
-  run(JSON.stringify({ tool_name: "Skill", tool_input: { skill: "Research" }, cwd: "/x/b" }));
+  run(JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Skill", tool_input: { skill: "Research" }, cwd: "/x/a" }));
+  run(JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Skill", tool_input: { skill: "Security" }, cwd: "/x/a" }));
+  run(JSON.stringify({ hook_event_name: "UserPromptExpansion", command_name: "/Research", cwd: "/x/b" }));
   const lines = logLines();
   expect(lines).toHaveLength(3);
   expect(lines.filter((l) => l.skill === "Research")).toHaveLength(2);

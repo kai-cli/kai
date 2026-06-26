@@ -30,6 +30,7 @@ import { join } from 'path';
 import { markStarted, markComplete, cleanupSession } from './lib/session-end-tracker';
 import { readHookInput, type HookInput } from './lib/hook-io';
 import { paiPath } from './lib/paths';
+import { emitMemoryTelemetry } from './lib/memory-telemetry';
 
 const TRIVIAL_MESSAGE_THRESHOLD = 6;
 const TRIVIAL_TOKEN_THRESHOLD = 2000;
@@ -103,6 +104,13 @@ function isTrivialSession(metrics: SessionMetrics): boolean {
          metrics.estimatedTokens < TRIVIAL_TOKEN_THRESHOLD;
 }
 
+function emitCompositeTelemetry(fields: Record<string, unknown>): void {
+  emitMemoryTelemetry('session_end.composite', {
+    hook: 'SessionEndComposite',
+    ...fields,
+  });
+}
+
 /** Always-run SessionEnd hooks (fast, no LLM inference). MemCapture included (W4). */
 export const ALWAYS_RUN_HOOKS = [
   'SessionCleanup',
@@ -170,16 +178,25 @@ function runHook(
  * Main composite handler
  */
 async function main() {
+  const startedAt = Date.now();
+  let sessionId = 'unknown';
   try {
     // Read hook input with timeout
     const input = await readHookInput();
 
     if (!input || !input.session_id) {
       console.error('[SessionEndComposite] No valid input, exiting');
+      emitCompositeTelemetry({
+        phase: 'complete',
+        status: 'skipped',
+        reason: 'invalid_input',
+        ms: Date.now() - startedAt,
+      });
       process.exit(0);
     }
 
     const { session_id, transcript_path } = input;
+    sessionId = session_id;
     console.error(`[SessionEndComposite] Starting for session ${session_id}`);
 
     // Analyze transcript to determine if we should gate inference hooks.
@@ -215,6 +232,22 @@ async function main() {
     // it was missing from the composite but present in the live wiring; omitting it would
     // silently stop Memcarry.
     const hooksToRun = selectSessionEndHooks(trivial);
+    const skippedHooks = trivial ? [...INFERENCE_HOOKS] : [];
+
+    emitCompositeTelemetry({
+      phase: 'decision',
+      session_id,
+      status: 'selected',
+      gate_enabled: gateEnabled,
+      trivial,
+      message_count: metrics.messageCount,
+      estimated_tokens: metrics.estimatedTokens,
+      has_feedback: metrics.hasFeedback,
+      selected_hooks: hooksToRun,
+      skipped_hooks: skippedHooks,
+      selected_count: hooksToRun.length,
+      skipped_count: skippedHooks.length,
+    });
 
     console.error(`[SessionEndComposite] Running ${hooksToRun.length} hooks in parallel`);
 
@@ -243,12 +276,35 @@ async function main() {
 
     console.error(`[SessionEndComposite] Complete: ${succeeded} succeeded, ${failed} failed`);
 
+    emitCompositeTelemetry({
+      phase: 'complete',
+      session_id,
+      status: failed > 0 ? 'partial' : 'complete',
+      gate_enabled: gateEnabled,
+      trivial,
+      message_count: metrics.messageCount,
+      estimated_tokens: metrics.estimatedTokens,
+      has_feedback: metrics.hasFeedback,
+      selected_count: hooksToRun.length,
+      skipped_count: skippedHooks.length,
+      succeeded,
+      failed,
+      ms: Date.now() - startedAt,
+    });
+
     // Clean up sentinel files for this session
     cleanupSession(session_id);
 
     process.exit(0);
   } catch (error) {
     console.error(`[SessionEndComposite] Fatal error: ${error}`);
+    emitCompositeTelemetry({
+      phase: 'complete',
+      session_id: sessionId,
+      status: 'error',
+      error_class: error instanceof Error ? error.name : typeof error,
+      ms: Date.now() - startedAt,
+    });
     process.exit(0); // Non-blocking even on fatal error
   }
 }

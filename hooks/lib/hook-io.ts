@@ -86,7 +86,9 @@ export async function readHookInput(): Promise<HookInput | null> {
     const knownFields = new Set([
       'session_id', 'transcript_path', 'hook_event_name', 'hookProtocolVersion',
       'last_assistant_message', 'prompt', 'user_prompt', 'cwd', 'stop_hook_active',
-      'tool_name', 'tool_input', 'tool_response', 'config_path', 'change_type'
+      'tool_name', 'tool_input', 'tool_response', 'source', 'file_path',
+      'task_id', 'task_subject', 'task_description', 'teammate_name', 'team_name',
+      'worktree_path', 'trigger', 'custom_instructions'
     ]);
     const unknownFields = Object.keys(obj).filter(k => !knownFields.has(k));
     if (unknownFields.length > 0) {
@@ -142,4 +144,59 @@ export async function parseTranscriptFromInput(input: HookInput): Promise<Parsed
   await new Promise(resolve => setTimeout(resolve, 150));
   // W3: route through the shared disk cache (one parse per session transcript).
   return getCachedTranscript(input.transcript_path);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook output contracts (Claude Code 2.1.185)
+//
+// SINGLE SOURCE for the correct PreToolUse / UserPromptSubmit decision shapes.
+// Hooks MUST build escalation output through these helpers, never by hand —
+// that is what keeps PAI-SR-005 / PAI-SR-030 from regressing (a contract test
+// asserts no PreToolUse hook emits the legacy top-level `{decision:"ask"}`).
+//
+// Verified against the installed 2.1.185 binary schema:
+//   PreToolUse: { hookSpecificOutput: { hookEventName: "PreToolUse",
+//                 permissionDecision: "allow"|"deny"|"ask"|"defer",
+//                 permissionDecisionReason: string } }
+//   Top-level `decision` is honored ONLY for "block".
+//   UserPromptSubmit has NO ask outcome — escalation must be
+//   { decision: "block", reason, suppressOriginalPrompt?: true }.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PreToolUseDecision {
+  hookSpecificOutput: {
+    hookEventName: 'PreToolUse';
+    permissionDecision: 'allow' | 'deny' | 'ask' | 'defer';
+    permissionDecisionReason: string;
+  };
+}
+
+/**
+ * Build a PreToolUse "ask" (user-confirmation) decision in the current 2.1.185 shape.
+ * Replaces the legacy top-level `{decision:"ask", message}` that 2.1.185 silently ignores.
+ */
+export function askPreToolUse(reason: string): PreToolUseDecision {
+  return {
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'ask',
+      permissionDecisionReason: reason,
+    },
+  };
+}
+
+export interface UserPromptBlock {
+  decision: 'block';
+  reason: string;
+  suppressOriginalPrompt: true;
+}
+
+/**
+ * Build a UserPromptSubmit "block" decision (the event has no "ask" outcome).
+ * `suppressOriginalPrompt:true` omits the original prompt from the transcript —
+ * used by SecretScanner so a detected secret is not persisted. The caller must
+ * never put the secret value into `reason`.
+ */
+export function blockUserPrompt(reason: string): UserPromptBlock {
+  return { decision: 'block', reason, suppressOriginalPrompt: true };
 }

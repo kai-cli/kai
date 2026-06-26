@@ -4,18 +4,19 @@
  *
  * PURPOSE:
  * Fires when a teammate is about to go idle. Checks that the teammate's
- * last message contains structured output (not just "done" or empty).
+ * teammate identity is present and, when a future payload includes message content,
+ * that content is structured enough to be useful.
  * Exit code 2 = block idle + send feedback. Exit code 0 = allow idle.
  *
  * TRIGGER: TeammateIdle
  *
  * INPUT:
- * - stdin: Hook input JSON (session_id, transcript_path, agent_type, agent_id, last_message?)
+ * - stdin: Hook input JSON (session_id, transcript_path, teammate_name, team_name)
  *
  * OUTPUT:
- * - stdout: Feedback message if blocking (exit 2)
+ * - stderr: Feedback message if blocking (exit 2)
  * - exit(0): Allow idle
- * - exit(2): Block idle, send stdout as feedback to teammate
+ * - exit(2): Block idle, send stderr as feedback to teammate
  *
  * QUALITY CRITERIA (teammate must have produced ONE of):
  * - JSON with result/findings/output/data keys
@@ -27,9 +28,9 @@
 interface HookInput {
   session_id?: string;
   transcript_path?: string;
-  agent_type?: string;
-  agent_id?: string;
-  last_message?: string;
+  teammate_name?: string;
+  team_name?: string;
+  last_message?: string; // Legacy/future optional field; current Claude payload does not include it.
 }
 
 async function main() {
@@ -48,9 +49,20 @@ async function main() {
       process.exit(0);
     }
 
-    const { last_message, agent_type } = input;
+    const { last_message, teammate_name } = input;
 
-    // If no message content available, allow idle (can't inspect without content)
+    // Current Claude payload exposes teammate/team identity but not last_message.
+    // Do not return early before validating the current payload surface: at minimum,
+    // a nameless teammate idle event is not actionable and should be fed back.
+    if (!teammate_name?.trim()) {
+      console.error(
+        `TeammateIdle payload is missing teammate_name, so PAI cannot attribute the idle transition. ` +
+        `Retry with a current Claude TeammateIdle payload that includes teammate_name.`
+      );
+      process.exit(2);
+    }
+
+    // If no message content is available, allow idle; current Claude payloads do not include it.
     if (!last_message) {
       process.exit(0);
     }
@@ -68,7 +80,7 @@ async function main() {
 
     if (!qualityOk) {
       // Block idle — request structured output
-      console.log(
+      console.error(
         `Your last message appears to be too brief or lacks structured output. ` +
         `Please provide a complete summary of what you accomplished, including: ` +
         `(1) what you found/built, (2) any key decisions made, (3) pass/fail status for your assigned criteria. ` +
@@ -87,3 +99,5 @@ async function main() {
 }
 
 main().catch((err) => { console.error(`[TeammateIdle] Error:`, err); process.exit(0); });
+
+export {};

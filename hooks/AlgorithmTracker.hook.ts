@@ -6,7 +6,7 @@
  * 1. Phase tracking:    Detects phase notification curls in Bash tool_input → phaseTransition()
  * 2. Criteria tracking: Intercepts TaskCreate for ISC criteria → criteriaAdd()
  * 3. Criteria updates:  Intercepts TaskUpdate status changes → criteriaUpdate()
- * 4. Agent tracking:    Intercepts Task tool for agent spawns → agentAdd()
+ * 4. Agent tracking:    Intercepts Agent tool for subagent spawns → agentAdd()
  *
  * Session activation is folded in: on any matched tool call, checks if session
  * needs activation.
@@ -250,8 +250,8 @@ async function main() {
     if (mapped) criteriaUpdate(session_id, tool_input.taskId, mapped);
   }
 
-  // ── 4. Task → Agent spawn tracking ──
-  else if (tool_name === 'Task' && tool_input) {
+  // ── 4. Agent → Agent spawn tracking (current tool name; was retired "Task") ──
+  else if (tool_name === 'Agent' && tool_input) {
     const agentName = tool_input.name || tool_input.description || 'unnamed';
     const agentType = tool_input.subagent_type || 'general-purpose';
     const task = tool_input.description || tool_input.prompt?.slice(0, 80);

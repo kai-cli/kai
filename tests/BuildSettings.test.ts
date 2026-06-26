@@ -8,9 +8,23 @@ import { test, expect, describe } from 'bun:test';
 import { parseJSONC, validateConfig, buildSettings, needsRebuild, build } from '../hooks/handlers/BuildSettings.ts';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { pinPaiEnv, stableTestHome } from './lib/pai-test-fixtures';
 
 // The release .claude directory — used for integration tests
 const RELEASE_PAI_DIR = join(import.meta.dir, '..');
+const RELEASE_HOME = stableTestHome();
+
+function pinBuildSettingsEnv(): void {
+  pinPaiEnv(RELEASE_PAI_DIR, RELEASE_HOME);
+}
+
+function buildReleaseSettings(): ReturnType<typeof buildSettings> {
+  // BuildSettings expands ${PAI_DIR}/${HOME} from process.env. Several tests in
+  // the full parallel suite mutate process.env, so pin immediately before each
+  // integration build instead of relying on file/suite ordering.
+  pinBuildSettingsEnv();
+  return buildSettings(RELEASE_PAI_DIR);
+}
 
 // ── parseJSONC ────────────────────────────────────────────────────────────
 
@@ -242,20 +256,20 @@ describe('buildSettings', () => {
       expect(existsSync(join(configDir, f))).toBe(true);
     }
 
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     const { valid, errors } = validateConfig(merged);
     expect(errors).toHaveLength(0);
     expect(valid).toBe(true);
   });
 
   test('merged config includes $schema field', () => {
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     expect(typeof merged.$schema).toBe('string');
     expect(merged.$schema).toContain('schemastore');
   });
 
   test('merged config has spinnerVerbs with mode=replace', () => {
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     const sv = merged.spinnerVerbs as Record<string, unknown>;
     expect(sv.mode).toBe('replace');
     expect(Array.isArray(sv.verbs)).toBe(true);
@@ -263,7 +277,7 @@ describe('buildSettings', () => {
   });
 
   test('merged config has spinnerTipsOverride with excludeDefault=true', () => {
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     const st = merged.spinnerTipsOverride as Record<string, unknown>;
     expect(st.excludeDefault).toBe(true);
     expect(Array.isArray(st.tips)).toBe(true);
@@ -271,7 +285,7 @@ describe('buildSettings', () => {
   });
 
   test('merged config has all 5 domain sections', () => {
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     // identity
     expect(merged.daidentity).toBeDefined();
     expect(merged.principal).toBeDefined();
@@ -287,7 +301,7 @@ describe('buildSettings', () => {
   });
 
   test('hooks section includes BuildSettings.ts in SessionStart', () => {
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     const hooks = merged.hooks as Record<string, unknown[]>;
     const sessionStart = hooks.SessionStart as Array<{ hooks: Array<{ command: string }> }>;
     const allCommands = sessionStart.flatMap(entry => entry.hooks.map(h => h.command));
@@ -305,7 +319,7 @@ describe('needsRebuild', () => {
 
   test('returns false when settings.json is newer than all config files', () => {
     // After running buildSettings, settings.json should be up-to-date
-    buildSettings(RELEASE_PAI_DIR); // ensure it's been built once
+    buildReleaseSettings(); // ensure it's been built once
     // needsRebuild may still be true if settings.json hasn't been written in this test run
     // Just verify the function doesn't throw
     expect(() => needsRebuild(RELEASE_PAI_DIR)).not.toThrow();
@@ -319,13 +333,13 @@ describe('buildSettings dry-run behavior', () => {
     // The dry-run flag is CLI-only; we test the underlying buildSettings()
     // function which dry-run calls before comparing — must not throw and
     // must return a valid config object.
-    const result = buildSettings(RELEASE_PAI_DIR);
+    const result = buildReleaseSettings();
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
 
   test('buildSettings() output passes validateConfig', () => {
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     const { valid, errors } = validateConfig(merged);
     // Live kai should always have valid config
     expect(errors).toEqual([]);
@@ -333,14 +347,14 @@ describe('buildSettings dry-run behavior', () => {
   });
 
   test('buildSettings() produces JSON-serializable output', () => {
-    const merged = buildSettings(RELEASE_PAI_DIR);
+    const merged = buildReleaseSettings();
     // dry-run serializes to JSON for comparison — must not throw
     expect(() => JSON.stringify(merged, null, 2)).not.toThrow();
   });
 
   test('buildSettings() output is deterministic on repeated calls', () => {
-    const first = JSON.stringify(buildSettings(RELEASE_PAI_DIR));
-    const second = JSON.stringify(buildSettings(RELEASE_PAI_DIR));
+    const first = JSON.stringify(buildReleaseSettings());
+    const second = JSON.stringify(buildReleaseSettings());
     expect(first).toBe(second);
   });
 });

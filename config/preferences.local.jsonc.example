@@ -1,0 +1,11 @@
+{
+  // preferences.local.jsonc.example — copy to `preferences.local.jsonc` (gitignored) to set
+  // machine-local root settings that survive every BuildSettings rebuild (PAI-SR-001).
+  //
+  // These keys live HERE, not hand-edited into the generated settings.json — otherwise a
+  // rebuild drops them. BuildSettings deepMerges this file LAST. ${PAI_DIR} expands at build.
+  //
+  // Example (adjust to your machine):
+  "model": "us.anthropic.claude-opus-4-8[1m]",
+  "autoMemoryDirectory": "${HOME}/.pai-runtime/auto-memory"
+}

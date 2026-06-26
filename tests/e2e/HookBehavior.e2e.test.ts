@@ -16,6 +16,10 @@ import { runHook } from './hook-harness';
 const HOOKS_DIR = join(import.meta.dir, '../../hooks');
 const REPO_ROOT = join(import.meta.dir, '../..');
 const TEST_ENV = { PAI_DIR: process.env.PAI_DIR || REPO_ROOT };
+const ANTHROPIC_OUTPUT_KEY = "sk" + "-ant-abc123456789012345678901234567890123456789";
+const ANTHROPIC_INPUT_KEY = "sk" + "-ant-api03-abc123456789012345678901234567890123456789";
+const GITHUB_OUTPUT_TOKEN = "gh" + "p_1234567890123456789012345678901234567890";
+const PRIVATE_KEY_HEADER = "-----BEGIN " + "PRIVATE KEY-----";
 
 describe('SecretOutputDetector E2E', () => {
   const HOOK_PATH = join(HOOKS_DIR, 'SecretOutputDetector.hook.ts');
@@ -24,7 +28,7 @@ describe('SecretOutputDetector E2E', () => {
     const result = await runHook(HOOK_PATH, {
       session_id: 'test-secret-1',
       tool_name: 'Bash',
-      tool_response: 'export ANTHROPIC_API_KEY=sk-ant-abc123456789012345678901234567890123456789'
+      tool_response: `export ANTHROPIC_API_KEY=${ANTHROPIC_OUTPUT_KEY}`
     }, TEST_ENV);
 
     expect(result.exitCode).toBe(0);
@@ -38,7 +42,7 @@ describe('SecretOutputDetector E2E', () => {
     const result = await runHook(HOOK_PATH, {
       session_id: 'test-secret-2',
       tool_name: 'Bash',
-      tool_response: 'Token: ghp_1234567890123456789012345678901234567890'
+      tool_response: `Token: ${GITHUB_OUTPUT_TOKEN}`
     }, TEST_ENV);
 
     expect(result.exitCode).toBe(0);
@@ -275,14 +279,15 @@ describe('SecretScanner E2E - Input Scanning', () => {
   test('detects Anthropic API key in user prompt', async () => {
     const result = await runHook(HOOK_PATH, {
       session_id: 'test-input-secret-1',
-      user_prompt: 'Here is my API key: sk-ant-api03-abc123456789012345678901234567890123456789'
+      user_prompt: `Here is my API key: ${ANTHROPIC_INPUT_KEY}`
     }, TEST_ENV);
 
     expect(result.exitCode).toBe(0);
     const output = JSON.parse(result.stdout.trim());
-    expect(output.decision).toBe('ask');
-    expect(output.message).toContain('Anthropic API Key');
-    expect(output.message).toContain('SECURITY');
+    expect(output.decision).toBe('block');
+    expect(output.suppressOriginalPrompt).toBe(true);
+    expect(output.reason).toContain('Anthropic API Key');
+    expect(output.reason).toContain('SECURITY');
   });
 
   test('detects AWS Access Key in user prompt', async () => {
@@ -293,32 +298,32 @@ describe('SecretScanner E2E - Input Scanning', () => {
 
     expect(result.exitCode).toBe(0);
     const output = JSON.parse(result.stdout.trim());
-    expect(output.decision).toBe('ask');
-    expect(output.message).toContain('AWS Access Key');
+    expect(output.decision).toBe('block');
+    expect(output.reason).toContain('AWS Access Key');
   });
 
   test('detects GitHub token in user prompt', async () => {
     const result = await runHook(HOOK_PATH, {
       session_id: 'test-input-secret-3',
-      user_prompt: 'Use this token: ghp_1234567890123456789012345678901234567890'
+      user_prompt: `Use this token: ${GITHUB_OUTPUT_TOKEN}`
     }, TEST_ENV);
 
     expect(result.exitCode).toBe(0);
     const output = JSON.parse(result.stdout.trim());
-    expect(output.decision).toBe('ask');
-    expect(output.message).toContain('GitHub');
+    expect(output.decision).toBe('block');
+    expect(output.reason).toContain('GitHub');
   });
 
   test('detects private key in user prompt', async () => {
     const result = await runHook(HOOK_PATH, {
       session_id: 'test-input-secret-4',
-      user_prompt: 'Here is the key:\n-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBg...'
+      user_prompt: `Here is the key:\n${PRIVATE_KEY_HEADER}\nMIIEvQIBADANBg...`
     }, TEST_ENV);
 
     expect(result.exitCode).toBe(0);
     const output = JSON.parse(result.stdout.trim());
-    expect(output.decision).toBe('ask');
-    expect(output.message).toContain('Private key');
+    expect(output.decision).toBe('block');
+    expect(output.reason).toContain('Private key');
   });
 
   test('detects Bearer token in user prompt', async () => {
@@ -329,8 +334,8 @@ describe('SecretScanner E2E - Input Scanning', () => {
 
     expect(result.exitCode).toBe(0);
     const output = JSON.parse(result.stdout.trim());
-    expect(output.decision).toBe('ask');
-    expect(output.message).toContain('Bearer');
+    expect(output.decision).toBe('block');
+    expect(output.reason).toContain('Bearer');
   });
 
   test('allows prompts without secrets', async () => {

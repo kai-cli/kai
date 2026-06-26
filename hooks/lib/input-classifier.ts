@@ -28,6 +28,17 @@ const QUESTION_WORDS_RE = /\b(what|how|why|when|where|who|which|can you|could yo
 // Shell metacharacters — each one adds p_shell
 const SHELL_META_RE = /[|>&;<$]/g;
 
+// Common English words that ALSO happen to be PATH binaries. When one of these starts
+// an unprefixed multi-word input it is almost always natural language ("test the theory",
+// "write a report", "make it faster"), not a shell invocation — so it must NOT receive the
+// multi-word shell boost. The explicit `!` prefix is the way to force shell for these.
+// (PAI-SR-040: bare `test`/`write` + a word was scoring p_shell=0.95 and auto-executing.)
+const COMMON_WORD_BINARIES = new Set([
+  'test', 'write', 'make', 'find', 'sort', 'time', 'help', 'read', 'type', 'file',
+  'look', 'wait', 'date', 'kill', 'clear', 'open', 'print', 'run', 'show', 'tell',
+  'use', 'build', 'fix', 'add', 'set', 'get', 'put', 'move', 'copy', 'link', 'view',
+]);
+
 export function classifyInput(raw: string): ClassificationResult {
   const input = raw.trim();
 
@@ -68,9 +79,11 @@ export function classifyInput(raw: string): ClassificationResult {
   const firstTokenIsCommand = !hasQuestionPattern && isKnownCommand(firstToken);
   if (firstTokenIsCommand) {
     p_shell += 0.6;
-    // Known binary + at least one argument (≥2 words) = strong shell signal.
-    // Single-word known binaries stay ambiguous (user should use ! prefix).
-    if (words.length >= 2) {
+    // Known binary + at least one argument (≥2 words) = strong shell signal — UNLESS the
+    // binary is also a common English word (test/write/make/…). Those stay capped at 0.6
+    // (< 0.85 threshold → ai) so natural-language sentences aren't auto-executed (PAI-SR-040).
+    // A real shell signal (metacharacter) can still push them over the line below.
+    if (words.length >= 2 && !COMMON_WORD_BINARIES.has(firstToken)) {
       p_shell += 0.35;
     }
   }

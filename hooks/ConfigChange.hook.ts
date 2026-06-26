@@ -13,10 +13,9 @@
  * - LOG: all config changes to MEMORY/STATE/config-changes.jsonl
  * - ALLOW: all other changes (whitelist approach — don't over-block)
  *
- * OUTPUT FORMAT (for blocking):
- *   {"decision": "block", "reason": "..."}
- * Allowed (exit 0 with no output, or):
- *   {"decision": "allow"}
+ * OUTPUT:
+ * - stderr + exit(2): block config changes that disable critical hooks
+ * - exit(0): allow all other config changes
  */
 
 import { appendFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
@@ -26,9 +25,9 @@ import { validateSettingsFile } from '../scripts/settings-validate';
 
 interface ConfigChangeInput {
   session_id: string;
-  config_path?: string;
+  source?: string;
+  file_path?: string;
   hook_event_name: string;
-  change_type?: string;
 }
 
 const PAI_DIR = process.env.PAI_DIR || join(homedir(), '.claude');
@@ -101,7 +100,7 @@ async function main() {
     process.exit(0);
   }
 
-  const configPath = input.config_path || join(PAI_DIR, 'settings.json');
+  const configPath = input.file_path || input.source || join(PAI_DIR, 'settings.json');
 
   // Only guard settings.json — other config files are lower risk
   // Logging removed: all 1,128+ entries were change_type:"unknown" with no actionable signal.
@@ -113,12 +112,8 @@ async function main() {
   // Check for critical hook removal
   const violation = checkForCriticalHookRemoval(configPath);
   if (violation) {
-    console.error(`[ConfigChange] BLOCKED: ${violation}`);
-    console.log(JSON.stringify({
-      decision: 'block',
-      reason: `PAI security guard: ${violation}. Restore the hook before proceeding.`,
-    }));
-    process.exit(0);
+    console.error(`[ConfigChange] BLOCKED: ${violation}. Restore the hook before proceeding.`);
+    process.exit(2);
   }
 
   // Schema validation — warn on violations, never block

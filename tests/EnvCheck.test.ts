@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { checkEnvironment, formatStatus, detectCwdMismatch, type EnvStatus } from '../hooks/lib/env-check';
+import { execFileSync } from 'child_process';
+import { checkEnvironment, formatStatus, detectCwdMismatch, detectLiveCheckoutDrift, type EnvStatus } from '../hooks/lib/env-check';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -156,7 +157,7 @@ describe('env-check.ts', () => {
       mkdirSync(projects, { recursive: true });
       const warning = detectCwdMismatch(projects, home);
       expect(warning).toBeDefined();
-      expect(warning).toContain('parent directory');
+      expect(warning).toContain('non-project directory');
     });
 
     test('silent for a real project dir with .git (even directly under home)', () => {
@@ -172,7 +173,7 @@ describe('env-check.ts', () => {
       mkdirSync(join(proj, '.claude'), { recursive: true });
       const warning = detectCwdMismatch(proj, home);
       expect(warning).toBeDefined();
-      expect(warning).toContain('parent directory');
+      expect(warning).toContain('non-project directory');
     });
 
     test('silent for a child-of-home dir that has a real project marker (package.json)', () => {
@@ -182,10 +183,31 @@ describe('env-check.ts', () => {
       expect(detectCwdMismatch(proj, home)).toBeUndefined();
     });
 
-    test('silent for a deep project dir (not home or immediate child)', () => {
-      const deep = join(home, 'Projects', 'rayhunter');
-      mkdirSync(deep, { recursive: true });
+    test('WARNS for a marker-less deep dir under ~/Projects (nested-domain blind spot)', () => {
+      // A reorg into ~/Projects/<Domain>/ creates marker-less containers at depth >= 2.
+      // The old immediate-child-only check went silent here — re-arming the rayhunter catch-all.
+      const container = join(home, 'Projects', 'LinksysPrograms');
+      mkdirSync(container, { recursive: true });
+      expect(detectCwdMismatch(container, home)).toBeDefined();
+    });
+
+    test('silent for a deep dir with .git (real project, depth >= 2)', () => {
+      const deep = join(home, 'Projects', 'OpenSource', 'mvt');
+      mkdirSync(join(deep, '.git'), { recursive: true });
       expect(detectCwdMismatch(deep, home)).toBeUndefined();
+    });
+
+    test('silent for a deep dir with a .pai-project sentinel (non-git project leaf)', () => {
+      const leaf = join(home, 'Projects', 'LinksysPrograms', 'qa');
+      mkdirSync(leaf, { recursive: true });
+      writeFileSync(join(leaf, '.pai-project'), '');
+      expect(detectCwdMismatch(leaf, home)).toBeUndefined();
+    });
+
+    test('silent for a marker-less dir OUTSIDE the ~/Projects tree', () => {
+      const elsewhere = join(home, 'Documents', 'notes');
+      mkdirSync(elsewhere, { recursive: true });
+      expect(detectCwdMismatch(elsewhere, home)).toBeUndefined();
     });
 
     test('silent when cwd or home is empty', () => {
@@ -208,6 +230,83 @@ describe('env-check.ts', () => {
       } finally {
         if (prevHome !== undefined) process.env.HOME = prevHome; else delete process.env.HOME;
       }
+    });
+  });
+
+  describe('detectLiveCheckoutDrift', () => {
+    function git(dir: string, args: string[]): string {
+      return execFileSync('git', ['-C', dir, ...args], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }).trim();
+    }
+
+    function makeRepo(name: string): string {
+      const repo = join(testDir, name);
+      mkdirSync(repo, { recursive: true });
+      git(repo, ['init', '-b', 'main']);
+      git(repo, ['config', 'user.name', 'Test User']);
+      git(repo, ['config', 'user.email', 'test@example.com']);
+      writeFileSync(join(repo, 'README.md'), '# test\n');
+      git(repo, ['add', 'README.md']);
+      git(repo, ['commit', '-m', 'initial']);
+      return repo;
+    }
+
+    test('silent for non-git directories', () => {
+      expect(detectLiveCheckoutDrift(testDir)).toBeUndefined();
+    });
+
+    test('silent for live checkout on expected branch with no upstream drift', () => {
+      const repo = makeRepo('live-main-clean');
+      expect(detectLiveCheckoutDrift(repo)).toBeUndefined();
+    });
+
+    test('warns when live checkout is on a feature branch', () => {
+      const repo = makeRepo('live-feature');
+      git(repo, ['switch', '-c', 'fix/test']);
+      const warning = detectLiveCheckoutDrift(repo);
+      expect(warning).toContain('fix/test');
+      expect(warning).toContain('expected clean/synced `main`');
+    });
+
+    test('warns when live checkout is behind its upstream', () => {
+      const remote = makeRepo('remote-behind');
+      const repo = join(testDir, 'live-behind');
+      execFileSync('git', ['clone', remote, repo], { stdio: ['ignore', 'pipe', 'pipe'] });
+      git(repo, ['switch', 'main']);
+
+      writeFileSync(join(remote, 'next.md'), 'new\n');
+      git(remote, ['add', 'next.md']);
+      git(remote, ['commit', '-m', 'remote update']);
+      git(repo, ['fetch']);
+
+      const warning = detectLiveCheckoutDrift(repo);
+      expect(warning).toContain('1 commit(s) behind');
+    });
+
+    test('warns when live checkout has local commits ahead of upstream', () => {
+      const remote = makeRepo('remote-ahead');
+      const repo = join(testDir, 'live-ahead');
+      execFileSync('git', ['clone', remote, repo], { stdio: ['ignore', 'pipe', 'pipe'] });
+      git(repo, ['switch', 'main']);
+      git(repo, ['config', 'user.name', 'Test User']);
+      git(repo, ['config', 'user.email', 'test@example.com']);
+
+      writeFileSync(join(repo, 'local.md'), 'local\n');
+      git(repo, ['add', 'local.md']);
+      git(repo, ['commit', '-m', 'local update']);
+
+      const warning = detectLiveCheckoutDrift(repo);
+      expect(warning).toContain('1 local commit(s) ahead');
+    });
+
+    test('checkEnvironment surfaces live checkout drift', () => {
+      process.env.ANTHROPIC_API_KEY = 'k';
+      const repo = makeRepo('env-live-feature');
+      git(repo, ['switch', '-c', 'stale-pr']);
+      const status = checkEnvironment(repo);
+      expect(status.liveCheckoutWarning).toContain('stale-pr');
     });
   });
 

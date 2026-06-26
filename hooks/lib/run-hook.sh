@@ -26,6 +26,7 @@ LOG_FILE="${LOG_DIR}/${LOG_BASE}.log"
 # Known slow hooks get longer timeouts. All others: 30s default.
 case "$LOG_BASE" in
   KnowledgeSync)             DEFAULT_TIMEOUT=180 ;;  # Full harvest: 7 domains × ~25s each
+  SessionEndComposite)       DEFAULT_TIMEOUT=240 ;;  # Parent fan-out wrapper; must exceed slowest child (KnowledgeSync=180s)
   SessionSummary)            DEFAULT_TIMEOUT=60  ;;  # LLM summarization
   WorkCompletionLearning)    DEFAULT_TIMEOUT=60  ;;  # LLM learning capture
   InsightExtractor)          DEFAULT_TIMEOUT=90  ;;  # Haiku inference (CLI cold start) + file writes
@@ -38,15 +39,37 @@ esac
 HOOK_ENV_VAR="PAI_HOOK_TIMEOUT_${LOG_BASE//-/_}"
 TIMEOUT="${!HOOK_ENV_VAR:-${PAI_HOOK_TIMEOUT:-$DEFAULT_TIMEOUT}}"
 
-# Log timeout to hook log
-echo "[$(date -u +%H:%M:%S)] run-hook.sh: $LOG_BASE (timeout: ${TIMEOUT}s)" >> "$LOG_FILE"
+now_ms() {
+  perl -MTime::HiRes=time -e 'printf "%.0f\n", time()*1000' 2>/dev/null || echo "$(($(date -u +%s) * 1000))"
+}
 
-# Execute with timeout — exits 124 on timeout (logged, not fatal)
+# Log start to hook log. Use an explicit START/END pair so latency incidents can
+# be attributed mechanically instead of inferred from adjacent hook starts.
+START_MS="$(now_ms)"
+START_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "[$(date -u +%H:%M:%S)] run-hook.sh START: $LOG_BASE (timeout: ${TIMEOUT}s, pid=$$)" >> "$LOG_FILE"
+
+# Execute with timeout — exits 124 on timeout (logged below, not fatal)
 # macOS doesn't ship GNU timeout; try gtimeout (brew install coreutils), else run without timeout
 if command -v timeout &>/dev/null; then
-  exec timeout "$TIMEOUT" bun "$HOOK_PATH" 2>>"$LOG_FILE"
+  timeout "$TIMEOUT" bun "$HOOK_PATH" 2>>"$LOG_FILE"
+  STATUS=$?
 elif command -v gtimeout &>/dev/null; then
-  exec gtimeout "$TIMEOUT" bun "$HOOK_PATH" 2>>"$LOG_FILE"
+  gtimeout "$TIMEOUT" bun "$HOOK_PATH" 2>>"$LOG_FILE"
+  STATUS=$?
 else
-  exec bun "$HOOK_PATH" 2>>"$LOG_FILE"
+  echo "[$(date -u +%H:%M:%S)] run-hook.sh WARNING: timeout command unavailable; running $LOG_BASE without wrapper timeout" >> "$LOG_FILE"
+  bun "$HOOK_PATH" 2>>"$LOG_FILE"
+  STATUS=$?
 fi
+
+END_MS="$(now_ms)"
+END_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+DURATION_MS=$((END_MS - START_MS))
+if [ "$STATUS" -eq 124 ]; then
+  echo "[$(date -u +%H:%M:%S)] run-hook.sh END: $LOG_BASE status=$STATUS duration_ms=${DURATION_MS} timeout=true started_at=$START_ISO ended_at=$END_ISO" >> "$LOG_FILE"
+else
+  echo "[$(date -u +%H:%M:%S)] run-hook.sh END: $LOG_BASE status=$STATUS duration_ms=${DURATION_MS} timeout=false started_at=$START_ISO ended_at=$END_ISO" >> "$LOG_FILE"
+fi
+
+exit "$STATUS"

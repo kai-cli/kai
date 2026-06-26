@@ -215,23 +215,35 @@ console.log(filename ?? '');
     }
   });
 
-  test('does not overwrite existing files', () => {
-    const insight: Insight = {
-      title: 'duplicate test',
-      content: 'First write.',
-      category: 'domain',
-      confidence: 'medium',
-    };
-
-    const first = writeInsight(insight, 'session-1');
-    const second = writeInsight(insight, 'session-2');
-
-    // Second write should return empty (no overwrite)
-    if (first) {
+  test('does not overwrite existing files', async () => {
+    // writeInsight uses the module-level INSIGHTS_DIR baked at import time. Run in a
+    // subprocess with an explicit PAI_DIR so both writes target an isolated temp store
+    // and never pollute the real ~/.claude/MEMORY/LEARNING/INSIGHTS/ directory.
+    // (Regression guard: this test previously wrote to the live store and orphaned
+    // a `YYYY-MM-DD_duplicate-test.md` file per run when HOME was mutated by a
+    // parallel test, defeating the cleanup branch.)
+    const paiDir = mkdtempSync(join(tmpdir(), 'pai-insight-dup-test-'));
+    mkdirSync(join(paiDir, 'MEMORY', 'LEARNING', 'INSIGHTS'), { recursive: true });
+    const HOOK = new URL('../hooks/InsightExtractor.hook.ts', import.meta.url).pathname;
+    try {
+      const script = `
+import { writeInsight } from '${HOOK}';
+const insight = { title: 'duplicate test', content: 'First write.', category: 'domain', confidence: 'medium' };
+const first = writeInsight(insight, 'session-1');
+const second = writeInsight(insight, 'session-2');
+console.log(JSON.stringify({ first, second }));
+`;
+      const proc = Bun.spawn(['bun', '-e', script], {
+        stdout: 'pipe', stderr: 'pipe',
+        env: { ...process.env, PAI_DIR: paiDir },
+      });
+      const out = (await new Response(proc.stdout).text()).trim();
+      const { first, second } = JSON.parse(out);
+      expect(first).toMatch(/_duplicate-test\.md$/);
+      // Second write must NOT overwrite — returns empty string.
       expect(second).toBe('');
-      // Cleanup
-      const insightsDir = join(process.env.HOME || '', '.claude', 'MEMORY', 'LEARNING', 'INSIGHTS');
-      rmSync(join(insightsDir, first), { force: true });
+    } finally {
+      rmSync(paiDir, { recursive: true, force: true });
     }
   });
 });

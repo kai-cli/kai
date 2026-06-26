@@ -11,12 +11,12 @@
  * TRIGGER: TaskCompleted
  *
  * INPUT:
- * - stdin: Hook input JSON (task_id, subject, description, owner, session_id)
+ * - stdin: Hook input JSON (task_id, task_subject, task_description, teammate_name, session_id)
  *
  * OUTPUT:
- * - stdout: Feedback message if blocking (exit 2)
+ * - stderr: Feedback message if blocking (exit 2)
  * - exit(0): Allow completion
- * - exit(2): Block completion, send stdout as feedback to agent
+ * - exit(2): Block completion, send stderr as feedback to agent
  *
  * ALGORITHM ISC QUALITY CRITERIA (for tasks with "ISC-" subject prefix):
  * The task description must contain ONE of:
@@ -28,9 +28,10 @@
 
 interface HookInput {
   task_id?: string;
-  subject?: string;
-  description?: string;
-  owner?: string;
+  task_subject?: string;
+  task_description?: string;
+  teammate_name?: string;
+  team_name?: string;
   session_id?: string;
 }
 
@@ -50,7 +51,8 @@ async function main() {
       process.exit(0);
     }
 
-    const { subject = '', description = '' } = input;
+    const subject = input.task_subject ?? '';
+    const description = input.task_description ?? '';
 
     // Only enforce on Algorithm ISC tasks
     const isISCTask = /^ISC-/i.test(subject.trim());
@@ -72,7 +74,7 @@ async function main() {
     const verificationOk = (hasPassSignal || hasVerificationLabel || hasCLIResult || hasTestResult) && hasExplicitEvidence;
 
     if (!verificationOk) {
-      console.log(
+      console.error(
         `ISC task "${subject}" cannot be closed without verification evidence. ` +
         `Before marking this criterion complete, add evidence to the task description: ` +
         `(1) State PASS or FAIL explicitly, ` +
@@ -93,3 +95,5 @@ async function main() {
 }
 
 main().catch((err) => { console.error(`[TaskCompleted] Error:`, err); process.exit(0); });
+
+export {};

@@ -13,7 +13,13 @@ export type HookEventName =
   | 'SessionStart'
   | 'SessionEnd'
   | 'PreToolUse'
-  | 'PostToolUse';
+  | 'PostToolUse'
+  | 'PreCompact'
+  | 'UserPromptExpansion'
+  | 'ConfigChange'
+  | 'WorktreeRemove'
+  | 'TaskCompleted'
+  | 'TeammateIdle';
 
 export interface ValidationResult {
   valid: boolean;
@@ -60,6 +66,41 @@ export const PAYLOAD_SCHEMAS: Record<HookEventName, FieldSpec[]> = {
     { field: 'tool_name', type: 'string', required: true },
     { field: 'tool_input', type: 'object', required: true },
     { field: 'tool_response', type: 'object', required: false },
+  ],
+  // Field names below verified against the installed Claude Code 2.1.185 binary (PAI-SR-013).
+  PreCompact: [
+    ...BASE,
+    { field: 'trigger', type: 'string', required: false },          // "manual" | "auto"
+    { field: 'custom_instructions', type: 'string', required: false },
+  ],
+  UserPromptExpansion: [
+    ...BASE,
+    { field: 'command_name', type: 'string', required: false },      // direct slash command name
+    { field: 'args', type: 'string', required: false },
+    { field: 'source', type: 'string', required: false },
+    { field: 'cwd', type: 'string', required: false },
+  ],
+  ConfigChange: [
+    ...BASE,
+    { field: 'source', type: 'string', required: false },           // current field (NOT legacy config_path)
+    { field: 'file_path', type: 'string', required: false },
+  ],
+  WorktreeRemove: [
+    ...BASE,
+    { field: 'worktree_path', type: 'string', required: false },
+  ],
+  TaskCompleted: [
+    ...BASE,
+    { field: 'task_id', type: 'string', required: false },
+    { field: 'task_subject', type: 'string', required: false },     // current (NOT legacy subject)
+    { field: 'task_description', type: 'string', required: false }, // current (NOT legacy description)
+    { field: 'teammate_name', type: 'string', required: false },    // current (NOT legacy owner)
+    { field: 'team_name', type: 'string', required: false },
+  ],
+  TeammateIdle: [
+    ...BASE,
+    { field: 'teammate_name', type: 'string', required: false },
+    { field: 'team_name', type: 'string', required: false },
   ],
 };
 

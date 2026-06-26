@@ -3,6 +3,8 @@ import { writeFileSync, mkdirSync, existsSync, unlinkSync, rmSync, readFileSync 
 import { join } from 'path';
 import { analyzeTranscript, isTrivialSession } from '../hooks/SessionEndComposite.hook';
 
+const HOOK_SOURCE = readFileSync(join(import.meta.dir, '../hooks/SessionEndComposite.hook.ts'), 'utf-8');
+
 const TEST_DIR = join(import.meta.dir, '.test-session-end-composite');
 const TRANSCRIPT_PATH = join(TEST_DIR, 'transcript.jsonl');
 
@@ -20,6 +22,15 @@ afterAll(() => {
 });
 
 describe('SessionEndComposite', () => {
+  test('emits decision telemetry explaining why inference hooks did or did not run', () => {
+    expect(HOOK_SOURCE).toContain("emitMemoryTelemetry('session_end.composite'");
+    expect(HOOK_SOURCE).toContain('selected_hooks');
+    expect(HOOK_SOURCE).toContain('skipped_hooks');
+    expect(HOOK_SOURCE).toContain('estimated_tokens');
+    expect(HOOK_SOURCE).toContain('message_count');
+    expect(HOOK_SOURCE).toContain('gate_enabled');
+  });
+
   describe('analyzeTranscript', () => {
     test('detects trivial session (4 messages, 1500 tokens)', () => {
       const transcript = [

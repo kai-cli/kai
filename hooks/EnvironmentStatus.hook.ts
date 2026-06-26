@@ -23,6 +23,7 @@ const status = checkEnvironment(PAI_DIR, cwd);
 const lines: string[] = [];
 if (status.critical) lines.push(`⚠️ ${status.critical}`, formatStatus(status));
 if (status.cwdWarning) lines.push(status.cwdWarning);
+if (status.liveCheckoutWarning) lines.push(status.liveCheckoutWarning);
 
 if (lines.length > 0) {
   console.log(JSON.stringify({ additionalContext: lines.join("\n") }));

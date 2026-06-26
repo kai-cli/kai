@@ -25,6 +25,9 @@ interface DomainsConfig {
   excludedProjects?: string[];
   personalProjects?: string[];
   maxDomainsPerSession?: number;
+  // Privacy gates (PAI-SR-031 / PAI-SR-073). Both safe-by-default.
+  crossProjectBodyInjection?: boolean;  // default false — inject only pointers across projects
+  knowledgeRedaction?: boolean;          // default true  — scrub secrets from injected KNOWLEDGE
 }
 
 interface CacheEntry {
@@ -106,6 +109,24 @@ export function loadExcludedProjects(): string[] {
 export function getMaxDomainsPerSession(): number {
   const config = loadConfig();
   return config.maxDomainsPerSession ?? 3;
+}
+
+/**
+ * Whether cross-project memory BODIES may be auto-injected (PAI-SR-031).
+ * Deny-by-default: when false (the default), cross-project recall emits pointers only.
+ */
+export function isCrossProjectBodyInjectionEnabled(): boolean {
+  const config = loadConfig();
+  return config.crossProjectBodyInjection === true;
+}
+
+/**
+ * Whether auto-injected KNOWLEDGE bodies are scrubbed for secrets (PAI-SR-073).
+ * Safe-by-default: redaction is ON unless explicitly disabled.
+ */
+export function isKnowledgeRedactionEnabled(): boolean {
+  const config = loadConfig();
+  return config.knowledgeRedaction !== false;
 }
 
 export function loadRequiredTags(): Record<string, string[]> {

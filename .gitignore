@@ -130,6 +130,10 @@ scripts/board-config.json
 PAI/USER/
 skills/PAI/USER/
 
+# Local ADA packs/procedure configs.
+# In this install ~/.claude is a symlink to pai-config, so ~/.claude/ada resolves here.
+ada/
+
 # Domain-specific example skills (not active, for reference only)
 # skills-examples/ is tracked intentionally as templates
 
@@ -137,6 +141,20 @@ skills/PAI/USER/
 skills/**/State/
 skills-examples/**/State/
 teams/investigation-*
+teams/session-*/
+# Per-machine update result (runtime state, not source)
+.last-update-result.json
+
+# Claude native/auto memory inbox.
+# MEMORY.md can remain a tracked/indexed pointer if intentionally curated, but generated topic files
+# are runtime/session artifacts and may come from unrelated projects.
+auto-memory/*.md
+!auto-memory/MEMORY.md
+!auto-memory/codex-secondary-validator.md
+
+# Memcarry durable lessons can be curated/tracked, but project resume-state atoms
+# are runtime/session state and may be written by unrelated sessions/projects.
+MEMORY/memcarry/store/atoms/project/
 
 # Memcarry vendored core
 memcarry/node_modules/

@@ -11,11 +11,12 @@
  * OUTPUT:
  * - {"continue": true}           → Allow
  * - {"decision": "block", ...}   → Hard block (internal network)
- * - {"decision": "ask", ...}     → Confirm (suspicious pattern)
+ * - {hookSpecificOutput:{…permissionDecision:"ask"}} → Confirm (suspicious pattern; 2.1.185)
  */
 
 import { appendFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+import { askPreToolUse } from './lib/hook-io';
 
 const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 const SECURITY_LOG = join(PAI_DIR, 'MEMORY', 'SECURITY', 'security-events.jsonl');
@@ -108,10 +109,9 @@ async function main() {
     for (const { pattern, reason } of SUSPICIOUS_PATTERNS) {
       if (pattern.test(url)) {
         logEvent('suspicious', url, reason, toolName);
-        process.stdout.write(JSON.stringify({
-          decision: 'ask',
-          message: `[WebFetchGuard] Unusual URL pattern detected (${reason}): ${url.slice(0, 100)}\n\nProceed?`,
-        }));
+        process.stdout.write(JSON.stringify(askPreToolUse(
+          `[WebFetchGuard] Unusual URL pattern detected (${reason}): ${url.slice(0, 100)}\n\nProceed?`
+        )));
         process.exit(0);
       }
     }

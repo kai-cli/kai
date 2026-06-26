@@ -10,6 +10,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { clearConfigCache } from '../hooks/lib/config-loader';
 import {
+  assessKnowledgeDisclosure,
   extractFacts,
   identifyAffectedDomains,
   type ChangedFile,
@@ -152,5 +153,44 @@ describe('identifyAffectedDomains', () => {
     const domains = identifyAffectedDomains(files);
     expect(domains.has('backend')).toBe(true);
     expect(domains.has('devops')).toBe(true);
+  });
+});
+
+// -- disclosure gate ----------------------------------------------------------
+
+describe('assessKnowledgeDisclosure', () => {
+  test('redacts secrets without staging otherwise safe knowledge', () => {
+    const secret = ['super', 'secret', 'value'].join('');
+    const assessment = assessKnowledgeDisclosure(`API integration uses password="${secret}" in the fixture.`);
+
+    expect(assessment.safeToWrite).toBe(true);
+    expect(assessment.body).not.toContain(secret);
+    expect(assessment.findings.some(f => f.kind === 'secret' && f.action === 'redact')).toBe(true);
+  });
+
+  test('stages private network URLs for review', () => {
+    const assessment = assessKnowledgeDisclosure('Router admin is available at http://192.168.1.1/admin.');
+
+    expect(assessment.safeToWrite).toBe(false);
+    expect(assessment.findings).toContainEqual({
+      kind: 'internal-url',
+      label: 'private network URL',
+      action: 'stage',
+    });
+  });
+
+  test('stages local user paths for review', () => {
+    const assessment = assessKnowledgeDisclosure('Local repo path is /Users/example/Projects/private-repo.');
+
+    expect(assessment.safeToWrite).toBe(false);
+    expect(assessment.findings.some(f => f.kind === 'private-path' && f.action === 'stage')).toBe(true);
+  });
+
+  test('stages email-like contact details for review', () => {
+    const email = ['ops-contact', 'example.com'].join('@');
+    const assessment = assessKnowledgeDisclosure(`Escalate to ${email} for deployment failures.`);
+
+    expect(assessment.safeToWrite).toBe(false);
+    expect(assessment.findings.some(f => f.kind === 'email' && f.action === 'stage')).toBe(true);
   });
 });

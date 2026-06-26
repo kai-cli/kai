@@ -24,6 +24,9 @@ import { inference } from '../PAI/Tools/Inference';
 import { canCallInference, recordInferenceCall, budgetStatus } from './lib/inference-budget';
 import { loadDomainKeywords, loadDomainDescriptions } from './lib/config-loader';
 import { parseKnowledgeFile, writeKnowledgeFile, type KnowledgeFile } from './lib/knowledge-schema';
+import { emitMemoryTelemetry } from './lib/memory-telemetry';
+import { redactSecrets } from './lib/redact';
+import { SECRET_PATTERNS } from './lib/secret-patterns';
 
 // ============================================================================
 // Types
@@ -42,6 +45,18 @@ export interface ChangedFile {
   filename: string;
   path: string;
   content: string;
+}
+
+export interface DisclosureFinding {
+  kind: 'secret' | 'internal-url' | 'private-path' | 'email';
+  label: string;
+  action: 'redact' | 'stage';
+}
+
+export interface DisclosureAssessment {
+  safeToWrite: boolean;
+  body: string;
+  findings: DisclosureFinding[];
 }
 
 // Domain definitions — loaded from config/domains.jsonc via config-loader
@@ -68,12 +83,102 @@ function writeKnowledgeFileWithFrontmatter(domain: string, body: string): void {
   writeKnowledgeFile(kf);
 }
 
+export function assessKnowledgeDisclosure(body: string): DisclosureAssessment {
+  const findings: DisclosureFinding[] = [];
+  for (const { name, pattern } of SECRET_PATTERNS) {
+    if (pattern.test(body)) findings.push({ kind: 'secret', label: name, action: 'redact' });
+  }
+
+  const redacted = redactSecrets(body);
+  const stagePatterns: Array<{ kind: DisclosureFinding['kind']; label: string; pattern: RegExp }> = [
+    { kind: 'internal-url', label: 'private network URL', pattern: /\bhttps?:\/\/(?:localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|[^/\s)]+(?:\.corp|\.internal|\.local|\.lan))\b/gi },
+    { kind: 'private-path', label: 'local user path', pattern: /(?:^|\s)(?:\/Users\/[A-Za-z0-9._-]+|~\/)(?:\/[^\s)]+)?/g },
+    { kind: 'email', label: 'email address', pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
+  ];
+  for (const { kind, label, pattern } of stagePatterns) {
+    if (pattern.test(redacted)) findings.push({ kind, label, action: 'stage' });
+  }
+
+  return {
+    safeToWrite: findings.every(f => f.action !== 'stage'),
+    body: redacted,
+    findings,
+  };
+}
+
+function writeKnowledgeSyncProposal(
+  domain: string,
+  body: string,
+  findings: DisclosureFinding[],
+  fields: { runId: string; mode: string },
+): string {
+  const stagingDir = join(getPaiDir(), 'MEMORY', 'STAGING');
+  mkdirSync(stagingDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const filename = `${timestamp}_knowledge-sync-review_${domain}.md`;
+  const content = [
+    '---',
+    'type: knowledge-sync-review',
+    `source_type: KnowledgeSync`,
+    `run_id: ${fields.runId}`,
+    `mode: ${fields.mode}`,
+    `domain: ${domain}`,
+    `generated: ${new Date().toISOString()}`,
+    `findings: ${findings.map(f => `${f.kind}:${f.label}`).join(', ')}`,
+    'target: MEMORY/KNOWLEDGE/' + domain + '.md',
+    '---',
+    '',
+    '# KnowledgeSync disclosure review',
+    '',
+    'KnowledgeSync staged this proposed domain refresh instead of writing tracked knowledge directly.',
+    '',
+    'Findings:',
+    ...findings.map(f => `- ${f.action}: ${f.kind} - ${f.label}`),
+    '',
+    '## Proposed content',
+    '',
+    body.trim(),
+    '',
+  ].join('\n');
+  writeFileSync(join(stagingDir, filename), content, 'utf-8');
+  return filename;
+}
+
+function persistDistilledKnowledge(
+  domain: string,
+  body: string,
+  fields: { runId: string; mode: string },
+): { status: 'updated' | 'redacted' | 'staged_disclosure_review'; body: string; findings: DisclosureFinding[]; stagedFilename?: string } {
+  const assessment = assessKnowledgeDisclosure(body);
+  if (!assessment.safeToWrite) {
+    const stagedFilename = writeKnowledgeSyncProposal(domain, assessment.body, assessment.findings, fields);
+    return { status: 'staged_disclosure_review', body: assessment.body, findings: assessment.findings, stagedFilename };
+  }
+  writeKnowledgeFileWithFrontmatter(domain, assessment.body);
+  return {
+    status: assessment.findings.length > 0 ? 'redacted' : 'updated',
+    body: assessment.body,
+    findings: assessment.findings,
+  };
+}
+
 // ============================================================================
 // State management
 // ============================================================================
 
 const KNOWLEDGE_DIR = paiPath('MEMORY', 'KNOWLEDGE');
 const STATE_FILE = join(KNOWLEDGE_DIR, '.harvest-state.json');
+
+function newRunId(): string {
+  return `ks_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function emitKnowledgeSyncTelemetry(fields: Record<string, unknown>): void {
+  emitMemoryTelemetry('knowledge.sync', {
+    hook: 'KnowledgeSync',
+    ...fields,
+  });
+}
 
 function loadState(): HarvestState {
   return readJSON<HarvestState>(STATE_FILE, { lastRun: '', fileMtimes: {} });
@@ -323,9 +428,21 @@ function maybeSynthesizePatterns(): void {
 // ============================================================================
 
 async function main() {
+  const runId = newRunId();
+  const runStart = Date.now();
   try {
+    emitKnowledgeSyncTelemetry({ phase: 'start', run_id: runId, mode: 'unknown' });
+
     if (!existsSync(KNOWLEDGE_DIR)) {
       console.error('[KnowledgeSync] No KNOWLEDGE/ directory - run KnowledgeHarvester.ts first');
+      emitKnowledgeSyncTelemetry({
+        phase: 'complete',
+        run_id: runId,
+        mode: 'unknown',
+        status: 'skipped',
+        reason: 'missing_knowledge_dir',
+        ms: Date.now() - runStart,
+      });
       process.exit(0);
     }
 
@@ -336,7 +453,7 @@ async function main() {
 
     if (needsFullHarvest) {
       console.error('[KnowledgeSync] Full harvest overdue — re-distilling ALL domains');
-      await runFullHarvest(state);
+      await runFullHarvest(state, runId, runStart);
       process.exit(0);
     }
 
@@ -344,6 +461,15 @@ async function main() {
 
     if (changedFiles.length === 0) {
       console.error('[KnowledgeSync] No memory file changes detected - skipping');
+      emitKnowledgeSyncTelemetry({
+        phase: 'complete',
+        run_id: runId,
+        mode: 'incremental',
+        status: 'skipped',
+        reason: 'no_changed_files',
+        changed_files: 0,
+        ms: Date.now() - runStart,
+      });
       process.exit(0);
     }
 
@@ -354,6 +480,16 @@ async function main() {
     if (affectedDomains.size === 0) {
       console.error('[KnowledgeSync] Changed files don\'t affect any knowledge domains - skipping');
       updateState(state);
+      emitKnowledgeSyncTelemetry({
+        phase: 'complete',
+        run_id: runId,
+        mode: 'incremental',
+        status: 'skipped',
+        reason: 'no_affected_domains',
+        changed_files: changedFiles.length,
+        affected_domains: 0,
+        ms: Date.now() - runStart,
+      });
       process.exit(0);
     }
 
@@ -361,10 +497,26 @@ async function main() {
 
     const allMemoryFiles = scanMemoryFiles();
     const domainKeywords = getDomainKeywords();
+    let updatedDomains = 0;
+    let skippedDomains = 0;
+    let stagedDomains = 0;
 
     for (const domain of affectedDomains) {
+      const domainStart = Date.now();
       const keywords = domainKeywords[domain];
-      if (!keywords) continue;
+      if (!keywords) {
+        skippedDomains++;
+        emitKnowledgeSyncTelemetry({
+          phase: 'domain',
+          run_id: runId,
+          mode: 'incremental',
+          domain,
+          status: 'skipped',
+          reason: 'missing_keywords',
+          ms: Date.now() - domainStart,
+        });
+        continue;
+      }
 
       const domainFacts: string[] = [];
 
@@ -382,6 +534,18 @@ async function main() {
 
       if (domainFacts.length < 3) {
         console.error(`  [KnowledgeSync] ${domain}: too few facts (${domainFacts.length}) - skipping`);
+        skippedDomains++;
+        emitKnowledgeSyncTelemetry({
+          phase: 'domain',
+          run_id: runId,
+          mode: 'incremental',
+          domain,
+          status: 'skipped',
+          reason: 'too_few_facts',
+          facts: domainFacts.length,
+          unique_facts: 0,
+          ms: Date.now() - domainStart,
+        });
         continue;
       }
 
@@ -402,14 +566,58 @@ async function main() {
 
       if (!canCallInference()) {
         console.error(`  [KnowledgeSync] ${domain}: skipped (inference budget exhausted: ${budgetStatus()})`);
+        skippedDomains++;
+        emitKnowledgeSyncTelemetry({
+          phase: 'domain',
+          run_id: runId,
+          mode: 'incremental',
+          domain,
+          status: 'skipped',
+          reason: 'inference_budget_exhausted',
+          facts: domainFacts.length,
+          unique_facts: unique.length,
+          ms: Date.now() - domainStart,
+        });
         continue;
       }
 
       const content = await distillDomain(domain, unique);
       if (content) {
         recordInferenceCall('KnowledgeSync', domain);
-        writeKnowledgeFileWithFrontmatter(domain, content);
-        console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars) [budget: ${budgetStatus()}]`);
+        const persisted = persistDistilledKnowledge(domain, content, { runId, mode: 'incremental' });
+        if (persisted.status === 'staged_disclosure_review') stagedDomains++;
+        else updatedDomains++;
+        emitKnowledgeSyncTelemetry({
+          phase: 'domain',
+          run_id: runId,
+          mode: 'incremental',
+          domain,
+          status: persisted.status,
+          facts: domainFacts.length,
+          unique_facts: unique.length,
+          output_chars: persisted.body.length,
+          disclosure_findings: persisted.findings.length,
+          staged_filename: persisted.stagedFilename,
+          ms: Date.now() - domainStart,
+        });
+        if (persisted.status === 'staged_disclosure_review') {
+          console.error(`  [KnowledgeSync] ${domain}: staged for disclosure review (${persisted.findings.length} finding(s)) [budget: ${budgetStatus()}]`);
+        } else {
+          console.error(`  [KnowledgeSync] ${domain}: ${persisted.status} (${persisted.body.length} chars) [budget: ${budgetStatus()}]`);
+        }
+      } else {
+        skippedDomains++;
+        emitKnowledgeSyncTelemetry({
+          phase: 'domain',
+          run_id: runId,
+          mode: 'incremental',
+          domain,
+          status: 'skipped',
+          reason: 'empty_distillation',
+          facts: domainFacts.length,
+          unique_facts: unique.length,
+          ms: Date.now() - domainStart,
+        });
       }
     }
 
@@ -419,9 +627,30 @@ async function main() {
     maybeSynthesizePatterns();
 
     console.error('[KnowledgeSync] Done');
+    emitKnowledgeSyncTelemetry({
+      phase: 'complete',
+      run_id: runId,
+      mode: 'incremental',
+      status: 'complete',
+      changed_files: changedFiles.length,
+      affected_domains: affectedDomains.size,
+      updated_domains: updatedDomains,
+      skipped_domains: skippedDomains,
+      staged_domains: stagedDomains,
+      memory_files_scanned: allMemoryFiles.length,
+      ms: Date.now() - runStart,
+    });
     process.exit(0);
   } catch (error) {
     console.error('[KnowledgeSync] Error:', error);
+    emitKnowledgeSyncTelemetry({
+      phase: 'complete',
+      run_id: runId,
+      mode: 'unknown',
+      status: 'error',
+      error_class: error instanceof Error ? error.name : typeof error,
+      ms: Date.now() - runStart,
+    });
     process.exit(0); // Non-fatal
   }
 }
@@ -440,12 +669,16 @@ function updateState(state: HarvestState, fullHarvest = false): void {
   });
 }
 
-async function runFullHarvest(state: HarvestState): Promise<void> {
+async function runFullHarvest(state: HarvestState, runId = newRunId(), runStart = Date.now()): Promise<void> {
   const allMemoryFiles = scanMemoryFiles();
   const domainKeywords = getDomainKeywords();
+  let updatedDomains = 0;
+  let skippedDomains = 0;
+  let stagedDomains = 0;
   console.error(`[KnowledgeSync] Full harvest: scanning ${allMemoryFiles.length} memory files across all projects`);
 
   for (const [domain, keywords] of Object.entries(domainKeywords)) {
+    const domainStart = Date.now();
     const domainFacts: string[] = [];
 
     for (const file of allMemoryFiles) {
@@ -462,6 +695,18 @@ async function runFullHarvest(state: HarvestState): Promise<void> {
 
     if (domainFacts.length < 3) {
       console.error(`  [KnowledgeSync] ${domain}: too few facts (${domainFacts.length}) - skipping`);
+      skippedDomains++;
+      emitKnowledgeSyncTelemetry({
+        phase: 'domain',
+        run_id: runId,
+        mode: 'full',
+        domain,
+        status: 'skipped',
+        reason: 'too_few_facts',
+        facts: domainFacts.length,
+        unique_facts: 0,
+        ms: Date.now() - domainStart,
+      });
       continue;
     }
 
@@ -482,20 +727,76 @@ async function runFullHarvest(state: HarvestState): Promise<void> {
 
     if (!canCallInference()) {
       console.error(`  [KnowledgeSync] ${domain}: skipped (inference budget exhausted: ${budgetStatus()})`);
+      skippedDomains++;
+      emitKnowledgeSyncTelemetry({
+        phase: 'domain',
+        run_id: runId,
+        mode: 'full',
+        domain,
+        status: 'skipped',
+        reason: 'inference_budget_exhausted',
+        facts: domainFacts.length,
+        unique_facts: unique.length,
+        ms: Date.now() - domainStart,
+      });
       continue;
     }
 
     const content = await distillDomain(domain, unique);
     if (content) {
       recordInferenceCall('KnowledgeSync', domain);
-      writeKnowledgeFileWithFrontmatter(domain, content);
-      console.error(`  [KnowledgeSync] ${domain}: updated (${content.length} chars) [budget: ${budgetStatus()}]`);
+      const persisted = persistDistilledKnowledge(domain, content, { runId, mode: 'full' });
+      if (persisted.status === 'staged_disclosure_review') stagedDomains++;
+      else updatedDomains++;
+      emitKnowledgeSyncTelemetry({
+        phase: 'domain',
+        run_id: runId,
+        mode: 'full',
+        domain,
+        status: persisted.status,
+        facts: domainFacts.length,
+        unique_facts: unique.length,
+        output_chars: persisted.body.length,
+        disclosure_findings: persisted.findings.length,
+        staged_filename: persisted.stagedFilename,
+        ms: Date.now() - domainStart,
+      });
+      if (persisted.status === 'staged_disclosure_review') {
+        console.error(`  [KnowledgeSync] ${domain}: staged for disclosure review (${persisted.findings.length} finding(s)) [budget: ${budgetStatus()}]`);
+      } else {
+        console.error(`  [KnowledgeSync] ${domain}: ${persisted.status} (${persisted.body.length} chars) [budget: ${budgetStatus()}]`);
+      }
+    } else {
+      skippedDomains++;
+      emitKnowledgeSyncTelemetry({
+        phase: 'domain',
+        run_id: runId,
+        mode: 'full',
+        domain,
+        status: 'skipped',
+        reason: 'empty_distillation',
+        facts: domainFacts.length,
+        unique_facts: unique.length,
+        ms: Date.now() - domainStart,
+      });
     }
   }
 
   updateState(state, true);
   maybeAutoHarvest();
   maybeSynthesizePatterns();
+  emitKnowledgeSyncTelemetry({
+    phase: 'complete',
+    run_id: runId,
+    mode: 'full',
+    status: 'complete',
+    affected_domains: Object.keys(domainKeywords).length,
+    updated_domains: updatedDomains,
+    skipped_domains: skippedDomains,
+    staged_domains: stagedDomains,
+    memory_files_scanned: allMemoryFiles.length,
+    ms: Date.now() - runStart,
+  });
   console.error('[KnowledgeSync] Full harvest complete');
 }
 

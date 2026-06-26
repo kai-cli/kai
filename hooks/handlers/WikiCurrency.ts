@@ -6,11 +6,17 @@
  * a Stop hook fires AFTER the response, so it can't inject into the turn that just ended.
  * Same two-part pattern as LastResponseCache (Stop) → FormatReminder (UserPromptSubmit).
  *
- * COST: a single `git -C <repo> diff --numstat HEAD` per wiki-bearing project with uncommitted
- * changes (~30ms). If no code changed, or the wiki was also touched → no flag, silent.
+ * COST: a couple of `git -C <repo> diff --numstat` calls per wiki-bearing project (~30-60ms). If no
+ * code changed, or the wiki was also touched → no flag, silent.
  *
  * DESIGN: nudge, never a gate. It writes a flag; the assistant decides to update inline or
  * note why deferred. Meaningful-change threshold avoids false positives on tiny edits.
+ *
+ * COVERS BOTH UNCOMMITTED AND COMMITTED-UNPUSHED WORK (hardening 2026-06-21): the original only
+ * diffed `HEAD` (uncommitted), so incrementally-committed work slipped past every Stop boundary with a
+ * clean tree — the blind spot that missed an entire memory-track build. Now it unions uncommitted
+ * (HEAD + untracked) with committed-unpushed (`@{u}..HEAD`), and treats a wiki update in EITHER state
+ * as "wiki touched". Falls back to uncommitted-only when there is no upstream.
  */
 import { existsSync, writeFileSync, mkdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
@@ -24,7 +30,7 @@ const NUDGE_PATH = join(getPaiDir(), 'MEMORY', 'STATE', 'pending-wiki-nudge.json
  * A change to code under `repo` should be reflected in `wiki`. Add projects here as they gain wikis.
  * `wikiPaths` are path fragments that, if present in the changed-file list, count as "wiki touched".
  */
-interface WikiProject {
+export interface WikiProject {
   /** absolute repo path whose code changes we watch */
   repo: string;
   /** human label for the nudge */
@@ -44,7 +50,7 @@ const WIKI_PROJECTS: WikiProject[] = [
 /** Code-file extensions whose substantive change implies the wiki may need updating. */
 const CODE_RE = /\.(ts|tsx|js|jsx|py|go|rs|sh|c|h|cpp|hpp)$/;
 /** Minimum net changed lines (added+removed) across code files to count as "substantive". */
-const MEANINGFUL_LINES = 20;
+export const MEANINGFUL_LINES = 20;
 
 interface ChangedStats {
   codeLines: number;
@@ -52,24 +58,33 @@ interface ChangedStats {
   wikiTouched: boolean;
 }
 
-/** Sum numstat for uncommitted changes (working tree + staged) in a repo. Returns null if not a git repo. */
-function analyzeRepo(p: WikiProject): ChangedStats | null {
-  if (!existsSync(p.repo)) return null;
-  let numstat: string;
+/** Run a git command in a repo, returning stdout, or null on any failure (not-a-repo, no-upstream, etc). */
+function git(repo: string, args: string[]): string | null {
   try {
-    // HEAD diff covers staged + unstaged tracked changes; --numstat gives "added removed path".
-    numstat = execFileSync('git', ['-C', p.repo, 'diff', '--numstat', 'HEAD'], {
-      timeout: 2000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-      encoding: 'utf-8',
+    return execFileSync('git', ['-C', repo, ...args], {
+      timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8',
     });
   } catch {
-    return null; // not a git repo / git unavailable — skip silently
+    return null;
   }
+}
 
-  let codeLines = 0;
-  const codeFiles: string[] = [];
-  let wikiTouchedInRepo = false;
+/** Does this repo have a configured upstream? (controls whether the committed-unpushed range exists.) */
+function hasUpstream(repo: string): boolean {
+  return git(repo, ['rev-parse', '--abbrev-ref', '@{u}']) !== null;
+}
+
+/**
+ * Parse a `git diff --numstat <range>` output into code-line count + code files + wiki-touched flag.
+ * Mutates the passed accumulators. `range` is e.g. 'HEAD' (uncommitted) or '@{u}..HEAD' (committed-unpushed).
+ */
+function accumulateNumstat(
+  numstat: string | null,
+  p: WikiProject,
+  codeFiles: Set<string>,
+  acc: { codeLines: number; wikiTouched: boolean },
+): void {
+  if (!numstat) return;
   for (const line of numstat.trim().split('\n')) {
     if (!line) continue;
     const m = line.match(/^(\d+|-)\t(\d+|-)\t(.+)$/);
@@ -77,41 +92,64 @@ function analyzeRepo(p: WikiProject): ChangedStats | null {
     const added = m[1] === '-' ? 0 : parseInt(m[1], 10);
     const removed = m[2] === '-' ? 0 : parseInt(m[2], 10);
     const file = m[3];
-    if (p.wikiSubdir && file.includes(p.wikiSubdir)) { wikiTouchedInRepo = true; continue; }
-    if (CODE_RE.test(file)) { codeLines += added + removed; codeFiles.push(file); }
+    if (p.wikiSubdir && file.includes(p.wikiSubdir)) { acc.wikiTouched = true; continue; }
+    if (CODE_RE.test(file) && !codeFiles.has(file)) {   // dedup by path across ranges
+      acc.codeLines += added + removed;
+      codeFiles.add(file);
+    }
+  }
+}
+
+/**
+ * Sum code changes in a repo across BOTH uncommitted (HEAD + untracked) AND committed-unpushed
+ * (@{u}..HEAD) work — the hardening fix. Returns null if not a git repo.
+ */
+export function analyzeRepo(p: WikiProject): ChangedStats | null {
+  if (!existsSync(p.repo)) return null;
+  // Probe: is this even a git repo? (a HEAD diff that returns null AND no upstream AND no untracked
+  // means git is unavailable here.)
+  const uncommitted = git(p.repo, ['diff', '--numstat', 'HEAD']);
+  const untrackedList = git(p.repo, ['ls-files', '--others', '--exclude-standard']);
+  if (uncommitted === null && untrackedList === null) return null; // not a git repo / git missing
+
+  const codeFiles = new Set<string>();
+  const acc = { codeLines: 0, wikiTouched: false };
+
+  // 1. Uncommitted tracked changes (HEAD).
+  accumulateNumstat(uncommitted, p, codeFiles, acc);
+
+  // 2. Committed-but-unpushed changes (@{u}..HEAD) — THE FIX for incrementally-committed work.
+  if (hasUpstream(p.repo)) {
+    accumulateNumstat(git(p.repo, ['diff', '--numstat', '@{u}..HEAD']), p, codeFiles, acc);
   }
 
-  // Also count NEW (untracked) code files — `git diff --numstat HEAD` misses them entirely, yet a
-  // brand-new file is the MOST likely change to need a wiki update. Count their line counts as added.
-  try {
-    const untracked = execFileSync('git', ['-C', p.repo, 'ls-files', '--others', '--exclude-standard'], {
-      timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8',
-    });
-    for (const file of untracked.trim().split('\n')) {
+  // 3. New (untracked) code files — diff --numstat misses them; a brand-new file most likely needs a wiki.
+  if (untrackedList) {
+    for (const file of untrackedList.trim().split('\n')) {
       if (!file) continue;
-      if (p.wikiSubdir && file.includes(p.wikiSubdir)) { wikiTouchedInRepo = true; continue; }
-      if (!CODE_RE.test(file)) continue;
+      if (p.wikiSubdir && file.includes(p.wikiSubdir)) { acc.wikiTouched = true; continue; }
+      if (!CODE_RE.test(file) || codeFiles.has(file)) continue;
       try {
         const full = join(p.repo, file);
-        if (statSync(full).size > 200_000) { codeLines += 50; codeFiles.push(file); continue; } // skip reading huge files
-        codeLines += readFileSync(full, 'utf-8').split('\n').length;
-        codeFiles.push(file);
+        if (statSync(full).size > 200_000) { acc.codeLines += 50; codeFiles.add(file); continue; }
+        acc.codeLines += readFileSync(full, 'utf-8').split('\n').length;
+        codeFiles.add(file);
       } catch { /* unreadable — skip */ }
     }
-  } catch { /* ls-files failed — tracked-only count still applies */ }
-
-  // Sibling wiki repo: any uncommitted change there counts as "wiki touched this session".
-  let wikiTouchedInSibling = false;
-  if (p.wikiRepo && existsSync(p.wikiRepo)) {
-    try {
-      const w = execFileSync('git', ['-C', p.wikiRepo, 'status', '--porcelain'], {
-        timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8',
-      });
-      wikiTouchedInSibling = w.trim().length > 0;
-    } catch { /* ignore */ }
   }
 
-  return { codeLines, codeFiles, wikiTouched: wikiTouchedInRepo || wikiTouchedInSibling };
+  // Sibling wiki repo: a wiki update in EITHER uncommitted (porcelain) OR committed-unpushed state
+  // counts as "wiki touched this session" (symmetric with the code-side fix).
+  if (p.wikiRepo && existsSync(p.wikiRepo)) {
+    const porcelain = git(p.wikiRepo, ['status', '--porcelain']);
+    if (porcelain && porcelain.trim().length > 0) acc.wikiTouched = true;
+    if (!acc.wikiTouched && hasUpstream(p.wikiRepo)) {
+      const committedWiki = git(p.wikiRepo, ['diff', '--numstat', '@{u}..HEAD']);
+      if (committedWiki && committedWiki.trim().length > 0) acc.wikiTouched = true;
+    }
+  }
+
+  return { codeLines: acc.codeLines, codeFiles: [...codeFiles], wikiTouched: acc.wikiTouched };
 }
 
 export async function handleWikiCurrency(_parsed: unknown, sessionId: string): Promise<void> {

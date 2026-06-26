@@ -12,7 +12,12 @@ import { spawn } from 'bun';
 
 const HOOK = new URL('../hooks/WebFetchGuard.hook.ts', import.meta.url).pathname;
 
-async function runGuard(url: string, toolName = 'WebFetch'): Promise<{ decision?: string; continue?: boolean; reason?: string; message?: string }> {
+interface HookSpecificOutput {
+  hookEventName?: string;
+  permissionDecision?: string;
+  permissionDecisionReason?: string;
+}
+async function runGuard(url: string, toolName = 'WebFetch'): Promise<{ decision?: string; continue?: boolean; reason?: string; message?: string; hookSpecificOutput?: HookSpecificOutput }> {
   const payload = JSON.stringify({ tool_name: toolName, tool_input: { url } });
   const proc = spawn(['bun', 'run', HOOK], {
     stdin: new TextEncoder().encode(payload),
@@ -70,13 +75,16 @@ describe('WebFetchGuard — blocked (internal network)', () => {
 describe('WebFetchGuard — suspicious (ask)', () => {
   test('asks on ngrok tunnel URLs', async () => {
     const result = await runGuard('https://abc123.ngrok.io/webhook');
-    expect(result.decision).toBe('ask');
-    expect(result.message).toContain('ngrok');
+    // 2.1.185 PreToolUse ask contract — no top-level decision:"ask"
+    expect(result.decision).toBeUndefined();
+    expect(result.hookSpecificOutput?.hookEventName).toBe('PreToolUse');
+    expect(result.hookSpecificOutput?.permissionDecision).toBe('ask');
+    expect(result.hookSpecificOutput?.permissionDecisionReason).toContain('ngrok');
   });
 
   test('asks on pastebin URLs', async () => {
     const result = await runGuard('https://pastebin.com/raw/abc123');
-    expect(result.decision).toBe('ask');
+    expect(result.hookSpecificOutput?.permissionDecision).toBe('ask');
   });
 });
 

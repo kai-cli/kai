@@ -16,6 +16,7 @@
 import { basename } from "node:path";
 import { appendFileSync, readFileSync } from "node:fs";
 import { recallLessons } from "./lib/memcarry-semantic.js";
+import { emitMemoryTelemetry } from "./lib/memory-telemetry";
 
 const PAI = process.env.PAI_DIR ?? `${process.env.HOME}/.claude`;
 const STORE = process.env.MEMCARRY_STORE ?? `${PAI}/MEMORY/memcarry/store`;
@@ -48,7 +49,17 @@ async function main() {
   const project = basename(projectDir);
 
   // Shared recall flow (same helper PostCompactRecovery uses — single source, can't drift).
+  const t0 = Date.now();
   const { hits, semantic } = await recallLessons(STORE, CACHE, prompt, project, K, beat);
+  emitMemoryTelemetry("recall.latency", {
+    session_id: input.session_id,
+    project,
+    provider: "MemRecall",
+    source: "memcarry",
+    semantic,
+    hits: hits.length,
+    ms: Date.now() - t0,
+  });
   if (hits.length === 0) {
     beat(`no recall hits (semantic=${semantic ? "on" : "off"})`);
     process.exit(0);
@@ -58,6 +69,16 @@ async function main() {
   for (const h of hits) lines.push(`- [${h.id}] ${h.claim}`); // id shown so it can be named for `refine` (backflow)
   lines.push(`</memcarry-recall>`);
   beat(`recalled ${hits.length} (semantic=${semantic ? "on" : "off"}) for ${project}`);
+  emitMemoryTelemetry("recall.surfaced", {
+    session_id: input.session_id,
+    project,
+    provider: "MemRecall",
+    source: "memcarry",
+    source_type: "memcarry",
+    count: hits.length,
+    sources: hits.map((h) => h.id),
+    semantic,
+  });
 
   // Record which GLOBAL lesson ids were recalled this session → the End-skill backflow safety net
   // (FR8) reads this to ask "did you learn anything that refines these?". Keyed by session_id.

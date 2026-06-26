@@ -17,6 +17,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync } fr
 import { join } from 'path';
 import { getPaiDir, paiPath } from './lib/paths';
 import { recordDetailRead } from './lib/memory-disclosure';
+import { creditRead } from './lib/recall-hit-ledger';
 
 // ── Routing-signal ledger (from ReadTracker) ────────────────────────────────
 const LOG_RETENTION_DAYS = 90;
@@ -129,6 +130,12 @@ async function main(): Promise<void> {
     // Dispatch to both ledgers (branches are path-disjoint — each no-ops for the other's paths).
     try { trackMemoryRead(filePath, paiDir); } catch { /* non-fatal */ }
     try { trackRoutingRead(input, filePath, paiDir); } catch { /* non-fatal */ }
+
+    // Recall hit-rate loop: if this Read hits a memory file recall surfaced this session, credit a
+    // recall.hit (once per source). Non-blocking — closes the Phase-1 hit-rate metric.
+    try {
+      if (isMemoryRead(filePath)) creditRead((input as any).session_id, filePath);
+    } catch { /* non-fatal */ }
 
     process.exit(0);
   } catch {

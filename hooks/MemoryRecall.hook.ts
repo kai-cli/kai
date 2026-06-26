@@ -24,6 +24,9 @@ import { join, basename } from 'path';
 import { readHookInput } from './lib/hook-io';
 import { encodeProjectDir } from './lib/paths';
 import { rankEntries, type MemoryEntry as ScorerEntry } from './lib/memory-scorer';
+import { isCrossProjectBodyInjectionEnabled } from './lib/config-loader';
+import { emitMemoryTelemetry } from './lib/memory-telemetry';
+import { recordSurfaced } from './lib/recall-hit-ledger';
 
 interface MemoryEntry {
   title: string;
@@ -326,11 +329,16 @@ function lookupCrossProject(promptKeywords: string[], currentMemDir: string): st
   const results: string[] = [];
   const projectsBase = join(process.env.HOME || '/tmp', '.claude', 'projects');
 
+  // PAI-SR-031: deny-by-default. Cross-project memory BODIES are only injected when
+  // explicitly enabled; otherwise we emit a pointer (no other project's content crosses
+  // into this session). The full scope model lands in 7.4.0.
+  const allowBodyInjection = isCrossProjectBodyInjectionEnabled();
+
   for (const [proj, hits] of relevant) {
     const kwList = [...hits].slice(0, 4).join(', ');
 
-    // High-confidence match: inject actual memory content
-    if (hits.size >= 3) {
+    // High-confidence match: inject actual memory content — gated, default OFF.
+    if (allowBodyInjection && hits.size >= 3) {
       const content = findAndReadBestMatch(proj, promptKeywords, projectsBase);
       if (content) {
         results.push(`• **${proj}** (${hits.size} keyword hits: ${kwList}):\n${content}`);
@@ -338,7 +346,7 @@ function lookupCrossProject(promptKeywords: string[], currentMemDir: string): st
       }
     }
 
-    // Lower confidence: pointer only
+    // Default / lower confidence: pointer only — no cross-project body disclosure.
     results.push(`• **${proj}** project has related memories (keywords: ${kwList})`);
   }
 
@@ -410,20 +418,36 @@ function scoreThreshold(promptKeywordCount: number): number {
 }
 
 async function main() {
+  const startedAt = Date.now();
   const input = await readHookInput();
   if (!input) process.exit(0);
 
+  const inputAny = input as any;
+  const projectDir = process.env.CLAUDE_PROJECT_DIR ?? inputAny.cwd ?? '';
+  const project = projectDir ? basename(projectDir) : 'unknown';
+  function exitWithLatency(fields: Record<string, unknown> = {}): never {
+    emitMemoryTelemetry('recall.latency', {
+      session_id: inputAny.session_id,
+      project,
+      provider: 'MemoryRecall',
+      path: 'keyword',
+      ms: Date.now() - startedAt,
+      ...fields,
+    });
+    process.exit(0);
+  }
+
   const prompt = ((input as any).prompt || '').trim();
-  if (!prompt || prompt.length < 5) process.exit(0);
+  if (!prompt || prompt.length < 5) exitWithLatency({ hits: 0, degraded: false, reason: 'empty_or_short_prompt' });
 
   // Skip bare ratings, slash commands, and very short messages
-  if (/^([1-9]|10)$/.test(prompt)) process.exit(0);
-  if (prompt.startsWith('/')) process.exit(0);
+  if (/^([1-9]|10)$/.test(prompt)) exitWithLatency({ hits: 0, degraded: false, reason: 'rating_prompt' });
+  if (prompt.startsWith('/')) exitWithLatency({ hits: 0, degraded: false, reason: 'slash_command' });
 
   // Find project memory
   const memDir = findProjectMemoryDir();
   if (!memDir) {
-    process.exit(0);
+    exitWithLatency({ hits: 0, degraded: true, reason: 'missing_project_memory' });
   }
 
   // Parse index — wrapped in try/catch to never block prompts
@@ -432,20 +456,20 @@ async function main() {
     content = readFileSync(join(memDir, 'MEMORY.md'), 'utf-8');
   } catch (err) {
     console.error(`[MemoryRecall] Failed to read MEMORY.md: ${err}`);
-    process.exit(0);
+    exitWithLatency({ hits: 0, degraded: true, reason: 'read_memory_index_failed' });
   }
 
   const entries = parseMemoryIndex(content);
   if (entries.length === 0) {
     console.error('[MemoryRecall] MEMORY.md has no parseable entries — skipped');
-    process.exit(0);
+    exitWithLatency({ hits: 0, degraded: true, reason: 'empty_memory_index' });
   }
 
   // Extract keywords from user prompt
   const promptKeywords = extractKeywords(prompt.toLowerCase());
   if (promptKeywords.length === 0) {
     console.error('[MemoryRecall] No keywords in prompt — skipped');
-    process.exit(0);
+    exitWithLatency({ hits: 0, degraded: false, reason: 'no_prompt_keywords' });
   }
 
   // Score all entries with dynamic threshold — KEYWORD GATE: decides which memories
@@ -483,7 +507,13 @@ async function main() {
 
   if (scored.length === 0) {
     console.error(`[MemoryRecall] No matches (threshold=${(threshold * 100).toFixed(0)}%) for: ${promptKeywords.slice(0, 5).join(', ')}`);
-    process.exit(0);
+    exitWithLatency({
+      hits: 0,
+      degraded: false,
+      reason: 'no_matches',
+      gated: gated.length,
+      candidate_count: entries.length,
+    });
   }
 
   // Cross-project lookup: check if prompt keywords hit other projects' memories
@@ -508,9 +538,36 @@ ${matchLines.join('\n')}${crossSection}
 Action: Read the matched memory file(s) if they contain details needed for this task.
 </memory-recall>`;
 
+  // Phase-1 telemetry: record what we surfaced so recall HIT-RATE is measurable (a "hit" = one of
+  // these source files subsequently Read this session; the Read-side correlation logs recall.hit).
+  // Non-blocking — emit swallows its own errors and never affects recall.
+  // Clean project name from the real cwd/CLAUDE_PROJECT_DIR (not the encoded memDir segment).
+  const surfacedSources = scored.map(s => (s.entry as any).path ?? (s.entry as any).title).slice(0, 5);
+  emitMemoryTelemetry('recall.surfaced', {
+    session_id: inputAny.session_id,
+    project,
+    provider: 'MemoryRecall',
+    source: 'project-memory',
+    source_type: 'project-memory',
+    count: scored.length,
+    sources: surfacedSources,
+    token_estimate: matchLines.join('\n').length / 4,
+    budget: mrSettings.tokenBudget,
+  });
+  // Record into the session ledger so a later Read of one of these files credits a recall.hit
+  // (closes the hit-rate loop — Phase 1 metric). Non-blocking.
+  recordSurfaced(inputAny.session_id, surfacedSources);
+
   console.log(JSON.stringify({ additionalContext: context }));
   console.error(`[MemoryRecall] ${scored.length} match(es): ${scored.map(s => s.entry.title).join(', ')}`);
-  process.exit(0);
+  exitWithLatency({
+    hits: scored.length,
+    degraded: false,
+    reason: 'surfaced',
+    gated: gated.length,
+    candidate_count: entries.length,
+    scorer_enabled: mrSettings.useScorer,
+  });
 }
 
 if (import.meta.main) main();

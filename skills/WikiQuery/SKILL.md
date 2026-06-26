@@ -119,5 +119,5 @@ User: "wiki: does the wiki cover EasyMesh?"
 
 If the wiki doesn't have what you need:
 - `~/Projects/Knowledge/` — Reference docs, specs, source code snapshots
-- `~/.claude/projects/-Users-your.name-Projects-Learning-YourCompany-Repo/memory/` — PAI memory (deepest firmware knowledge)
+- `~/.claude/projects/-Users-your-name-Projects-Learning-YourCompany-Repo/memory/` — PAI memory (deepest firmware knowledge)
 - Actual GitHub repos via `gh` CLI

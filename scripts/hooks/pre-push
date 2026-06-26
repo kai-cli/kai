@@ -11,6 +11,16 @@
 # Installed by: bash scripts/install-hooks.sh   |   Bypass (auditable): git push --no-verify
 set -euo pipefail
 
+# ── R3. core.bare canary (incident 2026-06-22 — a stray tool flipped core.bare=true) ──
+# MUST run FIRST: under core.bare=true, `git rev-parse --show-toplevel` (below) fails with
+# "fatal: this operation must be run in a work tree" and aborts the hook before any later
+# check — so the canary has to fire here, with its own explicit diagnostic, not later.
+if [[ "$(git config --get core.bare 2>/dev/null || echo false)" == "true" ]]; then
+  echo "❌ Pre-push BLOCKED: core.bare=true on a working repo (config corruption)."
+  echo "   A stray tool likely flipped it (incident 2026-06-22). Fix: git config core.bare false"
+  exit 1
+fi
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 # Sync-atomicity guard: refuse to push while a sync scrub is mid-flight (see scripts/hooks/pre-commit
@@ -27,6 +37,82 @@ fi
 PUSH_STDIN="$(cat || true)"
 
 echo "── KAI pre-push checks ──"
+
+# ── Compute the push range once (shared by the repo-safety + PII gates) ──────
+# Pre-push stdin: <local-ref> <local-sha> <remote-ref> <remote-sha> per line.
+# NOTE (known limitation, tracked): on a multi-ref push (rare — `git push` of several branches
+# at once) this keeps only the LAST ref's range. Normal single-branch pushes are unaffected.
+# A future hardening pass should accumulate all ref ranges; left out here to keep R1/R2 simple.
+SAFE_RANGE=""
+SAFE_TIP=""
+SAFE_NEW_BRANCH=0
+while read -r _lref lsha _rref rsha; do
+  [[ -z "${lsha:-}" ]] && continue
+  [[ "$lsha" =~ ^0+$ ]] && continue            # branch deletion — nothing to scan
+  SAFE_TIP="$lsha"
+  if [[ "${rsha:-}" =~ ^0+$ || -z "${rsha:-}" ]]; then
+    # New branch: scan ONLY commits not already on the remote. Plain "$lsha" would be the
+    # branch's ENTIRE ancestry (every historical author/deletion → false positives), and
+    # "--not --all" wrongly excludes the very commits being pushed (they're on the local ref).
+    # "--not --remotes=origin" = "what this push actually adds to origin".
+    SAFE_RANGE="$lsha --not --remotes=origin"
+    SAFE_NEW_BRANCH=1
+  else
+    SAFE_RANGE="$rsha..$lsha"                    # normal push — only new commits
+  fi
+done <<< "$PUSH_STDIN"
+
+# ── R1. Repo-wipe / large-deletion guard (incident 2026-06-22 "seed") ────────
+# A stray scaffolding tool once committed a "seed" that deleted the whole tree (1894 files).
+# Block a push whose range deletes an implausible number of files. Override (audited):
+#   PAI_ALLOW_LARGE_DELETE=1 git push ...
+if [[ -n "$SAFE_RANGE" ]]; then
+  DEL_THRESHOLD="${PAI_DELETE_THRESHOLD:-400}"
+  # git log (not git diff) so both "$rsha..$lsha" and "$lsha --not --remotes=origin" forms work.
+  # SAFE_RANGE is intentionally unquoted — it may carry multiple revision-walk args.
+  # shellcheck disable=SC2086
+  # `|| true` on grep: under pipefail, grep exits 1 when it filters everything out (0 deletions),
+  # which would abort the hook (set -e). Guard each fail-prone stage.
+  DELETED=$(git log --diff-filter=D --name-only --pretty=format: $SAFE_RANGE 2>/dev/null | { grep -v '^$' || true; } | sort -u | wc -l | tr -d ' ')
+  if [[ "${DELETED:-0}" -gt "$DEL_THRESHOLD" ]]; then
+    if [[ "${PAI_ALLOW_LARGE_DELETE:-}" == "1" ]]; then
+      echo "⚠️  Large deletion ($DELETED files) ALLOWED via PAI_ALLOW_LARGE_DELETE=1 — logged."
+      echo "$(date -u +%FT%TZ) push deletes=$DELETED range=$SAFE_RANGE override=1" \
+        >> "$REPO_ROOT/.git/large-delete-overrides.log" 2>/dev/null || true
+    else
+      echo ""
+      echo "❌ Pre-push BLOCKED: push range deletes $DELETED files (> $DEL_THRESHOLD threshold)."
+      echo "   This is the signature of a repo-wipe / stray 'seed' commit (incident 2026-06-22)."
+      echo "   If intentional: PAI_ALLOW_LARGE_DELETE=1 git push … (logged)."
+      exit 1
+    fi
+  fi
+fi
+
+# ── R2. Author-identity guard (incident 2026-06-22 junk "T <t@t.t>") ─────────
+# Reject pushing commits authored by a junk/placeholder identity. Allowlist is intentional:
+# real maintainers only. Override (audited): PAI_ALLOW_AUTHOR=1.
+if [[ -n "$SAFE_RANGE" ]]; then
+  # SAFE_RANGE unquoted — may carry "$lsha --not --remotes=origin" for a new branch.
+  # shellcheck disable=SC2086
+  # grep -vi exits 1 when ALL authors are allowlisted (empty) — guard it so pipefail/set -e
+  # doesn't abort the hook on the common (good) case.
+  BAD_AUTHORS=$(git log --format='%ae' $SAFE_RANGE 2>/dev/null \
+    | { grep -viE '@(kai-cli\.com|users\.noreply\.github\.com|anthropic\.com|openai\.com)$' || true; } \
+    | sort -u || true)
+  if [[ -n "$BAD_AUTHORS" ]]; then
+    if [[ "${PAI_ALLOW_AUTHOR:-}" == "1" ]]; then
+      echo "⚠️  Non-allowlisted author(s) ALLOWED via PAI_ALLOW_AUTHOR=1: $BAD_AUTHORS"
+    else
+      echo ""
+      echo "❌ Pre-push BLOCKED: commit(s) in range authored by non-allowlisted identity:"
+      echo "$BAD_AUTHORS" | sed 's/^/     /'
+      echo "   Junk identities (e.g. t@t.t) signal a stray tool. Fix author or:"
+      echo "   PAI_ALLOW_AUTHOR=1 git push … (if a new real author is expected)."
+      exit 1
+    fi
+  fi
+fi
 
 # ── 0. PII / personal-data gate (public fork only) ───────────────────────────
 # Last line of defense against personal data reaching the public fork — INDEPENDENT of the sync
@@ -106,22 +192,54 @@ fi
 # trusting the exit code alone.
 # Integration tests that spawn subprocesses (e.g. GitHubWriteGuard) can produce
 # a single flaky fail under parallel load — retry once before blocking.
-echo "Running tests (CI simulation: PAI_DIR=\$REPO_ROOT)..."
-TEST_OUTPUT=$(PAI_DIR="$REPO_ROOT" bun test --cwd "$REPO_ROOT" 2>&1) || true
-echo "$TEST_OUTPUT"
-if echo "$TEST_OUTPUT" | grep -q "[1-9][0-9]* fail"; then
-  echo ""
-  echo "⚠️  Test run had failures — retrying once (subprocess spawn flakiness)..."
+LOCAL_CHANGED_FILES=""
+if [[ -n "$SAFE_RANGE" ]]; then
+  # SAFE_RANGE unquoted — may carry "$lsha --not --remotes=origin" for a new branch.
+  # shellcheck disable=SC2086
+  LOCAL_CHANGED_FILES=$(git log --diff-filter=ACMR --name-only --pretty=format: $SAFE_RANGE 2>/dev/null \
+    | { grep -v '^$' || true; } \
+    | sort -u || true)
+fi
+
+LOCAL_RUN_FULL_TESTS=1
+if [[ "${PAI_PRE_PUSH_FULL_TESTS:-}" == "1" ]]; then
+  LOCAL_RUN_FULL_TESTS=1
+elif [[ -n "$LOCAL_CHANGED_FILES" ]]; then
+  LOCAL_RUN_FULL_TESTS=0
+  while IFS= read -r changed_path; do
+    [[ -z "$changed_path" ]] && continue
+    case "$changed_path" in
+      *.md|docs/*|README.md|CHANGELOG.md|MEMORY/KNOWLEDGE/*.md|MEMORY/WISDOM/*|MEMORY/memcarry/store/atoms/*|auto-memory/MEMORY.md|auto-memory/codex-secondary-validator.md)
+        ;;
+      *)
+        LOCAL_RUN_FULL_TESTS=1
+        break
+        ;;
+    esac
+  done <<< "$LOCAL_CHANGED_FILES"
+fi
+
+if [[ "$LOCAL_RUN_FULL_TESTS" == "1" ]]; then
+  echo "Running tests (CI simulation: PAI_DIR=\$REPO_ROOT)..."
   TEST_OUTPUT=$(PAI_DIR="$REPO_ROOT" bun test --cwd "$REPO_ROOT" 2>&1) || true
   echo "$TEST_OUTPUT"
   if echo "$TEST_OUTPUT" | grep -q "[1-9][0-9]* fail"; then
     echo ""
-    echo "❌ Pre-push blocked: test suite has failures (failed on retry too)."
-    echo "   Fix failing tests, then push again."
-    echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
-    exit 1
+    echo "⚠️  Test run had failures — retrying once (subprocess spawn flakiness)..."
+    TEST_OUTPUT=$(PAI_DIR="$REPO_ROOT" bun test --cwd "$REPO_ROOT" 2>&1) || true
+    echo "$TEST_OUTPUT"
+    if echo "$TEST_OUTPUT" | grep -q "[1-9][0-9]* fail"; then
+      echo ""
+      echo "❌ Pre-push blocked: test suite has failures (failed on retry too)."
+      echo "   Fix failing tests, then push again."
+      echo "   Escape hatch: git push --no-verify (auditable, not encouraged)"
+      exit 1
+    fi
+    echo "✅ Retry passed."
   fi
-  echo "✅ Retry passed."
+else
+  echo "Skipping full test suite for docs/memory-only push range."
+  echo "Set PAI_PRE_PUSH_FULL_TESTS=1 to force local full-suite validation."
 fi
 
 # ── 2. Manifest count alignment ──────────────────────────────

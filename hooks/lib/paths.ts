@@ -54,6 +54,19 @@ export function paiPath(...segments: string[]): string {
 }
 
 /**
+ * Path to the per-session "last assistant response" cache (PAI-SR-041).
+ *
+ * Keyed by session_id so concurrent sessions cannot overwrite each other's response
+ * (the LastResponseCache Stop hook writes it; FormatReminder + RatingCapture read it on
+ * the next UserPromptSubmit). Single source of this path — all three hooks call here so
+ * the writer and readers can never drift apart.
+ */
+export function lastResponseCachePath(sessionId: string): string {
+  const safe = (sessionId || 'unknown').replace(/[^A-Za-z0-9_-]/g, '_');
+  return paiPath('MEMORY', 'STATE', `last-response-${safe}.txt`);
+}
+
+/**
  * Get the hooks directory
  */
 export function getHooksDir(): string {
@@ -78,7 +91,7 @@ export function getMemoryDir(): string {
  * Encode an absolute project path to its Claude Code transcript/memory store dir name.
  *
  * Claude Code names `~/.claude/projects/<dir>` by replacing EVERY non-alphanumeric character with `-`
- * (so `/Users/your.name/Projects/Instant_Help` → `-Users-your.name-Projects-Instant-Help`).
+ * (so `/Users/your.name/Projects/Instant_Help` → `-Users-your-name-Projects-Instant-Help`).
  *
  * SINGLE SOURCE — fixes a system-wide bug where 6 call sites used `replace(/[/_]/g,'-')`, which missed the
  * `.` in the username (and spaces), computed a nonexistent dir, and silently fell back to GLOBAL memory.

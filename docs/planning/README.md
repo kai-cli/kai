@@ -6,8 +6,7 @@
 
 | File | Purpose |
 |------|---------|
-| [ROADMAP-7.x.md](ROADMAP-7.x.md) | **Single source of truth.** Shipped 7.0/7.1, active 7.2 (consolidation + KAI hardening), 7.3+ candidates, open tickets, full shipped history |
-| [BACKLOG.md](BACKLOG.md) | Hook integration-test backlog + post-KAI-sync tickets (SF-*) |
+| [ROADMAP-7.x.md](ROADMAP-7.x.md) | **Single source of truth.** Shipped 7.0/7.1, active 7.2 (consolidation + KAI hardening), 7.3+ candidates, open tickets, full shipped history. Also owns the hook-integration-test backlog (folded in from the retired BACKLOG.md, 2026-06-22 — see 8.0.0 "Testing blind spots"). |
 | [RELEASE-BLOCKERS.md](RELEASE-BLOCKERS.md) | Release gates |
 | [memcarry-plan.md](memcarry-plan.md) | Memcarry integration sub-plan (drives W6) |
 
@@ -19,6 +18,13 @@
 | [MCP-REARCHITECT-PLAN.md](MCP-REARCHITECT-PLAN.md) | Needs re-scope (partly addressed by v5.9 MCP work) |
 | [MCP-SSH-IDENTITY-PLAN.md](MCP-SSH-IDENTITY-PLAN.md) | 🆕 Device identity by MAC/serial + verify-on-connect + add/swap/retire (shared-IP ambiguity). HIGH friction. |
 | [crewai-adoption-plan.md](crewai-adoption-plan.md) | Parked — multi-agent orchestration patterns |
+
+## Hook test backlog — folded in + retired (2026-06-22)
+
+The former `BACKLOG.md` (hook integration-test gaps + SF-* tickets) was folded into **ROADMAP-7.x.md §
+8.0.0 "Testing blind spots"**: the ~33-hook coverage gap maps to the hook-lifecycle harness, SF-7 +
+SF-1 carried forward by name, SF-2/8/9/18 already tracked elsewhere, and PromptAnalysis/SF-19/SF-20
+dropped as stale (deleted / done). The file was **deleted** once incorporated.
 
 ## Streamlining plan — incorporated + retired (2026-06-07)
 

@@ -17,7 +17,7 @@
  * OUTPUT:
  * - stdout: JSON decision object
  *   - {"continue": true} → Allow operation
- *   - {"decision": "ask", "message": "..."} → Prompt user for confirmation
+ *   - {hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",…}} → confirm (2.1.185)
  * - exit(0): Normal completion (with decision)
  * - exit(2): Hard block (catastrophic operation prevented)
  *
@@ -64,6 +64,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, appendFileSync, rea
 import { join } from 'path';
 import { paiPath, expandPath } from './lib/paths';
 import { classifyCommand } from './lib/risk-classifier';
+import { askPreToolUse } from './lib/hook-io';
 
 // ========================================
 // Security Event Logging
@@ -459,10 +460,9 @@ function handleBash(input: HookInput): void {
         reason: result.reason,
         action_taken: 'Prompted user for confirmation'
       });
-      console.log(JSON.stringify({
-        decision: 'ask',
-        message: `[KAI SECURITY] ⚠️ ${result.reason}\n\nCommand: ${command.slice(0, 200)}\n\nProceed?`
-      }));
+      console.log(JSON.stringify(askPreToolUse(
+        `[KAI SECURITY] ⚠️ ${result.reason}\n\nCommand: ${command.slice(0, 200)}\n\nProceed?`
+      )));
       break;
 
     case 'alert':
@@ -526,10 +526,9 @@ function handleFileWrite(input: HookInput, toolName: string): void {
         reason: result.reason,
         action_taken: 'Prompted user for confirmation'
       });
-      console.log(JSON.stringify({
-        decision: 'ask',
-        message: `[KAI SECURITY] ⚠️ ${result.reason}\n\nPath: ${filePath}\n\nProceed?`
-      }));
+      console.log(JSON.stringify(askPreToolUse(
+        `[KAI SECURITY] ⚠️ ${result.reason}\n\nPath: ${filePath}\n\nProceed?`
+      )));
       break;
 
     default:

@@ -122,6 +122,10 @@ async function main() {
     { name: 'Tests (critical)', cmd: ['bun', 'test', 'tests/SecurityValidator.test.ts', 'tests/PostCompactRecovery.test.ts', 'tests/GitHubWriteGuard.test.ts', 'tests/RiskClassifier.test.ts'] },
   ];
 
+  if (existsSync(join(PAI_DIR, 'PAI/Tools/ada-generate.ts'))) {
+    tasks.splice(10, 0, { name: 'ada-drift-check', cmd: ['bun', 'PAI/Tools/ada-generate.ts', '--check', '--no-pointers'] });
+  }
+
   if (DRY_RUN) {
     console.log('Would run:');
     for (const t of tasks) console.log(`  - ${t.name}: ${t.cmd.join(' ')}`);

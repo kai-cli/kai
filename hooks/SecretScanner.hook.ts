@@ -16,7 +16,7 @@
  * OUTPUT:
  * - stdout: JSON with optional warning message injected into context
  * - {"continue": true} → No secrets detected
- * - {"decision": "ask", "message": "..."} → Secret detected, warn user
+ * - {decision:"block", reason, suppressOriginalPrompt:true} → secret detected (UserPromptSubmit; 2.1.185)
  *
  * SECURITY MODEL:
  * - Regex-based pattern matching (no network calls, no inference)
@@ -28,6 +28,7 @@
 import { appendFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { SECRET_PATTERNS } from './lib/secret-patterns';
+import { blockUserPrompt } from './lib/hook-io';
 
 const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 
@@ -37,7 +38,7 @@ const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, '.claude');
 // --- Main ---
 
 async function main(): Promise<void> {
-  let input: { user_prompt?: string; session_id?: string };
+  let input: { prompt?: string; user_prompt?: string; session_id?: string };
 
   try {
     const reader = Bun.stdin.stream().getReader();
@@ -63,7 +64,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  const prompt = input.user_prompt || '';
+  // 2.1.185 UserPromptSubmit supplies `prompt`; keep `user_prompt` as a back-compat fallback.
+  const prompt = input.prompt || input.user_prompt || '';
   if (!prompt) {
     console.log(JSON.stringify({ continue: true }));
     return;
@@ -104,12 +106,13 @@ async function main(): Promise<void> {
     // Logging failure is non-fatal
   }
 
-  // Warn the user
+  // Block the prompt. UserPromptSubmit has no "ask" outcome in 2.1.185, so we emit a block with
+  // suppressOriginalPrompt so the secret is not persisted in the transcript. `reason` lists only
+  // pattern NAMES — never the matched secret value.
   const patternList = matches.map(m => `  - ${m}`).join('\n');
-  console.log(JSON.stringify({
-    decision: 'ask',
-    message: `[KAI SECURITY] Potential credentials detected in your prompt:\n${patternList}\n\nSecrets in prompts are stored in session transcripts and sent to the API. Consider using environment variables or file references instead.\n\nProceed anyway?`
-  }));
+  console.log(JSON.stringify(blockUserPrompt(
+    `[KAI SECURITY] Potential credentials detected in your prompt:\n${patternList}\n\nSecrets in prompts are stored in session transcripts and sent to the API. Resubmit using an environment variable or a file reference instead of pasting the secret.`
+  )));
 }
 
 main().catch(() => {

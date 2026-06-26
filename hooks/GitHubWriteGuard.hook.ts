@@ -13,11 +13,12 @@
  *   - gh pr create / merge / close / edit / review / comment
  *   - gh issue create / close / edit / delete / comment
  *   - gh release create / edit / delete / upload
+ *   - gh api mutations using POST / PUT / PATCH / DELETE
  *   - gh repo delete / archive / rename / transfer
  *   - gh branch delete
  *   - git push --delete (remote branch deletion)
  *
- * ALLOWED: All read-only operations (gh pr list/view, gh issue list/view, git status, etc.)
+ * ALLOWED: All read-only operations (gh pr list/view/checks/diff, gh api GET, git status, etc.)
  *
  * APPROVAL FLOW (when blocked):
  *   1. Hook blocks command, explains what was blocked
@@ -33,20 +34,45 @@
  * Token location: MEMORY/STATE/github-approvals/{hash}.json (TTL: 60s)
  */
 
-import { existsSync, readFileSync, unlinkSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { appendFileSync, existsSync, readFileSync, unlinkSync, readdirSync, mkdirSync } from 'fs';
+import { basename, join } from 'path';
 import { homedir } from 'os';
 import { createHash } from 'crypto';
+import { execFileSync } from 'child_process';
 
 const BASE_DIR = process.env.PAI_DIR || join(homedir(), '.claude');
 const APPROVALS_DIR = join(BASE_DIR, 'MEMORY', 'STATE', 'github-approvals');
 const APPROVE_SCRIPT = join(BASE_DIR, 'hooks', 'lib', 'github-approve.ts');
+const ADA_PROCEDURES_DIR = join(BASE_DIR, 'ada', 'procedures');
+const ADA_OVERRIDE_LOG = join(BASE_DIR, 'MEMORY', 'STATE', 'ada-branch-guard-overrides.jsonl');
 
 interface HookInput {
   tool_name?: string;
+  cwd?: string;
   tool_input?: {
     command?: string;
   };
+}
+
+interface AdaProcedureConfig {
+  branch?: string;
+  steps?: string[];
+  guard?: {
+    hardBlock?: string[];
+    warnOnly?: string[];
+    overrideEnv?: string;
+  };
+}
+
+interface AdaBranchCheck {
+  config: AdaProcedureConfig;
+  repoKey: string;
+  expectedBranch: string;
+  actualBranch?: string;
+  targetBranch?: string;
+  mismatch: boolean;
+  hardBlock: boolean;
+  overrideEnv: string;
 }
 
 // GitHub write patterns — regex-tested against each command segment
@@ -65,6 +91,12 @@ const WRITE_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
 
   // gh release mutations
   { pattern: /\bgh\s+release\s+(create|edit|delete|upload)\b/, description: 'gh release mutation' },
+
+  // gh api defaults to GET, but mutating methods and field/input flags are writes.
+  // `gh api -f/-F/--field/--raw-field/--input` changes the request to POST unless a
+  // method is explicitly set, so treat those as writes too.
+  { pattern: /\bgh\s+api\b.*(?:--method(?:=|\s+)|-X\s*)(POST|PUT|PATCH|DELETE)\b/i, description: 'gh api mutation' },
+  { pattern: /\bgh\s+api\b.*(?:\s|^)(-f|-F|--field|--raw-field|--input)(?:=|\s|$)/, description: 'gh api mutation' },
 
   // gh repo mutations
   { pattern: /\bgh\s+repo\s+(delete|archive|rename|transfer|edit)\b/, description: 'gh repo mutation' },
@@ -111,6 +143,177 @@ function isGitHubWriteCommand(command: string): { write: boolean; description: s
   return { write: false, description: '' };
 }
 
+function githubWriteSegments(command: string): Array<{ segment: string; description: string }> {
+  const writes: Array<{ segment: string; description: string }> = [];
+  for (const segment of extractCommandInvocations(command)) {
+    for (const { pattern, description } of WRITE_PATTERNS) {
+      if (pattern.test(segment)) {
+        writes.push({ segment, description });
+        break;
+      }
+    }
+  }
+  return writes;
+}
+
+function shellTokens(command: string): string[] {
+  return command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(t =>
+    t.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1')
+  ) ?? [];
+}
+
+function gitCurrentBranch(cwd: string): string | undefined {
+  try {
+    return execFileSync('git', ['-C', cwd, 'branch', '--show-current'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 500,
+    }).trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function commandSegments(command: string): string[] {
+  return extractCommandInvocations(command);
+}
+
+function parseGitPushTarget(command: string, cwd: string): string | undefined {
+  for (const segment of commandSegments(command)) {
+    const tokens = shellTokens(segment);
+    const gitIndex = tokens.indexOf('git');
+    if (gitIndex < 0) continue;
+
+    let i = gitIndex + 1;
+    while (i < tokens.length && tokens[i].startsWith('-')) {
+      if (tokens[i] === '-C' && tokens[i + 1]) i += 2;
+      else i++;
+    }
+    if (tokens[i] !== 'push') continue;
+    i++;
+
+    const args = tokens.slice(i).filter(t => !t.startsWith('-'));
+    if (args.length >= 2) {
+      const refspec = args[1];
+      return refspec.includes(':') ? refspec.split(':').pop() || undefined : refspec;
+    }
+    return gitCurrentBranch(cwd);
+  }
+  return undefined;
+}
+
+function parseGhPrBase(command: string): string | undefined {
+  for (const segment of commandSegments(command)) {
+    const tokens = shellTokens(segment);
+    const ghIndex = tokens.indexOf('gh');
+    if (ghIndex < 0 || tokens[ghIndex + 1] !== 'pr') continue;
+    const action = tokens[ghIndex + 2];
+    if (!['create', 'edit', 'merge'].includes(action)) continue;
+
+    const baseLong = tokens.indexOf('--base');
+    if (baseLong >= 0 && tokens[baseLong + 1]) return tokens[baseLong + 1];
+    const baseShort = tokens.indexOf('-B');
+    if (baseShort >= 0 && tokens[baseShort + 1]) return tokens[baseShort + 1];
+    if (action === 'create') return undefined;
+  }
+  return undefined;
+}
+
+function isAdaBranchSensitiveCommand(command: string): boolean {
+  for (const segment of commandSegments(command)) {
+    if (new RegExp(GIT_CMD.source + 'push\\b').test(segment)) return true;
+    if (/\bgh\s+pr\s+(create|edit)\b/.test(segment)) return true;
+  }
+  return false;
+}
+
+function isGitPushCommand(command: string): boolean {
+  return commandSegments(command).some(segment => new RegExp(GIT_CMD.source + 'push\\b').test(segment));
+}
+
+function isGhPrBaseCommand(command: string): boolean {
+  return commandSegments(command).some(segment => /\bgh\s+pr\s+(create|edit)\b/.test(segment));
+}
+
+function protectedAdaPushTargets(expectedBranch: string, hardBlock: string[]): Set<string> {
+  return new Set(['main', 'master', expectedBranch, ...hardBlock].filter(Boolean));
+}
+
+function loadAdaProcedure(cwd: string): { repoKey: string; config: AdaProcedureConfig } | null {
+  const repoKey = basename(cwd);
+  const procedurePath = join(ADA_PROCEDURES_DIR, `${repoKey}.json`);
+  if (!existsSync(procedurePath)) return null;
+  try {
+    const config = JSON.parse(readFileSync(procedurePath, 'utf-8')) as AdaProcedureConfig;
+    return { repoKey, config };
+  } catch {
+    return null;
+  }
+}
+
+function checkAdaBranch(command: string, cwd: string): AdaBranchCheck | null {
+  if (!isAdaBranchSensitiveCommand(command)) return null;
+
+  const procedure = loadAdaProcedure(cwd);
+  if (!procedure) return null;
+
+  const expectedBranch = procedure.config.branch?.trim();
+  if (!expectedBranch) return null;
+
+  const targetBranch = parseGhPrBase(command) ?? parseGitPushTarget(command, cwd);
+  const actualBranch = targetBranch ?? gitCurrentBranch(cwd);
+  const mismatch = actualBranch !== undefined && actualBranch !== expectedBranch;
+  const missingTargetForPrCreate = /\bgh\s+pr\s+create\b/.test(command) && !parseGhPrBase(command);
+  const hardBlock = (procedure.config.guard?.hardBlock ?? []).includes(expectedBranch);
+  const hardBlockTargets = procedure.config.guard?.hardBlock ?? [];
+  const pushCommand = isGitPushCommand(command);
+  const prBaseCommand = isGhPrBaseCommand(command);
+  const protectedPushTarget = actualBranch !== undefined && protectedAdaPushTargets(expectedBranch, hardBlockTargets).has(actualBranch);
+  const shouldBlockMismatch = prBaseCommand
+    ? (mismatch || missingTargetForPrCreate)
+    : pushCommand && mismatch && protectedPushTarget;
+  const overrideEnv = procedure.config.guard?.overrideEnv || 'ADA_BRANCH_GUARD_OVERRIDE';
+
+  return {
+    config: procedure.config,
+    repoKey: procedure.repoKey,
+    expectedBranch,
+    actualBranch,
+    targetBranch,
+    mismatch: shouldBlockMismatch,
+    hardBlock,
+    overrideEnv,
+  };
+}
+
+function formatProcedureCard(config: AdaProcedureConfig): string[] {
+  const steps = config.steps ?? [];
+  if (steps.length === 0) return [];
+  return [
+    ``,
+    `ADA procedure checklist:`,
+    ...steps.map((step, idx) => `${idx + 1}. ${step}`),
+  ];
+}
+
+function logAdaOverride(check: AdaBranchCheck, command: string, cwd: string): void {
+  try {
+    mkdirSync(join(BASE_DIR, 'MEMORY', 'STATE'), { recursive: true });
+    appendFileSync(ADA_OVERRIDE_LOG, JSON.stringify({
+      timestamp: new Date().toISOString(),
+      repo: check.repoKey,
+      cwd,
+      branch: check.actualBranch ?? null,
+      expected: check.expectedBranch,
+      target: check.targetBranch ?? null,
+      action: command.slice(0, 240),
+      overrideEnv: check.overrideEnv,
+    }) + '\n');
+  } catch {
+    // Override logging must not block the command path.
+  }
+}
+
 function normalizeForHash(command: string): string {
   // Strip quoted content so body/message changes don't invalidate the approval.
   // The guard protects WHICH operation runs (create vs merge, which repo/branch),
@@ -122,14 +325,112 @@ function normalizeForHash(command: string): string {
     .trim();
 }
 
-function commandHash(command: string): string {
-  return createHash('sha256').update(normalizeForHash(command)).digest('hex').slice(0, 12);
+function optionValue(tokens: string[], longName: string, shortName?: string): string | undefined {
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token === longName && tokens[i + 1]) return tokens[i + 1];
+    if (token.startsWith(`${longName}=`)) return token.slice(longName.length + 1);
+    if (shortName && token === shortName && tokens[i + 1]) return tokens[i + 1];
+  }
+  return undefined;
 }
 
-function checkApprovalToken(command: string): boolean {
+function ghTarget(tokens: string[], start: number): string | undefined {
+  for (let i = start; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (!token || token === '--') continue;
+    if (token.startsWith('-')) {
+      // Skip the value for common gh flags that take one argument. Unknown flags
+      // are treated as flags only; if they have a value, the strict hash path is
+      // safer than accidentally treating that value as a PR/issue target.
+      if ([
+        '--repo', '-R', '--body', '-b', '--body-file', '-F', '--template',
+        '--jq', '-q', '--json', '--hostname',
+      ].includes(token) && tokens[i + 1]) i++;
+      continue;
+    }
+    return token;
+  }
+  return undefined;
+}
+
+function normalizeRepoScope(repo: string): string {
+  return repo
+    .replace(/^https?:\/\/github\.com\//, '')
+    .replace(/^git@github\.com:/, '')
+    .replace(/\.git$/, '')
+    .trim();
+}
+
+function repoScopeForCommand(tokens: string[], cwd: string): string {
+  const explicit = optionValue(tokens, '--repo', '-R');
+  if (explicit) return normalizeRepoScope(explicit);
+
+  try {
+    const remote = execFileSync('git', ['-C', cwd, 'remote', 'get-url', 'origin'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 500,
+    }).trim();
+    if (remote) return normalizeRepoScope(remote);
+  } catch {
+    // Non-git directories still need isolation. cwd is stable enough to prevent
+    // cross-repo approval bleed when no GitHub remote is available.
+  }
+
+  return `cwd:${cwd}`;
+}
+
+function stableCommentApprovalKey(command: string, cwd: string): string | null {
+  const writes = githubWriteSegments(command);
+  if (writes.length === 0) return null;
+
+  const keys: string[] = [];
+  for (const { segment } of writes) {
+    const tokens = shellTokens(segment);
+    const ghIndex = tokens.indexOf('gh');
+    if (ghIndex < 0) return null;
+
+    const area = tokens[ghIndex + 1];
+    const action = tokens[ghIndex + 2];
+    const target = ghTarget(tokens, ghIndex + 3);
+    if (!target) return null;
+    const repo = repoScopeForCommand(tokens, cwd);
+
+    if (area === 'pr' && action === 'comment') {
+      keys.push(`${repo}:gh pr comment ${target}`);
+      continue;
+    }
+
+    if (area === 'issue' && action === 'comment') {
+      keys.push(`${repo}:gh issue comment ${target}`);
+      continue;
+    }
+
+    if (area === 'pr' && action === 'review' && tokens.includes('--comment')) {
+      keys.push(`${repo}:gh pr review ${target} --comment`);
+      continue;
+    }
+
+    // Keep PR approvals, request-changes, merges, pushes, deletes, etc. on the
+    // strict full-command hash path.
+    return null;
+  }
+
+  return `stable-comment-approval:v1:${keys.sort().join('|')}`;
+}
+
+function commandHash(command: string, cwd: string): string {
+  return createHash('sha256')
+    .update(stableCommentApprovalKey(command, cwd) ?? normalizeForHash(command))
+    .digest('hex')
+    .slice(0, 12);
+}
+
+function checkApprovalToken(command: string, cwd: string): boolean {
   if (!existsSync(APPROVALS_DIR)) return false;
 
-  const hash = commandHash(command);
+  const hash = commandHash(command, cwd);
   const tokenPath = join(APPROVALS_DIR, `${hash}.json`);
 
   if (!existsSync(tokenPath)) return false;
@@ -181,6 +482,7 @@ async function main() {
 
     const input: HookInput = JSON.parse(raw || '{}');
     const command = input.tool_input?.command || '';
+    const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
     if (!command) {
       console.log(JSON.stringify({ continue: true }));
@@ -204,8 +506,29 @@ async function main() {
       process.exit(0);
     }
 
+    const adaBranch = checkAdaBranch(command, cwd);
+    const adaProcedureCard = adaBranch ? formatProcedureCard(adaBranch.config) : [];
+    if (adaBranch?.mismatch && adaBranch.hardBlock) {
+      if (process.env[adaBranch.overrideEnv] === '1') {
+        logAdaOverride(adaBranch, command, cwd);
+      } else {
+        const reason = [
+          `🚧 ADA BRANCH GUARD BLOCKED: ${adaBranch.repoKey}`,
+          `Expected branch/base: ${adaBranch.expectedBranch}`,
+          `Actual branch/base: ${adaBranch.actualBranch ?? 'unknown'}`,
+          ``,
+          `This repo has a hard-block branch rule. Use the expected branch/base, or set ` +
+            `${adaBranch.overrideEnv}=1 only when intentionally bypassing the ADA guard.`,
+          ...adaProcedureCard,
+        ].join('\n');
+        console.log(JSON.stringify({ decision: 'block', reason }));
+        console.error(`[GitHubWriteGuard] ADA blocked ${adaBranch.repoKey}: expected ${adaBranch.expectedBranch}, got ${adaBranch.actualBranch ?? 'unknown'}`);
+        process.exit(0);
+      }
+    }
+
     // GitHub write detected — check for approval token
-    if (checkApprovalToken(command)) {
+    if (checkApprovalToken(command, cwd)) {
       // Approved — allow
       console.log(JSON.stringify({ continue: true }));
       process.exit(0);
@@ -213,10 +536,11 @@ async function main() {
 
     // No approval — block and explain
     const shortCmd = command.slice(0, 120);
-    const hash = commandHash(command);
+    const hash = commandHash(command, cwd);
     const reason = [
       `🔒 GITHUB WRITE BLOCKED: ${description}`,
       `Command: ${shortCmd}`,
+      ...adaProcedureCard,
       ``,
       `This operation requires your explicit confirmation (owner access protection).`,
       ``,

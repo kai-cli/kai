@@ -369,6 +369,101 @@ ${draft.content}
 }
 
 // ============================================================================
+// Insight promotion (LEARNING/INSIGHTS candidate → consolidated project memory)
+// ============================================================================
+
+const INSIGHTS_DIR = join(paiDir, 'MEMORY', 'LEARNING', 'INSIGHTS');
+
+/** Resolve (or create) the memory dir for a project name, mirroring approveDraft. */
+function resolveProjectMemoryDir(project: string): string {
+  const projectsDir = join(paiDir, 'projects');
+  const projectDirs = existsSync(projectsDir) ? readdirSync(projectsDir) : [];
+  for (const dir of projectDirs) {
+    if (dir.includes(project.replace(/\//g, '-'))) {
+      return join(projectsDir, dir, 'memory');
+    }
+  }
+  // Fall back: encode an absolute project path the way Claude Code names its store dir.
+  const home = process.env.HOME || '';
+  const absProjectPath = join(home, 'Projects', project || 'kai');
+  const dir = projectMemoryDir(absProjectPath);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+/** Parse an INSIGHTS candidate file into frontmatter fields + body. */
+function parseInsight(content: string): { title: string; category: string; confidence: string; captured: string; status: string; body: string } {
+  const fm = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  const get = (block: string, key: string): string => {
+    const m = block.match(new RegExp(`^${key}:\\s*"?(.*?)"?\\s*$`, 'm'));
+    return m ? m[1] : '';
+  };
+  if (!fm) return { title: '', category: '', confidence: '', captured: '', status: '', body: content.trim() };
+  return {
+    title: get(fm[1], 'title'),
+    category: get(fm[1], 'category'),
+    confidence: get(fm[1], 'confidence'),
+    captured: get(fm[1], 'captured'),
+    status: get(fm[1], 'status'),
+    body: fm[2].trim(),
+  };
+}
+
+/**
+ * Promote an INSIGHTS candidate into a consolidated per-project memory file.
+ * Appends the lesson under a dated bullet to `insights_promoted.md`, updates the
+ * MEMORY.md index, and flips the source file's status to `promoted` (audit trail).
+ */
+function promoteInsight(filename: string, projectOverride?: string): { success: boolean; error?: string; target?: string } {
+  const srcPath = filename.includes('/') ? filename : join(INSIGHTS_DIR, filename);
+  if (!existsSync(srcPath)) return { success: false, error: `Insight not found: ${filename}` };
+
+  const raw = readFileSync(srcPath, 'utf-8');
+  const insight = parseInsight(raw);
+  if (insight.status === 'promoted') return { success: false, error: `Already promoted: ${filename}` };
+  if (!insight.title) return { success: false, error: `Could not parse insight frontmatter: ${filename}` };
+
+  const project = projectOverride || 'kai';
+  const memoryDir = resolveProjectMemoryDir(project);
+  if (!existsSync(memoryDir)) mkdirSync(memoryDir, { recursive: true });
+
+  const targetFile = 'insights_promoted.md';
+  const targetPath = join(memoryDir, targetFile);
+  const date = (insight.captured || new Date().toISOString()).slice(0, 10);
+  const entry = `\n## ${insight.title}\n_${insight.category || 'general'} · confidence: ${insight.confidence || 'n/a'} · captured ${date}_\n\n${insight.body}\n`;
+
+  try {
+    if (!existsSync(targetPath)) {
+      const header = `---\ntype: project\ndescription: "Promoted insights (auto-extracted lessons reviewed via pai curate promote)"\nsource: promoted from MEMORY/LEARNING/INSIGHTS\n---\n\n# Promoted Insights\n\nDurable lessons promoted from session insight extraction. One section per insight.\n`;
+      writeFileSync(targetPath, header + entry);
+    } else {
+      const existing = readFileSync(targetPath, 'utf-8');
+      if (existing.includes(`## ${insight.title}\n`)) {
+        // Already present in the consolidated file — still flip status, treat as success.
+      } else {
+        writeFileSync(targetPath, existing.trimEnd() + '\n' + entry);
+      }
+    }
+
+    // Update MEMORY.md index (one pointer for the consolidated file).
+    const memoryMd = join(memoryDir, 'MEMORY.md');
+    if (existsSync(memoryMd)) {
+      const existing = readFileSync(memoryMd, 'utf-8');
+      if (!existing.includes(targetFile)) {
+        writeFileSync(memoryMd, existing.trimEnd() + `\n- [Promoted Insights](${targetFile}) — durable lessons promoted from session insight extraction\n`);
+      }
+    }
+
+    // Flip source status candidate → promoted (audit trail; do not delete).
+    writeFileSync(srcPath, raw.replace(/^status:\s*candidate\s*$/m, 'status: promoted'));
+
+    return { success: true, target: targetPath };
+  } catch (e: unknown) {
+    return { success: false, error: String(e) };
+  }
+}
+
+// ============================================================================
 // Interactive single-key prompt
 // ============================================================================
 
@@ -817,6 +912,7 @@ if (flags.includes('--help') || subcommand === 'help') {
     ${cyan('pai curate approve <n>')}        Approve draft #n
     ${cyan('pai curate reject <n>')}         Reject draft #n
     ${cyan('pai curate restore <proj> <f>')} Restore archived file
+    ${cyan('pai curate promote <f> [--project <p>]')} Promote an INSIGHTS candidate to project memory
     ${cyan('pai curate check')}              Validate knowledge + detect contradictions
     ${cyan('pai curate approve-all')}         Auto-approve eligible drafts (≥14d, conf≥0.8)
     ${cyan('pai curate approve-all --dry-run')} Preview what would be promoted
@@ -869,6 +965,23 @@ switch (subcommand) {
     const result = restoreFile(project, filename);
     if (result.success) {
       console.log(green(`  ✓ Restored ${filename} to ${project} memory.`));
+    } else {
+      console.log(red(`  ✗ ${result.error}`));
+      process.exit(1);
+    }
+    break;
+  }
+  case 'promote': {
+    const filename = subArg;
+    if (!filename) {
+      console.log(red('  Usage: pai curate promote <insight-filename> [--project <name>]'));
+      process.exit(1);
+    }
+    const projIdx = process.argv.indexOf('--project');
+    const projectOverride = projIdx !== -1 ? process.argv[projIdx + 1] : undefined;
+    const result = promoteInsight(filename, projectOverride);
+    if (result.success) {
+      console.log(green(`  ✓ Promoted ${basename(filename)} → ${result.target}`));
     } else {
       console.log(red(`  ✗ ${result.error}`));
       process.exit(1);

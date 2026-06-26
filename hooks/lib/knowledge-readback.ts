@@ -9,7 +9,8 @@
 
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { loadProjectMapping, loadExcludedProjects, getMaxDomainsPerSession } from './config-loader';
+import { loadProjectMapping, loadExcludedProjects, getMaxDomainsPerSession, isKnowledgeRedactionEnabled } from './config-loader';
+import { redactSecrets } from './redact';
 
 /**
  * Determine which knowledge domains are relevant for the current project.
@@ -46,6 +47,7 @@ export function loadKnowledgeContext(paiDir: string, projectDir: string): Knowle
   if (!existsSync(knowledgeDir)) return { content: null, injectedDomains: [], totalChars: 0 };
 
   const selectedDomains = selectDomains(projectDir);
+  const redact = isKnowledgeRedactionEnabled();
   const parts: string[] = [];
   const injectedDomains: string[] = [];
   let totalChars = 0;
@@ -55,7 +57,10 @@ export function loadKnowledgeContext(paiDir: string, projectDir: string): Knowle
     if (!existsSync(filePath)) continue;
 
     try {
-      const content = readFileSync(filePath, 'utf-8').trim();
+      // Read-only: redaction is applied to the in-memory copy before injection.
+      // The source KNOWLEDGE file is never modified (PAI-SR-073).
+      const raw = readFileSync(filePath, 'utf-8').trim();
+      const content = redact ? redactSecrets(raw) : raw;
       if (content.length > 0) {
         parts.push(content);
         injectedDomains.push(domain);

@@ -128,7 +128,7 @@ function collectIndexablePaths(): string[] {
   }
 
   // 2. project memory files (MEMORY.md and topic files)
-  const projectMemDir = join(pai, 'projects', '-Users-your.name-Projects-kai', 'memory');
+  const projectMemDir = join(pai, 'projects', '-Users-your-name-Projects-kai', 'memory');
   if (existsSync(projectMemDir)) {
     readdirSync(projectMemDir).filter(f => f.endsWith('.md')).forEach(f => paths.push(join(projectMemDir, f)));
   }
