@@ -1,4 +1,4 @@
-# KAI 7.3.2 — Personal AI Infrastructure
+# KAI 7.7.0 — Personal AI Infrastructure
 
 > Built on the foundation of Daniel Miessler's [PAI system](https://github.com/danielmiessler/Personal_AI_Infrastructure). The Algorithm, TELOS framework, skill hierarchy, and hook lifecycle originated there. KAI extends it with production hardening, multi-model inference, self-learning memory, and individual deployment.
 
@@ -28,7 +28,7 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 | `PAI/` | Core system: Algorithm <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end -->, context routing, system docs |
 | `skills/` | <!-- KAI:counts:skills:begin -->71<!-- KAI:counts:skills:end --> skill modules (Research, Security, Writing, Analysis, EM/PLM workflows) |
 | `hooks/` | <!-- KAI:counts:hooks:begin -->61<!-- KAI:counts:hooks:end --> lifecycle hooks (security guards, formatters, analytics, cleanup) |
-| `agents/` | <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> named agents (Architect, Engineer, 5 researchers, Pentester, etc.) |
+| `agents/` | <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> named agents (Architect, Engineer, 7 researchers, Pentester, etc.) |
 | `config/` | 7 domain config files that generate settings.json |
 | `scripts/` | KAI Board dashboard, deployment packager |
 | `PAI-Install/` | Interactive setup wizard |
@@ -38,7 +38,7 @@ The installer symlinks `~/.claude/` to your repo, walks you through identity set
 
 See **[docs/WHATS-DIFFERENT.md](docs/WHATS-DIFFERENT.md)** for a detailed comparison with Daniel Miessler's original.
 
-Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> named agents, Algorithm <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end --> with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
+Highlights: domain-based config, interactive installer, hook stderr wrapper + async flags, SecretScanner, GitHubWriteGuard, branch-write guards, staged-artifact KAI release sync, memory + latency telemetry, agent context handoff, SpecKit spec-driven workflows, <!-- KAI:counts:agents:begin -->20<!-- KAI:counts:agents:end --> named agents, Algorithm <!-- KAI:algorithm-version:begin -->v3.14.0<!-- KAI:algorithm-version:end --> with ISC quality gates, EM/PLM workflow skills, no personal data in repo.
 
 ## Configuration
 
