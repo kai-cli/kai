@@ -163,7 +163,7 @@ async function main() {
 
   // Sync status
   process.stdout.write('  Checking sync status...');
-  const syncResult = await runTask('Sync status', ['git', '-C', join(process.env.HOME!, 'Projects/kai'), 'log', '--oneline', '-1']);
+  const syncResult = await runTask('Sync status', ['git', '-C', REPO_DIR, 'log', '--oneline', '-1']);
   results.push(syncResult);
   console.log(` ✅`);
 

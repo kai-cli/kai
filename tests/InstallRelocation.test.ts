@@ -5,7 +5,7 @@ import { join } from 'path';
 const repo = join(import.meta.dir, '..');
 
 describe('install relocation resilience', () => {
-  test('runtime scripts do not pin the old ~/Projects/kai location', () => {
+  test('runtime scripts do not pin old ~/Projects checkout locations', () => {
     const files = [
       'scripts/hooks/pre-push',
       'scripts/weekly-maintenance.ts',
@@ -14,6 +14,7 @@ describe('install relocation resilience', () => {
 
     for (const file of files) {
       const text = readFileSync(join(repo, file), 'utf8');
+      expect(text).not.toContain('Projects/kai');
       expect(text).not.toContain('Projects/kai');
     }
   });
