@@ -34,6 +34,22 @@ function buildFixtureSettings(): Record<string, unknown> {
   return buildSettings(FIXTURE.dir) as Record<string, unknown>;
 }
 
+function normalizeHookRunnerPaths(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return value.replace(/\/[^\s"']+\/hooks\/lib\/run-hook\.sh/g, '${PAI_DIR}/hooks/lib/run-hook.sh');
+  }
+  if (Array.isArray(value)) return value.map(normalizeHookRunnerPaths);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
+        key,
+        normalizeHookRunnerPaths(nested),
+      ])
+    );
+  }
+  return value;
+}
+
 // buildSettings expands ${PAI_DIR}/${HOME} from process.env and (by design, PAI-SR-001)
 // THROWS when they resolve empty. In the full parallel suite another test can clear those
 // env vars in-process, making these tests flaky. Pin them for this suite and restore after.
@@ -81,9 +97,12 @@ describe('settings reproducibility (PAI-SR-001)', () => {
     const code = `
       const { buildSettings, findSettingsDivergence } = require(${JSON.stringify(join(REPO, 'hooks/handlers/BuildSettings.ts'))});
       const { readFileSync } = require('fs');
+      const normalizeHookRunnerPaths = ${normalizeHookRunnerPaths.toString()};
       const built = buildSettings(${JSON.stringify(LIVE_PAI_DIR)});
       const live = JSON.parse(readFileSync(${JSON.stringify(settingsPath)}, 'utf-8'));
-      console.log(JSON.stringify(findSettingsDivergence(built, live)));
+      const builtComparable = { ...built, hooks: normalizeHookRunnerPaths(built.hooks) };
+      const liveComparable = { ...live, hooks: normalizeHookRunnerPaths(live.hooks) };
+      console.log(JSON.stringify(findSettingsDivergence(builtComparable, liveComparable)));
     `;
     const proc = spawnSync(['bun', '-e', code], {
       stdout: 'pipe',
@@ -94,7 +113,7 @@ describe('settings reproducibility (PAI-SR-001)', () => {
     const divergent = JSON.parse(proc.stdout.toString()) as string[];
     // Allowed: spinnerTipsOverride (version-string staleness). Local installs may also carry
     // environment-specific statusLine/autoMemoryDirectory drift. Any OTHER key is a new defect.
-    const ALLOWED = new Set(['spinnerTipsOverride', 'autoMemoryDirectory', 'statusLine', 'pai']);
+    const ALLOWED = new Set(['spinnerTipsOverride', 'autoMemoryDirectory', 'statusLine']);
     const unexpected = divergent.filter(k => !ALLOWED.has(k));
     expect(unexpected).toEqual([]);
   });

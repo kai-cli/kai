@@ -25,6 +25,8 @@
  * - A CLI command result (contains $ or exit code reference)
  * - A test result reference (pass/fail count)
  */
+import { agentUpdateStatus } from './lib/algorithm-state';
+import { emitMemoryTelemetry } from './lib/memory-telemetry';
 
 interface HookInput {
   task_id?: string;
@@ -33,6 +35,7 @@ interface HookInput {
   teammate_name?: string;
   team_name?: string;
   session_id?: string;
+  cwd?: string;
 }
 
 async function main() {
@@ -58,7 +61,7 @@ async function main() {
     const isISCTask = /^ISC-/i.test(subject.trim());
 
     if (!isISCTask) {
-      // Non-ISC task — pass through freely
+      emitCompletion(input, subject, false);
       process.exit(0);
     }
 
@@ -85,6 +88,8 @@ async function main() {
       process.exit(2);
     }
 
+    emitCompletion(input, subject, true);
+
     // Verification evidence found — allow completion
     process.exit(0);
   } catch (error) {
@@ -97,3 +102,23 @@ async function main() {
 main().catch((err) => { console.error(`[TaskCompleted] Error:`, err); process.exit(0); });
 
 export {};
+
+function emitCompletion(input: HookInput, subject: string, iscTask: boolean): void {
+  emitMemoryTelemetry('agent.task_completed', {
+    session_id: input.session_id,
+    project: projectName(input),
+    task_id: input.task_id,
+    task_subject: subject,
+    teammate_name: input.teammate_name,
+    team_name: input.team_name,
+    isc_task: iscTask,
+  });
+  if (input.session_id && input.teammate_name) {
+    agentUpdateStatus(input.session_id, input.teammate_name, 'completed');
+  }
+}
+
+function projectName(input: HookInput): string {
+  const dir = process.env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd();
+  return dir.split('/').filter(Boolean).pop() ?? 'unknown';
+}

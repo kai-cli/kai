@@ -35,7 +35,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync, appendFileSync, mkdirSync } from 'fs';
-import { loadIndexMemory, initializeMeta, loadMeta } from './lib/memory-disclosure';
+import { loadIndexMemory, loadPromotedInsights, initializeMeta, loadMeta } from './lib/memory-disclosure';
 import { decayInstincts, surfaceInstincts, formatInstinctContext } from './lib/instinct-store';
 
 function ttyLog(msg: string): void {
@@ -685,7 +685,7 @@ async function main() {
           }
         }
       }
-      indexMemory = loadIndexMemory(paiDir);
+      indexMemory = [loadIndexMemory(paiDir), loadPromotedInsights(paiDir)].filter(Boolean).join('\n\n');
       if (indexMemory) {
         console.error(`[LoadContext] Feature A: loaded index memory (${indexMemory.length} chars)`);
       }
@@ -813,7 +813,7 @@ Dynamic context loaded. Core identity, rules, and format are in CLAUDE.md.
     } catch { /* non-fatal */ }
 
     flushTty();
-    console.error('✅ KAI session initialization complete (v7.4.2)');
+    console.error('✅ KAI session initialization complete (v7.7.0)');
     process.exit(0);
   } catch (error) {
     flushTty();

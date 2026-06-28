@@ -41,8 +41,9 @@ export interface WikiProject {
 }
 
 const HOME = process.env.HOME || '';
+const PAI_REPO = process.env.PAI_REPO_DIR || getPaiDir();
 const WIKI_PROJECTS: WikiProject[] = [
-  { repo: join(HOME, 'Projects/kai'), name: 'PAI', wikiRepo: join(HOME, 'Projects/PAI-Wiki') },
+  { repo: PAI_REPO, name: 'PAI', wikiRepo: join(HOME, 'Projects/PAI-Wiki') },
   { repo: join(HOME, 'Projects/Du_tracking'), name: 'Du-tracking', wikiSubdir: 'wiki/' },
   // YourCompany firmware code lives in many repos; its wiki is ~/Projects/YourCompany-Wiki — wire per-repo if needed.
 ];

@@ -181,7 +181,7 @@ describe('synthesisToStagingContent', () => {
 // --- maybeRunSynthesisBackstop tests ---
 // Note: This function spawns a subprocess and reads state files.
 // We test it indirectly by checking it doesn't throw.
-import { maybeRunSynthesisBackstop, maybeAutoConsolidate } from '../hooks/SessionCleanup.hook';
+import { autoConsolidateEnabled, maybeRunSynthesisBackstop, maybeAutoConsolidate } from '../hooks/SessionCleanup.hook';
 
 describe('maybeRunSynthesisBackstop', () => {
   test('does not throw when called', () => {
@@ -194,6 +194,13 @@ describe('maybeRunSynthesisBackstop', () => {
 });
 
 describe('maybeAutoConsolidate', () => {
+  test('is disabled by default and enabled only by explicit opt-in env', () => {
+    expect(autoConsolidateEnabled({})).toBe(false);
+    expect(autoConsolidateEnabled({ PAI_AUTO_CONSOLIDATE: '0' })).toBe(false);
+    expect(autoConsolidateEnabled({ PAI_AUTO_CONSOLIDATE: '1' })).toBe(true);
+    expect(autoConsolidateEnabled({ PAI_AUTO_CONSOLIDATE: 'true' })).toBe(true);
+  });
+
   test('does not throw when called', () => {
     expect(() => maybeAutoConsolidate()).not.toThrow();
   });

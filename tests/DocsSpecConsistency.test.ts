@@ -46,10 +46,11 @@ describe('docs-spec-consistency', () => {
     expect(findings[0].line).toBe(1);
   });
 
-  test('validates 7.4.1 → 7.4.2 → 7.5.x roadmap order', () => {
+  test('validates 7.4.1 → 7.4.2 → 7.4.4 → 7.5.x roadmap order', () => {
     const ok = checkRoadmapVersionSequence([
       '## 7.4.1 (TARGETED)',
       '## 7.4.2 (TARGETED)',
+      '## 7.4.4 (TARGETED)',
       '## 7.5.0 (TARGETED)',
       '## 7.5.1 (TARGETED)',
       '## 7.5.2 (TARGETED)',
@@ -60,6 +61,7 @@ describe('docs-spec-consistency', () => {
     const bad = checkRoadmapVersionSequence([
       '## 7.4.2 (TARGETED)',
       '## 7.4.1 (TARGETED)',
+      '## 7.4.4 (TARGETED)',
       '## 7.5.0 (TARGETED)',
       '## 7.5.1 (TARGETED)',
       '## 7.5.2 (TARGETED)',

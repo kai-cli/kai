@@ -34,11 +34,11 @@ describe('hook-event schema coverage (PAI-SR-013 release gate)', () => {
     expect(uncovered).toEqual([]);
   });
 
-  test('all 12 currently-registered events are present', () => {
+  test('all 13 currently-registered events are present', () => {
     // Snapshot of the known-registered set; tightens the gate so silent registration is caught.
     const events = registeredEvents().sort();
     expect(events).toEqual([
-      'ConfigChange', 'PostToolUse', 'PreCompact', 'PreToolUse', 'SessionEnd',
+      'ConfigChange', 'InstructionsLoaded', 'PostToolUse', 'PreCompact', 'PreToolUse', 'SessionEnd',
       'SessionStart', 'Stop', 'TaskCompleted', 'TeammateIdle', 'UserPromptExpansion',
       'UserPromptSubmit', 'WorktreeRemove',
     ].sort());

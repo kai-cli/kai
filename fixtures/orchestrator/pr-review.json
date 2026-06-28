@@ -1,0 +1,44 @@
+{
+  "id": "fixture-pr-review-001",
+  "type": "pr-review",
+  "objective": "Review a fixture pull request, capture structured findings, and decide whether it is safe to continue.",
+  "inputs": [
+    {
+      "id": "input-pr",
+      "type": "github-pr",
+      "source": "https://github.com/example/project/pull/123",
+      "metadata": {
+        "repo": "example/project",
+        "number": 123,
+        "head": "feature/example",
+        "base": "main"
+      }
+    }
+  ],
+  "roles": [
+    {
+      "id": "claude-reviewer",
+      "role": "reviewer",
+      "engine": "claude-local",
+      "capabilities": ["review"]
+    },
+    {
+      "id": "codex-fixer",
+      "role": "fixer",
+      "engine": "codex-local",
+      "capabilities": ["implement", "validate"]
+    }
+  ],
+  "policy": {
+    "autonomy": "iterate",
+    "maxRounds": 2,
+    "allowedPaths": ["src/**", "tests/**", "docs/**"],
+    "blockedPaths": ["docs/planning/**", "specs/**", "MEMORY/**", "USER/**", "Plans/**"],
+    "requireGreenCI": true,
+    "allowPush": false,
+    "allowMerge": false,
+    "stopOnPrivateBoundaryRisk": true
+  },
+  "artifacts": [],
+  "status": "queued"
+}

@@ -323,7 +323,8 @@ function approveDraft(index: number): { success: boolean; error?: string } {
   const targetPath = join(targetMemoryDir, draft.targetFilename);
 
   try {
-    // Write the draft content (without frontmatter) to target
+    // Write new targets with frontmatter; existing targets are append-only so repeated fixed-name
+    // feedback drafts cannot clobber earlier approved memory or hand edits.
     const memContent = `---
 type: ${draft.type.includes('success') ? 'feedback' : 'project'}
 description: ${draft.title}
@@ -333,7 +334,14 @@ source_session: ${draft.sourceSession}
 
 ${draft.content}
 `;
-    writeFileSync(targetPath, memContent);
+    if (!existsSync(targetPath)) {
+      writeFileSync(targetPath, memContent);
+    } else {
+      const existing = readFileSync(targetPath, 'utf-8');
+      const approvedDate = new Date().toISOString().split('T')[0];
+      const entry = `\n## ${draft.title}\n_source: auto-generated (approved ${approvedDate}) · source_session: ${draft.sourceSession}_\n\n${draft.content.trim()}\n`;
+      writeFileSync(targetPath, existing.trimEnd() + '\n' + entry);
+    }
 
     // Update MEMORY.md index
     const memoryMd = join(targetMemoryDir, 'MEMORY.md');
@@ -409,6 +417,20 @@ function parseInsight(content: string): { title: string; category: string; confi
   };
 }
 
+function listCandidateInsightFiles(): string[] {
+  if (!existsSync(INSIGHTS_DIR)) return [];
+  return readdirSync(INSIGHTS_DIR)
+    .filter(f => f.endsWith('.md'))
+    .filter(f => {
+      try {
+        return readFileSync(join(INSIGHTS_DIR, f), 'utf-8').includes('status: candidate');
+      } catch {
+        return false;
+      }
+    })
+    .sort();
+}
+
 /**
  * Promote an INSIGHTS candidate into a consolidated per-project memory file.
  * Appends the lesson under a dated bullet to `insights_promoted.md`, updates the
@@ -461,6 +483,50 @@ function promoteInsight(filename: string, projectOverride?: string): { success: 
   } catch (e: unknown) {
     return { success: false, error: String(e) };
   }
+}
+
+interface InsightPromotionRequest {
+  filename: string;
+  project?: string;
+}
+
+interface InsightPromotionBatchResult {
+  promoted: number;
+  failed: { filename: string; error: string }[];
+  targets: string[];
+}
+
+function parseInsightPromotionManifest(manifestPath: string): InsightPromotionRequest[] {
+  const lines = readFileSync(manifestPath, 'utf-8')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#'));
+
+  return lines.map(line => {
+    const [filename, project] = line.split('\t').map(part => part.trim());
+    if (!filename) throw new Error(`Invalid promotion manifest row: ${line}`);
+    return { filename, project: project || undefined };
+  });
+}
+
+function promoteInsightBatch(requests: InsightPromotionRequest[], projectOverride?: string): InsightPromotionBatchResult {
+  const result: InsightPromotionBatchResult = { promoted: 0, failed: [], targets: [] };
+  for (const request of requests) {
+    const promoted = promoteInsight(request.filename, projectOverride || request.project);
+    if (promoted.success) {
+      result.promoted += 1;
+      if (promoted.target && !result.targets.includes(promoted.target)) result.targets.push(promoted.target);
+    } else {
+      result.failed.push({ filename: request.filename, error: promoted.error || 'unknown error' });
+    }
+  }
+  return result;
+}
+
+function printBatchPromotionResult(result: InsightPromotionBatchResult): void {
+  if (result.promoted > 0) console.log(green(`  ✓ Promoted ${result.promoted} insight(s).`));
+  for (const target of result.targets) console.log(dim(`    → ${target}`));
+  for (const failure of result.failed) console.log(red(`  ✗ ${failure.filename}: ${failure.error}`));
 }
 
 // ============================================================================
@@ -663,31 +729,33 @@ async function interactiveInsights(dryRun: boolean): Promise<void> {
     console.log(dim('  Run `pai curate drafts` after those sessions to review generated memories.'));
   }
 
-  // Show insight candidates from InsightExtractor
-  const insightsDir = join(paiDir, 'MEMORY', 'LEARNING', 'INSIGHTS');
-  if (existsSync(insightsDir)) {
-    const insightFiles = readdirSync(insightsDir).filter(f => f.endsWith('.md'));
-    const candidates = insightFiles.filter(f => {
+  const candidates = listCandidateInsightFiles();
+  if (candidates.length > 0) {
+    console.log(`\n  ${bold(String(candidates.length))} insight candidate(s) pending review:`);
+    for (const f of dryRun ? candidates.slice(0, 5) : candidates) {
       try {
-        const content = readFileSync(join(insightsDir, f), 'utf-8');
-        return content.includes('status: candidate');
-      } catch { return false; }
-    });
-    if (candidates.length > 0) {
-      console.log(`\n  ${bold(String(candidates.length))} insight candidate(s) pending review:`);
-      for (const f of candidates.slice(0, 5)) {
-        try {
-          const content = readFileSync(join(insightsDir, f), 'utf-8');
-          const titleMatch = content.match(/title:\s*"([^"]+)"/);
-          const title = titleMatch ? titleMatch[1] : f;
-          console.log(`    • ${title}`);
-        } catch { console.log(`    • ${f}`); }
+        const content = readFileSync(join(INSIGHTS_DIR, f), 'utf-8');
+        const insight = parseInsight(content);
+        console.log(`    • ${insight.title || f}`);
+      } catch { console.log(`    • ${f}`); }
+
+      if (!dryRun) {
+        const key = await prompt(
+          `      Action: ${green('[p]')}romote to kai  ${dim('[s]')}kip  ${dim('[q]')}uit → `,
+          ['p', 's', 'q']
+        );
+        if (key === 'q') { console.log(dim('  (quit)\n')); return; }
+        if (key === 'p') {
+          const result = promoteInsight(f);
+          if (result.success) console.log(green(`      ✓ Promoted → ${result.target}`));
+          else console.log(red(`      ✗ Failed: ${result.error}`));
+        }
       }
-      if (candidates.length > 5) {
-        console.log(dim(`    ... and ${candidates.length - 5} more`));
-      }
-      console.log(dim('  Promote to project memory with `pai curate promote <filename>`'));
     }
+    if (dryRun && candidates.length > 5) {
+      console.log(dim(`    ... and ${candidates.length - 5} more`));
+    }
+    console.log(dim('  Batch promote with `pai curate promote --from-manifest <file>` or `pai curate promote --all <project>`.'));
   }
 
   console.log();
@@ -913,6 +981,8 @@ if (flags.includes('--help') || subcommand === 'help') {
     ${cyan('pai curate reject <n>')}         Reject draft #n
     ${cyan('pai curate restore <proj> <f>')} Restore archived file
     ${cyan('pai curate promote <f> [--project <p>]')} Promote an INSIGHTS candidate to project memory
+    ${cyan('pai curate promote --from-manifest <file>')} Batch promote <file><TAB><project> rows
+    ${cyan('pai curate promote --all <project>')} Promote every candidate insight to one project
     ${cyan('pai curate check')}              Validate knowledge + detect contradictions
     ${cyan('pai curate approve-all')}         Auto-approve eligible drafts (≥14d, conf≥0.8)
     ${cyan('pai curate approve-all --dry-run')} Preview what would be promoted
@@ -972,13 +1042,43 @@ switch (subcommand) {
     break;
   }
   case 'promote': {
+    const projIdx = process.argv.indexOf('--project');
+    const projectOverride = projIdx !== -1 ? process.argv[projIdx + 1] : undefined;
+    if (flags.includes('--from-manifest')) {
+      const manifestPath = subArg;
+      if (!manifestPath) {
+        console.log(red('  Usage: pai curate promote --from-manifest <manifest.tsv> [--project <name>]'));
+        process.exit(1);
+      }
+      try {
+        const requests = parseInsightPromotionManifest(manifestPath);
+        const result = promoteInsightBatch(requests, projectOverride);
+        printBatchPromotionResult(result);
+        if (result.failed.length > 0) process.exit(1);
+      } catch (e: unknown) {
+        console.log(red(`  ✗ ${e}`));
+        process.exit(1);
+      }
+      break;
+    }
+    if (flags.includes('--all')) {
+      const project = projectOverride || subArg;
+      if (!project) {
+        console.log(red('  Usage: pai curate promote --all <project>'));
+        process.exit(1);
+      }
+      const requests = listCandidateInsightFiles().map(filename => ({ filename, project }));
+      const result = promoteInsightBatch(requests);
+      printBatchPromotionResult(result);
+      if (result.failed.length > 0) process.exit(1);
+      break;
+    }
+
     const filename = subArg;
     if (!filename) {
       console.log(red('  Usage: pai curate promote <insight-filename> [--project <name>]'));
       process.exit(1);
     }
-    const projIdx = process.argv.indexOf('--project');
-    const projectOverride = projIdx !== -1 ? process.argv[projIdx + 1] : undefined;
     const result = promoteInsight(filename, projectOverride);
     if (result.success) {
       console.log(green(`  ✓ Promoted ${basename(filename)} → ${result.target}`));

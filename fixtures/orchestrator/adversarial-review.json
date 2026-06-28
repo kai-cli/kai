@@ -1,0 +1,39 @@
+{
+  "id": "fixture-adversarial-review-001",
+  "type": "adversarial-review",
+  "objective": "Stress-test a local architecture plan and produce a structured decision artifact.",
+  "inputs": [
+    {
+      "id": "input-plan",
+      "type": "markdown",
+      "source": "docs/planning/example-plan.md",
+      "content": "# Example Plan\n\nBuild a local-only fixture workflow for orchestration tests."
+    }
+  ],
+  "roles": [
+    {
+      "id": "claude-red-team",
+      "role": "red-team",
+      "engine": "claude-local",
+      "capabilities": ["red-team", "review"]
+    },
+    {
+      "id": "codex-judge",
+      "role": "judge",
+      "engine": "codex-local",
+      "capabilities": ["judge", "validate"]
+    }
+  ],
+  "policy": {
+    "autonomy": "advise",
+    "maxRounds": 1,
+    "allowedPaths": ["docs/**", "specs/**"],
+    "blockedPaths": ["MEMORY/**", "USER/**", "Plans/**"],
+    "requireGreenCI": true,
+    "allowPush": false,
+    "allowMerge": false,
+    "stopOnPrivateBoundaryRisk": true
+  },
+  "artifacts": [],
+  "status": "queued"
+}

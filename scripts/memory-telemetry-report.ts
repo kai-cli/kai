@@ -146,20 +146,49 @@ function sessionEndCompositeSummary(events: MemoryTelemetryEvent[]): {
 }
 
 function agentReturnSummary(events: MemoryTelemetryEvent[]): {
+  spawns: number;
   returns: number;
   checkpoints: number;
+  task_completed: number;
+  idle: number;
+  returns_without_checkpoint_prompt: number;
+  return_status: Record<string, number>;
+  missing_context_handoff: number;
+  spawn_to_return_latency: { count: number; p50: number; p95: number };
   result_chars: { count: number; p50: number; p95: number; total: number; max: number };
   by_project: Record<string, { returns: number; total_chars: number; max_chars: number }>;
   largest_returns: Array<{ ts: string; project: string; agent_type: string; description: string; result_chars: number }>;
 } {
+  const spawns = events.filter(e => e.type === 'agent.spawn');
   const returns = events.filter(e => e.type === 'agent.return');
-  const checkpoints = events.filter(e => e.type === 'agent.checkpoint').length;
+  const checkpointEvents = events.filter(e => e.type === 'agent.checkpoint');
+  const completedEvents = events.filter(e => e.type === 'agent.task_completed');
+  const idleEvents = events.filter(e => e.type === 'agent.idle');
+  const checkpoints = checkpointEvents.length;
+  const checkpointIds = new Set(checkpointEvents.map(e => String(e.agent_call_id ?? '')).filter(Boolean));
   const sizes = returns.map(e => Number(e.result_chars)).filter(Number.isFinite);
   const byProject = new Map<string, { returns: number; total_chars: number; max_chars: number }>();
+  const byStatus = new Map<string, number>();
+  const spawnTimes = new Map<string, number>();
+  const latencies: number[] = [];
+
+  for (const e of spawns) {
+    const id = String(e.agent_call_id ?? '');
+    const t = Date.parse(String(e.ts ?? ''));
+    if (id && Number.isFinite(t) && !spawnTimes.has(id)) spawnTimes.set(id, t);
+  }
 
   for (const e of returns) {
     const project = String(e.project ?? 'unknown');
     const chars = Number(e.result_chars);
+    const status = String(e.return_status ?? 'ok');
+    byStatus.set(status, (byStatus.get(status) ?? 0) + 1);
+    const id = String(e.agent_call_id ?? '');
+    const spawnedAt = id ? spawnTimes.get(id) : undefined;
+    const returnedAt = Date.parse(String(e.ts ?? ''));
+    if (spawnedAt !== undefined && Number.isFinite(returnedAt) && returnedAt >= spawnedAt) {
+      latencies.push(returnedAt - spawnedAt);
+    }
     const row = byProject.get(project) ?? { returns: 0, total_chars: 0, max_chars: 0 };
     row.returns++;
     if (Number.isFinite(chars)) {
@@ -182,8 +211,18 @@ function agentReturnSummary(events: MemoryTelemetryEvent[]): {
 
   const sizeSummary = latencySummary(sizes);
   return {
+    spawns: spawns.length,
     returns: returns.length,
     checkpoints,
+    task_completed: completedEvents.length,
+    idle: idleEvents.length,
+    returns_without_checkpoint_prompt: returns.filter(e => {
+      const id = String(e.agent_call_id ?? '');
+      return id ? !checkpointIds.has(id) : true;
+    }).length,
+    return_status: Object.fromEntries(byStatus),
+    missing_context_handoff: spawns.filter(e => e.context_handoff_missing === true).length,
+    spawn_to_return_latency: latencySummary(latencies),
     result_chars: {
       ...sizeSummary,
       total: sizes.reduce((n, x) => n + x, 0),
@@ -249,7 +288,10 @@ function main(): void {
 
   // Agent capture-loss-guard activity (Phase 0).
   const agentReturns = byType.get('agent.return') ?? 0;
+  const agentSpawns = byType.get('agent.spawn') ?? 0;
   const agentCheckpoints = byType.get('agent.checkpoint') ?? 0;
+  const agentTaskCompleted = byType.get('agent.task_completed') ?? 0;
+  const agentIdle = byType.get('agent.idle') ?? 0;
 
   // Coherence drift (D2 trigger metric).
   const driftCount = byType.get('coherence.drift') ?? 0;
@@ -270,7 +312,8 @@ function main(): void {
       session_end_composite: sessionEndComposite,
       agent_return: agentReturn,
       turn_prompt: turnPrompt,
-      agent_returns: agentReturns, agent_checkpoints: agentCheckpoints,
+      agent_spawns: agentSpawns, agent_returns: agentReturns, agent_checkpoints: agentCheckpoints,
+      agent_task_completed: agentTaskCompleted, agent_idle: agentIdle,
       coherence_drift: driftCount,
     }, null, 2));
     return;
@@ -314,9 +357,18 @@ function main(): void {
     console.log(`      - skipped hooks       ${sessionEndComposite.skipped_hooks_total}`);
   }
   console.log('\n  Phase-0 capture-loss guard:');
+  console.log(`    • subagent spawns       : ${agentSpawns}`);
   console.log(`    • subagent returns      : ${agentReturns}`);
   console.log(`    • checkpoint prompts    : ${agentCheckpoints}`);
+  console.log(`    • task completed events : ${agentTaskCompleted}`);
+  console.log(`    • idle events           : ${agentIdle}`);
   if (agentReturn.returns > 0) {
+    console.log(`    • no-checkpoint returns : ${agentReturn.returns_without_checkpoint_prompt}`);
+    console.log(`    • missing handoffs      : ${agentReturn.missing_context_handoff}`);
+    console.log(`    • spawn→return ms p50/p95: ${fmt(agentReturn.spawn_to_return_latency.p50, 0)} / ${fmt(agentReturn.spawn_to_return_latency.p95, 0)}  (n=${agentReturn.spawn_to_return_latency.count})`);
+    for (const [status, count] of Object.entries(agentReturn.return_status)) {
+      console.log(`      - status ${status.padEnd(9)} ${count}`);
+    }
     console.log(`    • return chars total    : ${agentReturn.result_chars.total}`);
     console.log(`    • return chars p50/p95  : ${fmt(agentReturn.result_chars.p50, 0)} / ${fmt(agentReturn.result_chars.p95, 0)}`);
     console.log(`    • largest return chars  : ${agentReturn.result_chars.max}`);

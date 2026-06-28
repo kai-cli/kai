@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-06-26T15:21:17.086Z",
+  "generated": "2026-06-28T00:11:57.340Z",
   "skills": {
     "Agents": {
       "source": "kai",
@@ -598,6 +598,28 @@
       "hash": "sha256:4ef3ceb66d855dc1d25ab3b5967cfdaa42665b4c9c572cb3b855387aa28f034b",
       "workflows": [],
       "workflowHashes": {},
+      "specializes": null
+    },
+    "SpecKit": {
+      "source": "kai",
+      "path": "skills/SpecKit/SKILL.md",
+      "hash": "sha256:35703f5aca5dce63d88059f83e8817647d014847773165192420df1cac076ba1",
+      "workflows": [
+        "Clarify",
+        "Implement",
+        "Plan",
+        "Spec",
+        "Tasks",
+        "Validate"
+      ],
+      "workflowHashes": {
+        "Clarify": "sha256:b8b54729e582159adc9a56b5a04aeffb958e014f889afa7923a929b291426896",
+        "Implement": "sha256:b840e14d408ded054ec95ea3c3cd254a8edeb94f45cfa2049ce00fa13db67f27",
+        "Plan": "sha256:cc328a713a9e68f75683b78e3513c783db368f32ec2886a07249d4085e08d6ff",
+        "Spec": "sha256:aeeaa507c7641b52aebe3a96e71e61b3f3ccce9cd78ac05dcd005751a9451838",
+        "Tasks": "sha256:5db256f8d743fc4b060366046bdcd36f616a1e484ea86570a49ceba3e03aea3b",
+        "Validate": "sha256:934220799d4ce75823313b3add1858652bbc7b62a0bdde5e6be790fb3190b3fe"
+      },
       "specializes": null
     },
     "Telos": {

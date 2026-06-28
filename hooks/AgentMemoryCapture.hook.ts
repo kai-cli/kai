@@ -16,6 +16,7 @@
  *
  * NON-NEGOTIABLE: exits 0 on every path; any error is swallowed (mirrors ReadActivity hygiene).
  */
+import { agentCallId } from './lib/agent-context-handoff';
 import { emitMemoryTelemetry } from './lib/memory-telemetry';
 
 interface HookInput {
@@ -50,6 +51,46 @@ function resultSize(resp: unknown): number {
   }
 }
 
+function resultText(resp: unknown): string {
+  try {
+    if (typeof resp === 'string') return resp;
+    if (resp == null) return '';
+    return JSON.stringify(resp);
+  } catch {
+    return '';
+  }
+}
+
+function hasDurableCheckpointMarker(resp: unknown): boolean {
+  return /Durable findings for parent checkpoint\s*:/i.test(resultText(resp));
+}
+
+type AgentReturnStatus = 'ok' | 'partial' | 'failed' | 'malformed';
+
+function statusField(resp: unknown): string {
+  if (!resp || typeof resp !== 'object' || Array.isArray(resp)) return '';
+  const obj = resp as Record<string, unknown>;
+  for (const key of ['status', 'state', 'exit_status', 'conclusion']) {
+    if (typeof obj[key] === 'string') return obj[key].toLowerCase();
+  }
+  return '';
+}
+
+function classifyReturnStatus(resp: unknown): AgentReturnStatus {
+  if (resp === undefined) return 'malformed';
+  const explicit = statusField(resp);
+  if (/^(failed|failure|error|errored|timeout|timed_out|cancelled|canceled|aborted)$/.test(explicit)) {
+    return 'failed';
+  }
+  if (/^(partial|incomplete|truncated|stalled)$/.test(explicit)) return 'partial';
+
+  const text = resultText(resp);
+  if (!text.trim()) return 'malformed';
+  if (/"error"\s*:|"exception"\s*:|timed out|timeout|failed|aborted|cancelled|canceled/i.test(text)) return 'failed';
+  if (/partial result|partially complete|incomplete|truncated|stalled/i.test(text)) return 'partial';
+  return 'ok';
+}
+
 function main(): void {
   try {
     const input = readStdin();
@@ -65,36 +106,51 @@ function main(): void {
     const description = input.tool_input?.description ?? '';
     const size = resultSize(input.tool_response);
     const project = projectName(input);
+    const returnStatus = classifyReturnStatus(input.tool_response);
+    const durableMarker = hasDurableCheckpointMarker(input.tool_response);
+    const agent_call_id = agentCallId(input.tool_input, input.session_id);
 
     // Always record the return (the save-gap signal). Cheap, swallows errors.
     emitMemoryTelemetry('agent.return', {
       session_id: input.session_id,
       project,
+      agent_call_id,
       agent_type: agentType,
       description,
       result_chars: size,
+      return_status: returnStatus,
+      durable_marker: durableMarker,
+      run_in_background: input.tool_input?.run_in_background === true,
     });
 
     // Background agents return asynchronously and the parent often isn't at a checkpoint boundary —
     // and trivially-small returns rarely carry durable lessons. Gate the *reminder* (not the telemetry)
     // to substantive, foreground returns to keep the already-busy context chain quiet.
-    const substantive = size >= 400 && input.tool_input?.run_in_background !== true;
+    const needsParentAttention = returnStatus !== 'ok' || size >= 400 || durableMarker;
+    const substantive = needsParentAttention && input.tool_input?.run_in_background !== true;
     if (!substantive) process.exit(0);
 
     emitMemoryTelemetry('agent.checkpoint', {
       session_id: input.session_id,
       project,
+      agent_call_id,
       agent_type: agentType,
+      return_status: returnStatus,
+      durable_marker: durableMarker,
     });
 
     const label = agentType ? `${agentType} subagent` : 'a subagent';
+    const failureClause = returnStatus !== 'ok'
+      ? ` It appears to have returned ${returnStatus} output; inspect the result before delegating more work.`
+      : '';
     const reminder =
       `<system-reminder>\n` +
       `🧠 ${label} just returned${description ? ` ("${description}")` : ''}. Subagents cannot persist ` +
       `memory themselves — YOU are the only actor that can. If it established anything durable ` +
-      `(a cross-project lesson, a project fact, a resolved gotcha), checkpoint it now: offer a ` +
+      `(a cross-project lesson, a project fact, a resolved gotcha, or a ` +
+      `"Durable findings for parent checkpoint:" section), checkpoint it now: offer a ` +
       `\`memcarry capture-lesson\` (per the steering rule) or a project-memory note before moving on. ` +
-      `If nothing durable was learned, ignore this.\n</system-reminder>`;
+      `If nothing durable was learned, ignore this.${failureClause}\n</system-reminder>`;
 
     // PostToolUse additionalContext contract (same shape MemoryRecall/LocalContextFirst use).
     console.log(JSON.stringify({ additionalContext: reminder }));

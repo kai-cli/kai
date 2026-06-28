@@ -246,6 +246,23 @@ describe("GitHubWriteGuard — edge cases", () => {
     const result = JSON.parse(out.trim());
     expect(result.continue).toBe(true);
   });
+
+  test("fails closed for write commands when a guard error occurs after detection", async () => {
+    const result = await runGuard("gh pr create --title test --body test", {
+      env: { PAI_GITHUB_WRITE_GUARD_TEST_THROW_AFTER_DETECT: "1" },
+    });
+
+    expect(result.decision).toBe("block");
+    expect(result.reason).toContain("guard error");
+  });
+
+  test("still fails open for read-only commands when the forced write-path error is enabled", async () => {
+    const result = await runGuard("gh pr view 67", {
+      env: { PAI_GITHUB_WRITE_GUARD_TEST_THROW_AFTER_DETECT: "1" },
+    });
+
+    expect(result.continue).toBe(true);
+  });
 });
 
 describe("GitHubWriteGuard — approval ergonomics", () => {

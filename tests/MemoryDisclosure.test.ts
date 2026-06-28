@@ -9,6 +9,7 @@ import {
   pruneIndex,
   appendTimeline,
   initializeMeta,
+  loadPromotedInsights,
   recordDetailRead,
   MAX_TIMELINE_ENTRIES,
   type MemoryMetaEntry,
@@ -178,5 +179,43 @@ describe('recordDetailRead', () => {
     const entries = loadMeta(paiDir);
     expect(entries.length).toBe(1);
     expect(entries[0].reference_count).toBe(1);
+  });
+});
+
+describe('loadPromotedInsights', () => {
+  it('surfaces latest promoted insight sections for current project', () => {
+    const paiDir = mkPaiDir();
+    const projectDir = '/Users/test/Projects/kai';
+    const encoded = projectDir.replace(/[^a-zA-Z0-9]/g, '-');
+    const memoryDir = join(paiDir, 'projects', encoded, 'memory');
+    mkdirSync(memoryDir, { recursive: true });
+    writeFileSync(join(memoryDir, 'insights_promoted.md'), `---
+type: project
+---
+
+# Promoted Insights
+
+## Old
+old body
+
+## Middle
+middle body
+
+## New
+new body
+`);
+
+    const prev = process.env.CLAUDE_PROJECT_DIR;
+    process.env.CLAUDE_PROJECT_DIR = projectDir;
+    try {
+      const result = loadPromotedInsights(paiDir, 2);
+      expect(result).toContain('## Promoted Insights (recent)');
+      expect(result).not.toContain('## Old');
+      expect(result).toContain('## Middle');
+      expect(result).toContain('## New');
+    } finally {
+      if (prev === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+      else process.env.CLAUDE_PROJECT_DIR = prev;
+    }
   });
 });

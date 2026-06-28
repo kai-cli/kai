@@ -151,6 +151,8 @@
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh MemRecall.hook.ts" },
           // Local context injection — outputs additionalContext
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh LocalContextFirst.hook.ts" },
+          // Skill discovery nudge — deterministic, local-only suggestion
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh SkillDiscoveryRecommender.hook.ts" },
           // Classify effort tier and inject context modifications
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh ModeClassifier.hook.ts" },
           // Detect PAI output format violations and inject correction hint
@@ -235,6 +237,15 @@
       {
         "hooks": [
           { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh PreCompact.hook.ts" }
+        ]
+      }
+    ],
+
+    // InstructionsLoaded — native instruction observability; telemetry only
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${PAI_DIR}/hooks/lib/run-hook.sh InstructionsLoaded.hook.ts", "async": true }
         ]
       }
     ],

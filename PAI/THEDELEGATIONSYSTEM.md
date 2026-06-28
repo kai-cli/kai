@@ -249,6 +249,26 @@ claude --attach <session-id>
 - ❌ No callback/RPC from background to foreground (use file-based coordination)
 - ❌ Don't rely on background agents to report back synchronously (they may outlive parent)
 
+### Context Envelope for Background / SDK Sessions
+
+Background and SDK-launched sessions do not share the parent conversation. Prepend the same narrow
+PAI handoff used for context-sensitive `Explore` / `Plan` delegation:
+
+```text
+<pai-agent-context-handoff tier="rules">
+- Follow current repo rules before acting: branch-only workflow, read before modifying, minimal scope, verify before reporting done.
+- Do not mutate public KAI, remotes, PRs, or release artifacts unless the parent prompt includes explicit current-turn approval.
+- Preserve user and memory content. Never delete, move, or rewrite memory based on format judgment.
+- Subagents cannot persist durable memory. If you learn something the parent should save, return a section named "Durable findings for parent checkpoint:" with only the facts worth keeping.
+- ADA pointer: if the task touches ambient domain activation or delegation reach, read docs/planning/ambient-domain-activation-design.md and docs/planning/ROADMAP-7.x.md before changing behavior.
+</pai-agent-context-handoff>
+<pai-background-delegation-boundary>
+- Background/SDK sessions do not share parent conversation state. Include only task-relevant paths, constraints, approvals, and this handoff block.
+- Do not include private conversation history, unrelated memories, credentials, tokens, or public-KAI-prohibited content.
+- Coordinate through commits, PR comments, or explicit task/status files; do not assume synchronous return to the parent session.
+</pai-background-delegation-boundary>
+```
+
 ### Model Selection for Background Sessions
 
 Background sessions have different cost/capability tradeoffs than intra-session agents:

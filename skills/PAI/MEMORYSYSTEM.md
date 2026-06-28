@@ -2,7 +2,7 @@
 
 **The unified system memory - what happened, what we learned, what we're working on.**
 
-**Version:** 7.4.2 (Projects-native architecture, 2026-01-12)
+**Version:** 7.7.0 (Projects-native architecture, 2026-01-12)
 **Location:** `~/.claude/MEMORY/`
 
 ---

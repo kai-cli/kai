@@ -95,8 +95,6 @@ describe('bump-version target manifest', () => {
   });
 
   test('implementation loads the manifest instead of owning a static target list', () => {
-    if (!existsSync(SCRIPT_PATH)) return;
-
     const script = readFileSync(SCRIPT_PATH, 'utf-8');
     expect(script).toContain('scripts/version-targets.json');
     expect(script).toContain('discoverTargets');

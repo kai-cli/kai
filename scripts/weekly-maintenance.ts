@@ -16,6 +16,7 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from 
 import { join } from 'path';
 
 const PAI_DIR = process.env.PAI_DIR ?? join(process.env.HOME!, '.claude');
+const REPO_DIR = process.env.PAI_REPO_DIR ?? PAI_DIR;
 const STATE_FILE = join(PAI_DIR, 'MEMORY', 'STATE', '.weekly-maintenance.json');
 const WORK_JSON = join(PAI_DIR, 'MEMORY', 'STATE', 'work.json');
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -200,8 +201,7 @@ async function main() {
   // Backlog surfacing trigger — keep targeted ideas in view so nothing rots in limbo (the SpecKit
   // lesson; see roadmap "📋 Backlog — the no-lose system"). Echo the next TARGETED release block.
   try {
-    const roadmap = join(PAI_DIR, '..', 'Projects', 'kai', 'docs', 'planning', 'ROADMAP-7.x.md');
-    const rmPath = existsSync(roadmap) ? roadmap : join(process.env.HOME!, 'Projects/kai/docs/planning/ROADMAP-7.x.md');
+    const rmPath = join(REPO_DIR, 'docs', 'planning', 'ROADMAP-7.x.md');
     if (existsSync(rmPath)) {
       const lines = readFileSync(rmPath, 'utf-8').split('\n');
       const start = lines.findIndex(l => /^## .*\(TARGETED\)/.test(l));

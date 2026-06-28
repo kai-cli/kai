@@ -1,10 +1,10 @@
 {
-  "version": "7.4.2",
+  "version": "7.7.0",
   "productName": "KAI",
   "algorithmVersion": "v3.14.0",
   "counts": {
-    "skills": 70,
-    "hooks": 59,
+    "skills": 71,
+    "hooks": 61,
     "agents": 20
   },
   "hookInventory": [
@@ -22,6 +22,7 @@
     "HealthCheck.hook",
     "InsightExtractor.hook",
     "InstinctCapture.hook",
+    "InstructionsLoaded.hook",
     "IntegrityCheck.hook",
     "KnowledgeSync.hook",
     "LastResponseCache.hook",
@@ -50,6 +51,7 @@
     "SessionEndComposite.hook",
     "SessionSummary.hook",
     "SetQuestionTab.hook",
+    "SkillDiscoveryRecommender.hook",
     "SkillGuard.hook",
     "SkillTracker.hook",
     "StartupGreeting.hook",
@@ -126,6 +128,7 @@
     "Security/Recon",
     "Security/SECUpdates",
     "Security/WebAssessment",
+    "SpecKit",
     "Telos",
     "Thinking",
     "Thinking/BeCreative",

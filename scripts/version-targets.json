@@ -8,7 +8,7 @@
     { "file": "PAI/Tools/Banner.ts", "kind": "banner-pai-algo-fallback", "category": "fallback" },
     { "file": "PAI/Tools/BuildCLAUDE.ts", "kind": "buildclaude-default-algo", "category": "fallback" },
     { "file": "PAI/Tools/BuildCLAUDE.ts", "kind": "buildclaude-default-pai", "category": "fallback" },
-    { "file": "CLAUDE.md", "kind": "h1-kai-version", "category": "docs", "optional": true },
+    { "file": "CLAUDE.md", "kind": "h1-kai-version", "category": "docs" },
     { "file": "README.md", "kind": "h1-kai-version", "category": "docs" },
     { "file": "README.md", "kind": "readme-algo-inline", "category": "docs" },
     { "file": "docs/WHATS-DIFFERENT.md", "kind": "whats-different-title", "category": "docs" },

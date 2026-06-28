@@ -11,7 +11,7 @@
  *
  * DESIGN:
  * - Uses git ls-files to get tracked files (ignores untracked/gitignored)
- * - Respects KAI_ONLY_FILES exclusions from sync-to-kai.sh
+ * - Respects private/kai-only paths from scripts/sync-manifest.json
  * - Compares file hashes for content drift detection
  * - Output: summary to stdout (parseable for CI)
  *
@@ -24,59 +24,39 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
 import { execSync } from 'child_process';
+import { matchesSyncPattern } from './lib/sync-classification';
 
-const PAI_DIR = join(process.env.HOME!, 'Projects', 'kai');
+const PAI_DIR = process.env.PAI_DIR || (
+  existsSync(join(process.cwd(), 'scripts', 'sync-manifest.json'))
+    ? process.cwd()
+    : join(process.env.HOME!, 'Projects', 'kai')
+);
 const KAI_DIR = process.env.KAI_DIR || join(process.env.HOME!, 'Projects', 'kai');
 
-// Files that exist ONLY in kai (should not be synced from kai)
-const KAI_ONLY_FILES = [
-  '.github/workflows/test.yml',
-  'CHANGELOG.md',
-  'CONTRIBUTING.md',
-  'LICENSE',
-  'LICENSE-UPSTREAM',
-  'config/domains.jsonc',
-  'config/identity.jsonc.template',
-  'config/user-hooks.jsonc.example',
-  'docs/CUSTOMIZATION.md',
-  'docs/architecture/archive/',
-  'docs/planning/deliberate-research-mode.md',
-  'get-kai.sh',
-  'PAI/CONTEXT_ROUTING.md',
-  'README.md',
-  'docs/WHATS-DIFFERENT.md',
-  'hooks/user/',
-  'MEMORY/KNOWLEDGE/.gitkeep',
-  'MEMORY/LEARNING/.gitkeep',
-  'MEMORY/RELATIONSHIP/.gitkeep',
-  'MEMORY/SECURITY/.gitkeep',
-  'MEMORY/STAGING/.gitkeep',
-  'MEMORY/STATE/.gitkeep',
-  'MEMORY/WORK/.gitkeep',
-  'tests/ConfigLoader.test.ts',
-  'tests/Installer.test.ts',
-  'tests/OncePerSession.test.ts',
-];
+type SyncManifest = {
+  private: string[];
+  kai_only: string[];
+  public: string[];
+  stale_kai_paths?: string[];
+};
 
-// Files excluded from sync (kai only, should NOT appear in kai)
-const PAI_ONLY_FILES = [
-  'CLAUDE.md',
-  'VERSION',
-  'config/identity.jsonc',
-  'docs/planning/GIT-HISTORY-REWRITE.md',
-  'docs/planning/PAI-5.0.0-PLAN.md',
-  'docs/planning/RELEASE-BLOCKERS.md',
-  '.github/workflows/test.yml',
-  'hooks/archive/',
-  'Plans/',
-  'skills/KAIUpgrade/',
-  'scripts/sync-to-kai.sh',
-  'scripts/verify-release.sh',
-  'scripts/kai-release-audit.ts',
-  'scripts/board-config.json',
-  'USER/',
-  '.claude/',
-];
+function loadSyncManifest(paiDir = PAI_DIR): SyncManifest {
+  const manifestPath = join(paiDir, 'scripts', 'sync-manifest.json');
+  if (!existsSync(manifestPath)) {
+    console.error(`Error: sync manifest not found: ${manifestPath}`);
+    process.exit(1);
+  }
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as SyncManifest;
+    for (const key of ['private', 'kai_only', 'public'] as const) {
+      if (!Array.isArray(manifest[key])) throw new Error(`field "${key}" must be an array`);
+    }
+    return manifest;
+  } catch (err) {
+    console.error(`Error: could not parse sync manifest: ${err}`);
+    process.exit(1);
+  }
+}
 
 function getTrackedFiles(repoDir: string): string[] {
   try {
@@ -98,12 +78,7 @@ function hashFile(filePath: string): string {
 }
 
 function isExcluded(file: string, patterns: string[]): boolean {
-  return patterns.some(pattern => {
-    if (pattern.endsWith('/')) {
-      return file.startsWith(pattern);
-    }
-    return file === pattern || file.startsWith(pattern + '/');
-  });
+  return patterns.some(pattern => matchesSyncPattern(file, pattern));
 }
 
 function main() {
@@ -123,6 +98,8 @@ function main() {
   console.log(`PAI: ${PAI_DIR}`);
   console.log(`KAI: ${KAI_DIR}\n`);
 
+  const manifest = loadSyncManifest(PAI_DIR);
+
   // Get tracked files
   const paiFiles = getTrackedFiles(PAI_DIR);
   const kaiFiles = getTrackedFiles(KAI_DIR);
@@ -130,8 +107,8 @@ function main() {
   console.log(`Files tracked: PAI=${paiFiles.length}, KAI=${kaiFiles.length}\n`);
 
   // Filter out excluded files
-  const sharedPaiFiles = paiFiles.filter(f => !isExcluded(f, PAI_ONLY_FILES));
-  const sharedKaiFiles = kaiFiles.filter(f => !isExcluded(f, KAI_ONLY_FILES));
+  const sharedPaiFiles = paiFiles.filter(f => !isExcluded(f, manifest.private));
+  const sharedKaiFiles = kaiFiles.filter(f => !isExcluded(f, manifest.kai_only));
 
   const paiSet = new Set(sharedPaiFiles);
   const kaiSet = new Set(sharedKaiFiles);
@@ -147,7 +124,7 @@ function main() {
   // Files in KAI but not in PAI (unexpected)
   const extraInKai: string[] = [];
   for (const file of kaiSet) {
-    if (!paiSet.has(file) && !isExcluded(file, KAI_ONLY_FILES)) {
+    if (!paiSet.has(file) && !isExcluded(file, manifest.kai_only)) {
       extraInKai.push(file);
     }
   }
@@ -228,3 +205,5 @@ function main() {
 if (import.meta.main) {
   main();
 }
+
+export { isExcluded, loadSyncManifest };
