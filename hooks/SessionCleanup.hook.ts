@@ -46,6 +46,10 @@ const MEMORY_DIR = paiPath('MEMORY');
 const STATE_DIR = paiPath('MEMORY', 'STATE');
 const WORK_DIR = paiPath('MEMORY', 'WORK');
 
+export function autoConsolidateEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return /^(1|true|yes)$/i.test(env.PAI_AUTO_CONSOLIDATE || '');
+}
+
 // Session-scoped state file lookup with legacy fallback
 function findStateFile(sessionId?: string): string | null {
   if (sessionId) {
@@ -528,6 +532,8 @@ export function maybeRunSynthesisBackstop(): void {
  */
 export function maybeAutoConsolidate(): void {
   try {
+    if (!autoConsolidateEnabled()) return;
+
     const consolidatePath = join(paiPath(), 'PAI', 'Tools', 'AutoConsolidate.ts');
     if (!existsSync(consolidatePath)) return;
 

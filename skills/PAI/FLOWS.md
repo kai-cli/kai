@@ -1,6 +1,6 @@
 # Flows
 
-> **KAI 7.4.2** — Stable release.
+> **KAI 7.7.0** — Stable release.
 
 **Connecting Sources to Pipelines on a Schedule**
 

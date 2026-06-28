@@ -24,6 +24,8 @@
  * - A completion signal ("completed", "done", "finished", "passing")
  * - Any non-trivial content (>100 chars)
  */
+import { agentUpdateStatus } from './lib/algorithm-state';
+import { emitMemoryTelemetry } from './lib/memory-telemetry';
 
 interface HookInput {
   session_id?: string;
@@ -31,6 +33,7 @@ interface HookInput {
   teammate_name?: string;
   team_name?: string;
   last_message?: string; // Legacy/future optional field; current Claude payload does not include it.
+  cwd?: string;
 }
 
 async function main() {
@@ -64,6 +67,7 @@ async function main() {
 
     // If no message content is available, allow idle; current Claude payloads do not include it.
     if (!last_message) {
+      emitIdle(input, false);
       process.exit(0);
     }
 
@@ -90,6 +94,7 @@ async function main() {
     }
 
     // Allow idle
+    emitIdle(input, true);
     process.exit(0);
   } catch (error) {
     // Never block on hook error
@@ -101,3 +106,21 @@ async function main() {
 main().catch((err) => { console.error(`[TeammateIdle] Error:`, err); process.exit(0); });
 
 export {};
+
+function emitIdle(input: HookInput, hadMessage: boolean): void {
+  emitMemoryTelemetry('agent.idle', {
+    session_id: input.session_id,
+    project: projectName(input),
+    teammate_name: input.teammate_name,
+    team_name: input.team_name,
+    had_message: hadMessage,
+  });
+  if (input.session_id && input.teammate_name) {
+    agentUpdateStatus(input.session_id, input.teammate_name, 'idle');
+  }
+}
+
+function projectName(input: HookInput): string {
+  const dir = process.env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd();
+  return dir.split('/').filter(Boolean).pop() ?? 'unknown';
+}

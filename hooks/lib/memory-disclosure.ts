@@ -34,6 +34,16 @@ function timelinePath(paiDir: string): string {
   return join(paiDir, 'MEMORY', 'STATE', 'timeline.jsonl');
 }
 
+function currentProjectMemoryPath(paiDir: string, filename: string): string {
+  const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
+  if (claudeProjectDir) {
+    const encoded = encodeProjectDir(claudeProjectDir);
+    const projectPath = join(paiDir, 'projects', encoded, 'memory', filename);
+    if (existsSync(projectPath)) return projectPath;
+  }
+  return join(paiDir, filename);
+}
+
 export function loadMeta(paiDir: string): MemoryMetaEntry[] {
   const path = metaPath(paiDir);
   if (!existsSync(path)) return [];
@@ -81,16 +91,7 @@ export function applyAging(entries: MemoryMetaEntry[]): MemoryMetaEntry[] {
  * Updates last_accessed in metadata for every surfaced entry.
  */
 export function loadIndexMemory(paiDir: string): string {
-  // Find MEMORY.md via project dir convention (Claude Code encodes paths as -Users-x-Projects-y)
-  const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
-  let mdPath = '';
-  if (claudeProjectDir) {
-    const encoded = encodeProjectDir(claudeProjectDir);
-    const projectMemPath = join(paiDir, 'projects', encoded, 'memory', 'MEMORY.md');
-    if (existsSync(projectMemPath)) mdPath = projectMemPath;
-  }
-  if (!mdPath) mdPath = join(paiDir, 'MEMORY.md');
-  if (!existsSync(mdPath)) return '';
+  const mdPath = currentProjectMemoryPath(paiDir, 'MEMORY.md');
   if (!existsSync(mdPath)) return '';
 
   try {
@@ -101,6 +102,32 @@ export function loadIndexMemory(paiDir: string): string {
     updateIndexAccess(paiDir, indexLines);
 
     return indexLines.join('\n');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Load the latest promoted insight sections for the current project.
+ *
+ * These are consolidated lessons written by `pai curate promote`; they are not
+ * guaranteed to fit in the first 50 lines of MEMORY.md, so they get a compact
+ * recall path here.
+ */
+export function loadPromotedInsights(paiDir: string, maxSections = 3): string {
+  const path = currentProjectMemoryPath(paiDir, 'insights_promoted.md');
+  if (!existsSync(path)) return '';
+
+  try {
+    const content = readFileSync(path, 'utf-8');
+    const sections = content
+      .split(/\n(?=## )/)
+      .filter(section => section.startsWith('## '))
+      .slice(-maxSections)
+      .map(section => section.trim());
+
+    if (sections.length === 0) return '';
+    return `## Promoted Insights (recent)\n\n${sections.join('\n\n')}`;
   } catch {
     return '';
   }

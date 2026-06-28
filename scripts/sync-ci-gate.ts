@@ -11,7 +11,7 @@
  *   bun scripts/sync-ci-gate.ts --strict     # also fail on dependency-closure warnings
  *
  * DESIGN:
- * 1. Parse EXCLUDE_PATHS and KAI_ONLY_FILES from sync-to-kai.sh
+ * 1. Load private/kai-only/public classification from scripts/sync-manifest.json
  * 2. Classify all tracked files into private/kai-only/public
  * 3. Scan public files for PII patterns (`--warn-pii` keeps scrub-covered findings non-blocking)
  * 4. Verify manifest counts align with filesystem
@@ -26,6 +26,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { reconcile } from './reconcile-wiring';
+import { classifyBySyncManifest, matchesSyncPattern } from './lib/sync-classification';
 
 const RED = '\x1b[0;31m';
 const GREEN = '\x1b[0;32m';
@@ -42,9 +43,10 @@ const STRICT = process.argv.includes('--strict');
 const WARN_PII = process.argv.includes('--warn-pii');
 
 type SyncManifest = {
-  private?: string[];
-  kai_only?: string[];
-  public?: string[];
+  private: string[];
+  kai_only: string[];
+  public: string[];
+  stale_kai_paths?: string[];
 };
 
 // Get PAI_DIR with fallback chain (evaluated lazily to avoid test environment issues)
@@ -72,19 +74,6 @@ function getKaiDir(): string {
   return process.env.KAI_DIR || join(process.env.HOME!, 'Projects', 'kai');
 }
 
-function isPublicKaiRepo(root: string): boolean {
-  try {
-    const remote = execSync('git remote get-url origin', {
-      cwd: root,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    return remote.includes('kai-cli/kai');
-  } catch {
-    return false;
-  }
-}
-
 // PII patterns loaded from external file (excluded from kai sync to avoid leaking identifiers)
 function loadPIIPatterns(paiDir: string): string[] {
   const patternsPath = join(paiDir, 'scripts', 'pii-patterns.json');
@@ -107,66 +96,41 @@ function getPIIPatterns(paiDir: string): string[] {
   return _piiPatterns;
 }
 
-// Parse EXCLUDE_PATHS from sync-to-kai.sh
-function parseExcludePaths(paiDir: string = getPaiDir()): string[] {
-  const syncScript = join(paiDir, 'scripts', 'sync-to-kai.sh');
-  if (!existsSync(syncScript)) {
-    fail(`sync-to-kai.sh not found at ${syncScript} (PAI_DIR=${paiDir})`);
-    process.exit(1);
-  }
-
-  const content = readFileSync(syncScript, 'utf-8');
-  // Match to the array-closing ')' at START of a line — a ')' inside a comment/value (e.g. a
-  // parenthetical in an inline # comment) must NOT prematurely terminate the capture.
-  const match = content.match(/EXCLUDE_PATHS=\(([\s\S]*?)\n\)/);
-  if (!match) {
-    fail('Could not parse EXCLUDE_PATHS from sync-to-kai.sh');
-    process.exit(1);
-  }
-
-  // Parse bash array — each line contains a path (possibly quoted)
-  const paths: string[] = [];
-  const lines = match[1].split('\n');
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    // Remove quotes and trailing comments
-    const cleaned = trimmed.replace(/^["']|["']$/g, '').split('#')[0].trim();
-    if (cleaned) paths.push(cleaned);
-  }
-  return paths;
-}
-
-// Parse KAI_ONLY_FILES from sync-to-kai.sh
-function parseKaiOnlyFiles(paiDir: string = getPaiDir()): string[] {
-  const syncScript = join(paiDir, 'scripts', 'sync-to-kai.sh');
-  const content = readFileSync(syncScript, 'utf-8');
-  const match = content.match(/KAI_ONLY_FILES=\(([\s\S]*?)\n\)/);
-  if (!match) {
-    fail('Could not parse KAI_ONLY_FILES from sync-to-kai.sh');
-    process.exit(1);
-  }
-
-  const paths: string[] = [];
-  const lines = match[1].split('\n');
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const cleaned = trimmed.replace(/^["']|["']$/g, '').split('#')[0].trim();
-    if (cleaned) paths.push(cleaned);
-  }
-  return paths;
-}
-
-function loadSyncManifest(paiDir: string = getPaiDir()): SyncManifest | null {
+function loadSyncManifest(paiDir: string = getPaiDir()): SyncManifest {
   const manifestPath = join(paiDir, 'scripts', 'sync-manifest.json');
-  if (!existsSync(manifestPath)) return null;
-  try {
-    return JSON.parse(readFileSync(manifestPath, 'utf-8')) as SyncManifest;
-  } catch (err) {
-    warn(`Could not parse scripts/sync-manifest.json: ${err}`);
-    return null;
+  if (!existsSync(manifestPath)) {
+    fail(`scripts/sync-manifest.json not found at ${manifestPath}`);
+    process.exit(1);
   }
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as SyncManifest;
+    const errors: string[] = [];
+    for (const key of ['private', 'kai_only', 'public'] as const) {
+      if (!Array.isArray(manifest[key]) || manifest[key].length === 0) {
+        errors.push(`sync-manifest.json field "${key}" must be a non-empty array`);
+      }
+    }
+    if (manifest.stale_kai_paths !== undefined && !Array.isArray(manifest.stale_kai_paths)) {
+      errors.push('sync-manifest.json field "stale_kai_paths" must be an array when present');
+    }
+    if (errors.length > 0) {
+      for (const err of errors) fail(err);
+      process.exit(1);
+    }
+    return manifest;
+  } catch (err) {
+    fail(`Could not parse scripts/sync-manifest.json: ${err}`);
+    process.exit(1);
+  }
+}
+
+// Compatibility wrappers retained for tests/callers; source of truth is sync-manifest.json.
+function parseExcludePaths(paiDir: string = getPaiDir()): string[] {
+  return loadSyncManifest(paiDir).private;
+}
+
+function parseKaiOnlyFiles(paiDir: string = getPaiDir()): string[] {
+  return loadSyncManifest(paiDir).kai_only;
 }
 
 // Get all tracked files from git
@@ -183,37 +147,6 @@ function getTrackedFiles(paiDir: string = getPaiDir()): string[] {
   }
 }
 
-// Check if file path matches pattern (with glob support for directories)
-function matchesPattern(filePath: string, pattern: string): boolean {
-  // A leading '/' in an rsync filter anchors the pattern to the transfer root.
-  // classifyFile works with root-relative paths, so a root-anchored pattern is
-  // just an exact-from-root match — strip the anchor and fall through to the
-  // exact/prefix logic below (which is already root-relative, not depth-matching).
-  if (pattern.startsWith('/')) pattern = pattern.slice(1);
-  if (pattern.endsWith('/')) {
-    return filePath.startsWith(pattern);
-  }
-  if (pattern.includes('*')) {
-    // Simple glob: "foo/*.md" or "*.ext"
-    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-    return regex.test(filePath);
-  }
-  return filePath === pattern || filePath.startsWith(pattern + '/');
-}
-
-function classifyBySyncManifest(filePath: string, manifest: SyncManifest): 'private' | 'kai-only' | 'public' | 'unclassified' {
-  for (const pattern of manifest.private ?? []) {
-    if (matchesPattern(filePath, pattern)) return 'private';
-  }
-  for (const pattern of manifest.kai_only ?? []) {
-    if (matchesPattern(filePath, pattern)) return 'kai-only';
-  }
-  for (const pattern of manifest.public ?? []) {
-    if (matchesPattern(filePath, pattern)) return 'public';
-  }
-  return 'unclassified';
-}
-
 // Classify file into private/kai-only/public
 function classifyFile(
   filePath: string,
@@ -222,14 +155,14 @@ function classifyFile(
 ): 'private' | 'kai-only' | 'public' {
   // Check if excluded from sync (kai only)
   for (const pattern of excludePaths) {
-    if (matchesPattern(filePath, pattern)) {
+    if (matchesSyncPattern(filePath, pattern)) {
       return 'private';
     }
   }
 
   // Check if kai-only (won't be synced, but exists in kai)
   for (const pattern of kaiOnlyFiles) {
-    if (matchesPattern(filePath, pattern)) {
+    if (matchesSyncPattern(filePath, pattern)) {
       return 'kai-only';
     }
   }
@@ -318,10 +251,6 @@ function resolveLocalImport(fromFile: string, specifier: string, paiDir: string)
 
 function runDependencyClosureReport(paiDir: string): { errors: string[]; warnings: string[] } {
   const manifest = loadSyncManifest(paiDir);
-  if (!manifest) {
-    return { errors: [], warnings: ['scripts/sync-manifest.json missing; dependency closure report skipped'] };
-  }
-
   const roots = ['hooks', 'PAI', 'scripts', 'agents', 'tests']
     .map((root) => join(paiDir, root))
     .filter((root) => existsSync(root));
@@ -397,7 +326,6 @@ function runDependencyClosureReport(paiDir: string): { errors: string[]; warning
 function main() {
   const PAI_DIR = getPaiDir();
   const KAI_DIR = getKaiDir();
-  const syncScript = join(PAI_DIR, 'scripts', 'sync-to-kai.sh');
 
   console.log('\n=== Sync CI Gate ===');
   console.log(`PAI: ${PAI_DIR}`);
@@ -408,40 +336,12 @@ function main() {
     process.exit(1);
   }
 
-  if (!existsSync(syncScript) && isPublicKaiRepo(PAI_DIR)) {
-    info('Public KAI checkout detected; sync-to-kai.sh is intentionally not shipped');
-    const manifestPath = join(PAI_DIR, 'manifest.json');
-    const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf-8')) : null;
-    if (!manifest?.counts) {
-      fail('manifest.json missing product counts');
-      process.exit(1);
-    }
-    const actualSkills = execSync(
-      "find skills -name SKILL.md -not -path '*/.archive/*' | wc -l | tr -d ' '",
-      { cwd: PAI_DIR, encoding: 'utf-8' }
-    ).trim();
-    const actualHooks = execSync(
-      "find hooks -maxdepth 1 -name '*.hook.ts' | wc -l | tr -d ' '",
-      { cwd: PAI_DIR, encoding: 'utf-8' }
-    ).trim();
-    const actualAgents = execSync(
-      "find agents -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' '",
-      { cwd: PAI_DIR, encoding: 'utf-8' }
-    ).trim();
-    if (String(manifest.counts.skills) !== actualSkills || String(manifest.counts.hooks) !== actualHooks || String(manifest.counts.agents) !== actualAgents) {
-      fail(`Manifest counts do not match filesystem (${actualSkills} skills, ${actualHooks} hooks, ${actualAgents} agents)`);
-      process.exit(1);
-    }
-    pass(`Public KAI manifest counts match filesystem (${actualSkills} skills, ${actualHooks} hooks, ${actualAgents} agents)`);
-    console.log('\n✅ Public KAI sync readiness gate skipped private sync checks\n');
-    process.exit(0);
-  }
-
-  // Step 1: Parse sync rules
-  info('Parsing sync rules from sync-to-kai.sh');
+  // Step 1: Load sync rules
+  info('Loading sync rules from scripts/sync-manifest.json');
   const excludePaths = parseExcludePaths(PAI_DIR);
   const kaiOnlyFiles = parseKaiOnlyFiles(PAI_DIR);
-  pass(`Loaded ${excludePaths.length} exclude patterns, ${kaiOnlyFiles.length} kai-only patterns`);
+  const syncManifest = loadSyncManifest(PAI_DIR);
+  pass(`Loaded ${excludePaths.length} private patterns, ${kaiOnlyFiles.length} kai-only patterns, ${syncManifest.public.length} public patterns`);
 
   // Step 2: Get tracked files
   info('Scanning tracked files');

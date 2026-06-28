@@ -407,6 +407,22 @@ export function agentAdd(sessionId: string, agent: { name: string; agentType: st
 }
 
 /**
+ * Called by native team lifecycle hooks when a known teammate transitions state.
+ * Matching is intentionally exact to avoid attributing a team event to the wrong agent.
+ */
+export function agentUpdateStatus(sessionId: string, agentName: string, status: AlgorithmAgent['status']): boolean {
+  const state = readState(sessionId);
+  if (!state) return false;
+
+  const agent = state.agents.find(a => a.name === agentName);
+  if (!agent) return false;
+
+  agent.status = status;
+  writeState(state);
+  return true;
+}
+
+/**
  * Called by Stop handler after response is complete.
  * Enriches state with data extracted from the full transcript.
  *

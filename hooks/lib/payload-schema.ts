@@ -15,6 +15,7 @@ export type HookEventName =
   | 'PreToolUse'
   | 'PostToolUse'
   | 'PreCompact'
+  | 'InstructionsLoaded'
   | 'UserPromptExpansion'
   | 'ConfigChange'
   | 'WorktreeRemove'
@@ -72,6 +73,15 @@ export const PAYLOAD_SCHEMAS: Record<HookEventName, FieldSpec[]> = {
     ...BASE,
     { field: 'trigger', type: 'string', required: false },          // "manual" | "auto"
     { field: 'custom_instructions', type: 'string', required: false },
+  ],
+  InstructionsLoaded: [
+    ...BASE,
+    { field: 'path', type: 'string', required: false },
+    { field: 'file_path', type: 'string', required: false },
+    { field: 'memory_type', type: 'string', required: false },
+    { field: 'reason', type: 'string', required: false },
+    { field: 'source', type: 'string', required: false },
+    { field: 'globs', type: 'object', required: false },
   ],
   UserPromptExpansion: [
     ...BASE,

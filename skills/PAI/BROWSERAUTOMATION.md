@@ -1,6 +1,6 @@
 # Browser Automation
 
-> **KAI 7.4.2** — Stable release.
+> **KAI 7.7.0** — Stable release.
 
 **Debug-first browser automation with always-on visibility.**
 

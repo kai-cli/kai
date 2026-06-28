@@ -30,7 +30,7 @@ const TEST_DIR = join(PAI_DIR, 'tests', '.sync-gate-test-tmp');
 const hasSyncScript = existsSync(join(PAI_DIR, 'scripts', 'sync-to-kai.sh'));
 
 describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
-  test('parses EXCLUDE_PATHS from sync-to-kai.sh', () => {
+  test('loads private paths from sync-manifest.json', () => {
     const excludePaths = parseExcludePaths(PAI_DIR);
     expect(excludePaths.length).toBeGreaterThan(0);
     // /CLAUDE.md is root-anchored (leading '/') so the bare basename exclude
@@ -38,14 +38,26 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
     expect(excludePaths).toContain('/CLAUDE.md');
     expect(excludePaths).toContain('VERSION');
     expect(excludePaths).toContain('config/identity.jsonc');
+    expect(excludePaths).toContain('scripts/pii-patterns.json');
+    expect(excludePaths).toContain('devices.json');
   });
 
-  test('parses KAI_ONLY_FILES from sync-to-kai.sh', () => {
+  test('loads kai-only paths from sync-manifest.json', () => {
     const kaiOnlyFiles = parseKaiOnlyFiles(PAI_DIR);
     expect(kaiOnlyFiles.length).toBeGreaterThan(0);
     expect(kaiOnlyFiles).toContain('CHANGELOG.md');
     expect(kaiOnlyFiles).toContain('LICENSE');
     expect(kaiOnlyFiles).toContain('get-kai.sh');
+  });
+
+  test('sync-to-kai consumes manifest instead of owning populated classification arrays', () => {
+    const sync = require('fs').readFileSync(join(PAI_DIR, 'scripts', 'sync-to-kai.sh'), 'utf-8');
+    expect(sync).toContain('SYNC_MANIFEST_FILE="$PAI_DIR/scripts/sync-manifest.json"');
+    expect(sync).toContain("jq -r '.private[]'");
+    expect(sync).toContain("jq -r '.kai_only[]'");
+    expect(sync).toContain("jq -r '.stale_kai_paths[]?'");
+    expect(sync).not.toMatch(/EXCLUDE_PATHS=\(\s*\n\s*\/CLAUDE\.md/);
+    expect(sync).not.toMatch(/KAI_ONLY_FILES=\(\s*\n\s*\.github\/workflows\/test\.yml/);
   });
 
   test('classifies file in EXCLUDE_PATHS as private', () => {
@@ -270,5 +282,15 @@ describe.skipIf(!hasSyncScript)('SyncCIGate', () => {
     // Test glob pattern for MEMORY/STAGING/2026-*
     const result = classifyFile('MEMORY/STAGING/2026-05-27-session.json', excludePaths, kaiOnlyFiles);
     expect(result).toBe('private');
+  });
+
+  test('manifest path metacharacters are literal, not regex syntax', () => {
+    expect(classifyFile('docs/v1.0.md', ['docs/v1.0.md'], [])).toBe('private');
+    expect(classifyFile('docs/v1x0.md', ['docs/v1.0.md'], [])).toBe('public');
+  });
+
+  test('globstar patterns match nested paths consistently', () => {
+    expect(classifyFile('memcarry/packages/lib/src/w6.test.ts', ['memcarry/**/*.test.ts'], [])).toBe('private');
+    expect(classifyFile('memcarry/packages/lib/src/w6.ts', ['memcarry/**/*.test.ts'], [])).toBe('public');
   });
 });

@@ -27,6 +27,7 @@ import { rankEntries, type MemoryEntry as ScorerEntry } from './lib/memory-score
 import { isCrossProjectBodyInjectionEnabled } from './lib/config-loader';
 import { emitMemoryTelemetry } from './lib/memory-telemetry';
 import { recordSurfaced } from './lib/recall-hit-ledger';
+import { redactSecrets } from './lib/redact';
 
 interface MemoryEntry {
   title: string;
@@ -356,6 +357,11 @@ function lookupCrossProject(promptKeywords: string[], currentMemDir: string): st
 /**
  * Find the best-matching memory file in a cross-project and return its body (capped).
  */
+export function sanitizeCrossProjectBody(body: string, maxChars = 1000): string {
+  const redacted = redactSecrets(body);
+  return redacted.length > maxChars ? redacted.substring(0, maxChars) + '…' : redacted;
+}
+
 function findAndReadBestMatch(projectSlug: string, promptKeywords: string[], projectsBase: string): string | null {
   // Find the project directory
   let projMemDir: string | null = null;
@@ -401,8 +407,8 @@ function findAndReadBestMatch(projectSlug: string, promptKeywords: string[], pro
     const secondDash = raw.indexOf('---', 4);
     const body = secondDash > 0 ? raw.substring(secondDash + 4).trim() : raw.trim();
 
-    // Cap at 1000 chars to control context budget
-    return body.length > 1000 ? body.substring(0, 1000) + '…' : body;
+    // Cap after redaction so credential-shaped content never enters model context.
+    return sanitizeCrossProjectBody(body);
   } catch { return null; }
 }
 

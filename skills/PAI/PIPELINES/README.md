@@ -1,6 +1,6 @@
 # PAI Pipelines
 
-> **KAI 7.4.2** — Stable release.
+> **KAI 7.7.0** — Stable release.
 
 Pipelines chain actions together. A pipeline is just a list of actions executed in order using the **pipe model** — the output of each action becomes the input of the next.
 

@@ -6,6 +6,7 @@
  */
 import { describe, test, expect } from 'bun:test';
 import { redactSecrets, containsSecret } from '../hooks/lib/redact';
+import { sanitizeCrossProjectBody } from '../hooks/MemoryRecall.hook';
 
 describe('redactSecrets', () => {
   test('masks an AWS access key with a marker', () => {
@@ -51,5 +52,15 @@ describe('config gate defaults (deny-by-default)', () => {
     const { isKnowledgeRedactionEnabled, clearConfigCache } = await import('../hooks/lib/config-loader');
     clearConfigCache();
     expect(isKnowledgeRedactionEnabled()).toBe(true);
+  });
+});
+
+describe('cross-project body redaction', () => {
+  test('redacts credential-shaped content before body injection', () => {
+    const token = `ghp_${'123456789012345678901234567890123456'}`;
+    const out = sanitizeCrossProjectBody(`Use token ${token} in the other project.`);
+
+    expect(out).not.toContain(token);
+    expect(out).toContain('[REDACTED:');
   });
 });

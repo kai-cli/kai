@@ -474,6 +474,8 @@ function cleanExpiredTokens(): void {
 }
 
 async function main() {
+  let command = '';
+  let cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
   try {
     const raw = await Promise.race([
       Bun.stdin.text(),
@@ -481,8 +483,8 @@ async function main() {
     ]).catch(() => '{}');
 
     const input: HookInput = JSON.parse(raw || '{}');
-    const command = input.tool_input?.command || '';
-    const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
+    command = input.tool_input?.command || '';
+    cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
     if (!command) {
       console.log(JSON.stringify({ continue: true }));
@@ -504,6 +506,10 @@ async function main() {
       // Not a GitHub write operation — allow immediately
       console.log(JSON.stringify({ continue: true }));
       process.exit(0);
+    }
+
+    if (process.env.PAI_GITHUB_WRITE_GUARD_TEST_THROW_AFTER_DETECT === '1') {
+      throw new Error('forced guard error after write detection');
     }
 
     const adaBranch = checkAdaBranch(command, cwd);
@@ -572,7 +578,16 @@ async function main() {
     process.exit(0);
   } catch (err) {
     console.error(`[GitHubWriteGuard] Error: ${err}`);
-    // Fail-open: don't block operations on hook errors
+    // Fail closed for detected GitHub writes: owner-access mutations must not pass just because
+    // a later guard check failed. Unknown/read-only commands still fail open to avoid wedging tooling.
+    const writeInfo = command ? isGitHubWriteCommand(command) : { write: false, description: '' };
+    if (writeInfo.write) {
+      console.log(JSON.stringify({
+        decision: 'block',
+        reason: `🔒 GITHUB WRITE BLOCKED: guard error while validating ${writeInfo.description}. Fail-closed; rerun after fixing the hook error.`,
+      }));
+      process.exit(0);
+    }
     console.log(JSON.stringify({ continue: true }));
     process.exit(0);
   }

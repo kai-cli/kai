@@ -242,6 +242,28 @@ describe('UserPromptExpansion', () => {
   });
 });
 
+// ── InstructionsLoaded ───────────────────────────────────────────────────────
+
+describe('InstructionsLoaded', () => {
+  test('valid native instruction-load payload', () => {
+    const r = validatePayload({
+      ...base('InstructionsLoaded'),
+      file_path: '/tmp/project/CLAUDE.md',
+      memory_type: 'project',
+      reason: 'changed',
+      source: 'native',
+      globs: { matched: ['CLAUDE.md'] },
+    });
+    expect(r.valid).toBe(true);
+    expect(r.missing).toEqual([]);
+  });
+
+  test('metadata fields are optional so telemetry can no-op fail-open', () => {
+    const r = validatePayload(base('InstructionsLoaded'));
+    expect(r.valid).toBe(true);
+  });
+});
+
 // ── ValidationResult shape ────────────────────────────────────────────────────
 
 describe('result shape', () => {

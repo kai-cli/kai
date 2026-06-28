@@ -13,14 +13,19 @@
  * - run_in_background: true → PASS (correct usage)
  * - run_in_background: false/missing AND model is "haiku" → PASS (fast-tier inline)
  * - run_in_background: false/missing AND subagent_type is "Explore" → PASS (quick lookups)
- * - All other cases → WARNING (inject system-reminder)
+ * - All other foreground cases → WARNING (inject system-reminder)
+ * - Non-lean Agent prompts without the KAI context handoff envelope → WARNING
  *
  * PERFORMANCE:
  * - Non-blocking: Yes (warning only, never blocks)
  * - Typical execution: <10ms (pure JSON parsing, no I/O)
  */
+import { agentCallId, decideAgentContextHandoff, missingAgentContextMessage } from './lib/agent-context-handoff';
+import { emitMemoryTelemetry } from './lib/memory-telemetry';
 
 interface HookInput {
+  session_id?: string;
+  cwd?: string;
   tool_name: string;
   tool_input: {
     run_in_background?: boolean;
@@ -58,33 +63,53 @@ async function main() {
     const data: HookInput = JSON.parse(input);
     const toolInput = data.tool_input || {};
 
-    // Already using background — correct usage, pass silently
+    const reminders: string[] = [];
+    const contextReminder = missingAgentContextMessage(toolInput);
+    if (contextReminder) reminders.push(contextReminder);
+    const contextDecision = decideAgentContextHandoff(toolInput);
+    emitMemoryTelemetry('agent.spawn', {
+      session_id: data.session_id,
+      project: projectName(data),
+      agent_call_id: agentCallId(toolInput, data.session_id),
+      agent_type: toolInput.subagent_type || '',
+      description: toolInput.description || '',
+      run_in_background: toolInput.run_in_background === true,
+      context_tier: contextDecision.tier,
+      context_handoff_present: contextDecision.hasHandoff,
+      context_handoff_missing: contextDecision.tier !== 'none' && !contextDecision.hasHandoff,
+    });
+
+    // Already using background — correct usage for execution mode, but still validate context handoff.
     if (toolInput.run_in_background === true) {
+      if (reminders.length > 0) console.log(reminders.join('\n\n'));
       process.exit(0);
     }
 
     // Fast-tier agents don't need background (quick lookups)
     const agentType = toolInput.subagent_type || '';
     if (FAST_AGENT_TYPES.includes(agentType)) {
+      if (reminders.length > 0) console.log(reminders.join('\n\n'));
       process.exit(0);
     }
 
     // Haiku model indicates fast-tier — inline is acceptable
     const model = toolInput.model || '';
     if (FAST_MODELS.includes(model)) {
+      if (reminders.length > 0) console.log(reminders.join('\n\n'));
       process.exit(0);
     }
 
     // Check if prompt contains ## Scope with FAST timing
     const prompt = toolInput.prompt || '';
     if (/##\s*Scope[\s\S]*?Timing:\s*FAST/i.test(prompt)) {
+      if (reminders.length > 0) console.log(reminders.join('\n\n'));
       process.exit(0);
     }
 
     // VIOLATION: Non-fast agent spawned without run_in_background: true
     const desc = toolInput.description || agentType || 'unknown';
 
-    console.log(`<system-reminder>
+    reminders.push(`<system-reminder>
 WARNING: FOREGROUND AGENT DETECTED — "${desc}" (${agentType})
 run_in_background is NOT set to true. This will BLOCK the user interface.
 
@@ -99,6 +124,7 @@ The Algorithm requires ALL non-fast agents to run in background:
 Only exceptions: Explore agents, haiku-model agents, and agents with ## Scope FAST.
 </system-reminder>`);
 
+    console.log(reminders.join('\n\n'));
     process.exit(0);
   } catch (err) {
     // On any error, pass silently — don't block agent execution
@@ -109,3 +135,8 @@ Only exceptions: Explore agents, haiku-model agents, and agents with ## Scope FA
 main().catch((err) => { console.error(`[AgentExecutionGuard] Error:`, err); process.exit(0); });
 
 export {};
+
+function projectName(input: HookInput): string {
+  const dir = process.env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd();
+  return dir.split('/').filter(Boolean).pop() ?? 'unknown';
+}

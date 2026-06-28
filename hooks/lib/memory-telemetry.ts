@@ -17,14 +17,16 @@
  *  - recall.latency / capture.latency → wall-time of those paths (ms). Health + revert signal.
  *  - coherence.drift               → the D2 proceed-to-5 TRIGGER metric: facts diverging between the
  *    PAI .md store and the atom store (correctness drift; see plan §6/§9 — sufficient-not-necessary).
- *  - agent.return / agent.checkpoint → Phase-0 capture-loss-guard signal (subagent returned; parent
- *    prompted to persist).
+ *  - agent.spawn / agent.return / agent.checkpoint → Agent resilience + Phase-0 capture-loss-guard
+ *    signal (subagent spawned/returned; parent prompted to persist).
+ *  - agent.task_completed / agent.idle → native team-event observability for delegated work recovery.
  *  - knowledge.sync                → KnowledgeSync run/domain cost baseline: mode, status, facts,
  *    output size, and wall time. Observability only; must not change SessionEnd behavior.
  *  - session_end.composite         → SessionEndComposite gate observability: metrics, selected/skipped
  *    hooks, succeeded/failed counts, and wall time. This explains why KnowledgeSync did or did not run.
  *  - turn.prompt                   → cheap UserPromptSubmit heartbeat. Metadata only; proves prompt
  *    telemetry is wired and gives offline reports a per-turn anchor before model response latency.
+ *  - instructions.loaded           → native instruction-load event: which instruction source changed and why.
  */
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -36,11 +38,15 @@ export type MemoryTelemetryType =
   | 'recall.latency'
   | 'capture.latency'
   | 'coherence.drift'
+  | 'agent.spawn'
   | 'agent.return'
   | 'agent.checkpoint'
+  | 'agent.task_completed'
+  | 'agent.idle'
   | 'knowledge.sync'
   | 'session_end.composite'
-  | 'turn.prompt';
+  | 'turn.prompt'
+  | 'instructions.loaded';
 
 export interface MemoryTelemetryEvent {
   ts: string;

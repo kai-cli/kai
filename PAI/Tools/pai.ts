@@ -638,6 +638,7 @@ COMMANDS:
   k mcp list               List all available MCPs
   k mcp set <profile>      Set MCP profile permanently
   k prompt "<text>"        One-shot prompt execution
+  k orchestrator           Run PAI orchestration work items
   k curate                 Review and approve/reject staged memory drafts
   k -w, --wallpaper        List/switch wallpapers (Kitty + macOS)
   k help, -h               Show this help
@@ -744,6 +745,11 @@ async function main() {
         wallpaperArgs = args.slice(i + 1);
         i = args.length;
         break;
+      case "orchestrator":
+        command = "orchestrator";
+        wallpaperArgs = args.slice(i + 1);
+        i = args.length;
+        break;
       case "harvest":
         command = "harvest";
         wallpaperArgs = args.slice(i + 1);
@@ -812,6 +818,15 @@ async function main() {
         stdio: 'inherit',
       });
       process.exit(curateProc.exitCode ?? 0);
+      break;
+    }
+    case "orchestrator": {
+      const orchestratorProc = spawnSync(['bun', 'run', paiPath('PAI', 'Tools', 'Orchestrator.ts'), ...wallpaperArgs], {
+        stdin: 'inherit',
+        stdout: 'inherit',
+        stderr: 'inherit',
+      });
+      process.exit(orchestratorProc.exitCode ?? 0);
       break;
     }
     case "harvest": {

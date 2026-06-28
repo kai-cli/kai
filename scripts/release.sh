@@ -54,11 +54,8 @@ fi
 # kai tree (where PII/brand strings live by design). verify-release.sh now splits checks into
 # STRUCTURAL (run on this repo), ARTIFACT/leak-brand (run on --target), and SECRETS (run on both).
 #
-# Producing/verifying the scrubbed artifact is the job of the sync pipeline (sync-to-kai.sh →
-# sync-ci-gate.ts on the real ~/Projects/kai tree, plus kai's own pre-push gate). Here we run the
-# STRUCTURAL + SECRETS checks against kai; the artifact leak/brand pass happens at sync time
-# against the real kai tree. (Run `bash scripts/verify-release.sh --target <kai-tree>` to scan a
-# specific scrubbed tree directly.)
+# Gate 4 builds a scrubbed temp KAI artifact and runs the public-boundary checks before this script can
+# tag. Gate 3 still runs the source-tree structural/secrets checks directly against kai.
 echo ""
 echo "── Gate 3: Release verification (structural + secrets) ──"
 if bash "$REPO_ROOT/scripts/verify-release.sh" 2>&1; then
@@ -67,17 +64,28 @@ else
   gate_fail "verify-release.sh failed — see output above"
 fi
 
-# ── Gate 4: Test suite ───────────────────────────────────────
-# bun 1.3.x crashes-on-exit (SIGABRT/C++ teardown panic) AFTER tests complete, which corrupts the
-# pipe and made `grep -q '0 fail'` flaky. Mirror the pre-push hook: detect an ACTUAL non-zero failure
-# count ([1-9][0-9]* fail) and retry once for subprocess-spawn flakiness before failing the gate.
+# ── Gate 4: Temp KAI artifact boundary ───────────────────────
 echo ""
-echo "── Gate 4: Test suite ──"
-TEST_OUTPUT=$(bun test 2>&1) || true
-if echo "$TEST_OUTPUT" | grep -qE '[1-9][0-9]* fail'; then
+echo "── Gate 4: Temp KAI artifact boundary ──"
+if bun "$REPO_ROOT/scripts/kai-temp-release-gate.ts" 2>&1; then
+  gate_pass "Temp KAI artifact gate passed"
+else
+  gate_fail "Temp KAI artifact gate failed — release artifact is not safe to tag"
+fi
+
+# ── Gate 5: Test suite ───────────────────────────────────────
+# Parse Bun's summary instead of grepping one substring. Retry once for the same subprocess-spawn
+# flakiness this gate has historically tolerated, then fail closed on missing summaries, failures,
+# crashes, or non-zero exits.
+echo ""
+echo "── Gate 5: Test suite ──"
+TEST_OUTPUT=$(bun test 2>&1)
+TEST_STATUS=$?
+if ! printf '%s\n' "$TEST_OUTPUT" | bun "$REPO_ROOT/scripts/bun-test-gate.ts" --exit-code "$TEST_STATUS" --label "release bun test"; then
   echo "  Test run had failures — retrying once (subprocess spawn flakiness)..."
-  TEST_OUTPUT=$(bun test 2>&1) || true
-  if echo "$TEST_OUTPUT" | grep -qE '[1-9][0-9]* fail'; then
+  TEST_OUTPUT=$(bun test 2>&1)
+  TEST_STATUS=$?
+  if ! printf '%s\n' "$TEST_OUTPUT" | bun "$REPO_ROOT/scripts/bun-test-gate.ts" --exit-code "$TEST_STATUS" --label "release bun test retry"; then
     gate_fail "Test suite has failures (failed on retry too) — run 'bun test' for details"
   else
     gate_pass "All tests pass (retry)"
@@ -86,9 +94,9 @@ else
   gate_pass "All tests pass"
 fi
 
-# ── Gate 5: BuildDocs freshness ──────────────────────────────
+# ── Gate 6: BuildDocs freshness ──────────────────────────────
 echo ""
-echo "── Gate 5: BuildDocs freshness ──"
+echo "── Gate 6: BuildDocs freshness ──"
 if [[ -f "$REPO_ROOT/PAI/Tools/BuildDocs.ts" ]]; then
   if bun "$REPO_ROOT/PAI/Tools/BuildDocs.ts" --check 2>&1; then
     gate_pass "All marker regions are fresh"
@@ -100,9 +108,9 @@ else
   gate_skip "BuildDocs.ts not found — skipping (Phase 2 prerequisite)"
 fi
 
-# ── Gate 6: RELEASE-BLOCKERS.md ──────────────────────────────
+# ── Gate 7: RELEASE-BLOCKERS.md ──────────────────────────────
 echo ""
-echo "── Gate 6: Release blockers ──"
+echo "── Gate 7: Release blockers ──"
 BLOCKERS_FILE="$REPO_ROOT/docs/planning/RELEASE-BLOCKERS.md"
 if [[ -f "$BLOCKERS_FILE" ]]; then
   # grep exits 1 on no-match. Under `set -euo pipefail` that 1 propagates through the pipe and kills

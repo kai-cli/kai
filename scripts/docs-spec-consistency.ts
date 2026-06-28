@@ -57,20 +57,6 @@ export function mergedPrNumbersFromGit(root = repoRoot()): Set<number> {
   }
 }
 
-function isPublicKaiRepo(root = repoRoot()): boolean {
-  try {
-    const remote = execFileSync('git', ['remote', 'get-url', 'origin'], {
-      cwd: root,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5000,
-    });
-    return remote.includes('kai-cli/kai');
-  } catch {
-    return false;
-  }
-}
-
 export function prNumbersFromText(text: string): Set<number> {
   const prs = new Set<number>();
   for (const match of text.matchAll(/#(\d+)/g)) {
@@ -137,7 +123,7 @@ export function checkStaleTaskTerminology(files: Record<string, string>): Findin
 }
 
 export function checkRoadmapVersionSequence(roadmap: string, file = 'ROADMAP-7.x.md'): Finding[] {
-  const required = ['7.4.1', '7.4.2', '7.5.0', '7.5.1', '7.5.2'];
+  const required = ['7.4.1', '7.4.2', '7.4.4', '7.5.0', '7.5.1', '7.5.2'];
   const positions = required.map(version => ({
     version,
     index: roadmap.search(new RegExp(`^##\\s+${version.replace('.', '\\.')}`, 'm')),
@@ -187,7 +173,7 @@ export function runDocsSpecConsistency(root = repoRoot()): ConsistencyResult {
   }
 
   const findings: Finding[] = [
-    ...(isPublicKaiRepo(root) ? [] : checkShippedPrReferences(files, mergedPrNumbersFromGit(root))),
+    ...checkShippedPrReferences(files, mergedPrNumbersFromGit(root)),
     ...checkStaleTaskTerminology(files),
   ];
 
